@@ -1,0 +1,36 @@
+# Dependencias y herramientas
+node_modules/
+.cache/
+.tmp/
+temp/
+
+# Builds
+builds/*
+!builds/.gitkeep
+dist/
+out/
+release/
+
+# Guardados y telemetría local
+saves/
+*.save.json
+*.telemetry.json
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+
+# Arte exportado temporal
+assets/exported/*
+!assets/exported/.gitkeep
+
+# Secretos del regalo
+private/
+combination.txt
