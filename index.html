@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="Prototipo tecnico de El Teorema del Si."
+    />
+    <link rel="stylesheet" href="./src/styles/main.css" />
+    <title>El Teorema del Si - Prototipo tecnico</title>
+  </head>
+  <body>
+    <main id="app" aria-label="El Teorema del Si">
+      <section id="game-shell">
+        <canvas
+          id="game-canvas"
+          width="480"
+          height="270"
+          aria-label="Area de juego"
+        ></canvas>
+
+        <div id="interaction-prompt" class="ui-panel ui-prompt" hidden></div>
+        <div id="toast" class="ui-panel ui-toast" hidden></div>
+
+        <section
+          id="dialogue-panel"
+          class="ui-panel ui-dialogue"
+          aria-live="polite"
+          hidden
+        >
+          <p id="dialogue-speaker" class="dialogue-speaker"></p>
+          <p id="dialogue-text" class="dialogue-text"></p>
+          <p class="dialogue-help">E / Enter: continuar</p>
+        </section>
+
+        <section id="notebook-panel" class="ui-panel ui-notebook" hidden>
+          <header>
+            <h1>Cuaderno de investigacion</h1>
+            <button id="notebook-close" type="button">Cerrar [Q]</button>
+          </header>
+          <div id="notebook-content"></div>
+        </section>
+
+        <aside id="prototype-help" class="prototype-help">
+          <span>WASD/Flechas: mover</span>
+          <span>E/Enter: interactuar</span>
+          <span>Q: cuaderno</span>
+          <span>K: guardar</span>
+          <span>L: cargar</span>
+        </aside>
+      </section>
+
+      <noscript>Este prototipo necesita JavaScript habilitado.</noscript>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
