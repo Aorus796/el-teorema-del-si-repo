@@ -1,0 +1,12 @@
+services:
+  game:
+    image: node:22-bookworm-slim
+    working_dir: /workspace
+    init: true
+    environment:
+      HOST: 0.0.0.0
+    ports:
+      - "8080:5173"
+    volumes:
+      - .:/workspace
+    command: npm run dev
