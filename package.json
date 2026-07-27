@@ -1,6 +1,6 @@
 {
   "name": "el-teorema-del-si",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Aventura narrativa de puzles matematicos creada como regalo de boda.",
   "type": "module",

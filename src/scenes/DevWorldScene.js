@@ -25,6 +25,7 @@ export class DevWorldScene {
 
   enter({ restoreFromState = false } = {}) {
     this.ui.closeAll();
+    this.ui.showPrototypeHelp();
 
     if (restoreFromState) {
       this.load();
