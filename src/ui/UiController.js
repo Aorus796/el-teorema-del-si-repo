@@ -9,6 +9,7 @@ export class UiController {
     this.notebookPanel = requireElement(documentRef, "#notebook-panel");
     this.notebookContent = requireElement(documentRef, "#notebook-content");
     this.notebookClose = requireElement(documentRef, "#notebook-close");
+    this.prototypeHelp = requireElement(documentRef, "#prototype-help");
     this.toastTimer = null;
     this.dialogue = null;
 
@@ -112,9 +113,18 @@ export class UiController {
     return !this.notebookPanel.hidden;
   }
 
+  showPrototypeHelp() {
+    this.prototypeHelp.hidden = false;
+  }
+
+  hidePrototypeHelp() {
+    this.prototypeHelp.hidden = true;
+  }
+
   closeAll() {
     this.hidePrompt();
     this.hideNotebook();
+    this.hidePrototypeHelp();
     this.dialogue = null;
     this.dialoguePanel.hidden = true;
   }

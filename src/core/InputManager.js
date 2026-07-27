@@ -7,6 +7,10 @@ const DEFAULT_BINDINGS = {
   notebook: ["KeyQ", "Tab"],
   save: ["KeyK"],
   load: ["KeyL"],
+  openPuzzlePrototype: ["KeyP"],
+  selectPuzzleOption: ["KeyE"],
+  startPuzzleAttempt: ["Enter"],
+  restartPuzzleAttempt: ["KeyR"],
   cancel: ["Escape"],
 };
 
