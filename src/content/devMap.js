@@ -46,6 +46,15 @@ export const DEV_MAP = {
       height: 18,
       interactionRadius: 28,
     },
+    {
+      id: "p2-bridge-board",
+      type: "puzzle",
+      x: 400,
+      y: 96,
+      width: 18,
+      height: 18,
+      interactionRadius: 28,
+    },
   ],
 };
 

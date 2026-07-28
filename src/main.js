@@ -31,7 +31,7 @@ scenes.register(
 
 scenes.register(
   "p2-bridges",
-  new P2BridgesScene({ scenes, input, ui }),
+  new P2BridgesScene({ scenes, input, state, ui }),
 );
 
 const game = new Game({

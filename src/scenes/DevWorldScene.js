@@ -1,4 +1,5 @@
 import { DEV_MAP } from "../content/devMap.js";
+import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
 import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
 import { Player } from "../world/Player.js";
@@ -110,6 +111,36 @@ export class DevWorldScene {
   }
 
   interact(object) {
+    if (object.id === "p2-bridge-board") {
+      this.ui.hidePrompt();
+
+      if (this.state.puzzles.p2.phase === P2_PHASE.SOLVED) {
+        this.ui.beginDialogue({
+          speaker: "Mapa de los puentes",
+          lines: [
+            "El recorrido permanece trazado sobre el mapa.",
+            "Seis puentes bastaban para llegar desde la entrada hasta el molino.",
+            "La observacion ha quedado registrada en el cuaderno.",
+          ],
+        });
+        return;
+      }
+
+      this.ui.beginDialogue({
+        speaker: "Mapa de los puentes",
+        lines: [
+          "Siete puentes conectan cinco lugares.",
+          "Uno de ellos estaba cerrado aquella tarde.",
+          "Encuentra un recorrido que cruce todos los demas una sola vez.",
+        ],
+        onComplete: () => {
+          this.syncPlayerState();
+          this.scenes.change("p2-bridges", { returnScene: "dev-world" });
+        },
+      });
+      return;
+    }
+
     if (object.id !== "prototype-sign") {
       return;
     }
