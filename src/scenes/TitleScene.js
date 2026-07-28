@@ -14,17 +14,12 @@ export class TitleScene {
   update() {
     if (this.input.wasPressed("interact")) {
       this.state.reset();
-      this.scenes.change("dev-world", { restoreFromState: false });
-      return;
-    }
-
-    if (this.input.wasPressed("openPuzzlePrototype")) {
-      this.scenes.change("p2-bridges");
+      this.scenes.change("world", { restoreFromState: false });
       return;
     }
 
     if (this.input.wasPressed("load") && this.storage.hasSave()) {
-      this.scenes.change("dev-world", { restoreFromState: true });
+      this.scenes.change("world", { restoreFromState: true });
     }
   }
 
@@ -39,20 +34,19 @@ export class TitleScene {
 
     context.fillStyle = "#71d5c6";
     context.font = "11px monospace";
-    context.fillText("Prototipo tecnico 0.4.0", 240, 94);
+    context.fillText("Vertical slice narrativo", 240, 94);
 
     context.fillStyle = "#fff7df";
     context.font = "12px monospace";
-    context.fillText("E / Enter - Nueva partida", 240, 138);
-    context.fillText("P - Prototipo P2", 240, 164);
+    context.fillText("E / Enter - Nueva partida", 240, 148);
 
     context.fillStyle = this.storage.hasSave() ? "#fff7df" : "#716d7a";
-    context.fillText("L - Continuar partida", 240, 190);
+    context.fillText("L - Continuar partida", 240, 180);
 
     context.fillStyle = "#c9bea4";
     context.font = "9px monospace";
     context.fillText(
-      "Movimiento, escenas, guardado y puzles",
+      "La víspera de la boda en Axioma",
       240,
       230,
     );

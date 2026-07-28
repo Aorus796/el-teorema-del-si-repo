@@ -5,7 +5,7 @@ import { StorageAdapter } from "./platform/StorageAdapter.js";
 import { GameState } from "./state/GameState.js";
 import { UiController } from "./ui/UiController.js";
 import { TitleScene } from "./scenes/TitleScene.js";
-import { DevWorldScene } from "./scenes/DevWorldScene.js";
+import { WorldScene } from "./scenes/WorldScene.js";
 import { P2BridgesScene } from "./scenes/P2BridgesScene.js";
 
 const canvas = document.querySelector("#game-canvas");
@@ -25,8 +25,8 @@ scenes.register(
 );
 
 scenes.register(
-  "dev-world",
-  new DevWorldScene({ scenes, input, storage, state, ui }),
+  "world",
+  new WorldScene({ scenes, input, storage, state, ui }),
 );
 
 scenes.register(

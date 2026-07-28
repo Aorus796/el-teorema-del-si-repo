@@ -38,11 +38,7 @@ export class GameState {
   }
 
   reset() {
-    /*
-     * Se mantiene temporalmente el nombre de escena "dev-world" para no
-     * romper la escena actual antes de sustituirla por la escena de mundo.
-     */
-    this.scene = "dev-world";
+    this.scene = "world";
 
     this.world = {
       currentMapId: DEFAULT_MAP_ID,
@@ -50,8 +46,8 @@ export class GameState {
     };
 
     /*
-     * Alias de compatibilidad con DevWorldScene. Durante el refactor de
-     * escenas, el acceso principal pasará a getPlayerState/setPlayerState.
+     * Alias compatible con partidas y pruebas anteriores. La escena de
+     * mundo utiliza getPlayerState() y setPlayerState().
      */
     this.player = this.getPlayerState();
 
@@ -171,7 +167,11 @@ export class GameState {
     }
 
     this.scene =
-      typeof data.scene === "string" ? data.scene : "dev-world";
+      data.scene === "dev-world"
+        ? "world"
+        : typeof data.scene === "string"
+          ? data.scene
+          : "world";
 
     this.world = restoreWorldState(data);
     this.player = this.getPlayerState();
