@@ -7,27 +7,68 @@ import {
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
 
 export class P2BridgesScene {
-  constructor({ scenes, input, ui }) {
+  constructor({ scenes, input, state, ui }) {
     this.scenes = scenes;
     this.input = input;
+    this.state = state;
     this.ui = ui;
     this.puzzle = null;
     this.selectedBridgeIndex = 0;
     this.selectedMoveIndex = 0;
     this.statusMessage = "";
+    this.returnScene = "title";
   }
 
-  enter() {
+  enter({ returnScene = "title" } = {}) {
     this.ui.closeAll();
-    this.puzzle = new P2Puzzle();
+    this.returnScene = returnScene;
+    this.puzzle = new P2Puzzle({ state: this.state.puzzles.p2 });
     this.selectedBridgeIndex = 0;
     this.selectedMoveIndex = 0;
-    this.statusMessage = "Elige el puente que estaba cerrado.";
+    this.syncViewFromState();
+  }
+
+  syncViewFromState() {
+    const state = this.puzzle.state;
+
+    if (state.closedBridgeId !== null) {
+      const bridgeIndex = P2_GRAPH.bridges.findIndex(
+        (bridge) => bridge.id === state.closedBridgeId,
+      );
+
+      if (bridgeIndex >= 0) {
+        this.selectedBridgeIndex = bridgeIndex;
+      }
+    }
+
+    if (state.phase === P2_PHASE.PLANNING) {
+      this.statusMessage =
+        state.closedBridgeId === null
+          ? "Elige el puente que estaba cerrado."
+          : `Puente ${state.closedBridgeId} marcado como cerrado.`;
+      return;
+    }
+
+    if (state.phase === P2_PHASE.TRAVERSING) {
+      this.syncHighlightedBridgeToMove();
+      this.statusMessage =
+        `Recorrido reanudado desde ${state.currentNode}.`;
+      return;
+    }
+
+    if (state.phase === P2_PHASE.FAILED) {
+      this.statusMessage =
+        "Intento fallido. Pulsa R para volver a planificar.";
+      return;
+    }
+
+    this.statusMessage =
+      "Recorrido completo. Has utilizado todos los puentes.";
   }
 
   update() {
     if (this.input.wasPressed("cancel")) {
-      this.scenes.change("title");
+      this.scenes.change(this.returnScene);
       return;
     }
 
@@ -159,8 +200,15 @@ export class P2BridgesScene {
     }
 
     if (result.code === P2_MOVE_CODE.SOLVED) {
+      const wasAdded = this.state.unlockP2Entry();
+
       this.statusMessage =
         "Recorrido completo. Has utilizado todos los puentes.";
+
+      if (wasAdded) {
+        this.ui.showToast("Nueva observacion registrada");
+      }
+
       return;
     }
 

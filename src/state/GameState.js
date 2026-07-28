@@ -1,3 +1,5 @@
+import { P2State } from "../puzzles/p2-bridges/P2State.js";
+
 export const SAVE_FORMAT_VERSION = 1;
 
 const DEFAULT_NOTEBOOK_ENTRY = {
@@ -5,6 +7,13 @@ const DEFAULT_NOTEBOOK_ENTRY = {
   title: "Una sala que todavia no existe",
   text:
     "Este espacio temporal valida movimiento, colisiones, interaccion, cuaderno y guardado.",
+};
+
+const P2_NOTEBOOK_ENTRY = {
+  id: "p2-bridges-solution",
+  title: "El paseo imposible",
+  text:
+    "No era necesario cruzar los siete puentes. Al reconocer cuál estaba cerrado, los seis restantes formaban un recorrido posible desde la entrada hasta el molino.",
 };
 
 export class GameState {
@@ -23,6 +32,9 @@ export class GameState {
       examinedPrototypeSign: false,
     };
     this.notebook = [];
+    this.puzzles = {
+      p2: new P2State(),
+    };
   }
 
   addNotebookEntry(entry) {
@@ -39,6 +51,10 @@ export class GameState {
     return this.addNotebookEntry(DEFAULT_NOTEBOOK_ENTRY);
   }
 
+  unlockP2Entry() {
+    return this.addNotebookEntry(P2_NOTEBOOK_ENTRY);
+  }
+
   toSaveData() {
     return {
       formatVersion: SAVE_FORMAT_VERSION,
@@ -47,6 +63,9 @@ export class GameState {
       player: { ...this.player },
       flags: { ...this.flags },
       notebook: this.notebook.map((entry) => ({ ...entry })),
+      puzzles: {
+        p2: this.puzzles.p2.toSaveData(),
+      },
     };
   }
 
@@ -67,6 +86,9 @@ export class GameState {
     this.notebook = Array.isArray(data.notebook)
       ? data.notebook.filter(isNotebookEntry).map((entry) => ({ ...entry }))
       : [];
+    this.puzzles = {
+      p2: new P2State(data.puzzles?.p2 ?? {}),
+    };
   }
 }
 

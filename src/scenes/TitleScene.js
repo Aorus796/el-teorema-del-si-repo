@@ -39,7 +39,7 @@ export class TitleScene {
 
     context.fillStyle = "#71d5c6";
     context.font = "11px monospace";
-    context.fillText("Prototipo tecnico 0.3.0", 240, 94);
+    context.fillText("Prototipo tecnico 0.4.0", 240, 94);
 
     context.fillStyle = "#fff7df";
     context.font = "12px monospace";
