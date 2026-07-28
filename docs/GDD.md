@@ -158,7 +158,9 @@ El concepto funciona si el jugador entiende los controles rápidamente, sonríe,
 
 ## 2.1. Premisa
 
-En la mañana de una celebración importante, el protagonista llega a la Plaza del Axioma y descubre que la novia ha desaparecido. No existen señales de violencia ni petición de rescate. En su lugar encuentra un mapa incompleto, una nota escrita mediante símbolos y una pieza perteneciente a un mecanismo desconocido.
+El día anterior a la boda, el protagonista se encuentra en la Plaza del Axioma mientras los habitantes preparan la ceremonia. Entre mesas, sillas, flores y cajas todavía por colocar, el padre de la novia le comunica que ella no está en su habitación y que nadie sabe dónde se encuentra. No existen señales de violencia ni petición de rescate.
+
+El padre entrega al protagonista una nota encontrada en la habitación de la novia. El mensaje indica que estaba investigando algo antes de la ceremonia y conduce al **Paseo de los Siete Puentes**. Allí, el protagonista encuentra un mapa alterado y la primera evidencia que relaciona su desaparición con la biblioteca.
 
 Los habitantes recuerdan versiones contradictorias. Siguiendo las pistas, el protagonista descubre que la novia investigaba una construcción oculta bajo el pueblo: el **Archivo de las Conjeturas**, una antigua institución dedicada a registrar y validar conocimiento.
 
@@ -208,9 +210,9 @@ Su conflicto se resuelve lógicamente. El jugador no lo destruye ni lo convence 
 
 ## 2.7. Estructura por actos
 
-### Prólogo: la ceremonia vacía
+### Prólogo: la víspera interrumpida
 
-Se presentan la plaza, los controles y la ausencia de la novia. La primera nota conduce a la biblioteca.
+Se presentan la Plaza del Axioma, los preparativos de la boda y los controles básicos. El padre de la novia entrega una nota encontrada en su habitación, que conduce al Paseo de los Siete Puentes. La resolución del primer problema revela una pista relacionada con la biblioteca.
 
 ### Acto I: versiones incompatibles
 
@@ -273,7 +275,7 @@ El mundo debe sentirse compacto, bello y denso en información. Desde la plaza s
 |---|---|---|
 | Plaza del Axioma | Centro narrativo y orientación | Deducción y síntesis |
 | Biblioteca del Margen | Información y sistema de pistas | Lógica y clasificación |
-| Barrio de los Puentes | Navegación y testimonios | Grafos y conectividad |
+| Paseo de los Siete Puentes | Primera investigación y conectividad | Grafos y conectividad |
 | Jardín de la Criba | Patrones naturales | Teoría de números |
 | Observatorio de las Órbitas Quietas | Perspectiva y proyección | Geometría y cifrado visual |
 | Molino de las Posibilidades | Máquinas configurables | Combinatoria e invariantes |
@@ -281,15 +283,16 @@ El mundo debe sentirse compacto, bello y denso en información. Desde la plaza s
 
 ## 3.3. Exploración semiabierta
 
-Después del prólogo se abren dos líneas de investigación: Puentes y Jardín. Al avanzar en ambas se desbloquean Observatorio y Molino, también resolubles en cualquier orden. El Archivo utiliza una progresión más lineal para concentrar la tensión.
+El prólogo conecta la Plaza del Axioma con el Paseo de los Siete Puentes. Resolver P2 revela una pista que abre la Biblioteca del Margen como siguiente destino. A partir de la investigación en la biblioteca se habilita parcialmente el Jardín; más adelante se desbloquean Observatorio y Molino, resolubles en un orden flexible. El Archivo utiliza una progresión más lineal para concentrar la tensión.
 
 No se utilizará una estructura de cuatro llaves. Cada zona modifica un sistema real del pueblo: agua, orientación, energía o conexiones. La entrada al archivo aparece como consecuencia de esas modificaciones conectadas.
 
 ## 3.4. Plaza del Axioma
 
-La plaza es el punto inicial y final. Contiene la ceremonia, la fuente central, el ayuntamiento, el tablón y los accesos a las zonas. Evoluciona durante la partida:
+La plaza es el punto inicial y final. Contiene el altar, la fuente central, el ayuntamiento, el tablón y los accesos a las zonas. Evoluciona durante la partida:
 
-- Al inicio está preparada y llena de invitados confundidos.
+- Al inicio está en plena preparación para la boda del día siguiente, con mesas, sillas, flores, cajas y habitantes trabajando.
+- Durante el prólogo, el padre de la novia entrega la nota que inicia la búsqueda.
 - En la mitad, los mecanismos antiguos comienzan a reaccionar.
 - Al final, la fuente revela el acceso subterráneo.
 
@@ -301,11 +304,11 @@ La biblioteca utiliza un sistema de clasificación coherente pero impracticable.
 
 Los documentos serán breves y visuales. Ningún libro obligatorio debe convertirse en un bloque extenso de exposición.
 
-## 3.6. Barrio de los Puentes
+## 3.6. Paseo de los Siete Puentes
 
-Un río dividido en canales, islotes y pasarelas. Maestro Nodo intenta recorrer todos los puentes bajo reglas imposibles. El jugador manipula compuertas, observa rutas de NPCs y reconstruye el recorrido de la novia.
+Un río dividido en canales, islotes y pasarelas. Durante el prólogo, el protagonista sigue la nota de la novia hasta un mapa manipulado que plantea P2, «El paseo imposible».
 
-Resolver la zona redirige el agua, abre el acceso al molino y crea un atajo hacia el jardín.
+Resolver el primer problema revela una anotación de la novia y un símbolo relacionado con la biblioteca. Las compuertas, el acceso al molino y el atajo hacia el jardín se desarrollarán posteriormente cuando el jugador regrese a la zona.
 
 ## 3.7. Jardín de la Criba
 
@@ -343,7 +346,7 @@ La novia utiliza una marca recurrente formada por dos arcos entrelazados. Señal
 
 No habrá ciclo dinámico de día y noche. El progreso cambia la iluminación:
 
-- Mañana luminosa durante el prólogo.
+- Mañana luminosa durante la víspera y el prólogo.
 - Mediodía durante la exploración.
 - Tarde cálida al reactivar el archivo.
 - Atardecer dorado en el epílogo.
@@ -432,19 +435,32 @@ Visualmente combina piedra clara, metal dorado, cristal turquesa y placas móvil
 ## 4.10. Alcaldesa Corolaria
 
 - **Zona:** Plaza.
-- **Función:** coordinar ceremonia, investigación y cambios del mundo.
+- **Función:** coordinar los preparativos de la ceremonia, introducir los controles básicos y comunicar los cambios del mundo.
 - **Personalidad:** eficiente, autoritaria y preocupada por el horario.
-- **Contradicción:** intenta controlar un pueblo construido sobre sistemas desconocidos.
-- **Evolución:** deja de ocultar el incidente y apoya la investigación.
-- **Rasgo visual:** banda municipal, carpeta y reloj.
+- **Contradicción:** intenta controlar tanto una boda como un pueblo construido sobre sistemas desconocidos.
+- **Evolución:** comienza tratando cualquier imprevisto como un retraso logístico y termina apoyando abiertamente la investigación.
+- **Rasgo visual:** banda municipal, carpeta, reloj y lista de preparativos.
+- **Papel en el prólogo:** recibe al protagonista, le pide que revise la plaza y dirige su atención hacia el tablón de preparativos. Actúa como tutorial diegético sin conocer todavía la desaparición.
 
-## 4.11. Testigo Cero
+## 4.11. Padre de la Investigadora
+
+- **Zona inicial:** Plaza del Axioma.
+- **Función:** iniciar la búsqueda y entregar la primera nota de la novia.
+- **Personalidad:** afectuoso, prudente y visiblemente preocupado, aunque intenta mantener la calma para no alarmar a todo el pueblo.
+- **Contradicción:** quiere proteger a su hija, pero comprende que ocultar la nota impediría encontrarla.
+- **Evolución:** pasa de pedir una búsqueda discreta a colaborar activamente cuando aparecen pruebas del Archivo.
+- **Rasgo visual:** ropa preparada para ayudar con la ceremonia y la nota doblada en la mano.
+- **Papel en el prólogo:** explica que la novia no está en su habitación, entrega la nota al protagonista y activa el objetivo de investigar el Paseo de los Siete Puentes.
+
+El personaje se mantendrá sin nombre definitivo hasta disponer de referencias personales para su versión final.
+
+## 4.12. Testigo Cero
 
 Personaje recurrente aparentemente inútil. Sus declaraciones parecen contradictorias porque utiliza referencias temporales y espaciales ambiguas, pero son verificables. La novia fue una de las pocas personas que aprendió a interpretarlo.
 
 Debe utilizarse con cuidado: sus frases nunca servirán como excusa para una pista arbitraria.
 
-## 4.12. Relaciones
+## 4.13. Relaciones
 
 - Nodo y Prima discuten sobre si todo debe estar conectado.
 - Silogio documenta inventos cuyos nombres Permuto cambia constantemente.
@@ -452,11 +468,11 @@ Debe utilizarse con cuidado: sus frases nunca servirán como excusa para una pis
 - El pueblo descarta a Testigo Cero, mientras la novia reconoce su valor.
 - Protagonista y novia se complementan sin convertirse en versiones idealizadas.
 
-## 4.13. Retratos y expresiones
+## 4.14. Retratos y expresiones
 
 Se utilizarán retratos pixel art para pareja, Custodio y NPCs principales. Protagonista y novia tendrán entre cuatro y cinco expresiones; NPCs, entre dos y tres; el Custodio utilizará estados geométricos.
 
-## 4.14. Personalización pendiente
+## 4.15. Personalización pendiente
 
 Antes del arte final se recopilarán fotografías, ropa, gestos, bromas privadas, aficiones, profesión de la novia, lugares y dinámica real de la pareja. Esta información personaliza diálogos y recursos, pero no debe convertir recuerdos olvidables en requisitos de solución.
 
@@ -494,12 +510,16 @@ Los interiores secundarios son el primer recorte si la producción artística su
 
 ## 5.4. Plaza
 
-- P1: ceremonia y fuente.
-- P2: calle de la biblioteca.
-- P3: calle de los canales.
-- P4: camino del jardín.
-- P5: escalinata del observatorio.
-- P6: calle del molino.
+La Plaza del Axioma funciona como introducción narrativa y núcleo central del pueblo. Durante el prólogo se encuentra en preparación para la boda del día siguiente.
+
+- **PL1: centro ceremonial.** Altar, fuente y espacio principal de la plaza.
+- **PL2: zona de invitados.** Filas de sillas, mesas de banquete, flores y cajas pendientes de colocar.
+- **PL3: tablón de preparativos.** Introduce movimiento, interacción, cuaderno y guardado dentro de la ficción.
+- **PL4: zona de organización.** Maestro de ceremonias y habitantes que preparan el evento.
+- **PL5: punto de encuentro.** El padre de la novia entrega la nota que inicia la búsqueda.
+- **PL6: accesos.** Caminos hacia la biblioteca, el Paseo de los Siete Puentes, el jardín, el observatorio y el molino.
+
+Durante el vertical slice solo estarán operativos el centro de la plaza y la salida hacia el Paseo de los Siete Puentes. Los demás accesos podrán verse, pero permanecerán narrativamente bloqueados.
 
 ## 5.5. Biblioteca
 
@@ -508,13 +528,17 @@ Los interiores secundarios son el primer recorte si la producción artística su
 - B3: sección restringida.
 - B4: sótano y conexión subterránea.
 
-## 5.6. Puentes
+## 5.6. Paseo de los Siete Puentes
 
-- U1: entrada de canales.
-- U2: isla de Maestro Nodo.
-- U3: tres pasarelas y compuertas.
-- U4: embarcadero.
-- U5: conexión al molino.
+Esta zona constituye la primera localización de investigación y contiene P2, «El paseo imposible».
+
+- **U1: acceso desde la plaza.** Presentación de la localización y orientación básica.
+- **U2: mirador del mapa.** Panel o maqueta manipulada por la novia desde la que se abre P2.
+- **U3: islas y pasarelas.** Representación ambiental de los lugares y conexiones del problema.
+- **U4: embarcadero.** Contiene la evidencia que aparece o puede interpretarse después de resolver P2.
+- **U5: conexión futura al molino.** Permanece cerrada durante el prólogo.
+
+Al resolver P2, el jugador obtiene una anotación de la novia y un símbolo que señala la Biblioteca del Axioma como siguiente destino.
 
 ## 5.7. Jardín
 
@@ -552,11 +576,11 @@ Los interiores secundarios son el primer recorte si la producción artística su
 
 ### Estado 0: prólogo
 
-Plaza, calles y sala principal de la biblioteca. Se aprende a investigar y se obtiene el cuaderno.
+Plaza del Axioma y Paseo de los Siete Puentes. Se presentan los preparativos de la boda, los controles y el cuaderno. El padre de la novia entrega la primera nota y el jugador resuelve P2. La pista obtenida señala la biblioteca como siguiente destino.
 
 ### Estado 1: primera investigación
 
-Puentes y Jardín disponibles parcialmente y resolubles en cualquier orden.
+La Biblioteca del Axioma queda disponible y comienza la reconstrucción del recorrido de la novia. El Jardín se abre parcialmente y puede investigarse junto con las nuevas pistas de la biblioteca.
 
 ### Estado 2: apertura del pueblo
 

@@ -32,12 +32,16 @@ Los interiores secundarios son el primer recorte si la producción artística su
 
 ## 5.4. Plaza
 
-- P1: ceremonia y fuente.
-- P2: calle de la biblioteca.
-- P3: calle de los canales.
-- P4: camino del jardín.
-- P5: escalinata del observatorio.
-- P6: calle del molino.
+La Plaza del Axioma funciona como introducción narrativa y núcleo central del pueblo. Durante el prólogo se encuentra en preparación para la boda del día siguiente.
+
+- **PL1: centro ceremonial.** Altar, fuente y espacio principal de la plaza.
+- **PL2: zona de invitados.** Filas de sillas, mesas de banquete, flores y cajas pendientes de colocar.
+- **PL3: tablón de preparativos.** Introduce movimiento, interacción, cuaderno y guardado dentro de la ficción.
+- **PL4: zona de organización.** Maestro de ceremonias y habitantes que preparan el evento.
+- **PL5: punto de encuentro.** El padre de la novia entrega la nota que inicia la búsqueda.
+- **PL6: accesos.** Caminos hacia la biblioteca, el Paseo de los Siete Puentes, el jardín, el observatorio y el molino.
+
+Durante el vertical slice solo estarán operativos el centro de la plaza y la salida hacia el Paseo de los Siete Puentes. Los demás accesos podrán verse, pero permanecerán narrativamente bloqueados.
 
 ## 5.5. Biblioteca
 
@@ -46,13 +50,17 @@ Los interiores secundarios son el primer recorte si la producción artística su
 - B3: sección restringida.
 - B4: sótano y conexión subterránea.
 
-## 5.6. Puentes
+## 5.6. Paseo de los Siete Puentes
 
-- U1: entrada de canales.
-- U2: isla de Maestro Nodo.
-- U3: tres pasarelas y compuertas.
-- U4: embarcadero.
-- U5: conexión al molino.
+Esta zona constituye la primera localización de investigación y contiene P2, «El paseo imposible».
+
+- **U1: acceso desde la plaza.** Presentación de la localización y orientación básica.
+- **U2: mirador del mapa.** Panel o maqueta manipulada por la novia desde la que se abre P2.
+- **U3: islas y pasarelas.** Representación ambiental de los lugares y conexiones del problema.
+- **U4: embarcadero.** Contiene la evidencia que aparece o puede interpretarse después de resolver P2.
+- **U5: conexión futura al molino.** Permanece cerrada durante el prólogo.
+
+Al resolver P2, el jugador obtiene una anotación de la novia y un símbolo que señala la Biblioteca del Axioma como siguiente destino.
 
 ## 5.7. Jardín
 
@@ -90,11 +98,11 @@ Los interiores secundarios son el primer recorte si la producción artística su
 
 ### Estado 0: prólogo
 
-Plaza, calles y sala principal de la biblioteca. Se aprende a investigar y se obtiene el cuaderno.
+Plaza del Axioma y Paseo de los Siete Puentes. Se presentan los preparativos de la boda, los controles y el cuaderno. El padre de la novia entrega la primera nota y el jugador resuelve P2. La pista obtenida señala la biblioteca como siguiente destino.
 
 ### Estado 1: primera investigación
 
-Puentes y Jardín disponibles parcialmente y resolubles en cualquier orden.
+La Biblioteca del Axioma queda disponible y comienza la reconstrucción del recorrido de la novia. El Jardín se abre parcialmente y puede investigarse junto con las nuevas pistas de la biblioteca.
 
 ### Estado 2: apertura del pueblo
 

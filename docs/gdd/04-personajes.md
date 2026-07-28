@@ -78,19 +78,32 @@ Visualmente combina piedra clara, metal dorado, cristal turquesa y placas móvil
 ## 4.10. Alcaldesa Corolaria
 
 - **Zona:** Plaza.
-- **Función:** coordinar ceremonia, investigación y cambios del mundo.
+- **Función:** coordinar los preparativos de la ceremonia, introducir los controles básicos y comunicar los cambios del mundo.
 - **Personalidad:** eficiente, autoritaria y preocupada por el horario.
-- **Contradicción:** intenta controlar un pueblo construido sobre sistemas desconocidos.
-- **Evolución:** deja de ocultar el incidente y apoya la investigación.
-- **Rasgo visual:** banda municipal, carpeta y reloj.
+- **Contradicción:** intenta controlar tanto una boda como un pueblo construido sobre sistemas desconocidos.
+- **Evolución:** comienza tratando cualquier imprevisto como un retraso logístico y termina apoyando abiertamente la investigación.
+- **Rasgo visual:** banda municipal, carpeta, reloj y lista de preparativos.
+- **Papel en el prólogo:** recibe al protagonista, le pide que revise la plaza y dirige su atención hacia el tablón de preparativos. Actúa como tutorial diegético sin conocer todavía la desaparición.
 
-## 4.11. Testigo Cero
+## 4.11. Padre de la Investigadora
+
+- **Zona inicial:** Plaza del Axioma.
+- **Función:** iniciar la búsqueda y entregar la primera nota de la novia.
+- **Personalidad:** afectuoso, prudente y visiblemente preocupado, aunque intenta mantener la calma para no alarmar a todo el pueblo.
+- **Contradicción:** quiere proteger a su hija, pero comprende que ocultar la nota impediría encontrarla.
+- **Evolución:** pasa de pedir una búsqueda discreta a colaborar activamente cuando aparecen pruebas del Archivo.
+- **Rasgo visual:** ropa preparada para ayudar con la ceremonia y la nota doblada en la mano.
+- **Papel en el prólogo:** explica que la novia no está en su habitación, entrega la nota al protagonista y activa el objetivo de investigar el Paseo de los Siete Puentes.
+
+El personaje se mantendrá sin nombre definitivo hasta disponer de referencias personales para su versión final.
+
+## 4.12. Testigo Cero
 
 Personaje recurrente aparentemente inútil. Sus declaraciones parecen contradictorias porque utiliza referencias temporales y espaciales ambiguas, pero son verificables. La novia fue una de las pocas personas que aprendió a interpretarlo.
 
 Debe utilizarse con cuidado: sus frases nunca servirán como excusa para una pista arbitraria.
 
-## 4.12. Relaciones
+## 4.13. Relaciones
 
 - Nodo y Prima discuten sobre si todo debe estar conectado.
 - Silogio documenta inventos cuyos nombres Permuto cambia constantemente.
@@ -98,10 +111,10 @@ Debe utilizarse con cuidado: sus frases nunca servirán como excusa para una pis
 - El pueblo descarta a Testigo Cero, mientras la novia reconoce su valor.
 - Protagonista y novia se complementan sin convertirse en versiones idealizadas.
 
-## 4.13. Retratos y expresiones
+## 4.14. Retratos y expresiones
 
 Se utilizarán retratos pixel art para pareja, Custodio y NPCs principales. Protagonista y novia tendrán entre cuatro y cinco expresiones; NPCs, entre dos y tres; el Custodio utilizará estados geométricos.
 
-## 4.14. Personalización pendiente
+## 4.15. Personalización pendiente
 
 Antes del arte final se recopilarán fotografías, ropa, gestos, bromas privadas, aficiones, profesión de la novia, lugares y dinámica real de la pareja. Esta información personaliza diálogos y recursos, pero no debe convertir recuerdos olvidables en requisitos de solución.

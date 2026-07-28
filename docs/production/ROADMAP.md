@@ -1,6 +1,14 @@
 # Hoja de ruta de producción
 
-## Etapa 0 - Documentación
+## Hitos publicados
+
+- [x] `v0.1.0-docs`: GDD inicial y estructura documental.
+- [x] `v0.2.0`: esqueleto técnico del motor.
+- [x] `v0.3.0`: framework de puzles y prototipo jugable de P2.
+- [x] `v0.4.0`: integración de P2 en mundo, cuaderno y guardado.
+- [ ] `v0.5.0`: primer vertical slice narrativo.
+
+## Etapa 0 - Documentación base
 
 - [x] Concepto.
 - [x] Historia.
@@ -9,53 +17,111 @@
 - [x] Mapa.
 - [x] Mecánicas.
 - [x] Puzles.
-- [x] Arte.
-- [x] UX.
+- [x] Dirección artística.
+- [x] Interfaz y experiencia de usuario.
 - [x] Diseño técnico.
 - [x] Producción y entrega.
 - [x] GDD consolidado.
+- [x] Diseño del primer vertical slice narrativo.
 
 ## Etapa 1 - Puzles de papel
 
-- [ ] P2: enumeración y tablero.
+- [x] P2: grafo, recorridos válidos y condición de fallo.
 - [ ] P6: espacio de estados e invariante.
 - [ ] P10: deducción y pruebas con perfiles.
 - [ ] Borrador parametrizable de P11.
 
 ## Etapa 2 - Prototipo técnico
 
-- [ ] Canvas y escalado.
-- [ ] Bucle y escenas.
-- [ ] Entrada abstracta.
-- [ ] Mapa, cámara y colisiones.
-- [ ] Interacción y NPC.
-- [ ] Diálogo.
-- [ ] Cuaderno mínimo.
-- [ ] Estado y guardado.
+- [x] Canvas y escalado.
+- [x] Bucle principal y escenas.
+- [x] Entrada abstracta.
+- [x] Mapa, cámara y colisiones.
+- [x] Interacción con objetos.
+- [x] Sistema de diálogo.
+- [x] Cuaderno mínimo.
+- [x] Estado global y guardado.
+- [x] Persistencia de puzles.
+- [ ] Sistema reutilizable de NPCs.
+- [ ] Transiciones visuales entre mapas.
 - [ ] Audio.
 
 ## Etapa 3 - Prototipos digitales
 
-- [ ] P2.
+- [x] P2 jugable.
+- [x] Persistencia de intentos de P2.
+- [x] Integración de P2 en el progreso del mundo.
+- [ ] Sistema visual de reflexiones y pistas.
 - [ ] P6.
 - [ ] P10.
-- [ ] Persistencia de tableros.
-- [ ] Reflexiones.
 
-## Etapa 4 - Vertical slice
+## Etapa 4 - Vertical slice `v0.5.0`
 
-- [ ] Plaza parcial.
-- [ ] Prólogo.
-- [ ] P0.
-- [ ] Biblioteca.
-- [ ] P1.
-- [ ] Arte representativo.
-- [ ] Música representativa.
-- [ ] Build de prueba.
+### Diseño
 
-## Etapa 5 - Producción completa
+- [x] Contexto de la víspera de la boda.
+- [x] Flujo narrativo Plaza → Paseo → P2 → Biblioteca.
+- [x] Corolaria como tutorial diegético.
+- [x] Padre de la novia como iniciador de la búsqueda.
+- [x] Nota inicial de la novia.
+- [x] Criterios de aceptación del vertical slice.
 
-- [ ] Puentes.
+### Plaza del Axioma
+
+- [ ] Sustituir la sala técnica por el mapa de la plaza.
+- [ ] Añadir altar y fuente.
+- [ ] Añadir mesas, sillas, flores, cajas y decoración.
+- [ ] Añadir tablón de preparativos.
+- [ ] Añadir Alcaldesa Corolaria.
+- [ ] Añadir padre de la novia.
+- [ ] Añadir al menos un habitante secundario.
+- [ ] Introducir movimiento, interacción, cuaderno y guardado.
+- [ ] Entregar y registrar la nota de la novia.
+- [ ] Bloquear narrativamente los accesos no disponibles.
+- [ ] Desbloquear la salida al Paseo de los Siete Puentes.
+
+### Paseo de los Siete Puentes
+
+- [ ] Crear un mapa exterior propio.
+- [ ] Añadir acceso desde la plaza.
+- [ ] Integrar el panel o maqueta de P2.
+- [ ] Mantener intentos incompletos al salir y cargar.
+- [ ] Mostrar evidencia posterior a la resolución.
+- [ ] Desbloquear la pista hacia la biblioteca.
+- [ ] Añadir transición de regreso a la plaza.
+
+### Progreso y persistencia
+
+- [ ] Persistir el mapa actual.
+- [ ] Persistir la posición por mapa.
+- [ ] Persistir eventos narrativos del prólogo.
+- [ ] Persistir la nota y los objetivos.
+- [ ] Persistir el resultado de P2.
+- [ ] Restaurar correctamente cualquier punto del vertical slice.
+- [ ] Eliminar el acceso público directo a P2 mediante `P`.
+
+### Presentación y validación
+
+- [ ] Arte provisional coherente para ambos mapas.
+- [ ] Identidad visual diferenciada para los NPCs.
+- [ ] Transiciones entre escenas y localizaciones.
+- [ ] Revisión completa de diálogos.
+- [ ] Pruebas automatizadas del progreso narrativo.
+- [ ] Validación manual de nueva partida, guardado y carga.
+- [ ] Build estático de prueba.
+- [ ] Etiqueta `v0.5.0`.
+
+## Etapa 5 - Primera investigación
+
+- [ ] Biblioteca del Margen.
+- [ ] Bibliotecario Silogio.
+- [ ] Sistema completo de reflexiones.
+- [ ] Reconstrucción del recorrido de la novia.
+- [ ] Apertura parcial del Jardín de la Criba.
+
+## Etapa 6 - Producción completa
+
+- [ ] Desarrollo completo de Puentes.
 - [ ] Jardín.
 - [ ] Molino.
 - [ ] Observatorio.
@@ -63,12 +129,14 @@
 - [ ] Epílogo.
 - [ ] Metapuzle.
 
-## Etapa 6 - Personalización y entrega
+## Etapa 7 - Personalización y entrega
 
-- [ ] Referencias de la pareja.
+- [ ] Referencias visuales de la pareja y familiares.
+- [ ] Nombres definitivos y detalles personales.
+- [ ] Bromas y recuerdos privados.
 - [ ] Candado real.
 - [ ] Combinación definitiva.
-- [ ] Ejecutable Windows.
-- [ ] Pruebas limpias.
+- [ ] Ejecutable para Windows.
+- [ ] Pruebas en una instalación limpia.
 - [ ] Caja física.
 - [ ] Ensayo general.

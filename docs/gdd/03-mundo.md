@@ -12,7 +12,7 @@ El mundo debe sentirse compacto, bello y denso en información. Desde la plaza s
 |---|---|---|
 | Plaza del Axioma | Centro narrativo y orientación | Deducción y síntesis |
 | Biblioteca del Margen | Información y sistema de pistas | Lógica y clasificación |
-| Barrio de los Puentes | Navegación y testimonios | Grafos y conectividad |
+| Paseo de los Siete Puentes | Primera investigación y conectividad | Grafos y conectividad |
 | Jardín de la Criba | Patrones naturales | Teoría de números |
 | Observatorio de las Órbitas Quietas | Perspectiva y proyección | Geometría y cifrado visual |
 | Molino de las Posibilidades | Máquinas configurables | Combinatoria e invariantes |
@@ -20,15 +20,16 @@ El mundo debe sentirse compacto, bello y denso en información. Desde la plaza s
 
 ## 3.3. Exploración semiabierta
 
-Después del prólogo se abren dos líneas de investigación: Puentes y Jardín. Al avanzar en ambas se desbloquean Observatorio y Molino, también resolubles en cualquier orden. El Archivo utiliza una progresión más lineal para concentrar la tensión.
+El prólogo conecta la Plaza del Axioma con el Paseo de los Siete Puentes. Resolver P2 revela una pista que abre la Biblioteca del Margen como siguiente destino. A partir de la investigación en la biblioteca se habilita parcialmente el Jardín; más adelante se desbloquean Observatorio y Molino, resolubles en un orden flexible. El Archivo utiliza una progresión más lineal para concentrar la tensión.
 
 No se utilizará una estructura de cuatro llaves. Cada zona modifica un sistema real del pueblo: agua, orientación, energía o conexiones. La entrada al archivo aparece como consecuencia de esas modificaciones conectadas.
 
 ## 3.4. Plaza del Axioma
 
-La plaza es el punto inicial y final. Contiene la ceremonia, la fuente central, el ayuntamiento, el tablón y los accesos a las zonas. Evoluciona durante la partida:
+La plaza es el punto inicial y final. Contiene el altar, la fuente central, el ayuntamiento, el tablón y los accesos a las zonas. Evoluciona durante la partida:
 
-- Al inicio está preparada y llena de invitados confundidos.
+- Al inicio está en plena preparación para la boda del día siguiente, con mesas, sillas, flores, cajas y habitantes trabajando.
+- Durante el prólogo, el padre de la novia entrega la nota que inicia la búsqueda.
 - En la mitad, los mecanismos antiguos comienzan a reaccionar.
 - Al final, la fuente revela el acceso subterráneo.
 
@@ -40,11 +41,11 @@ La biblioteca utiliza un sistema de clasificación coherente pero impracticable.
 
 Los documentos serán breves y visuales. Ningún libro obligatorio debe convertirse en un bloque extenso de exposición.
 
-## 3.6. Barrio de los Puentes
+## 3.6. Paseo de los Siete Puentes
 
-Un río dividido en canales, islotes y pasarelas. Maestro Nodo intenta recorrer todos los puentes bajo reglas imposibles. El jugador manipula compuertas, observa rutas de NPCs y reconstruye el recorrido de la novia.
+Un río dividido en canales, islotes y pasarelas. Durante el prólogo, el protagonista sigue la nota de la novia hasta un mapa manipulado que plantea P2, «El paseo imposible».
 
-Resolver la zona redirige el agua, abre el acceso al molino y crea un atajo hacia el jardín.
+Resolver el primer problema revela una anotación de la novia y un símbolo relacionado con la biblioteca. Las compuertas, el acceso al molino y el atajo hacia el jardín se desarrollarán posteriormente cuando el jugador regrese a la zona.
 
 ## 3.7. Jardín de la Criba
 
@@ -82,7 +83,7 @@ La novia utiliza una marca recurrente formada por dos arcos entrelazados. Señal
 
 No habrá ciclo dinámico de día y noche. El progreso cambia la iluminación:
 
-- Mañana luminosa durante el prólogo.
+- Mañana luminosa durante la víspera y el prólogo.
 - Mediodía durante la exploración.
 - Tarde cálida al reactivar el archivo.
 - Atardecer dorado en el epílogo.
