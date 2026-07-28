@@ -109,7 +109,7 @@
 - [x] Pruebas automatizadas del progreso narrativo.
 - [x] Validación manual de nueva partida, guardado y carga.
 - [x] Build estático de prueba.
-- [ ] Etiqueta `v0.5.0`.
+- [x] Etiqueta `v0.5.0`.
 
 ## Etapa 5 - Primera investigación
 
