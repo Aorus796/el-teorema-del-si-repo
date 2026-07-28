@@ -68,47 +68,47 @@
 
 ### Plaza del Axioma
 
-- [ ] Sustituir la sala técnica por el mapa de la plaza.
-- [ ] Añadir altar y fuente.
+- [x] Sustituir la sala técnica por el mapa de la plaza.
+- [x] Añadir altar y fuente.
 - [ ] Añadir mesas, sillas, flores, cajas y decoración.
-- [ ] Añadir tablón de preparativos.
-- [ ] Añadir Alcaldesa Corolaria.
-- [ ] Añadir padre de la novia.
-- [ ] Añadir al menos un habitante secundario.
-- [ ] Introducir movimiento, interacción, cuaderno y guardado.
-- [ ] Entregar y registrar la nota de la novia.
-- [ ] Bloquear narrativamente los accesos no disponibles.
-- [ ] Desbloquear la salida al Paseo de los Siete Puentes.
+- [x] Añadir tablón de preparativos.
+- [x] Añadir Alcaldesa Corolaria.
+- [x] Añadir padre de la novia.
+- [x] Añadir al menos un habitante secundario.
+- [x] Introducir movimiento, interacción, cuaderno y guardado.
+- [x] Entregar y registrar la nota de la novia.
+- [x] Bloquear narrativamente los accesos no disponibles.
+- [x] Desbloquear la salida al Paseo de los Siete Puentes.
 
 ### Paseo de los Siete Puentes
 
-- [ ] Crear un mapa exterior propio.
-- [ ] Añadir acceso desde la plaza.
-- [ ] Integrar el panel o maqueta de P2.
-- [ ] Mantener intentos incompletos al salir y cargar.
-- [ ] Mostrar evidencia posterior a la resolución.
-- [ ] Desbloquear la pista hacia la biblioteca.
-- [ ] Añadir transición de regreso a la plaza.
+- [x] Crear un mapa exterior propio.
+- [x] Añadir acceso desde la plaza.
+- [x] Integrar el panel o maqueta de P2.
+- [x] Mantener intentos incompletos al salir y cargar.
+- [x] Mostrar evidencia posterior a la resolución.
+- [x] Desbloquear la pista hacia la biblioteca.
+- [x] Añadir transición de regreso a la plaza.
 
 ### Progreso y persistencia
 
-- [ ] Persistir el mapa actual.
-- [ ] Persistir la posición por mapa.
-- [ ] Persistir eventos narrativos del prólogo.
-- [ ] Persistir la nota y los objetivos.
-- [ ] Persistir el resultado de P2.
-- [ ] Restaurar correctamente cualquier punto del vertical slice.
-- [ ] Eliminar el acceso público directo a P2 mediante `P`.
+- [x] Persistir el mapa actual.
+- [x] Persistir la posición por mapa.
+- [x] Persistir eventos narrativos del prólogo.
+- [x] Persistir la nota y los objetivos.
+- [x] Persistir el resultado de P2.
+- [x] Restaurar correctamente cualquier punto del vertical slice.
+- [x] Eliminar el acceso público directo a P2 mediante `P`.
 
 ### Presentación y validación
 
-- [ ] Arte provisional coherente para ambos mapas.
-- [ ] Identidad visual diferenciada para los NPCs.
+- [x] Arte provisional coherente para ambos mapas.
+- [x] Identidad visual diferenciada para los NPCs.
 - [ ] Transiciones entre escenas y localizaciones.
-- [ ] Revisión completa de diálogos.
-- [ ] Pruebas automatizadas del progreso narrativo.
-- [ ] Validación manual de nueva partida, guardado y carga.
-- [ ] Build estático de prueba.
+- [x] Revisión completa de diálogos.
+- [x] Pruebas automatizadas del progreso narrativo.
+- [x] Validación manual de nueva partida, guardado y carga.
+- [x] Build estático de prueba.
 - [ ] Etiqueta `v0.5.0`.
 
 ## Etapa 5 - Primera investigación
