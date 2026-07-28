@@ -134,6 +134,11 @@ export class GameState {
     return this.addNotebookEntry(P2_NOTEBOOK_ENTRY);
   }
 
+  registerP2Solution() {
+    this.objectiveId = "inspect-p2-evidence";
+    return this.unlockP2Entry();
+  }
+
   toSaveData() {
     this.setPlayerState(this.player);
 

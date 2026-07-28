@@ -200,7 +200,7 @@ export class P2BridgesScene {
     }
 
     if (result.code === P2_MOVE_CODE.SOLVED) {
-      const wasAdded = this.state.unlockP2Entry();
+      const wasAdded = this.state.registerP2Solution();
 
       this.statusMessage =
         "Recorrido completo. Has utilizado todos los puentes.";

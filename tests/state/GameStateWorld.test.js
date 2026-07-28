@@ -98,3 +98,14 @@ test("GameState guarda y restaura el progreso del prólogo", () => {
     "investigate-seven-bridges",
   );
 });
+
+test("GameState registra la resolución narrativa de P2 una sola vez", () => {
+  const state = new GameState();
+
+  assert.equal(state.registerP2Solution(), true);
+  assert.equal(state.registerP2Solution(), false);
+
+  assert.equal(state.objectiveId, "inspect-p2-evidence");
+  assert.equal(state.notebook.length, 1);
+  assert.equal(state.notebook[0].id, "p2-bridges-solution");
+});
