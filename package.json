@@ -12,6 +12,10 @@
     "build": "node tools/build.mjs",
     "preview": "node tools/dev-server.mjs builds/browser 4173",
     "test": "node --test",
-    "check": "npm run test && npm run build"
+    "check": "npm run test && npm run build",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.0"
   }
 }
