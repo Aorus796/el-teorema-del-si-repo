@@ -60,5 +60,12 @@ test("inicia una partida y abre y cierra el cuaderno", async ({
 
   await page.keyboard.press("KeyQ");
   await expect(notebook).toBeHidden();
+
+  await page.keyboard.press("Tab");
+  await expect(notebook).toBeVisible();
+
+  await page.keyboard.press("Tab");
+  await expect(notebook).toBeHidden();
+
   expect(errors).toEqual([]);
 });

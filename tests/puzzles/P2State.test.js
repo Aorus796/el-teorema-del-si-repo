@@ -91,7 +91,7 @@ test("un intento fallido puede reiniciarse conservando la planificacion", () => 
   const state = new P2State();
 
   state.selectClosedBridge("B1");
-  state.addHint(1);
+  state.revealNextHint();
   state.startTraversal();
   state.registerStep({
     nodeId: "R",
@@ -110,13 +110,13 @@ test("un intento fallido puede reiniciarse conservando la planificacion", () => 
   assert.equal(state.lifecycle.attemptCount, 1);
 });
 
-test("las reflexiones no se duplican y se mantienen ordenadas", () => {
+test("las reflexiones avanzan en orden sin duplicar niveles", () => {
   const state = new P2State();
 
-  state.addHint(3);
-  state.addHint(1);
-  state.addHint(2);
-  state.addHint(2);
+  state.revealNextHint();
+  state.revealNextHint();
+  state.revealNextHint();
+  state.revealNextHint();
 
   assert.deepEqual(state.hintsRead, [1, 2, 3]);
 });
@@ -137,8 +137,8 @@ test("el estado puede guardarse y restaurarse sin perder progreso", () => {
   const original = new P2State();
 
   original.selectClosedBridge("B1");
-  original.addHint(1);
-  original.addHint(2);
+  original.revealNextHint();
+  original.revealNextHint();
   original.startTraversal();
   original.registerStep({
     nodeId: "R",
@@ -155,6 +155,14 @@ test("el estado puede guardarse y restaurarse sin perder progreso", () => {
 });
 
 test("rechaza datos persistidos incoherentes", () => {
+  assert.throws(
+    () =>
+      new P2State({
+        hintsRead: [1, 3],
+      }),
+    /progreso de pistas/,
+  );
+
   assert.throws(
     () =>
       new P2State({

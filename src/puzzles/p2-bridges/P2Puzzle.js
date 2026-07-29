@@ -1,4 +1,5 @@
 import { P2_GRAPH } from "./P2Graph.js";
+import { getP2Hint } from "./P2Hints.js";
 import { P2_PHASE, P2State } from "./P2State.js";
 import {
   findBridge,
@@ -15,6 +16,10 @@ export const P2_MOVE_CODE = Object.freeze({
   INVALID_STEP: "invalid_step",
   CLOSED_BRIDGE: "closed_bridge",
   REPEATED_BRIDGE: "repeated_bridge",
+});
+
+export const P2_HINT_CODE = Object.freeze({
+  PUZZLE_SOLVED: "puzzle_solved",
 });
 
 export class P2Puzzle {
@@ -164,8 +169,21 @@ export class P2Puzzle {
     this.state.restartTraversal();
   }
 
-  addHint(hintNumber) {
-    this.state.addHint(hintNumber);
+  revealNextHint() {
+    if (this.state.phase === P2_PHASE.SOLVED) {
+      const level = this.state.hintsRead.at(-1) ?? null;
+      return {
+        code: P2_HINT_CODE.PUZZLE_SOLVED,
+        level,
+        hint: getP2Hint(level),
+      };
+    }
+
+    const result = this.state.revealNextHint();
+    return {
+      ...result,
+      hint: getP2Hint(result.level),
+    };
   }
 
   toSaveData() {

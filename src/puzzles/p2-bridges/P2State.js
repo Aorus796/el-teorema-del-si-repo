@@ -1,4 +1,8 @@
 import { PuzzleLifecycle, PUZZLE_STATUS } from "../core/PuzzleLifecycle.js";
+import {
+  revealNextHint as revealNextHintProgress,
+  validateHintsRead,
+} from "../core/HintProgress.js";
 import { P2_GRAPH } from "./P2Graph.js";
 
 export const P2_PHASE = Object.freeze({
@@ -30,7 +34,7 @@ export class P2State {
     this.currentNode = currentNode;
     this.route = [...route];
     this.usedBridgeIds = [...usedBridgeIds];
-    this.hintsRead = [...hintsRead];
+    this.hintsRead = validateHintsRead(hintsRead);
     this.failureCode = failureCode;
 
     this.validate();
@@ -124,15 +128,10 @@ export class P2State {
     this.failureCode = null;
   }
 
-  addHint(hintNumber) {
-    if (!Number.isInteger(hintNumber) || hintNumber < 1 || hintNumber > 3) {
-      throw new Error("La reflexion debe estar comprendida entre 1 y 3.");
-    }
-
-    if (!this.hintsRead.includes(hintNumber)) {
-      this.hintsRead.push(hintNumber);
-      this.hintsRead.sort((left, right) => left - right);
-    }
+  revealNextHint() {
+    const result = revealNextHintProgress(this.hintsRead);
+    this.hintsRead = [...result.hintsRead];
+    return result;
   }
 
   toSaveData() {
@@ -179,6 +178,8 @@ export class P2State {
     if (new Set(this.usedBridgeIds).size !== this.usedBridgeIds.length) {
       throw new Error("La partida contiene puentes utilizados repetidos.");
     }
+
+    validateHintsRead(this.hintsRead);
 
     if (this.route.length !== this.usedBridgeIds.length + 1) {
       throw new Error(
