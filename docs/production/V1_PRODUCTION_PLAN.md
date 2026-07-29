@@ -89,11 +89,12 @@ Los tres puzles son:
 2. Segundo puzle en la Biblioteca del Margen: **El catálogo perfecto**,
    decisión definitiva documentada en
    [`../puzzles/LIBRARY_CATALOGUE_SPEC.md`](../puzzles/LIBRARY_CATALOGUE_SPEC.md).
-3. Tercer puzle en el Archivo.
+3. Tercer puzle en el Archivo: **La pregunta correcta**, decisión definitiva
+   documentada en
+   [`../puzzles/ARCHIVE_CRITERIA_SPEC.md`](../puzzles/ARCHIVE_CRITERIA_SPEC.md).
 
-La mecánica definitiva del segundo puzle está cerrada. La del tercer puzle
-continúa como una **decisión pendiente inmediata** y debe cerrarse antes del
-2 de agosto.
+Las mecánicas definitivas del segundo y tercer puzle están cerradas y
+documentadas.
 
 ## 4. Elementos expresamente fuera de alcance
 
@@ -605,7 +606,7 @@ Nunca se recortan:
 |---|---|---|---|
 | 1 | Paseo de los Siete Puentes | P2 existente e integrado | Validar el bucle exploración → puzle → evidencia. |
 | 2 | Biblioteca del Margen | **El catálogo perfecto**, decisión cerrada ([especificación](../puzzles/LIBRARY_CATALOGUE_SPEC.md)) | Ampliar investigación, cuaderno y pistas sin elevar en exceso la dificultad. |
-| 3 | Archivo compacto | Decisión pendiente inmediata | Resolver la investigación y activar el epílogo. |
+| 3 | Archivo compacto | **La pregunta correcta**, decisión cerrada ([especificación](../puzzles/ARCHIVE_CRITERIA_SPEC.md)) | Resolver la investigación y activar el epílogo. |
 
 Antes del 2 de agosto, cada puzle nuevo debe fijar:
 
@@ -685,8 +686,9 @@ el 2 de agosto:
 - [x] **Concepto del segundo puzle:** **El catálogo perfecto**; mecánica,
   solución, dificultad, estados, pistas, coste y criterios definidos en
   [`LIBRARY_CATALOGUE_SPEC.md`](../puzzles/LIBRARY_CATALOGUE_SPEC.md).
-- [ ] **Concepto del tercer puzle:** mecánica, solución, dificultad, estados,
-  pistas y coste.
+- [x] **Concepto del tercer puzle:** **La pregunta correcta**; mecánica,
+  solución, dificultad, estados, pistas, coste y criterios definidos en
+  [`ARCHIVE_CRITERIA_SPEC.md`](../puzzles/ARCHIVE_CRITERIA_SPEC.md).
 - [ ] **Arquitectura de pistas:** fuente de datos, desbloqueo, presentación,
   no duplicación y persistencia.
 - [ ] **Formato de mapas de Biblioteca y Archivo:** continuar con datos
