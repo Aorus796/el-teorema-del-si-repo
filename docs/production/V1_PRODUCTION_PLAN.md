@@ -86,12 +86,14 @@ contrastar código, pruebas, `package.json`, etiquetas Git y este documento.
 Los tres puzles son:
 
 1. P2 existente en el Paseo de los Siete Puentes.
-2. Segundo puzle en la Biblioteca del Margen.
+2. Segundo puzle en la Biblioteca del Margen: **El catálogo perfecto**,
+   decisión definitiva documentada en
+   [`../puzzles/LIBRARY_CATALOGUE_SPEC.md`](../puzzles/LIBRARY_CATALOGUE_SPEC.md).
 3. Tercer puzle en el Archivo.
 
-La mecánica definitiva de los puzles segundo y tercero es una **decisión
-pendiente inmediata**. Debe cerrarse antes del 2 de agosto; este plan no la
-presupone ni la inventa.
+La mecánica definitiva del segundo puzle está cerrada. La del tercer puzle
+continúa como una **decisión pendiente inmediata** y debe cerrarse antes del
+2 de agosto.
 
 ## 4. Elementos expresamente fuera de alcance
 
@@ -602,7 +604,7 @@ Nunca se recortan:
 | Orden | Localización | Estado | Función de producción |
 |---|---|---|---|
 | 1 | Paseo de los Siete Puentes | P2 existente e integrado | Validar el bucle exploración → puzle → evidencia. |
-| 2 | Biblioteca del Margen | Decisión pendiente inmediata | Ampliar investigación, cuaderno y pistas sin elevar en exceso la dificultad. |
+| 2 | Biblioteca del Margen | **El catálogo perfecto**, decisión cerrada ([especificación](../puzzles/LIBRARY_CATALOGUE_SPEC.md)) | Ampliar investigación, cuaderno y pistas sin elevar en exceso la dificultad. |
 | 3 | Archivo compacto | Decisión pendiente inmediata | Resolver la investigación y activar el epílogo. |
 
 Antes del 2 de agosto, cada puzle nuevo debe fijar:
@@ -680,8 +682,9 @@ mitigación o en un recorte permitido.
 Todas estas decisiones deben quedar cerradas y registradas antes de finalizar
 el 2 de agosto:
 
-- [ ] **Concepto del segundo puzle:** mecánica, solución, dificultad, estados,
-  pistas y coste.
+- [x] **Concepto del segundo puzle:** **El catálogo perfecto**; mecánica,
+  solución, dificultad, estados, pistas, coste y criterios definidos en
+  [`LIBRARY_CATALOGUE_SPEC.md`](../puzzles/LIBRARY_CATALOGUE_SPEC.md).
 - [ ] **Concepto del tercer puzle:** mecánica, solución, dificultad, estados,
   pistas y coste.
 - [ ] **Arquitectura de pistas:** fuente de datos, desbloqueo, presentación,
