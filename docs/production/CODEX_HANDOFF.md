@@ -34,12 +34,13 @@ feat/v1-production-scope
 HEAD esperado al crear este documento:
 
 ```text
-fad4d94 feat: add library world integration
+56c5c57 docs: add Codex handoff and next task
 ```
 
 Commits recientes relevantes:
 
 ```text
+56c5c57 docs: add Codex handoff and next task
 fad4d94 feat: add library world integration
 85a9546 feat: add library catalogue scene
 29430b7 feat: persist library catalogue state
@@ -71,7 +72,7 @@ Comprobar:
 
 - rama `feat/v1-production-scope`;
 - árbol de trabajo limpio;
-- HEAD `fad4d94`;
+- HEAD `56c5c57`;
 - existencia de `AGENTS.md`;
 - existencia de los documentos de producción y especificaciones;
 - `SAVE_FORMAT_VERSION === 3`;
