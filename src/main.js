@@ -7,6 +7,9 @@ import { UiController } from "./ui/UiController.js";
 import { TitleScene } from "./scenes/TitleScene.js";
 import { WorldScene } from "./scenes/WorldScene.js";
 import { P2BridgesScene } from "./scenes/P2BridgesScene.js";
+import {
+  LibraryCatalogueScene,
+} from "./scenes/LibraryCatalogueScene.js";
 
 const canvas = document.querySelector("#game-canvas");
 if (!(canvas instanceof HTMLCanvasElement)) {
@@ -32,6 +35,11 @@ scenes.register(
 scenes.register(
   "p2-bridges",
   new P2BridgesScene({ scenes, input, state, ui }),
+);
+
+scenes.register(
+  "library-catalogue",
+  new LibraryCatalogueScene({ scenes, input, state, ui }),
 );
 
 const game = new Game({
