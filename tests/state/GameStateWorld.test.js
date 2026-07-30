@@ -57,9 +57,14 @@ test("GameState mantiene una posición independiente para cada mapa", () => {
     y: 256,
     facing: "up",
   });
+  assert.deepEqual(state.getPlayerState("archive"), {
+    x: 192,
+    y: 192,
+    facing: "up",
+  });
 });
 
-test("GameState guarda y restaura posiciones independientes de los tres mapas", () => {
+test("GameState guarda y restaura posiciones independientes de los cuatro mapas", () => {
   const state = new GameState();
   state.setPlayerState({
     x: 304,
@@ -81,6 +86,11 @@ test("GameState guarda y restaura posiciones independientes de los tres mapas", 
     y: 248,
     facing: "down",
   };
+  state.changeMap("archive", {
+    x: 192,
+    y: 176,
+    facing: "down",
+  });
 
   const worldBefore = structuredClone(state.world);
   const saved = state.toSaveData();
@@ -89,7 +99,7 @@ test("GameState guarda y restaura posiciones independientes de los tres mapas", 
 
   assert.equal(saved.formatVersion, SAVE_FORMAT_VERSION);
   assert.deepEqual(state.world, worldBefore);
-  assert.equal(restored.world.currentMapId, "library");
+  assert.equal(restored.world.currentMapId, "archive");
   assert.deepEqual(restored.getPlayerState("axiom-plaza"), {
     x: 304,
     y: 208,
@@ -106,6 +116,11 @@ test("GameState guarda y restaura posiciones independientes de los tres mapas", 
   assert.deepEqual(restored.getPlayerState("library"), {
     x: 232,
     y: 248,
+    facing: "down",
+  });
+  assert.deepEqual(restored.getPlayerState("archive"), {
+    x: 192,
+    y: 176,
     facing: "down",
   });
 });

@@ -28,6 +28,8 @@ const OBJECTIVE_LABELS = {
   "investigate-seven-bridges": "Investiga el Paseo de los Siete Puentes",
   "inspect-p2-evidence": "Busca la pista junto al embarcadero",
   "go-to-library": "Dirígete a la Biblioteca del Margen",
+  "inspect-archive-criteria-table":
+    "Entra en el Archivo y examina la mesa de criterios.",
 };
 
 export class WorldScene {
@@ -341,6 +343,17 @@ export class WorldScene {
         lines: [
           "Todavía no tengo ningún motivo para ir a la Biblioteca.",
         ],
+      });
+      return;
+    }
+
+    if (
+      object.id === "library-to-archive" &&
+      !this.state.flags.archiveUnlocked
+    ) {
+      this.ui.beginDialogue({
+        speaker: "Acceso al Archivo",
+        lines: ["El acceso al Archivo sigue cerrado."],
       });
       return;
     }
@@ -750,6 +763,14 @@ function renderObjects(context, camera, objects, state) {
       context.fillStyle = "#332c36";
       context.fillRect(x + 3, y + 3, object.width - 6, 2);
       context.fillRect(x + 3, y + 7, object.width - 9, 2);
+      continue;
+    }
+
+    if (object.type === "table") {
+      context.fillStyle = "#553b2d";
+      context.fillRect(x, y + 4, object.width, object.height - 4);
+      context.fillStyle = "#d6b65f";
+      context.fillRect(x + 3, y, object.width - 6, 6);
       continue;
     }
 

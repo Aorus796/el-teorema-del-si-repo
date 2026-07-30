@@ -302,6 +302,22 @@ const LIBRARY = createMap({
         facing: "left",
       },
     },
+    {
+      id: "library-to-archive",
+      type: "exit",
+      x: 448,
+      y: 144,
+      width: 16,
+      height: 64,
+      interactionRadius: 30,
+      label: "Archivo",
+      targetMapId: "archive",
+      targetPlayerState: {
+        x: 192,
+        y: 192,
+        facing: "up",
+      },
+    },
   ],
   decorations: [
     {
@@ -355,10 +371,94 @@ const LIBRARY = createMap({
   ],
 });
 
+const ARCHIVE = createMap({
+  id: "archive",
+  name: "Archivo",
+  width: 24,
+  height: 16,
+  palette: {
+    groundA: "#74685b",
+    groundB: "#807365",
+    wall: "#443d3c",
+    wallTop: "#766b61",
+    water: "#4f7b79",
+  },
+  solidRegions: [
+    { x: 2, y: 3, width: 5, height: 2 },
+    { x: 17, y: 3, width: 5, height: 2 },
+    { x: 2, y: 8, width: 4, height: 2 },
+    { x: 18, y: 8, width: 4, height: 2 },
+    { x: 11, y: 7, width: 2, height: 2 },
+  ],
+  objects: [
+    {
+      id: "archive-criteria-table",
+      type: "table",
+      x: 176,
+      y: 112,
+      width: 32,
+      height: 24,
+      interactionRadius: 30,
+      label: "Mesa de criterios",
+    },
+    {
+      id: "archive-to-library",
+      type: "exit",
+      x: 176,
+      y: 224,
+      width: 32,
+      height: 16,
+      interactionRadius: 30,
+      label: "Biblioteca",
+      targetMapId: "library",
+      targetPlayerState: {
+        x: 416,
+        y: 176,
+        facing: "left",
+      },
+    },
+  ],
+  decorations: [
+    {
+      id: "archive-shelves-northwest",
+      type: "tables",
+      x: 32,
+      y: 48,
+      width: 80,
+      height: 32,
+    },
+    {
+      id: "archive-shelves-northeast",
+      type: "tables",
+      x: 272,
+      y: 48,
+      width: 80,
+      height: 32,
+    },
+    {
+      id: "archive-boxes-west",
+      type: "tables",
+      x: 32,
+      y: 128,
+      width: 64,
+      height: 32,
+    },
+    {
+      id: "archive-boxes-east",
+      type: "tables",
+      x: 288,
+      y: 128,
+      width: 64,
+      height: 32,
+    },
+  ],
+});
+
 export const WORLD_MAPS = {
   [AXIOM_PLAZA.id]: AXIOM_PLAZA,
   [SEVEN_BRIDGES_WALK.id]: SEVEN_BRIDGES_WALK,
   [LIBRARY.id]: LIBRARY,
+  [ARCHIVE.id]: ARCHIVE,
 };
 
 export function getWorldMap(mapId) {

@@ -454,10 +454,7 @@ test("GameState migra explícitamente los formatos 1 y 2", () => {
       restored.flags.libraryObjectiveUnlocked,
       true,
     );
-    assert.equal(
-      Object.hasOwn(restored.flags, "archiveUnlocked"),
-      false,
-    );
+    assert.equal(restored.flags.archiveUnlocked, false);
     assert.deepEqual(
       restored.puzzles.p2.toSaveData(),
       p2Data,
@@ -472,4 +469,57 @@ test("GameState migra explícitamente los formatos 1 y 2", () => {
       facing: "up",
     });
   }
+});
+
+test("GameState reconcilia un guardado v3 resuelto sin Archivo", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.archiveUnlocked = false;
+  saved.objectiveId = "go-to-library";
+  saved.puzzles.libraryCatalogue = {
+    order: SOLVED_CATALOGUE_ORDER,
+    phase: LIBRARY_CATALOGUE_PHASE.SOLVED,
+    hintsRead: [],
+    attemptCount: 1,
+    failureCode: null,
+  };
+
+  const restored = new GameState();
+  restored.restore(saved);
+
+  assert.equal(SAVE_FORMAT_VERSION, 3);
+  assert.equal(restored.flags.archiveUnlocked, true);
+  assert.equal(
+    restored.objectiveId,
+    "inspect-archive-criteria-table",
+  );
+  assert.equal(restored.notebook.length, 1);
+  assert.match(restored.notebook[0].text, /A-D-R-C-M/);
+  restored.restore(restored.toSaveData());
+  assert.equal(restored.notebook.length, 1);
+});
+
+test("GameState no retrocede un objetivo posterior al restaurar", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.archiveUnlocked = true;
+  saved.objectiveId = "start-epilogue";
+  saved.notebook = [
+    {
+      id: "library-catalogue-solution",
+      title: "El catálogo perfecto",
+      text: "El orden A-D-R-C-M ha restaurado el catálogo.",
+    },
+  ];
+  saved.puzzles.libraryCatalogue = {
+    order: SOLVED_CATALOGUE_ORDER,
+    phase: LIBRARY_CATALOGUE_PHASE.SOLVED,
+    hintsRead: [],
+    attemptCount: 1,
+    failureCode: null,
+  };
+
+  const restored = new GameState();
+  restored.restore(saved);
+
+  assert.equal(restored.objectiveId, "start-epilogue");
+  assert.equal(restored.notebook.length, 1);
 });

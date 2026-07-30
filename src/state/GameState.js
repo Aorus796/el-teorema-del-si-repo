@@ -2,6 +2,9 @@ import { P2State } from "../puzzles/p2-bridges/P2State.js";
 import {
   LibraryCatalogueState,
 } from "../puzzles/library-catalogue/LibraryCatalogueState.js";
+import {
+  applyLibraryCatalogueProgression,
+} from "../progression/LibraryCatalogueProgression.js";
 
 export const SAVE_FORMAT_VERSION = 3;
 
@@ -29,6 +32,11 @@ const DEFAULT_PLAYER_BY_MAP = {
   library: {
     x: 240,
     y: 256,
+    facing: "up",
+  },
+  archive: {
+    x: 192,
+    y: 192,
     facing: "up",
   },
 };
@@ -73,6 +81,7 @@ export class GameState {
       sevenBridgesUnlocked: false,
       p2EvidenceFound: false,
       libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
     };
 
     this.objectiveId = "review-preparations-board";
@@ -227,6 +236,7 @@ export class GameState {
       libraryObjectiveUnlocked: Boolean(
         data.flags?.libraryObjectiveUnlocked,
       ),
+      archiveUnlocked: Boolean(data.flags?.archiveUnlocked),
     };
 
     this.objectiveId =
@@ -244,6 +254,8 @@ export class GameState {
       p2: new P2State(data.puzzles?.p2 ?? {}),
       libraryCatalogue: restoreLibraryCatalogue(data),
     };
+
+    applyLibraryCatalogueProgression(this);
   }
 }
 

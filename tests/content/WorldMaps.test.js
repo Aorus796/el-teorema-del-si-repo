@@ -7,11 +7,32 @@ import {
 import { GameState } from "../../src/state/GameState.js";
 import { CollisionMap } from "../../src/world/CollisionMap.js";
 
-test("el registro contiene la Plaza, el Paseo y la Biblioteca", () => {
+test("el registro contiene las cuatro localizaciones obligatorias", () => {
   assert.deepEqual(
     Object.keys(WORLD_MAPS).sort(),
-    ["axiom-plaza", "library", "seven-bridges-walk"],
+    ["archive", "axiom-plaza", "library", "seven-bridges-walk"],
   );
+});
+
+test("archive es compacto, tiene mesa inerte y salida a la Biblioteca", () => {
+  const map = getWorldMap("archive");
+  const table = map.objects.find(
+    (object) => object.id === "archive-criteria-table",
+  );
+  const exit = map.objects.find(
+    (object) => object.id === "archive-to-library",
+  );
+
+  assert.equal(map.name, "Archivo");
+  assert.ok(map.width <= 30);
+  assert.ok(map.height <= 20);
+  assert.ok(map.solidTiles.length > 0);
+  assert.equal(table?.type, "table");
+  assert.equal(exit?.targetMapId, "library");
+});
+
+test("la aparición inicial de archive es transitable y no solapa objetos", () => {
+  assertSpawnIsClear("archive");
 });
 
 test("getWorldMap devuelve un mapa completo por identificador", () => {
@@ -82,8 +103,12 @@ test("library es un mapa compacto con salida y Silogio", () => {
 });
 
 test("la posición inicial de library es transitable y no solapa objetos", () => {
-  const map = getWorldMap("library");
-  const playerState = new GameState().getPlayerState("library");
+  assertSpawnIsClear("library");
+});
+
+function assertSpawnIsClear(mapId) {
+  const map = getWorldMap(mapId);
+  const playerState = new GameState().getPlayerState(mapId);
   const collisionMap = new CollisionMap({
     width: map.width,
     height: map.height,
@@ -106,7 +131,7 @@ test("la posición inicial de library es transitable y no solapa objetos", () =>
       `La aparición solapa ${object.id}`,
     );
   }
-});
+}
 
 function rectanglesOverlap(first, second) {
   return (

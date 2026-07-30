@@ -203,13 +203,86 @@ test("Silogio abre el catálogo sin alterar progreso global o local", () => {
       catalogueBefore,
     );
     assert.deepEqual(setup.state.flags, flagsBefore);
-    assert.equal(
-      Object.hasOwn(setup.state.flags, "archiveUnlocked"),
-      false,
-    );
+    assert.equal(setup.state.flags.archiveUnlocked, false);
     assert.equal(setup.state.objectiveId, objectiveBefore);
     assert.deepEqual(setup.state.notebook, notebookBefore);
   }
+});
+
+test("el Archivo permanece cerrado hasta resolver el catálogo", () => {
+  const setup = createWorldAt("library");
+  const exit = findObject("library", "library-to-archive");
+  const flagsBefore = { ...setup.state.flags };
+
+  setup.scene.interactWithExit(exit);
+
+  assert.equal(setup.state.world.currentMapId, "library");
+  assert.deepEqual(setup.state.flags, flagsBefore);
+  assert.equal(
+    setup.ui.dialogue.lines[0],
+    "El acceso al Archivo sigue cerrado.",
+  );
+});
+
+test("la Biblioteca y el Archivo conservan posiciones y evitan bucles", () => {
+  const setup = createWorldAt("library");
+  const archiveExit = findObject("library", "library-to-archive");
+  setup.state.flags.archiveUnlocked = true;
+  setup.scene.player.x = 416;
+  setup.scene.player.y = 176;
+  setup.scene.player.facing = "right";
+
+  setup.scene.interactWithExit(archiveExit);
+
+  assert.equal(setup.state.world.currentMapId, "archive");
+  assert.deepEqual(setup.state.getPlayerState("library"), {
+    x: 416,
+    y: 176,
+    facing: "right",
+  });
+  assertOutsideInteractionRadius(
+    setup.state.getPlayerState(),
+    findObject("archive", "archive-to-library"),
+  );
+
+  const libraryExit = findObject("archive", "archive-to-library");
+  setup.scene.player.x = 192;
+  setup.scene.player.y = 208;
+  setup.scene.player.facing = "down";
+  setup.scene.interactWithExit(libraryExit);
+
+  assert.equal(setup.state.world.currentMapId, "library");
+  assert.deepEqual(setup.state.getPlayerState("archive"), {
+    x: 192,
+    y: 208,
+    facing: "down",
+  });
+  assertOutsideInteractionRadius(
+    setup.state.getPlayerState(),
+    findObject("library", "library-to-archive"),
+  );
+});
+
+test("la mesa de criterios no altera el estado ni abre un puzle", () => {
+  const setup = createWorldAt("archive");
+  const table = findObject("archive", "archive-criteria-table");
+  const flagsBefore = { ...setup.state.flags };
+  const objectiveBefore = setup.state.objectiveId;
+  const notebookBefore = structuredClone(setup.state.notebook);
+  const catalogueBefore =
+    setup.state.puzzles.libraryCatalogue.toSaveData();
+
+  setup.scene.interact(table);
+
+  assert.deepEqual(setup.state.flags, flagsBefore);
+  assert.equal(setup.state.objectiveId, objectiveBefore);
+  assert.deepEqual(setup.state.notebook, notebookBefore);
+  assert.deepEqual(
+    setup.state.puzzles.libraryCatalogue.toSaveData(),
+    catalogueBefore,
+  );
+  assert.deepEqual(setup.scenes.changes, []);
+  assert.equal(setup.ui.dialogue, null);
 });
 
 test("volver del catálogo conserva mapa, posición y datos persistentes", () => {

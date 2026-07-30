@@ -16,6 +16,9 @@ import {
   LIBRARY_CATALOGUE_PHASE,
   LibraryCatalogueState,
 } from "../puzzles/library-catalogue/LibraryCatalogueState.js";
+import {
+  applyLibraryCatalogueProgression,
+} from "../progression/LibraryCatalogueProgression.js";
 
 const DOCUMENT_COUNT = LIBRARY_CATALOGUE_DOCUMENTS.length;
 
@@ -159,6 +162,19 @@ export class LibraryCatalogueScene {
     this.selectedIndex = result.selectedIndex;
     this.visibleHintLevel = null;
     this.statusMessage = messageForResult(result.code);
+
+    if (
+      result.code !== LIBRARY_CATALOGUE_ACTION_CODE.PUZZLE_SOLVED
+    ) {
+      return;
+    }
+
+    const wasArchiveUnlocked = this.state.flags.archiveUnlocked;
+    applyLibraryCatalogueProgression(this.state);
+
+    if (!wasArchiveUnlocked && this.state.flags.archiveUnlocked) {
+      this.ui.showToast("El Archivo ha quedado accesible");
+    }
   }
 
   getCatalogueState() {

@@ -228,6 +228,12 @@ test("confirmar respeta selección, fallo, solución y terminalidad", () => {
     3,
   );
   assert.equal(second.scene.statusMessage, "Catálogo resuelto.");
+  assert.equal(
+    second.ui.toasts.at(-1),
+    "El Archivo ha quedado accesible",
+  );
+  assert.equal(second.state.flags.archiveUnlocked, true);
+  assert.equal(second.state.notebook.length, 1);
 
   const solvedState = second.state.puzzles.libraryCatalogue;
   press(second.scene, second.input, "startPuzzleAttempt");
@@ -243,6 +249,40 @@ test("confirmar respeta selección, fallo, solución y terminalidad", () => {
     second.scene.statusMessage,
     "El catálogo ya está registrado.",
   );
+  assert.equal(second.ui.toasts.length, 1);
+});
+
+test("repara el cuaderno sin anunciar un Archivo ya desbloqueado", () => {
+  const catalogue = new LibraryCatalogueState({
+    order: LIBRARY_CATALOGUE_SOLUTION,
+    phase: LIBRARY_CATALOGUE_PHASE.ARRANGING,
+  });
+  const { scene, input, state, ui } = createScene(catalogue);
+  state.flags.archiveUnlocked = true;
+  state.objectiveId = "start-epilogue";
+  scene.enter();
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.equal(state.puzzles.libraryCatalogue.phase, "solved");
+  assert.equal(state.notebook.length, 1);
+  assert.equal(ui.toasts.includes("El Archivo ha quedado accesible"), false);
+  assert.equal(state.objectiveId, "start-epilogue");
+});
+
+test("reentrar en un catálogo resuelto no muestra el toast", () => {
+  const { scene, state, ui } = createScene(solvedCatalogue());
+  state.flags.archiveUnlocked = true;
+  state.addNotebookEntry({
+    id: "library-catalogue-solution",
+    title: "El catálogo perfecto",
+    text: "El orden A-D-R-C-M ha restaurado el catálogo.",
+  });
+
+  scene.enter();
+  scene.enter();
+
+  assert.equal(ui.toasts.includes("El Archivo ha quedado accesible"), false);
 });
 
 test("reiniciar restaura el orden y conserva pistas e intentos", () => {
