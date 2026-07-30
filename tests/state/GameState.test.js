@@ -466,5 +466,10 @@ test("GameState migra explícitamente los formatos 1 y 2", () => {
       restored.puzzles.libraryCatalogue.toSaveData(),
       INITIAL_CATALOGUE_DATA,
     );
+    assert.deepEqual(restored.getPlayerState("library"), {
+      x: 240,
+      y: 256,
+      facing: "up",
+    });
   }
 });

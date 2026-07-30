@@ -182,6 +182,11 @@ export class WorldScene {
       return;
     }
 
+    if (object.id === "library-silogio") {
+      this.interactWithSilogio();
+      return;
+    }
+
     if (object.type === "exit") {
       this.interactWithExit(object);
       return;
@@ -327,6 +332,19 @@ export class WorldScene {
       return;
     }
 
+    if (
+      object.id === "seven-bridges-to-library" &&
+      !this.state.flags.libraryObjectiveUnlocked
+    ) {
+      this.ui.beginDialogue({
+        speaker: "Camino de la biblioteca",
+        lines: [
+          "Todavía no tengo ningún motivo para ir a la Biblioteca.",
+        ],
+      });
+      return;
+    }
+
     this.syncPlayerState();
     this.state.changeMap(
       object.targetMapId,
@@ -334,6 +352,11 @@ export class WorldScene {
     );
     this.setupCurrentMap();
     this.ui.showToast(this.map.name);
+  }
+
+  interactWithSilogio() {
+    this.syncPlayerState();
+    this.scenes.change("library-catalogue");
   }
 
   interactWithBlockedExit(object) {

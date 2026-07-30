@@ -26,6 +26,11 @@ const DEFAULT_PLAYER_BY_MAP = {
     y: 192,
     facing: "right",
   },
+  library: {
+    x: 240,
+    y: 256,
+    facing: "up",
+  },
 };
 
 const DEFAULT_NOTEBOOK_ENTRY = {

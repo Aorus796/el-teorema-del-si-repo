@@ -4,11 +4,13 @@ import {
   WORLD_MAPS,
   getWorldMap,
 } from "../../src/content/worldMaps.js";
+import { GameState } from "../../src/state/GameState.js";
+import { CollisionMap } from "../../src/world/CollisionMap.js";
 
-test("el registro contiene la Plaza y el Paseo de los Siete Puentes", () => {
+test("el registro contiene la Plaza, el Paseo y la Biblioteca", () => {
   assert.deepEqual(
     Object.keys(WORLD_MAPS).sort(),
-    ["axiom-plaza", "seven-bridges-walk"],
+    ["axiom-plaza", "library", "seven-bridges-walk"],
   );
 });
 
@@ -57,3 +59,60 @@ test("las salidas apuntan a mapas registrados", () => {
     }
   }
 });
+
+test("library es un mapa compacto con salida y Silogio", () => {
+  const map = getWorldMap("library");
+
+  assert.equal(map.name, "Biblioteca");
+  assert.equal(map.width, 30);
+  assert.equal(map.height, 20);
+  assert.ok(map.solidTiles.length > 0);
+
+  const exit = map.objects.find(
+    (object) => object.id === "library-to-seven-bridges",
+  );
+  const silogio = map.objects.find(
+    (object) => object.id === "library-silogio",
+  );
+
+  assert.equal(exit?.type, "exit");
+  assert.equal(exit?.targetMapId, "seven-bridges-walk");
+  assert.equal(silogio?.type, "npc");
+  assert.equal(silogio?.label, "Silogio");
+});
+
+test("la posición inicial de library es transitable y no solapa objetos", () => {
+  const map = getWorldMap("library");
+  const playerState = new GameState().getPlayerState("library");
+  const collisionMap = new CollisionMap({
+    width: map.width,
+    height: map.height,
+    tileSize: map.tileSize,
+    solidTiles: map.solidTiles,
+  });
+  const playerBounds = {
+    x: playerState.x - 5,
+    y: playerState.y - 7,
+    width: 10,
+    height: 14,
+  };
+
+  assert.equal(collisionMap.collides(playerBounds), false);
+
+  for (const object of map.objects) {
+    assert.equal(
+      rectanglesOverlap(playerBounds, object),
+      false,
+      `La aparición solapa ${object.id}`,
+    );
+  }
+});
+
+function rectanglesOverlap(first, second) {
+  return (
+    first.x < second.x + second.width &&
+    first.x + first.width > second.x &&
+    first.y < second.y + second.height &&
+    first.y + first.height > second.y
+  );
+}

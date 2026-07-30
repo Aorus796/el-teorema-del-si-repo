@@ -209,6 +209,22 @@ const SEVEN_BRIDGES_WALK = createMap({
       label: "Anotación junto al embarcadero",
     },
     {
+      id: "seven-bridges-to-library",
+      type: "exit",
+      x: 656,
+      y: 272,
+      width: 16,
+      height: 64,
+      interactionRadius: 30,
+      label: "Biblioteca",
+      targetMapId: "library",
+      targetPlayerState: {
+        x: 240,
+        y: 256,
+        facing: "up",
+      },
+    },
+    {
       id: "blocked-mill-path",
       type: "blocked-exit",
       x: 656,
@@ -239,9 +255,110 @@ const SEVEN_BRIDGES_WALK = createMap({
   ],
 });
 
+const LIBRARY = createMap({
+  id: "library",
+  name: "Biblioteca",
+  width: 30,
+  height: 20,
+  palette: {
+    groundA: "#8b765f",
+    groundB: "#947f67",
+    wall: "#51443f",
+    wallTop: "#806b59",
+    water: "#4f7b79",
+  },
+  solidRegions: [
+    { x: 3, y: 3, width: 9, height: 2 },
+    { x: 18, y: 3, width: 9, height: 2 },
+    { x: 3, y: 8, width: 7, height: 2 },
+    { x: 20, y: 8, width: 7, height: 2 },
+    { x: 3, y: 13, width: 7, height: 2 },
+    { x: 20, y: 13, width: 7, height: 2 },
+  ],
+  objects: [
+    {
+      id: "library-silogio",
+      type: "npc",
+      x: 233,
+      y: 128,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Silogio",
+    },
+    {
+      id: "library-to-seven-bridges",
+      type: "exit",
+      x: 224,
+      y: 288,
+      width: 32,
+      height: 16,
+      interactionRadius: 30,
+      label: "Paseo de los Siete Puentes",
+      targetMapId: "seven-bridges-walk",
+      targetPlayerState: {
+        x: 624,
+        y: 304,
+        facing: "left",
+      },
+    },
+  ],
+  decorations: [
+    {
+      id: "library-shelves-northwest",
+      type: "tables",
+      x: 48,
+      y: 48,
+      width: 144,
+      height: 32,
+    },
+    {
+      id: "library-shelves-northeast",
+      type: "tables",
+      x: 288,
+      y: 48,
+      width: 144,
+      height: 32,
+    },
+    {
+      id: "library-shelves-west-upper",
+      type: "tables",
+      x: 48,
+      y: 128,
+      width: 112,
+      height: 32,
+    },
+    {
+      id: "library-shelves-east-upper",
+      type: "tables",
+      x: 320,
+      y: 128,
+      width: 112,
+      height: 32,
+    },
+    {
+      id: "library-shelves-west-lower",
+      type: "tables",
+      x: 48,
+      y: 208,
+      width: 112,
+      height: 32,
+    },
+    {
+      id: "library-shelves-east-lower",
+      type: "tables",
+      x: 320,
+      y: 208,
+      width: 112,
+      height: 32,
+    },
+  ],
+});
+
 export const WORLD_MAPS = {
   [AXIOM_PLAZA.id]: AXIOM_PLAZA,
   [SEVEN_BRIDGES_WALK.id]: SEVEN_BRIDGES_WALK,
+  [LIBRARY.id]: LIBRARY,
 };
 
 export function getWorldMap(mapId) {
