@@ -1,8 +1,18 @@
 import { P2State } from "../puzzles/p2-bridges/P2State.js";
+import {
+  LibraryCatalogueState,
+} from "../puzzles/library-catalogue/LibraryCatalogueState.js";
 
-export const SAVE_FORMAT_VERSION = 2;
+export const SAVE_FORMAT_VERSION = 3;
 
-const LEGACY_SAVE_FORMAT_VERSION = 1;
+const LEGACY_SAVE_FORMAT_VERSIONS = Object.freeze([1, 2]);
+const LIBRARY_CATALOGUE_SAVE_FIELDS = Object.freeze([
+  "order",
+  "phase",
+  "hintsRead",
+  "attemptCount",
+  "failureCode",
+]);
 const DEFAULT_MAP_ID = "axiom-plaza";
 
 const DEFAULT_PLAYER_BY_MAP = {
@@ -65,6 +75,7 @@ export class GameState {
 
     this.puzzles = {
       p2: new P2State(),
+      libraryCatalogue: new LibraryCatalogueState(),
     };
   }
 
@@ -140,22 +151,33 @@ export class GameState {
   }
 
   toSaveData() {
-    this.setPlayerState(this.player);
+    const savedPlayer = normalizePlayerState(
+      this.player,
+      this.getPlayerState(),
+    );
+    const savedPlayerByMap = clonePlayerByMap(
+      this.world.playerByMap,
+    );
+    savedPlayerByMap[this.world.currentMapId] = {
+      ...savedPlayer,
+    };
 
     return {
       formatVersion: SAVE_FORMAT_VERSION,
       savedAt: new Date().toISOString(),
       scene: this.scene,
-      player: { ...this.player },
+      player: { ...savedPlayer },
       world: {
         currentMapId: this.world.currentMapId,
-        playerByMap: clonePlayerByMap(this.world.playerByMap),
+        playerByMap: savedPlayerByMap,
       },
       flags: { ...this.flags },
       objectiveId: this.objectiveId,
       notebook: this.notebook.map((entry) => ({ ...entry })),
       puzzles: {
         p2: this.puzzles.p2.toSaveData(),
+        libraryCatalogue:
+          this.puzzles.libraryCatalogue.toSaveData(),
       },
     };
   }
@@ -164,7 +186,7 @@ export class GameState {
     if (
       !data ||
       ![
-        LEGACY_SAVE_FORMAT_VERSION,
+        ...LEGACY_SAVE_FORMAT_VERSIONS,
         SAVE_FORMAT_VERSION,
       ].includes(data.formatVersion)
     ) {
@@ -215,6 +237,7 @@ export class GameState {
 
     this.puzzles = {
       p2: new P2State(data.puzzles?.p2 ?? {}),
+      libraryCatalogue: restoreLibraryCatalogue(data),
     };
   }
 }
@@ -253,7 +276,7 @@ function restoreWorldState(data) {
    * sirve como fallback para fixtures o guardados incompletos de formato 2.
    */
   if (
-    data.formatVersion === LEGACY_SAVE_FORMAT_VERSION ||
+    data.formatVersion === LEGACY_SAVE_FORMAT_VERSIONS[0] ||
     !savedPlayerByMap?.[currentMapId]
   ) {
     playerByMap[currentMapId] = normalizePlayerState(
@@ -267,6 +290,52 @@ function restoreWorldState(data) {
     currentMapId,
     playerByMap,
   };
+}
+
+function restoreLibraryCatalogue(data) {
+  if (LEGACY_SAVE_FORMAT_VERSIONS.includes(data.formatVersion)) {
+    return new LibraryCatalogueState();
+  }
+
+  const hasCatalogue =
+    data.puzzles &&
+    typeof data.puzzles === "object" &&
+    !Array.isArray(data.puzzles) &&
+    Object.hasOwn(data.puzzles, "libraryCatalogue");
+  const catalogueData = data.puzzles?.libraryCatalogue;
+
+  if (
+    !hasCatalogue ||
+    !catalogueData ||
+    typeof catalogueData !== "object" ||
+    Array.isArray(catalogueData) ||
+    !hasExactCatalogueFields(catalogueData)
+  ) {
+    throw new Error(
+      "La partida guardada no contiene un catálogo válido.",
+    );
+  }
+
+  try {
+    return new LibraryCatalogueState(
+      catalogueData,
+    );
+  } catch (error) {
+    throw new Error(
+      `El catálogo de la partida guardada no es válido: ${error.message}`,
+    );
+  }
+}
+
+function hasExactCatalogueFields(catalogueData) {
+  const fields = Object.keys(catalogueData);
+
+  return (
+    fields.length === LIBRARY_CATALOGUE_SAVE_FIELDS.length &&
+    LIBRARY_CATALOGUE_SAVE_FIELDS.every((field) =>
+      Object.hasOwn(catalogueData, field),
+    )
+  );
 }
 
 function cloneDefaultPlayerByMap() {
