@@ -31,7 +31,7 @@ Rama de trabajo:
 feat/v1-production-scope
 ```
 
-HEAD esperado al crear este documento:
+Commit mínimo requerido (HEAD puede ser cualquier descendiente):
 
 ```text
 56c5c57 docs: add Codex handoff and next task
@@ -72,7 +72,7 @@ Comprobar:
 
 - rama `feat/v1-production-scope`;
 - árbol de trabajo limpio;
-- HEAD `56c5c57`;
+- HEAD contiene el commit `56c5c57` en su historial;
 - existencia de `AGENTS.md`;
 - existencia de los documentos de producción y especificaciones;
 - `SAVE_FORMAT_VERSION === 3`;
@@ -639,7 +639,7 @@ Antes de modificar cualquier archivo:
 3. Comprueba que:
    - la rama es feat/v1-production-scope;
    - el árbol de trabajo está limpio;
-   - HEAD coincide con el commit indicado en CODEX_HANDOFF.md;
+   - HEAD contiene como ancestro el commit mínimo indicado en CODEX_HANDOFF.md;
    - existen todos los archivos importantes indicados en el handoff.
 
 4. No edites todavía.
