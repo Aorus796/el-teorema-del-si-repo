@@ -1,8 +1,10 @@
-# Next Codex Task — Consecuencias del catálogo y Archivo compacto
+# Next Codex Task — Archive Criteria: tercer puzle "La pregunta correcta"
 
-Implementa el sexto bloque de **El catálogo perfecto**: consecuencias narrativas idempotentes, desbloqueo del Archivo y mapa compacto del Archivo.
+Implementa el bloque completo del tercer puzle principal: datos, validador,
+estado, controlador, escena focal, integración con `archive-criteria-table`,
+consecuencias narrativas idempotentes y migración de guardado a formato 4.
 
-El tercer puzle queda fuera de alcance.
+El epílogo, la personalización y Max quedan fuera de alcance.
 
 No hagas commit ni push.
 
@@ -15,535 +17,501 @@ Antes de editar, revisa completamente:
 - `AGENTS.md`
 - `docs/production/CODEX_HANDOFF.md`
 - `docs/production/V1_PRODUCTION_PLAN.md`
-- `docs/puzzles/LIBRARY_CATALOGUE_SPEC.md`
 - `docs/puzzles/ARCHIVE_CRITERIA_SPEC.md`
+- `docs/puzzles/LIBRARY_CATALOGUE_SPEC.md`
+- `src/puzzles/library-catalogue/` (todo el directorio, como patrón de referencia)
 - `src/scenes/LibraryCatalogueScene.js`
 - `src/scenes/WorldScene.js`
-- `src/content/worldMaps.js`
 - `src/state/GameState.js`
-- sistema actual de objetivos, banderas y cuaderno
-- consecuencias actuales de completar P2
-- comportamiento de `GameState.restore()`
-- pruebas de catálogo, mundo, mapas, estado y migraciones
+- `src/progression/LibraryCatalogueProgression.js`
+- `src/core/InputManager.js`
+- `src/main.js`
+- pruebas existentes de catálogo, mundo, estado y migraciones
 
 Confirma primero:
 
-1. cómo se añaden entradas idempotentes al cuaderno;
-2. cómo se actualiza el objetivo;
-3. cómo se representan las banderas predeterminadas;
-4. cómo se restauran guardados que no contienen una bandera nueva;
-5. si existe un patrón reutilizable para aplicar consecuencias al resolver un puzle.
+1. que las teclas necesarias (`moveUp`, `moveDown`, `moveLeft`, `moveRight`,
+   `startPuzzleAttempt`, `nextPuzzleHint`, `restartPuzzleAttempt`, `cancel`)
+   ya existen en `InputManager.js` — no se necesita ninguna tecla nueva;
+2. el patrón exacto de `LibraryCatalogueState`/`LibraryCataloguePuzzle` para
+   replicarlo en `archive-criteria`;
+3. el contrato exacto de `applyLibraryCatalogueProgression` para
+   replicarlo en `applyArchiveCriteriaProgression`;
+4. cómo `GameState.restore()` distingue hoy los formatos legacy del mundo
+   de los formatos legacy del catálogo, para no repetir el error de
+   compartir una sola lista entre conceptos distintos.
 
-Si el estado Git o la arquitectura no coinciden con `CODEX_HANDOFF.md`, detente antes de editar y explica la discrepancia.
-
----
-
-## Objetivo funcional
-
-Cuando **El catálogo perfecto** pase por primera vez a `solved`:
-
-1. establecer:
-
-```js
-state.flags.archiveUnlocked = true;
-```
-
-2. actualizar el objetivo para dirigir al jugador al Archivo;
-3. añadir una única entrada de cuaderno sobre la solución del catálogo;
-4. informar visualmente de que el Archivo ha quedado accesible;
-5. permitir entrar en un nuevo mapa compacto `archive` desde la Biblioteca;
-6. conservar todo mediante guardado y carga;
-7. no repetir consecuencias al reabrir un catálogo ya resuelto.
-
-También debe recuperarse correctamente una partida creada antes de este bloque cuyo catálogo ya esté resuelto pero no contenga todavía `archiveUnlocked`.
+Si el estado Git o la arquitectura no coinciden con `CODEX_HANDOFF.md`,
+detente antes de editar y explica la discrepancia.
 
 ---
 
-## Consecuencias exactas
+## 1. Mecánica
 
-La bandera debe llamarse exactamente:
+Clasificar seis afirmaciones (`voluntary-entry`, `followed-trail`,
+`never-disagreed`, `someone-refuses-now`, `present-choice`,
+`universal-future`) en tres veredictos (`confirmed`, `contradicted`,
+`undecidable`). IDs, textos, evidencias y solución exactos según
+`ARCHIVE_CRITERIA_SPEC.md` §5 y §6 — no inventes ni alteres ninguno.
+
+---
+
+## 2. Fases persistentes
 
 ```js
-archiveUnlocked
+"ready" | "classifying" | "failed" | "solved"
 ```
 
-El objetivo debe expresar:
+Máquina de estados exacta según `ARCHIVE_CRITERIA_SPEC.md` §12.
+
+---
+
+## 3. Campos persistentes
+
+```js
+{
+  verdicts: {
+    "voluntary-entry": null,
+    "followed-trail": null,
+    "never-disagreed": null,
+    "someone-refuses-now": null,
+    "present-choice": null,
+    "universal-future": null,
+  },
+  phase: "ready",
+  hintsRead: [],
+  attemptCount: 0,
+  failureCode: null,
+}
+```
+
+`focusedClaimIndex` es exclusivamente transitorio (no se persiste).
+
+---
+
+## 4. Pistas
+
+Tres reflexiones manuales, sin coste, en
+`src/puzzles/archive-criteria/ArchiveCriteriaHints.js` (mismo patrón que
+`LibraryCatalogueHints.js`: array de niveles + función
+`getArchiveCriteriaHint(level)`). La tercera revela la clasificación
+completa (texto exacto en `ARCHIVE_CRITERIA_SPEC.md` §20). Reutiliza
+`src/puzzles/core/HintProgress.js` sin modificarlo.
+
+---
+
+## 5. Controles
+
+Reutiliza las acciones ya existentes en `InputManager.js`, sin añadir ni
+modificar bindings:
+
+| Tecla | Acción |
+|---|---|
+| Izquierda/Derecha | `moveLeft` / `moveRight` — navegar entre afirmaciones (transitorio) |
+| Arriba/Abajo | `moveUp` / `moveDown` — ciclo de veredicto (persistente) |
+| Enter | `startPuzzleAttempt` — confirmar clasificación completa |
+| Q | `nextPuzzleHint` — revelar siguiente pista |
+| R | `restartPuzzleAttempt` — reiniciar mientras no esté `solved` |
+| Escape | `cancel` — volver a `world` conservando el progreso |
+
+Ciclo de veredicto (§11 del spec):
 
 ```text
-Entra en el Archivo y examina la mesa de criterios.
+abajo: null -> confirmed -> contradicted -> undecidable -> null
+arriba: null -> undecidable -> contradicted -> confirmed -> null
 ```
-
-Usa el mecanismo real del proyecto para `objectiveId`. No introduzcas un segundo sistema de objetivos.
-
-La entrada del cuaderno debe:
-
-- tener un ID estable;
-- no duplicarse;
-- titularse de forma equivalente a `El catálogo perfecto`;
-- registrar el orden correcto `A-D-R-C-M`;
-- indicar que la ordenación ha revelado el acceso al Archivo;
-- no contener pistas del tercer puzle.
-
-El texto puede adaptarse al tono existente, pero debe conservar esos datos.
 
 ---
 
-## Idempotencia
+## 6. `SAVE_FORMAT_VERSION` pasa a 4
 
-### Primera resolución
+```js
+export const SAVE_FORMAT_VERSION = 4;
+```
 
-Al recibir `puzzle_solved`:
+Es un cambio de formato aprobado explícitamente para este bloque.
 
-- actualizar el catálogo a `solved`;
-- establecer `archiveUnlocked`;
-- actualizar objetivo;
-- añadir cuaderno;
-- mostrar:
+---
+
+## 7. Migración segura desde 1, 2 y 3
+
+Todos los guardados de formato `1`, `2` y `3` deben seguir cargando. Los
+tres crean `archiveCriteria` en su estado inicial (`new
+ArchiveCriteriaState()`).
+
+---
+
+## 8. Separación obligatoria de listas de formato
+
+**No reutilices una sola lista de "formatos legacy" para todo.** Usa tres
+listas distintas y explícitas:
+
+```js
+// Versiones generales aceptadas por GameState.restore() además de la actual.
+const SUPPORTED_LEGACY_FORMAT_VERSIONS = [1, 2, 3];
+
+// Formatos en los que libraryCatalogue NO tiene datos persistidos.
+// El formato 3 YA tiene datos reales del catálogo: no lo incluyas aquí.
+const LIBRARY_CATALOGUE_LEGACY_FORMAT_VERSIONS = [1, 2];
+
+// Formatos en los que archiveCriteria NO tiene datos persistidos.
+const ARCHIVE_CRITERIA_LEGACY_FORMAT_VERSIONS = [1, 2, 3];
+```
+
+`restoreLibraryCatalogue` sigue usando su lista de `[1, 2]` sin cambios de
+comportamiento. Solo la nueva `restoreArchiveCriteria` usa
+`ARCHIVE_CRITERIA_LEGACY_FORMAT_VERSIONS`.
+
+Cualquier comparación posicional existente como
+`data.formatVersion === LEGACY_SAVE_FORMAT_VERSIONS[0]` (usada hoy en
+`restoreWorldState` para detectar el formato 1) debe quedar como una
+comparación explícita `=== 1`, para no depender del orden de un array que
+ahora cambia de tamaño.
+
+---
+
+## 9. Test obligatorio anti-regresión de formato 3
+
+Añade un test explícito en `tests/state/GameState.test.js` que:
+
+1. construya un guardado de formato `3` con el catálogo `solved` (`order`
+   = solución, `phase: "solved"`), `archiveUnlocked: true`, posición en
+   `archive` o `library`, objetivo y cuaderno ya poblados;
+2. lo restaure con `GameState.restore()`;
+3. compruebe que `state.puzzles.libraryCatalogue.phase === "solved"` y que
+   `state.puzzles.libraryCatalogue.order` sigue siendo la solución real
+   (no se reinicializó a `C-M-A-R-D`);
+4. compruebe que `state.puzzles.archiveCriteria` es un estado inicial
+   nuevo (`phase: "ready"`, todos los veredictos `null`);
+5. compruebe que mapa, posición, objetivo, banderas existentes y cuaderno
+   se conservan intactos.
+
+Este test es el que detecta si alguien reutiliza por error una sola lista
+de formatos legacy compartida.
+
+---
+
+## 10. Progresión idempotente
+
+Crea `src/progression/ArchiveCriteriaProgression.js`, exportando
+`applyArchiveCriteriaProgression(state)`:
+
+```js
+export function applyArchiveCriteriaProgression(state) {
+  if (state.puzzles.archiveCriteria.phase !== ARCHIVE_CRITERIA_PHASE.SOLVED) {
+    return { applied: false };
+  }
+
+  let changed = false;
+
+  // investigationComplete y epilogueUnlocked se reparan de forma
+  // independiente entre sí.
+  if (!state.flags.investigationComplete) {
+    state.flags.investigationComplete = true;
+    changed = true;
+  }
+
+  if (!state.flags.epilogueUnlocked) {
+    // objectiveId SOLO se escribe aquí: en la transición real
+    // false -> true de epilogueUnlocked.
+    state.flags.epilogueUnlocked = true;
+    state.objectiveId = "start-epilogue";
+    changed = true;
+  }
+
+  const notebookAdded = state.addNotebookEntry(ARCHIVE_FINAL_EVIDENCE_ENTRY);
+
+  if (!changed && !notebookAdded) {
+    return { applied: false };
+  }
+
+  return { applied: true, notebookAdded };
+}
+```
+
+Reglas:
+
+- si `archiveCriteria` no está `solved`: `{ applied: false }`, sin tocar
+  nada;
+- `investigationComplete` y `epilogueUnlocked` se comprueban y reparan
+  cada una por separado, nunca como una condición combinada;
+- si `epilogueUnlocked` ya era `true`, no se sobrescribe `objectiveId`,
+  aunque falte `investigationComplete` o la entrada de cuaderno;
+- si solo falta la entrada de cuaderno, añadirla y devolver
+  `{ applied: true, notebookAdded: true }`, conservando cualquier objetivo
+  posterior;
+- el criterio de "ya está reconciliado" se basa en
+  `investigationComplete && epilogueUnlocked && entrada de cuaderno
+  presente` — **nunca** en si `objectiveId` sigue siendo
+  `"start-epilogue"`.
+
+Sin Canvas, `UiController`, `SceneManager`, `StorageAdapter` ni
+`localStorage`. No guarda ni muestra toasts.
+
+Llamar desde dos puntos, sin duplicar lógica:
+
+1. `ArchiveCriteriaScene`, justo después de que confirmar la clasificación
+   devuelva `PUZZLE_SOLVED`;
+2. `GameState.restore()`, después de restaurar `puzzles.archiveCriteria`,
+   como punto canónico de reconciliación (mismo orden relativo que ya usa
+   `applyLibraryCatalogueProgression`, aplicada justo antes que esta).
+
+---
+
+## 11. `objectiveId` exacto
+
+```js
+"start-epilogue"
+```
+
+Etiqueta exacta en `OBJECTIVE_LABELS` de `WorldScene.js`:
+
+```js
+"start-epilogue": "La investigación ha terminado."
+```
+
+Se asigna únicamente dentro de la rama `if (!state.flags.epilogueUnlocked)`
+de `applyArchiveCriteriaProgression`. Si al cargar una partida
+`epilogueUnlocked` ya es `true`, esa rama no se ejecuta y cualquier
+objetivo posterior ya presente en el guardado se conserva exactamente.
+
+---
+
+## 12. Entrada de cuaderno exacta
+
+```js
+{
+  id: "archive-final-evidence",
+  title: "La pregunta correcta",
+  text: "El Archivo conserva dos declaraciones presentes coincidentes y confirma que no dispone de observaciones futuras.",
+}
+```
+
+No debe incluir la solución del puzle ni narrar el epílogo.
+
+---
+
+## 13. Toast
 
 ```text
-El Archivo ha quedado accesible
+La investigación ha terminado
 ```
 
-### Reapertura posterior
+Se muestra únicamente cuando `epilogueUnlocked` pasa de `false` a `true`
+en esa llamada concreta. La escena captura el valor previo antes de
+llamar a la función de progresión y compara después, igual que
+`LibraryCatalogueScene` ya hace con `archiveUnlocked`:
 
-Si el catálogo ya está resuelto:
+```js
+const wasEpilogueUnlocked = this.state.flags.epilogueUnlocked;
+applyArchiveCriteriaProgression(this.state);
 
-- puede seguir abriéndose;
-- muestra su estado terminal;
-- no vuelve a añadir cuaderno;
-- no vuelve a cambiar el objetivo;
-- no vuelve a mostrar el aviso;
-- no aumenta intentos;
-- no modifica banderas adicionales.
+if (!wasEpilogueUnlocked && this.state.flags.epilogueUnlocked) {
+  this.ui.showToast("La investigación ha terminado");
+}
+```
 
-### Reconciliación de guardados anteriores
-
-Un guardado de formato 3 anterior puede contener:
-
-- catálogo `solved`;
-- ausencia de `archiveUnlocked`;
-- ausencia de la entrada de cuaderno;
-- objetivo anterior.
-
-Al restaurarlo, o mediante el punto canónico más seguro:
-
-- aplicar las consecuencias pendientes;
-- hacerlo una sola vez;
-- no incrementar el formato de guardado;
-- no reparar otros datos no relacionados;
-- no aplicar consecuencias si el catálogo no está resuelto.
-
-Evita duplicar la lógica entre escena y restauración.
-
-Crea una función pequeña y reutilizable si no existe ya un patrón equivalente.
-
-La función debe devolver información suficiente para saber si las consecuencias se han aplicado en esa llamada, para que `LibraryCatalogueScene` pueda mostrar el toast únicamente durante la primera resolución.
-
-La función no debe depender de:
-
-- Canvas;
-- `UiController`;
-- `SceneManager`;
-- `StorageAdapter`;
-- `localStorage`.
-
-No debe guardar ni mostrar toasts por sí misma.
+No debe mostrarse si solo se reparó `investigationComplete` o la entrada
+de cuaderno con `epilogueUnlocked` ya en `true`.
 
 ---
 
-## Compatibilidad de guardado
+## 14. Integración de `archive-criteria-table`
 
-`SAVE_FORMAT_VERSION` debe continuar siendo:
-
-```js
-3
-```
-
-No cambies la estructura persistente del catálogo.
-
-Debe seguir siendo posible:
-
-- cargar formatos 1 y 2;
-- cargar formato 3 anterior sin `archiveUnlocked`;
-- cargar formato 3 nuevo;
-- guardar y cargar dentro del Archivo;
-- conservar posiciones independientes de Plaza, Paseo, Biblioteca y Archivo.
-
-Para guardados no resueltos sin la bandera:
+**No modifiques `src/content/worldMaps.js`.** El objeto ya existe con
+`id`, posición e `interactionRadius` correctos desde `7a0c13c`. Añade en
+`src/scenes/WorldScene.js`, dentro de `interact()`, una rama por `id`
+(mismo patrón que `library-silogio` o `p2-bridge-board`):
 
 ```js
-archiveUnlocked === false
+if (object.id === "archive-criteria-table") {
+  this.interactWithArchiveCriteriaTable();
+  return;
+}
 ```
 
-Para guardados con catálogo resuelto:
-
-```js
-archiveUnlocked === true
-```
-
-tras la reconciliación.
-
-No añadas una versión 4.
+`interactWithArchiveCriteriaTable()` hace `syncPlayerState()` y
+`this.scenes.change("archive-criteria")`, sin diálogo previo (la
+explicación de los tres veredictos vive dentro de la propia escena, igual
+que las seis reglas del catálogo viven dentro de `LibraryCatalogueScene`).
 
 ---
 
-## Banderas predeterminadas
+## 15. Registro de la escena
 
-`archiveUnlocked` debe existir como booleano en todo `GameState` válido.
-
-Partida nueva:
+En `src/main.js`:
 
 ```js
-archiveUnlocked: false
+scenes.register(
+  "archive-criteria",
+  new ArchiveCriteriaScene({ scenes, input, state, ui }),
+);
 ```
-
-Formatos 1, 2 y 3 no resueltos sin la bandera:
-
-```js
-archiveUnlocked === false
-```
-
-Guardado restaurado con catálogo `solved`:
-
-```js
-archiveUnlocked === true
-```
-
-No debe quedar `undefined` después de `reset()` o `restore()`.
-
-Preserva las banderas existentes del guardado.
 
 ---
 
-## Mapa del Archivo
+## 16. Archivos permitidos
 
-Añade un mapa compacto:
+### Crear
 
-```js
-id: "archive"
-name: "Archivo"
-```
+- `src/puzzles/archive-criteria/ArchiveCriteriaData.js`
+- `src/puzzles/archive-criteria/ArchiveCriteriaValidator.js`
+- `src/puzzles/archive-criteria/ArchiveCriteriaHints.js`
+- `src/puzzles/archive-criteria/ArchiveCriteriaState.js`
+- `src/puzzles/archive-criteria/ArchiveCriteriaPuzzle.js`
+- `src/scenes/ArchiveCriteriaScene.js`
+- `src/progression/ArchiveCriteriaProgression.js`
+- `tests/puzzles/ArchiveCriteriaData.test.js`
+- `tests/puzzles/ArchiveCriteriaValidator.test.js`
+- `tests/puzzles/ArchiveCriteriaState.test.js`
+- `tests/puzzles/ArchiveCriteriaPuzzle.test.js`
+- `tests/scenes/ArchiveCriteriaScene.test.js`
+- `tests/progression/ArchiveCriteriaProgression.test.js`
 
-Debe ser más pequeño o igual de compacto que la Biblioteca.
+### Modificar
 
-Incluye:
-
-- límites cerrados;
-- colisiones;
-- zona central transitable;
-- estanterías o cajas con recursos existentes;
-- mesa de criterios visible en el centro;
-- salida hacia `library`;
-- aparición segura;
-- ninguna imagen ni dependencia nueva.
-
-No implementes todavía el tercer puzle.
-
-Debe existir un objeto visible e inerte:
-
-```js
-archive-criteria-table
-```
-
-La mesa:
-
-- no abre escenas;
-- no cambia banderas;
-- no cambia objetivo;
-- no añade cuaderno;
-- no inicia diálogo;
-- no contiene lógica del tercer puzle;
-- no produce acción al pulsar E.
-
-Usa el tipo de objeto que mejor encaje con la arquitectura existente sin añadir un sistema nuevo.
-
----
-
-## Acceso Biblioteca → Archivo
-
-Añade una salida reconocible desde la Biblioteca con identificador estable:
-
-```js
-library-to-archive
-```
-
-### Con `archiveUnlocked === false`
-
-- no cambia de mapa;
-- no altera banderas;
-- no cambia objetivo;
-- no modifica cuaderno;
-- muestra:
-
-```text
-El acceso al Archivo sigue cerrado.
-```
-
-### Con `archiveUnlocked === true`
-
-- cambia a `archive`;
-- conserva la posición de la Biblioteca;
-- aparece en una posición válida;
-- evita un retorno inmediato por solapamiento;
-- muestra el nombre del mapa mediante el comportamiento normal de `WorldScene`.
-
-La condición depende exclusivamente de:
-
-```js
-state.flags.archiveUnlocked
-```
-
-No añadas otra bandera de acceso.
-
----
-
-## Regreso Archivo → Biblioteca
-
-Añade una salida con identificador estable:
-
-```js
-archive-to-library
-```
-
-Debe:
-
-- volver a `library`;
-- conservar la posición del Archivo;
-- aparecer fuera del radio del portal de entrada;
-- no modificar progreso narrativo;
-- no reabrir el catálogo;
-- no volver a aplicar consecuencias.
-
----
-
-## LibraryCatalogueScene
-
-Modifica la escena únicamente para conectar la resolución con las consecuencias.
-
-No alteres:
-
-- controles;
-- renderizado general;
-- selección;
-- intercambio;
-- pistas;
-- reinicio;
-- persistencia del catálogo;
-- Escape;
-- separación entre E y Enter.
-
-Al procesar `puzzle_solved`:
-
-1. actualizar primero `state.puzzles.libraryCatalogue`;
-2. aplicar las consecuencias mediante la función común;
-3. conservar el mensaje:
-
-```text
-Catálogo resuelto.
-```
-
-4. mostrar con `ui.showToast()`:
-
-```text
-El Archivo ha quedado accesible
-```
-
-solo si las consecuencias se han aplicado por primera vez en esa llamada.
-
-No mostrar el aviso:
-
-- al reabrir un catálogo `solved`;
-- con `already_solved`;
-- al cargar una partida reconciliada;
-- al entrar de nuevo en la escena;
-- al guardar o cargar;
-- al confirmar otra vez un catálogo resuelto.
-
----
-
-## Objetivo y cuaderno
-
-Usa el sistema real del proyecto.
-
-No dupliques textos en varias escenas.
-
-Define constantes pequeñas si ayuda a mantener:
-
-- ID del objetivo;
-- texto del objetivo;
-- ID de la entrada de cuaderno;
-- título;
-- texto.
-
-La entrada de cuaderno debe contener inequívocamente:
-
-```text
-A-D-R-C-M
-```
-
-y que ese orden ha revelado el acceso al Archivo.
-
-No debe incluir ninguna respuesta del tercer puzle.
-
----
-
-## Archivos permitidos
-
-Modifica únicamente los necesarios entre:
-
-- `src/scenes/LibraryCatalogueScene.js`
+- `src/main.js`
 - `src/scenes/WorldScene.js`
-- `src/content/worldMaps.js`
 - `src/state/GameState.js`
-- un archivo nuevo y pequeño para consecuencias o progresión
-- pruebas correspondientes de escena, mundo, mapas, estado y migración
+- `tests/state/GameState.test.js`
+- `tests/scenes/WorldScene.test.js`
+- `tests/e2e/game.spec.js`
 
-Posible ubicación para la función común:
+### No modificar
 
-```text
-src/progression/LibraryCatalogueProgression.js
-```
+- `src/content/worldMaps.js` y `tests/content/WorldMaps.test.js` (sin
+  necesidad — ver punto 14);
+- todo `src/puzzles/library-catalogue/` y
+  `src/progression/LibraryCatalogueProgression.js`;
+- todo `src/puzzles/p2-bridges/` (P2 completo);
+- `src/core/InputManager.js` (las teclas ya existen);
+- `src/ui/UiController.js`, `src/platform/StorageAdapter.js`;
+- `package.json`, dependencias, configuración Docker.
 
-Usa otra ubicación solo si encaja mejor con la arquitectura real.
-
-No modifiques:
-
-- `LibraryCatalogueState`
-- `LibraryCataloguePuzzle`
-- `LibraryCatalogueValidator`
-- `LibraryCatalogueHints`
-- `InputManager`
-- `UiController`
-- `StorageAdapter`
-- P2
-- formato persistente del catálogo
-- documentos de diseño
-- Playwright salvo necesidad real
-- `package.json`
-- dependencias
-- configuración Docker
-
-Si aparece una necesidad real de tocar un archivo prohibido, detente y explica el bloqueo.
+Si aparece una necesidad real de tocar un archivo prohibido, detente y
+explica el bloqueo.
 
 ---
 
-## Pruebas obligatorias
+## 17. Pruebas obligatorias
 
-### Primera resolución
+- datos: 6 evidencias y 6 afirmaciones exactas, IDs únicos, solución
+  coincide con el spec;
+- validador: rechazo estructural completo, distinción
+  `incomplete_classification` vs `incorrect_verdicts`, cada afirmación
+  rechaza sus otros dos veredictos, solución exacta válida;
+- ciclo de veredictos en ambos sentidos, incluido el paso por `null`;
+- confirmación incompleta: incrementa intentos, fase `failed`, veredictos
+  conservados;
+- confirmación incorrecta: incrementa intentos, fase `failed`, **el
+  render/`statusMessage` de la escena nunca debe incluir
+  `incorrectClaimIds`** (el validador sí puede devolverlos, para
+  diagnóstico y tests, pero la UI no los muestra);
+- resolución correcta con la clasificación exacta del spec;
+- terminalidad tras `solved`: cambiar veredicto, confirmar, reiniciar o
+  pedir pista no modifican nada;
+- pistas 1, 2 y 3, la tercera revela la clasificación completa;
+- reinicio conserva `hintsRead` y `attemptCount`, solo mientras no esté
+  `solved`;
+- Escape vuelve a `world` conservando todo el estado persistente;
+- reentrada antes y después de resolver reconstruye el estado transitorio
+  sin alterar lo persistente;
+- integración de `archive-criteria-table` (WorldScene.test.js);
+- persistencia y migraciones de las tres listas de formato (punto 8) y el
+  test anti-regresión del punto 9;
+- progresión idempotente: los casos parciales (falta solo
+  `investigationComplete`, falta solo el cuaderno, falta solo
+  `epilogueUnlocked`, todo reconciliado, primera resolución, fase no
+  `solved`);
+- toast solo en la transición real de `epilogueUnlocked`;
+- regresión: los 149 tests actuales (incluidos todos los de P2 y de
+  `LibraryCatalogue*`) siguen en verde sin modificar sus archivos.
 
-- el catálogo termina en `solved`;
-- `archiveUnlocked` pasa a `true`;
-- se actualiza el objetivo;
-- se añade exactamente una entrada de cuaderno;
-- la entrada contiene `A-D-R-C-M`;
-- aparece el toast;
-- se conserva `Catálogo resuelto.`
+---
 
-### Idempotencia
+## 18. Riesgo de desbordamiento de texto en 480×270
 
-- confirmar de nuevo un catálogo resuelto no repite consecuencias;
-- salir y reentrar no duplica cuaderno;
-- guardar y cargar no duplica cuaderno;
-- `already_solved` no cambia objetivo;
-- el toast aparece solo una vez;
-- aplicar dos veces la función común no duplica ni altera el resultado;
-- una segunda aplicación informa de que no hubo cambios si la función devuelve ese dato.
+El layout es más ajustado que el del catálogo (`ARCHIVE_CRITERIA_SPEC.md`
+§24: afirmación máx. 3 líneas, evidencias en ~72px, mensaje/pista máx. 3
+líneas). Reutiliza la técnica de ajuste de línea ya usada en
+`LibraryCatalogueScene.js` (`wrapText(text, maxChars)` + `slice(0, N)`).
+Añade en `ArchiveCriteriaScene.test.js` un test directo sobre esa función
+con los textos reales más largos de `ArchiveCriteriaData.js` (la
+afirmación y la evidencia más largas), comprobando que el número de
+líneas resultante no excede el presupuesto de cada bloque del spec §24.
+No basta un test de "el render no lanza excepción".
 
-### Reconciliación
+---
 
-- formato 3 anterior con catálogo resuelto y sin `archiveUnlocked` queda reconciliado;
-- formato 3 anterior con catálogo resuelto y bandera falsa también queda reconciliado;
-- formato 3 no resuelto obtiene `archiveUnlocked === false`;
-- formato 3 ya reconciliado no duplica cuaderno;
-- formatos 1 y 2 continúan cargando;
-- `SAVE_FORMAT_VERSION` sigue siendo 3;
-- `reset()` crea `archiveUnlocked === false`;
-- no se aplican consecuencias a `ready`, `arranging` o `failed`;
-- restaurar una partida no resuelta no cambia un objetivo no relacionado.
+## 19. Validación final
 
-### Mapa
+Ejecuta:
 
-- `archive` está registrado;
-- tiene nombre visible;
-- tiene dimensiones compactas;
-- tiene colisiones;
-- contiene `archive-criteria-table`;
-- tiene salida a `library`;
-- la aparición inicial es transitable;
-- no solapa mesa, paredes, mobiliario o portal;
-- las apariciones de ambos portales quedan fuera del radio contrario;
-- todas las salidas apuntan a mapas registrados.
+```bash
+docker compose run --rm game npm run check
+docker compose run --rm playwright
+git diff --check
+git status --short
+```
 
-### Acceso bloqueado
+No afirmes que una validación ha pasado sin ejecutar el comando
+correspondiente.
 
-- con la bandera falsa no cambia de mapa;
-- no altera objetivo, cuaderno ni banderas;
-- muestra `El acceso al Archivo sigue cerrado.`
+Al terminar muestra:
 
-### Acceso permitido y regreso
+- arquitectura encontrada;
+- contrato exacto de `applyArchiveCriteriaProgression`;
+- archivos creados y modificados;
+- identificadores de bandera, objetivo y cuaderno;
+- texto final de la entrada de cuaderno;
+- estrategia de migración y las tres listas de formato usadas;
+- resultado del test anti-regresión de formato 3;
+- total de pruebas unitarias, resultado del build, resultado de
+  Playwright, resultado de `git diff --check`, `git status --short`;
+- limitaciones y comprobaciones manuales pendientes.
 
-- Biblioteca → Archivo conserva la posición de Biblioteca;
-- establece una posición válida en Archivo;
-- Archivo → Biblioteca conserva la posición del Archivo;
-- no hay bucle inmediato;
-- no se reaplican consecuencias;
-- no se abre ninguna escena al entrar en Archivo.
+---
 
-### Mesa de criterios
+## 20. Prohibiciones de este bloque
 
-- existe;
-- es visible en los datos del mapa;
-- interactuar no abre escena;
-- no modifica estado;
-- no inicia el tercer puzle;
-- no cambia objetivo, cuaderno o banderas.
-
-No añadas lógica general solo para probar que la mesa es inerte.
-
-### Persistencia del mundo
-
-- guardar dentro de Archivo restaura `currentMapId === "archive"`;
-- los cuatro mapas mantienen posiciones independientes;
-- `toSaveData()` no muta el estado;
-- formatos anteriores reciben posición predeterminada válida para `archive`;
-- formato 3 conserva una posición guardada en `archive`;
-- `SAVE_FORMAT_VERSION` continúa siendo 3.
-
-### Regresiones
-
-- catálogo no resuelto conserva comportamiento anterior;
-- Silogio sigue abriendo el catálogo;
-- E sigue seleccionando;
-- Enter sigue confirmando;
-- P2 no cambia;
-- Biblioteca sigue accesible con `libraryObjectiveUnlocked`;
-- todos los tests existentes siguen pasando.
-
-No pruebes coordenadas gráficas exactas salvo las necesarias para aparición, colisiones y ausencia de bucles.
+- no implementar el epílogo (escena, `epilogueStarted`,
+  `epilogueCompleted`);
+- no implementar personalización (`personalization.js`, marcadores);
+- no añadir a Max;
+- no modificar P2;
+- no ampliar mapas ni tocar `worldMaps.js`;
+- no crear accesos temporales, teclas secretas ni menús de depuración;
+- no añadir dependencias;
+- no hacer refactors generales durante este bloque;
+- no renombrar identificadores existentes;
+- no modificar código no relacionado con este alcance;
+- no acceder directamente a `localStorage` fuera de `StorageAdapter`;
+- usar funciones pequeñas y puras cuando sea posible;
+- no hacer commit ni push hasta validar el bloque completo.
 
 ---
 
 ## Comprobación manual preparada
 
-Describe al terminar esta ruta:
+Describe al terminar esta ruta, partiendo de una partida guardada en
+formato `3` con el catálogo resuelto:
 
-1. iniciar o cargar una partida con el catálogo sin resolver;
-2. llegar a la Biblioteca;
-3. hablar con Silogio;
-4. ordenar `A-D-R-C-M`;
-5. confirmar;
-6. comprobar `Catálogo resuelto.`;
-7. comprobar el toast de acceso;
-8. salir a la Biblioteca;
-9. entrar en el Archivo;
-10. caminar hasta la mesa;
-11. comprobar que la mesa no abre puzle;
-12. regresar a la Biblioteca;
-13. reabrir el catálogo;
-14. comprobar que no se duplican consecuencias;
-15. guardar dentro del Archivo;
-16. cargar;
-17. comprobar que se restaura dentro del Archivo.
+1. cargar la partida (migra a formato `4` en memoria);
+2. entrar al Archivo, caminar hasta la mesa, pulsar E;
+3. comprobar navegación izquierda/derecha entre las 6 afirmaciones;
+4. comprobar el ciclo de veredicto arriba/abajo, incluido el paso por
+   `null`;
+5. provocar un fallo incompleto (Enter con algún veredicto en `null`);
+6. provocar un fallo incorrecto (las 6 completas, alguna equivocada);
+7. consultar las 3 pistas en orden;
+8. guardar y cargar a mitad del puzle (fase `classifying` o `failed`);
+9. clasificar correctamente las 6 y confirmar;
+10. comprobar objetivo (`La investigación ha terminado.`) y cuaderno
+    (`archive-final-evidence`);
+11. guardar y cargar tras resolver, comprobando que no se repiten
+    consecuencias ni el toast;
+12. reentrar a la escena tras resolver;
+13. salir con Escape en distintos momentos del puzle.
 
 No añadas accesos temporales ni código de depuración.
 
@@ -585,7 +553,8 @@ Marcadores futuros:
 {{FINAL_DEDICATION}}
 ```
 
-Esta información solo evita decisiones incompatibles con la personalización futura.
+Esta información solo evita decisiones incompatibles con la
+personalización futura.
 
 En este bloque:
 
@@ -598,56 +567,5 @@ En este bloque:
 - mantener Axioma como pueblo ficticio.
 
 ---
-
-## Reglas técnicas
-
-- JavaScript ES modules.
-- Sin dependencias nuevas.
-- Funciones pequeñas y puras cuando sea posible.
-- No acceder directamente a `localStorage`.
-- No guardar desde la función de consecuencias.
-- No mostrar toasts desde la función de consecuencias.
-- No acoplar progresión a Canvas.
-- No cambiar el formato persistente del catálogo.
-- No hacer refactors generales.
-- No renombrar identificadores existentes.
-- No modificar código no relacionado.
-- No hacer commit ni push.
-
----
-
-## Validación final
-
-Ejecuta:
-
-```bash
-docker compose run --rm game npm run check
-docker compose run --rm playwright
-git diff --check
-git status --short
-```
-
-Al terminar muestra:
-
-- arquitectura encontrada;
-- plan aplicado;
-- función usada para aplicar consecuencias;
-- contrato exacto de esa función;
-- archivos creados y modificados;
-- identificadores de bandera, objetivo y cuaderno;
-- texto final de la entrada de cuaderno;
-- dimensiones y aparición del mapa `archive`;
-- identificadores de portales;
-- comportamiento de `archive-criteria-table`;
-- comportamiento bloqueado y desbloqueado;
-- estrategia de reconciliación;
-- confirmación de `SAVE_FORMAT_VERSION === 3`;
-- total de pruebas unitarias;
-- resultado del build;
-- resultado de Playwright;
-- resultado de `git diff --check`;
-- `git status --short`;
-- limitaciones;
-- comprobaciones manuales pendientes.
 
 No hagas commit ni push.

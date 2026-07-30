@@ -34,12 +34,15 @@ feat/v1-production-scope
 Commit mínimo requerido (HEAD puede ser cualquier descendiente):
 
 ```text
-56c5c57 docs: add Codex handoff and next task
+7a0c13c feat: unlock archive after catalogue puzzle
 ```
 
 Commits recientes relevantes:
 
 ```text
+7a0c13c feat: unlock archive after catalogue puzzle
+e49571b docs: relax Codex handoff head check
+5594216 docs: update Codex handoff head
 56c5c57 docs: add Codex handoff and next task
 fad4d94 feat: add library world integration
 85a9546 feat: add library catalogue scene
@@ -49,9 +52,6 @@ de5d6a2 feat: add library catalogue validator
 8d88c9b feat: add sequential puzzle hints
 93de060 docs: define archive criteria puzzle
 8d2885a docs: define library catalogue puzzle
-d1b6176 test: add Playwright smoke tests
-9cad749 docs: add v1 production plan
-adc6cbd docs: add AI agent repository guidelines
 ```
 
 El árbol de trabajo debe estar limpio antes de comenzar el siguiente bloque.
@@ -72,12 +72,13 @@ Comprobar:
 
 - rama `feat/v1-production-scope`;
 - árbol de trabajo limpio;
-- HEAD contiene el commit `56c5c57` en su historial;
+- HEAD contiene el commit `7a0c13c` en su historial;
 - existencia de `AGENTS.md`;
 - existencia de los documentos de producción y especificaciones;
-- `SAVE_FORMAT_VERSION === 3`;
-- mapas registrados actuales;
-- escena `library-catalogue` registrada.
+- `SAVE_FORMAT_VERSION === 3` (subirá a `4` durante el bloque Archive Criteria, ver más abajo);
+- mapas registrados actuales, incluido `archive`;
+- escena `library-catalogue` registrada;
+- objeto `archive-criteria-table` presente en el mapa `archive` y todavía inerte (sin escena asociada).
 
 La nueva sesión debe explicar lo que ha entendido antes de implementar.
 
@@ -230,7 +231,7 @@ src/state/GameState.js
 
 ## Estado global y persistencia
 
-Formato actual:
+Formato actual (antes de implementar Archive Criteria):
 
 ```js
 SAVE_FORMAT_VERSION = 3
@@ -248,14 +249,12 @@ El formato 3 contiene:
 - escena;
 - jugador;
 - mapa actual;
-- posiciones por mapa;
-- banderas;
+- posiciones por mapa, incluida `archive`;
+- banderas, incluida `archiveUnlocked`;
 - objetivo;
 - cuaderno;
 - P2;
-- catálogo de Biblioteca.
-
-No incrementar el formato sin necesidad explícita.
+- catálogo de Biblioteca (con sus consecuencias narrativas ya aplicadas).
 
 La clave de `StorageAdapter` no cambió.
 
@@ -264,8 +263,33 @@ Posiciones independientes actuales:
 - `axiom-plaza`
 - `seven-bridges-walk`
 - `library`
+- `archive`
 
-El siguiente bloque añadirá `archive` sin incrementar el formato.
+### Migración prevista para el bloque Archive Criteria
+
+El bloque **Archive Criteria** (siguiente bloque, ver más abajo) subirá
+`SAVE_FORMAT_VERSION` de `3` a `4`. Es un cambio de formato aprobado y
+necesario, no accidental.
+
+Al implementarlo es obligatorio mantener **tres listas de versiones
+separadas**, no una sola:
+
+- versiones legacy generales aceptadas por `GameState.restore()`: `[1, 2, 3]`;
+- formatos en los que `libraryCatalogue` **no** tiene datos persistidos
+  todavía: solo `[1, 2]` — el formato `3` ya contiene el catálogo real
+  (resuelto o no) y debe seguir leyéndose como dato real, nunca
+  reinicializarse;
+- formatos en los que `archiveCriteria` **no** tiene datos persistidos
+  todavía: `[1, 2, 3]` — solo el formato `4` lo contiene.
+
+Reutilizar una única lista compartida para las tres comprobaciones es un
+error conocido: si el formato `3` se trata como "legacy" también para el
+catálogo, cualquier partida real en formato `3` (catálogo ya resuelto,
+`archiveUnlocked = true`) perdería su catálogo al cargar y volvería al
+orden inicial sin resolver. El bloque Archive Criteria debe incluir un
+test explícito que demuestre que una partida `v3` con el catálogo
+resuelto conserva ese catálogo intacto tras migrar a `v4`, inicializando
+únicamente `archiveCriteria`.
 
 ---
 
@@ -399,7 +423,13 @@ La escena está registrada como:
 library-catalogue
 ```
 
-El catálogo todavía no aplica consecuencias narrativas al resolverse.
+Al resolverse por primera vez, el catálogo aplica sus consecuencias
+narrativas mediante `applyLibraryCatalogueProgression`
+(`src/progression/LibraryCatalogueProgression.js`): establece
+`archiveUnlocked`, actualiza `objectiveId` a
+`inspect-archive-criteria-table` y añade la entrada de cuaderno
+`library-catalogue-solution`. Es idempotente y se aplica también al
+restaurar partidas antiguas resueltas sin la bandera.
 
 ---
 
@@ -460,9 +490,53 @@ Silogio:
 
 ---
 
+## Archivo integrado
+
+Mapa:
+
+```text
+id: archive
+name: Archivo
+```
+
+Dimensiones:
+
+```text
+24×16 tiles (más compacto que la Biblioteca)
+```
+
+El Archivo:
+
+- contiene colisiones y límites cerrados;
+- contiene estanterías y cajas decorativas reutilizando el tipo `tables`;
+- contiene el objeto `archive-criteria-table` (id estable), **visible pero
+  todavía inerte**: no abre ninguna escena, no cambia banderas, objetivo
+  ni cuaderno, no produce ninguna acción al pulsar E;
+- tiene salida hacia `library`.
+
+El acceso desde la Biblioteca depende exclusivamente de:
+
+```js
+state.flags.archiveUnlocked
+```
+
+Portales:
+
+- `library-to-archive`: con la bandera falsa no cambia de mapa y muestra
+  «El acceso al Archivo sigue cerrado.»; con la bandera verdadera cambia a
+  `archive` conservando la posición de la Biblioteca y apareciendo fuera
+  del radio del portal de regreso.
+- `archive-to-library`: vuelve a `library` conservando la posición del
+  Archivo, sin reabrir el catálogo ni reaplicar consecuencias.
+
+No existe todavía ninguna escena `archive-criteria`. El bloque siguiente
+la añade.
+
+---
+
 ## Validación manual ya realizada
 
-Ruta validada:
+Ruta validada (bloques del catálogo):
 
 1. completar P2;
 2. examinar la evidencia del embarcadero;
@@ -477,13 +551,32 @@ Ruta validada:
 
 No se detectaron bloqueos de colisión en esa ruta.
 
+Ruta validada (bloque `7a0c13c` — Archivo), completada correctamente:
+
+1. cargar una partida guardada con el catálogo ya resuelto;
+2. comprobar la entrada de cuaderno «El catálogo perfecto» con el orden
+   `A-D-R-C-M`;
+3. comprobar el objetivo «Entra en el Archivo y examina la mesa de
+   criterios.»;
+4. cruzar el portal Biblioteca → Archivo;
+5. comprobar que la aparición en el Archivo no produce un bucle de
+   reentrada inmediata;
+6. caminar hasta `archive-criteria-table` y comprobar el prompt de
+   interacción;
+7. pulsar E sobre la mesa y comprobar que queda inerte (no abre ninguna
+   escena ni modifica banderas, objetivo o cuaderno);
+8. volver por el portal Archivo → Biblioteca sin bucle de reentrada.
+
+No se detectaron bloqueos de colisión, errores de consola ni bucles de
+portal en esa ruta.
+
 ---
 
 ## Línea base de pruebas
 
-Tras `fad4d94`:
+Tras `7a0c13c`:
 
-- 136 pruebas unitarias superadas;
+- 149 pruebas unitarias superadas;
 - 0 pruebas unitarias fallidas;
 - build estático correcto;
 - 2 pruebas Playwright superadas;
@@ -495,6 +588,10 @@ Pruebas E2E actuales:
 - título;
 - nueva partida y apertura del cuaderno mediante Q/Tab.
 
+La validación manual en navegador del acceso al Archivo y de
+`archive-criteria-table` se completó correctamente — ver «Validación
+manual ya realizada».
+
 ---
 
 ## Siguiente bloque
@@ -505,24 +602,31 @@ La siguiente tarea está definida íntegramente en:
 docs/production/NEXT_CODEX_TASK.md
 ```
 
-Resumen:
+Resumen: **Archive Criteria — "La pregunta correcta"**, el tercer y
+último puzle principal, situado en el Archivo compacto.
 
-- consecuencias idempotentes al resolver el catálogo;
-- bandera `archiveUnlocked`;
-- actualización del objetivo;
-- entrada de cuaderno con `A-D-R-C-M`;
-- reconciliación de guardados de formato 3 anteriores;
-- mapa compacto `archive`;
-- portales Biblioteca ↔ Archivo;
-- mesa inerte `archive-criteria-table`;
-- persistencia de posición del Archivo;
-- `SAVE_FORMAT_VERSION` debe seguir siendo 3.
+Incluye:
 
-El tercer puzle no debe implementarse todavía.
+- datos, validador, estado y controlador del puzle (6 afirmaciones, 3
+  veredictos);
+- escena focal `archive-criteria` y su registro en `src/main.js`;
+- conexión de `archive-criteria-table` con la nueva escena, sin modificar
+  `src/content/worldMaps.js`;
+- subida de `SAVE_FORMAT_VERSION` de `3` a `4`, con migración explícita
+  desde `1`, `2` y `3`, manteniendo separadas las tres listas de formatos
+  descritas en «Estado global y persistencia»;
+- consecuencias narrativas idempotentes: banderas `investigationComplete`
+  y `epilogueUnlocked`, objetivo `start-epilogue`, entrada de cuaderno
+  `archive-final-evidence`.
+
+El tercer puzle **sí** debe implementarse en este bloque. Lo que queda
+fuera de alcance es el epílogo en sí (escena, `epilogueStarted`,
+`epilogueCompleted`), la personalización y Max — ver «Bloque en curso:
+Archive Criteria» más abajo.
 
 ---
 
-## Tercer puzle futuro
+## Bloque en curso: Archive Criteria
 
 Especificación:
 
@@ -536,25 +640,31 @@ Nombre:
 La pregunta correcta
 ```
 
-Concepto:
+Concepto: clasificar seis afirmaciones como `confirmed`, `contradicted` o
+`undecidable`, con solución única, cerrada en la especificación.
 
-Clasificar seis afirmaciones como:
+Decisiones ya aprobadas para este bloque (no reabrir sin autorización):
 
-- confirmada;
-- contradicha;
-- indecidible.
+- `SAVE_FORMAT_VERSION` pasa de `3` a `4`;
+- `objectiveId` resultante al resolver: `start-epilogue`, solo durante la
+  transición real `epilogueUnlocked: false -> true`;
+- banderas resultantes: `investigationComplete` y `epilogueUnlocked`
+  (reparables de forma independiente, ver `NEXT_CODEX_TASK.md`);
+- entrada de cuaderno resultante: `archive-final-evidence`;
+- las pistas viven en `ArchiveCriteriaHints.js`, mismo patrón que
+  `LibraryCatalogueHints.js`;
+- `src/content/worldMaps.js` no se modifica: `archive-criteria-table` ya
+  tiene todo lo necesario y el despacho es por `id`, no por `type`.
 
-Todavía no están implementados:
+Todavía **no** están implementados ni forman parte de este bloque:
 
-- datos;
-- validador;
-- estado;
-- controlador;
-- escena;
-- consecuencias;
-- epílogo.
+- el epílogo en sí (escena, `epilogueStarted`, `epilogueCompleted`);
+- personalización (`personalization.js`, marcadores);
+- Max;
+- cambios en P2.
 
-Se implementará por bloques después del mapa del Archivo.
+Se implementará por bloques posteriores, en el orden descrito en «Orden de
+trabajo posterior».
 
 ---
 
@@ -606,14 +716,15 @@ Max se implementará después del epílogo como compañero visual seguro, inicia
 
 ## Orden de trabajo posterior
 
-1. Consecuencias del catálogo y mapa del Archivo.
-2. Lógica pura del tercer puzle.
-3. Escena del tercer puzle.
-4. Resolución final y epílogo.
-5. Personalización centralizada.
-6. Max como compañero visual.
-7. Empaquetado Windows.
-8. QA y release final.
+1. ~~Consecuencias del catálogo y mapa del Archivo~~ — completado en
+   `7a0c13c`.
+2. Archive Criteria: lógica, escena e integración completas — **bloque
+   actual**, ver `NEXT_CODEX_TASK.md`.
+3. Resolución final y epílogo.
+4. Personalización centralizada.
+5. Max como compañero visual.
+6. Empaquetado Windows.
+7. QA y release final.
 
 ---
 
