@@ -7,6 +7,7 @@ export default defineConfig({
   reporter: [
     ["line"],
     ["html", { open: "never" }],
+    ["json", { outputFile: "test-results/results.json" }],
   ],
   use: {
     baseURL: "http://127.0.0.1:4173",
