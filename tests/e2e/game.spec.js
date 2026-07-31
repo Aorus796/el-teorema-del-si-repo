@@ -909,6 +909,227 @@ test("guarda y carga la partida en la Plaza del Axioma tras recargar la página"
   expect(errors).toEqual([]);
 });
 
+test("restaura un intento fallido del catálogo de la Biblioteca tras recargar la página", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 240, y: 155, facing: "up" },
+    world: {
+      currentMapId: "library",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 155, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "go-to-library",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.goto("/");
+
+  /*
+   * A diferencia de la mayoría de tests de este archivo, el fixture inicial
+   * se siembra con `page.evaluate` (no `page.addInitScript`) porque este
+   * test hace un `page.reload()` real: `addInitScript` se re-ejecuta en
+   * cada navegación posterior, incluida la del reload, y sobrescribiría en
+   * silencio el guardado real producido por "KeyK" antes de que el segundo
+   * "KeyL" pudiera leerlo. `page.evaluate` se ejecuta una sola vez, así que
+   * el localStorage sobrevive al reload sin intervención del test, que es
+   * justo lo que este test necesita demostrar.
+   */
+  await page.evaluate((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await canvas.evaluate((element) =>
+      element.toDataURL(),
+    );
+
+    await page.keyboard.press(key);
+
+    await expect
+      .poll(() => canvas.evaluate((element) => element.toDataURL()))
+      .not.toBe(previousFrame);
+  };
+
+  const readSave = async () => {
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+
+    return JSON.parse(savedRaw);
+  };
+
+  const titleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(titleFrame);
+
+  const worldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  // Selecciona el documento en el índice 0 ("C").
+  await pressAndWaitForFrameChange("KeyE");
+
+  // Mueve el foco al índice 1 ("M").
+  await pressAndWaitForFrameChange("ArrowRight");
+
+  // Intercambia los índices 0 y 1: el orden pasa a ["M","C","A","R","D"].
+  await pressAndWaitForFrameChange("KeyE");
+
+  // Revela la primera pista sin resolver el puzle.
+  await pressAndWaitForFrameChange("KeyQ");
+
+  // Confirma un orden que no cumple las seis reglas: la fase pasa a
+  // "failed", se consume un intento y el orden no cambia.
+  await pressAndWaitForFrameChange("Enter");
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .toBe(worldFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const firstSave = await readSave();
+
+  expect(firstSave.puzzles.libraryCatalogue.phase).toBe("failed");
+  expect(firstSave.puzzles.libraryCatalogue.order).toEqual([
+    "M",
+    "C",
+    "A",
+    "R",
+    "D",
+  ]);
+  expect(firstSave.puzzles.libraryCatalogue.hintsRead).toEqual([1]);
+  expect(firstSave.puzzles.libraryCatalogue.attemptCount).toBe(1);
+  expect(firstSave.puzzles.libraryCatalogue.failureCode).toBe(
+    "constraints_not_satisfied",
+  );
+
+  await page.reload();
+
+  const reloadedTitleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedTitleFrame);
+
+  const reloadedWorldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  // Reentra en el catálogo para confirmar que reconstruir un intento
+  // "failed" desde el guardado no lanza ninguna excepción.
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedWorldFrame);
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .toBe(reloadedWorldFrame);
+
+  /*
+   * Releer localStorage aquí solo demostraría que "KeyL" no lo tocó, no
+   * que GameState se restauró de verdad en memoria. Para probar la
+   * restauración real, se vuelve a guardar desde el estado recién cargado
+   * y se comprueban explícitamente los campos del puzle en el guardado
+   * resultante (sin comparar el objeto completo: `savedAt` cambia en cada
+   * guardado).
+   */
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const secondSave = await readSave();
+
+  expect(secondSave.puzzles.libraryCatalogue.phase).toBe("failed");
+  expect(secondSave.puzzles.libraryCatalogue.order).toEqual([
+    "M",
+    "C",
+    "A",
+    "R",
+    "D",
+  ]);
+  expect(secondSave.puzzles.libraryCatalogue.hintsRead).toEqual([1]);
+  expect(secondSave.puzzles.libraryCatalogue.attemptCount).toBe(1);
+  expect(secondSave.puzzles.libraryCatalogue.failureCode).toBe(
+    "constraints_not_satisfied",
+  );
+
+  expect(errors).toEqual([]);
+});
+
 const INVALID_SAVE_VARIANTS = [
   {
     name: "JSON inválido",
