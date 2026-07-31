@@ -880,9 +880,31 @@ test("guarda y carga la partida en la Plaza del Axioma tras recargar la página"
     .poll(() => canvas.evaluate((element) => element.toDataURL()))
     .not.toBe(reloadedTitleFrame);
 
+  /*
+   * Releer localStorage aquí solo demostraría que "KeyL" no lo tocó, no
+   * que GameState se restauró de verdad en memoria. Para probar la
+   * restauración real, se vuelve a guardar desde el estado recién
+   * cargado y se comprueban explícitamente los campos relevantes del
+   * guardado resultante (sin comparar el objeto completo: `savedAt`
+   * cambia en cada guardado).
+   */
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
   const secondSave = await readSave();
 
-  expect(secondSave).toEqual(firstSave);
+  expect(secondSave.world.currentMapId).toBe("axiom-plaza");
+  expect(secondSave.world.playerByMap["axiom-plaza"]).toEqual({
+    x: 400,
+    y: 350,
+    facing: "left",
+  });
+  expect(secondSave.flags.preparationsBoardRead).toBe(true);
+  expect(secondSave.flags.brideNoteReceived).toBe(false);
+  expect(secondSave.flags.examinedPrototypeSign).toBe(false);
+  expect(secondSave.flags.sevenBridgesUnlocked).toBe(false);
+  expect(secondSave.objectiveId).toBe("speak-to-corolaria");
 
   expect(errors).toEqual([]);
 });
