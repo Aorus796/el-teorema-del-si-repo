@@ -45,6 +45,191 @@ function cloneInitialArchiveCriteriaData() {
   };
 }
 
+const LIBRARY_CATALOGUE_INVALID_CASES = [
+  (saved) => {
+    delete saved.puzzles.libraryCatalogue;
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue = null;
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue = [];
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue = "invalid";
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue = 42;
+  },
+  (saved) => {
+    delete saved.puzzles.libraryCatalogue.hintsRead;
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.selectedIndex = 0;
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.order = ["C", "M"];
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.phase = "unknown";
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.hintsRead = [1, 3];
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.attemptCount = -1;
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.attemptCount = 1.5;
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.attemptCount = "1";
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.failureCode = "unknown";
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.phase =
+      LIBRARY_CATALOGUE_PHASE.FAILED;
+    saved.puzzles.libraryCatalogue.failureCode = null;
+  },
+  (saved) => {
+    saved.puzzles.libraryCatalogue.phase =
+      LIBRARY_CATALOGUE_PHASE.SOLVED;
+    saved.puzzles.libraryCatalogue.order = [
+      "C",
+      "M",
+      "A",
+      "R",
+      "D",
+    ];
+  },
+];
+
+const ARCHIVE_CRITERIA_INVALID_CASES = [
+  (saved) => {
+    delete saved.puzzles.archiveCriteria;
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria = null;
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria = [];
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria = "invalid";
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria = 42;
+  },
+  (saved) => {
+    delete saved.puzzles.archiveCriteria.hintsRead;
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.focusedClaimIndex = 0;
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.verdicts = {
+      "voluntary-entry": null,
+    };
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.verdicts["voluntary-entry"] =
+      "maybe";
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.phase = "unknown";
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.hintsRead = [1, 3];
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.attemptCount = -1;
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.attemptCount = 1.5;
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.attemptCount = "1";
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.failureCode = "unknown";
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.phase =
+      ARCHIVE_CRITERIA_PHASE.FAILED;
+    saved.puzzles.archiveCriteria.failureCode = null;
+    saved.puzzles.archiveCriteria.attemptCount = 1;
+  },
+  (saved) => {
+    saved.puzzles.archiveCriteria.phase =
+      ARCHIVE_CRITERIA_PHASE.SOLVED;
+    saved.puzzles.archiveCriteria.attemptCount = 1;
+    // verdicts se quedan en el estado inicial (todo null): no es la solución.
+  },
+];
+
+function captureObservableState(state) {
+  return {
+    scene: state.scene,
+    world: structuredClone(state.world),
+    player: structuredClone(state.player),
+    flags: structuredClone(state.flags),
+    objectiveId: state.objectiveId,
+    notebook: structuredClone(state.notebook),
+    puzzles: {
+      p2: state.puzzles.p2.toSaveData(),
+      libraryCatalogue: state.puzzles.libraryCatalogue.toSaveData(),
+      archiveCriteria: state.puzzles.archiveCriteria.toSaveData(),
+    },
+  };
+}
+
+/*
+ * Un GameState con progreso real no trivial, construido mediante un
+ * restore() válido previo: mapa distinto del inicial, banderas activas,
+ * cuaderno con entradas y puzzles.p2 con progreso. Sirve para descartar
+ * que la atomicidad de restore() solo funcione por coincidencia con los
+ * valores por defecto de un GameState recién construido.
+ */
+function buildProgressedState() {
+  const seed = new GameState();
+  seed.puzzles.p2.selectClosedBridge("B1");
+  seed.puzzles.p2.startTraversal();
+  seed.puzzles.p2.registerStep({
+    nodeId: "R",
+    bridgeId: "B2",
+  });
+
+  const saved = seed.toSaveData();
+  saved.scene = "world";
+  saved.world.currentMapId = "library";
+  saved.world.playerByMap.library = { x: 10, y: 20, facing: "left" };
+  saved.flags.examinedPrototypeSign = true;
+  saved.flags.preparationsBoardRead = true;
+  saved.flags.brideNoteReceived = true;
+  saved.flags.sevenBridgesUnlocked = true;
+  saved.flags.p2EvidenceFound = true;
+  saved.flags.libraryObjectiveUnlocked = true;
+  saved.objectiveId = "go-to-library";
+  saved.notebook = [
+    {
+      id: "bride-note",
+      title: "Nota encontrada en la habitación",
+      text: "Texto conservado.",
+    },
+    {
+      id: "library-clue",
+      title: "La marca de la biblioteca",
+      text: "Texto conservado.",
+    },
+  ];
+
+  const state = new GameState();
+  state.restore(saved);
+  return state;
+}
+
 test("GameState no duplica entradas del cuaderno", () => {
   const state = new GameState();
 
@@ -308,68 +493,7 @@ test("GameState restaura las cuatro fases válidas del catálogo", () => {
 });
 
 test("GameState rechaza catálogos ausentes o inválidos en el formato vigente", () => {
-  const invalidCases = [
-    (saved) => {
-      delete saved.puzzles.libraryCatalogue;
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue = null;
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue = [];
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue = "invalid";
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue = 42;
-    },
-    (saved) => {
-      delete saved.puzzles.libraryCatalogue.hintsRead;
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.selectedIndex = 0;
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.order = ["C", "M"];
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.phase = "unknown";
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.hintsRead = [1, 3];
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.attemptCount = -1;
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.attemptCount = 1.5;
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.attemptCount = "1";
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.failureCode = "unknown";
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.phase =
-        LIBRARY_CATALOGUE_PHASE.FAILED;
-      saved.puzzles.libraryCatalogue.failureCode = null;
-    },
-    (saved) => {
-      saved.puzzles.libraryCatalogue.phase =
-        LIBRARY_CATALOGUE_PHASE.SOLVED;
-      saved.puzzles.libraryCatalogue.order = [
-        "C",
-        "M",
-        "A",
-        "R",
-        "D",
-      ];
-    },
-  ];
-
-  for (const makeInvalid of invalidCases) {
+  for (const makeInvalid of LIBRARY_CATALOGUE_INVALID_CASES) {
     const saved = new GameState().toSaveData();
     makeInvalid(saved);
 
@@ -382,70 +506,7 @@ test("GameState rechaza catálogos ausentes o inválidos en el formato vigente",
 });
 
 test("GameState rechaza archiveCriteria ausente o inválido en el formato vigente", () => {
-  const invalidCases = [
-    (saved) => {
-      delete saved.puzzles.archiveCriteria;
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria = null;
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria = [];
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria = "invalid";
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria = 42;
-    },
-    (saved) => {
-      delete saved.puzzles.archiveCriteria.hintsRead;
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.focusedClaimIndex = 0;
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.verdicts = {
-        "voluntary-entry": null,
-      };
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.verdicts["voluntary-entry"] =
-        "maybe";
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.phase = "unknown";
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.hintsRead = [1, 3];
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.attemptCount = -1;
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.attemptCount = 1.5;
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.attemptCount = "1";
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.failureCode = "unknown";
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.phase =
-        ARCHIVE_CRITERIA_PHASE.FAILED;
-      saved.puzzles.archiveCriteria.failureCode = null;
-      saved.puzzles.archiveCriteria.attemptCount = 1;
-    },
-    (saved) => {
-      saved.puzzles.archiveCriteria.phase =
-        ARCHIVE_CRITERIA_PHASE.SOLVED;
-      saved.puzzles.archiveCriteria.attemptCount = 1;
-      // verdicts se quedan en el estado inicial (todo null): no es la solución.
-    },
-  ];
-
-  for (const makeInvalid of invalidCases) {
+  for (const makeInvalid of ARCHIVE_CRITERIA_INVALID_CASES) {
     const saved = new GameState().toSaveData();
     makeInvalid(saved);
 
@@ -885,4 +946,78 @@ test("restaurar un archiveCriteria solved con epilogueUnlocked ya true conserva 
 
   assert.equal(restored.objectiveId, "some-later-objective");
   assert.equal(restored.notebook.length, 1);
+});
+
+test("GameState.restore() no muta el receptor cuando el catálogo es inválido (estado por defecto)", () => {
+  for (const makeInvalid of LIBRARY_CATALOGUE_INVALID_CASES) {
+    const saved = new GameState().toSaveData();
+    makeInvalid(saved);
+
+    const state = new GameState();
+    const before = captureObservableState(state);
+
+    assert.throws(() => state.restore(saved), /catálogo/i);
+    assert.deepEqual(captureObservableState(state), before);
+  }
+});
+
+test("GameState.restore() no muta el receptor cuando el catálogo es inválido (progreso previo real)", () => {
+  for (const makeInvalid of LIBRARY_CATALOGUE_INVALID_CASES) {
+    const saved = new GameState().toSaveData();
+    makeInvalid(saved);
+
+    const state = buildProgressedState();
+    const before = captureObservableState(state);
+
+    assert.throws(() => state.restore(saved), /catálogo/i);
+    assert.deepEqual(captureObservableState(state), before);
+  }
+});
+
+test("GameState.restore() no muta el receptor cuando archiveCriteria es inválido (estado por defecto)", () => {
+  for (const makeInvalid of ARCHIVE_CRITERIA_INVALID_CASES) {
+    const saved = new GameState().toSaveData();
+    makeInvalid(saved);
+
+    const state = new GameState();
+    const before = captureObservableState(state);
+
+    assert.throws(() => state.restore(saved), /Archivo/i);
+    assert.deepEqual(captureObservableState(state), before);
+  }
+});
+
+test("GameState.restore() no muta el receptor cuando archiveCriteria es inválido (progreso previo real)", () => {
+  for (const makeInvalid of ARCHIVE_CRITERIA_INVALID_CASES) {
+    const saved = new GameState().toSaveData();
+    makeInvalid(saved);
+
+    const state = buildProgressedState();
+    const before = captureObservableState(state);
+
+    assert.throws(() => state.restore(saved), /Archivo/i);
+    assert.deepEqual(captureObservableState(state), before);
+  }
+});
+
+test("GameState.restore() no muta el receptor cuando formatVersion no es soportado (estado por defecto)", () => {
+  const state = new GameState();
+  const before = captureObservableState(state);
+
+  assert.throws(
+    () => state.restore({ formatVersion: 999 }),
+    /no es compatible/,
+  );
+  assert.deepEqual(captureObservableState(state), before);
+});
+
+test("GameState.restore() no muta el receptor cuando formatVersion no es soportado (progreso previo real)", () => {
+  const state = buildProgressedState();
+  const before = captureObservableState(state);
+
+  assert.throws(
+    () => state.restore({ formatVersion: 999 }),
+    /no es compatible/,
+  );
+  assert.deepEqual(captureObservableState(state), before);
 });
