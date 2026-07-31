@@ -11,6 +11,11 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 - Catálogo de once puzles principales.
 - Estructura inicial del repositorio.
 - Plantillas de incidencias y pull requests.
+- Capa de automatización con Claude Code: `CLAUDE.md`, agentes
+  especializados (`planner`, `developer`, `qa`, `reviewer`), skill
+  `autopilot`, quality gate único `npm run verify`, workflow de CI en
+  GitHub Actions y hooks de protección en `.claude/settings.json`. Ver
+  [`docs/development/AUTOMATION.md`](docs/development/AUTOMATION.md).
 
 ### Pendiente
 

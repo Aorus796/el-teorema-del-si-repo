@@ -1,0 +1,56 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "Bash(git branch -D*)",
+      "Edit(private/**)",
+      "Write(private/**)",
+      "Edit(combination.txt)",
+      "Write(combination.txt)",
+      "Edit(.env)",
+      "Write(.env)",
+      "Edit(.env.*)",
+      "Write(.env.*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \".claude/hooks/guard-bash.ps1\"",
+            "timeout": 10,
+            "statusMessage": "Comprobando politica de Git/npm..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \".claude/hooks/guard-edit.ps1\"",
+            "timeout": 10,
+            "statusMessage": "Comprobando rutas protegidas..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \".claude/hooks/notify-stop.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

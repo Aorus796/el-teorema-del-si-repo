@@ -17,6 +17,7 @@ El concepto, la historia, el mundo, los personajes, el mapa, las mecánicas, los
 - [Plan de producción](docs/production/ROADMAP.md)
 - [Registro de decisiones](docs/decisions/README.md)
 - [Historial de cambios](CHANGELOG.md)
+- [Sistema de automatización con Claude Code](docs/development/AUTOMATION.md)
 
 ## Próximo hito
 
