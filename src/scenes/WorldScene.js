@@ -30,6 +30,7 @@ const OBJECTIVE_LABELS = {
   "go-to-library": "Dirígete a la Biblioteca del Margen",
   "inspect-archive-criteria-table":
     "Entra en el Archivo y examina la mesa de criterios.",
+  "start-epilogue": "La investigación ha terminado.",
 };
 
 export class WorldScene {
@@ -186,6 +187,11 @@ export class WorldScene {
 
     if (object.id === "library-silogio") {
       this.interactWithSilogio();
+      return;
+    }
+
+    if (object.id === "archive-criteria-table") {
+      this.interactWithArchiveCriteriaTable();
       return;
     }
 
@@ -370,6 +376,11 @@ export class WorldScene {
   interactWithSilogio() {
     this.syncPlayerState();
     this.scenes.change("library-catalogue");
+  }
+
+  interactWithArchiveCriteriaTable() {
+    this.syncPlayerState();
+    this.scenes.change("archive-criteria");
   }
 
   interactWithBlockedExit(object) {

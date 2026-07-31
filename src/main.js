@@ -10,6 +10,9 @@ import { P2BridgesScene } from "./scenes/P2BridgesScene.js";
 import {
   LibraryCatalogueScene,
 } from "./scenes/LibraryCatalogueScene.js";
+import {
+  ArchiveCriteriaScene,
+} from "./scenes/ArchiveCriteriaScene.js";
 
 const canvas = document.querySelector("#game-canvas");
 if (!(canvas instanceof HTMLCanvasElement)) {
@@ -40,6 +43,11 @@ scenes.register(
 scenes.register(
   "library-catalogue",
   new LibraryCatalogueScene({ scenes, input, state, ui }),
+);
+
+scenes.register(
+  "archive-criteria",
+  new ArchiveCriteriaScene({ scenes, input, state, ui }),
 );
 
 const game = new Game({

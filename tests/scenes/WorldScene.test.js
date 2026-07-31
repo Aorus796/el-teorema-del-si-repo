@@ -89,6 +89,20 @@ class FakeStorage {
   }
 }
 
+class FakeCanvasContext {
+  constructor() {
+    this.texts = [];
+  }
+
+  fillRect() {}
+
+  strokeRect() {}
+
+  fillText(text) {
+    this.texts.push(String(text));
+  }
+}
+
 test("el acceso bloqueado no cambia progreso ni mapa", () => {
   const setup = createWorldAt("seven-bridges-walk");
   const exit = findObject(
@@ -263,7 +277,7 @@ test("la Biblioteca y el Archivo conservan posiciones y evitan bucles", () => {
   );
 });
 
-test("la mesa de criterios no altera el estado ni abre un puzle", () => {
+test("interactuar con la mesa de criterios cambia a archive-criteria sin modificar estado", () => {
   const setup = createWorldAt("archive");
   const table = findObject("archive", "archive-criteria-table");
   const flagsBefore = { ...setup.state.flags };
@@ -271,9 +285,23 @@ test("la mesa de criterios no altera el estado ni abre un puzle", () => {
   const notebookBefore = structuredClone(setup.state.notebook);
   const catalogueBefore =
     setup.state.puzzles.libraryCatalogue.toSaveData();
+  const archiveCriteriaBefore =
+    setup.state.puzzles.archiveCriteria.toSaveData();
+  setup.scene.player.x = 300;
+  setup.scene.player.y = 250;
+  setup.scene.player.facing = "up";
 
   setup.scene.interact(table);
 
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "archive-criteria", payload: {} },
+  ]);
+  assert.deepEqual(setup.state.getPlayerState("archive"), {
+    x: 300,
+    y: 250,
+    facing: "up",
+  });
+  assert.equal(setup.ui.dialogue, null);
   assert.deepEqual(setup.state.flags, flagsBefore);
   assert.equal(setup.state.objectiveId, objectiveBefore);
   assert.deepEqual(setup.state.notebook, notebookBefore);
@@ -281,8 +309,24 @@ test("la mesa de criterios no altera el estado ni abre un puzle", () => {
     setup.state.puzzles.libraryCatalogue.toSaveData(),
     catalogueBefore,
   );
-  assert.deepEqual(setup.scenes.changes, []);
-  assert.equal(setup.ui.dialogue, null);
+  assert.deepEqual(
+    setup.state.puzzles.archiveCriteria.toSaveData(),
+    archiveCriteriaBefore,
+  );
+});
+
+test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {
+  const setup = createWorldAt("archive");
+  setup.state.objectiveId = "start-epilogue";
+  const context = new FakeCanvasContext();
+
+  assert.doesNotThrow(() => setup.scene.render(context));
+  assert.equal(
+    context.texts.some((text) =>
+      text.includes("La investigación ha terminado."),
+    ),
+    true,
+  );
 });
 
 test("volver del catálogo conserva mapa, posición y datos persistentes", () => {
