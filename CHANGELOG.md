@@ -37,6 +37,12 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   desde la entrada hasta el molino, y comprueba el avance narrativo
   resultante (objetivo `inspect-p2-evidence`, entrada de cuaderno
   `p2-bridges-solution` y el guardado persistido en `localStorage`).
+- Prueba Playwright que guarda y carga la partida en la Plaza del Axioma,
+  la cuarta y última de las localizaciones obligatorias sin esta
+  cobertura: siembra un guardado, lo carga, guarda de nuevo con "K", hace
+  el primer `page.reload()` real del repositorio y vuelve a cargar con
+  "L", comprobando que el `localStorage` sobrevive intacto al ciclo
+  completo de guardar → recargar la página → cargar.
 
 ### Corregido
 
