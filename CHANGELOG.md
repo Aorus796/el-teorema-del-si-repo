@@ -17,6 +17,16 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   GitHub Actions y hooks de protección en `.claude/settings.json`. Ver
   [`docs/development/AUTOMATION.md`](docs/development/AUTOMATION.md).
 
+### Añadido
+
+- Prueba Playwright que resuelve realmente el tercer puzle del Archivo
+  ("La pregunta correcta") con la secuencia de teclado completa, en vez
+  de solo abrir y cerrar la escena: clasifica las seis afirmaciones,
+  confirma, y comprueba el avance narrativo resultante (banderas
+  `investigationComplete`/`epilogueUnlocked`, objetivo `start-epilogue`,
+  entrada de cuaderno `archive-final-evidence` y el guardado persistido
+  en `localStorage`).
+
 ### Corregido
 
 - El manejo de guardados inválidos o incompatibles al cargar ("L" en el

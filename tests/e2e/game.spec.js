@@ -169,6 +169,200 @@ test("entra en la escena archive-criteria desde un guardado existente y vuelve a
   expect(errors).toEqual([]);
 });
 
+test("resuelve el tercer puzle del Archivo con teclado y desbloquea el epílogo", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 192, y: 145, facing: "up" },
+    world: {
+      currentMapId: "archive",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "inspect-archive-criteria-table",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["A", "D", "R", "C", "M"],
+        phase: "solved",
+        hintsRead: [],
+        attemptCount: 1,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await canvas.evaluate((element) =>
+      element.toDataURL(),
+    );
+
+    await page.keyboard.press(key);
+
+    await expect
+      .poll(() => canvas.evaluate((element) => element.toDataURL()))
+      .not.toBe(previousFrame);
+  };
+
+  const initialFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(initialFrame);
+
+  const worldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  // voluntary-entry (foco inicial): null -> confirmed
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  await pressAndWaitForFrameChange("ArrowRight");
+
+  // followed-trail: null -> confirmed
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  await pressAndWaitForFrameChange("ArrowRight");
+
+  // never-disagreed: null -> confirmed -> contradicted
+  await pressAndWaitForFrameChange("ArrowDown");
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  await pressAndWaitForFrameChange("ArrowRight");
+
+  // someone-refuses-now: null -> confirmed -> contradicted
+  await pressAndWaitForFrameChange("ArrowDown");
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  await pressAndWaitForFrameChange("ArrowRight");
+
+  // present-choice: null -> confirmed
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  await pressAndWaitForFrameChange("ArrowRight");
+
+  // universal-future: null -> confirmed -> contradicted -> undecidable
+  await pressAndWaitForFrameChange("ArrowDown");
+  await pressAndWaitForFrameChange("ArrowDown");
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  await page.keyboard.press("Enter");
+
+  const toast = page.locator("#toast");
+
+  await expect(toast).not.toBeEmpty();
+  await expect(toast).toHaveText("La investigación ha terminado");
+
+  const solvedSceneFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(solvedSceneFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const savedRaw = await page.evaluate(() =>
+    localStorage.getItem("el-teorema-del-si.save.v1"),
+  );
+  const savedData = JSON.parse(savedRaw);
+
+  expect(savedData.flags.investigationComplete).toBe(true);
+  expect(savedData.flags.epilogueUnlocked).toBe(true);
+  expect(savedData.objectiveId).toBe("start-epilogue");
+  expect(savedData.puzzles.archiveCriteria.phase).toBe("solved");
+  expect(savedData.puzzles.archiveCriteria.attemptCount).toBe(1);
+  expect(savedData.puzzles.archiveCriteria.verdicts).toEqual({
+    "voluntary-entry": "confirmed",
+    "followed-trail": "confirmed",
+    "never-disagreed": "contradicted",
+    "someone-refuses-now": "contradicted",
+    "present-choice": "confirmed",
+    "universal-future": "undecidable",
+  });
+  expect(
+    savedData.notebook.some(
+      (entry) => entry.id === "archive-final-evidence",
+    ),
+  ).toBe(true);
+
+  const notebook = page.locator("#notebook-panel");
+
+  await page.keyboard.press("KeyQ");
+  await expect(notebook).toBeVisible();
+
+  const entryTitle = page.locator(
+    "#notebook-content article.notebook-entry h2",
+    { hasText: "La pregunta correcta" },
+  );
+
+  await expect(entryTitle).toHaveText("La pregunta correcta");
+
+  await page.keyboard.press("KeyQ");
+  await expect(notebook).toBeHidden();
+
+  expect(errors).toEqual([]);
+});
+
 const INVALID_SAVE_VARIANTS = [
   {
     name: "JSON inválido",
