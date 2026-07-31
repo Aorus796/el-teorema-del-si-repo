@@ -138,7 +138,7 @@ jugables.
 
 ### Estado y guardado
 
-- [ ] Se puede guardar y cargar en cada localización obligatoria.
+- [x] Se puede guardar y cargar en cada localización obligatoria.
 - [ ] Se conservan mapa, posición, banderas, objetivo, cuaderno, pistas y
   estado completo de los tres puzles.
 - [ ] Un intento incompleto de cada puzle puede restaurarse o reiniciarse de

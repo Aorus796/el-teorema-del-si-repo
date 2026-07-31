@@ -37,6 +37,15 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   desde la entrada hasta el molino, y comprueba el avance narrativo
   resultante (objetivo `inspect-p2-evidence`, entrada de cuaderno
   `p2-bridges-solution` y el guardado persistido en `localStorage`).
+- Prueba Playwright que guarda y carga la partida en la Plaza del Axioma,
+  la cuarta y última de las localizaciones obligatorias sin esta
+  cobertura: siembra un guardado, lo carga, guarda de nuevo con "K", hace
+  el primer `page.reload()` real del repositorio, vuelve a cargar con "L"
+  y guarda una segunda vez, comprobando en el guardado resultante que
+  mapa, posición, orientación, banderas relevantes y objetivo coinciden
+  con lo esperado — demostrando que `GameState` se restauró de verdad en
+  memoria tras el ciclo completo de guardar → recargar la página →
+  cargar, no solo que el `localStorage` quedó intacto.
 
 ### Corregido
 

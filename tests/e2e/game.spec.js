@@ -754,6 +754,161 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
   expect(errors).toEqual([]);
 });
 
+test("guarda y carga la partida en la Plaza del Axioma tras recargar la página", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 400, y: 350, facing: "left" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 400, y: 350, facing: "left" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: false,
+      preparationsBoardRead: true,
+      brideNoteReceived: false,
+      sevenBridgesUnlocked: false,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "speak-to-corolaria",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.goto("/");
+
+  /*
+   * A diferencia de los demás tests de este archivo, el fixture inicial se
+   * siembra con `page.evaluate` (no `page.addInitScript`) porque este test
+   * hace un `page.reload()` real: `addInitScript` se re-ejecuta en cada
+   * navegación posterior, incluida la del reload, y sobrescribiría en
+   * silencio el guardado real producido por "KeyK" antes de que el
+   * segundo "KeyL" pudiera leerlo. `page.evaluate` se ejecuta una sola
+   * vez, así que el localStorage sobrevive al reload sin intervención del
+   * test, que es justo lo que este test necesita demostrar.
+   */
+  await page.evaluate((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+
+  const titleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(titleFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const readSave = async () => {
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+
+    return JSON.parse(savedRaw);
+  };
+
+  const firstSave = await readSave();
+
+  expect(firstSave.world.currentMapId).toBe("axiom-plaza");
+  expect(firstSave.world.playerByMap["axiom-plaza"]).toEqual({
+    x: 400,
+    y: 350,
+    facing: "left",
+  });
+  expect(firstSave.flags.preparationsBoardRead).toBe(true);
+  expect(firstSave.flags.brideNoteReceived).toBe(false);
+  expect(firstSave.flags.examinedPrototypeSign).toBe(false);
+  expect(firstSave.flags.sevenBridgesUnlocked).toBe(false);
+  expect(firstSave.objectiveId).toBe("speak-to-corolaria");
+
+  await page.reload();
+
+  const reloadedTitleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedTitleFrame);
+
+  /*
+   * Releer localStorage aquí solo demostraría que "KeyL" no lo tocó, no
+   * que GameState se restauró de verdad en memoria. Para probar la
+   * restauración real, se vuelve a guardar desde el estado recién
+   * cargado y se comprueban explícitamente los campos relevantes del
+   * guardado resultante (sin comparar el objeto completo: `savedAt`
+   * cambia en cada guardado).
+   */
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const secondSave = await readSave();
+
+  expect(secondSave.world.currentMapId).toBe("axiom-plaza");
+  expect(secondSave.world.playerByMap["axiom-plaza"]).toEqual({
+    x: 400,
+    y: 350,
+    facing: "left",
+  });
+  expect(secondSave.flags.preparationsBoardRead).toBe(true);
+  expect(secondSave.flags.brideNoteReceived).toBe(false);
+  expect(secondSave.flags.examinedPrototypeSign).toBe(false);
+  expect(secondSave.flags.sevenBridgesUnlocked).toBe(false);
+  expect(secondSave.objectiveId).toBe("speak-to-corolaria");
+
+  expect(errors).toEqual([]);
+});
+
 const INVALID_SAVE_VARIANTS = [
   {
     name: "JSON inválido",
