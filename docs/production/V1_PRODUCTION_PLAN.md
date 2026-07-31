@@ -145,7 +145,7 @@ jugables.
   forma segura según su diseño aprobado.
 - [ ] Los guardados compatibles de `v0.5.0` se restauran mediante migración
   explícita y probada si cambia el formato.
-- [ ] Un guardado inválido o incompatible falla de forma controlada y no
+- [x] Un guardado inválido o incompatible falla de forma controlada y no
   corrompe otro progreso.
 
 ### Calidad y entrega

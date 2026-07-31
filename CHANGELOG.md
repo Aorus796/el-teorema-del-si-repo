@@ -17,6 +17,18 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   GitHub Actions y hooks de protección en `.claude/settings.json`. Ver
   [`docs/development/AUTOMATION.md`](docs/development/AUTOMATION.md).
 
+### Corregido
+
+- El manejo de guardados inválidos o incompatibles al cargar ("L" en el
+  título y en el mundo) es ahora atómico y no propaga excepciones sin
+  capturar: `GameState.restore()` construye escena, mundo, jugador,
+  banderas, objetivo, cuaderno y los tres puzles en variables locales
+  antes de mutar el estado, de modo que un guardado con JSON corrupto,
+  `formatVersion` incompatible o datos de catálogo/Archivo inválidos deja
+  el progreso previo intacto; `WorldScene.load()` captura cualquier error
+  de `storage.load()` o `state.restore()` y muestra un aviso claro en
+  lugar de romper el juego.
+
 ### Pendiente
 
 - Prototipos de papel de P2, P6 y P10.

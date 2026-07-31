@@ -82,10 +82,22 @@ class FakeUi {
 }
 
 class FakeStorage {
-  save() {}
+  constructor({ loadResult = null, loadError = null } = {}) {
+    this.loadResult = loadResult;
+    this.loadError = loadError;
+    this.savedData = null;
+  }
+
+  save(data) {
+    this.savedData = data;
+  }
 
   load() {
-    return null;
+    if (this.loadError) {
+      throw this.loadError;
+    }
+
+    return this.loadResult;
   }
 }
 
@@ -385,6 +397,187 @@ test("volver del catálogo conserva mapa, posición y datos persistentes", () =>
   assert.equal(catalogueScene.focusedIndex, 0);
   assert.equal(catalogueScene.selectedIndex, null);
 });
+
+test("load() sin guardado existente conserva el aviso actual y devuelve false", () => {
+  const storage = new FakeStorage();
+  const { scene, ui } = createScene(storage);
+
+  const result = scene.load();
+
+  assert.equal(result, false);
+  assert.deepEqual(ui.toasts, ["No existe una partida guardada"]);
+});
+
+test("load() con datos válidos restaura el estado y devuelve true", () => {
+  const seed = new GameState();
+  seed.changeMap("library", {
+    x: 10,
+    y: 20,
+    facing: "left",
+  });
+  const saved = seed.toSaveData();
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, ui, state } = createScene(storage);
+
+  const result = scene.load();
+
+  assert.equal(result, true);
+  assert.equal(state.world.currentMapId, "library");
+  assert.deepEqual(state.getPlayerState("library"), {
+    x: 10,
+    y: 20,
+    facing: "left",
+  });
+  assert.deepEqual(ui.toasts, []);
+});
+
+test("load() con storage.load() que lanza no propaga, registra el error y avisa sin confundirlo con otros mensajes", () => {
+  withMockedConsoleError((consoleErrorCalls) => {
+    const thrownError = new Error("JSON inválido");
+    const storage = new FakeStorage({ loadError: thrownError });
+    const { scene, ui } = createScene(storage);
+
+    let result;
+    assert.doesNotThrow(() => {
+      result = scene.load();
+    });
+
+    assert.equal(result, false);
+    assert.equal(consoleErrorCalls.length, 1);
+    assert.equal(consoleErrorCalls[0][0], thrownError);
+    assert.equal(ui.toasts.length, 1);
+    assert.notEqual(ui.toasts[0], "No existe una partida guardada");
+    assert.notEqual(ui.toasts[0], "Partida cargada");
+    assert.ok(ui.toasts[0].length > 0);
+  });
+});
+
+test("load() con formatVersion no soportado no propaga y avisa del fallo", () => {
+  withMockedConsoleError((consoleErrorCalls) => {
+    const saved = new GameState().toSaveData();
+    saved.formatVersion = 999;
+    const storage = new FakeStorage({ loadResult: saved });
+    const { scene, ui } = createScene(storage);
+
+    let result;
+    assert.doesNotThrow(() => {
+      result = scene.load();
+    });
+
+    assert.equal(result, false);
+    assert.equal(consoleErrorCalls.length, 1);
+    assert.equal(ui.toasts.length, 1);
+    assert.notEqual(ui.toasts[0], "No existe una partida guardada");
+    assert.notEqual(ui.toasts[0], "Partida cargada");
+  });
+});
+
+test("load() con libraryCatalogue o archiveCriteria corruptos (formatVersion válido) no propaga y avisa del fallo", () => {
+  const corruptionCases = [
+    (saved) => {
+      delete saved.puzzles.libraryCatalogue.hintsRead;
+    },
+    (saved) => {
+      delete saved.puzzles.archiveCriteria.hintsRead;
+    },
+  ];
+
+  for (const corrupt of corruptionCases) {
+    withMockedConsoleError((consoleErrorCalls) => {
+      const saved = new GameState().toSaveData();
+      corrupt(saved);
+      const storage = new FakeStorage({ loadResult: saved });
+      const { scene, ui } = createScene(storage);
+
+      let result;
+      assert.doesNotThrow(() => {
+        result = scene.load();
+      });
+
+      assert.equal(result, false);
+      assert.equal(consoleErrorCalls.length, 1);
+      assert.equal(ui.toasts.length, 1);
+      assert.notEqual(ui.toasts[0], "No existe una partida guardada");
+      assert.notEqual(ui.toasts[0], "Partida cargada");
+    });
+  }
+});
+
+test("update() con tecla load no añade el toast de éxito cuando load() falla", () => {
+  withMockedConsoleError((consoleErrorCalls) => {
+    const thrownError = new Error("Fallo simulado");
+    const storage = new FakeStorage({ loadError: thrownError });
+    const { scene, ui, input } = createScene(storage);
+    scene.enter();
+
+    input.press("load");
+
+    assert.doesNotThrow(() => scene.update(0));
+    assert.equal(consoleErrorCalls.length, 1);
+    assert.equal(ui.toasts.includes("Partida cargada"), false);
+  });
+});
+
+test("update() con tecla load y load() exitoso conserva el comportamiento actual", () => {
+  const saved = new GameState().toSaveData();
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, ui, input } = createScene(storage);
+  scene.enter();
+
+  input.press("load");
+  scene.update(0);
+
+  assert.equal(ui.toasts.at(-1), "Partida cargada");
+});
+
+test("enter({ restoreFromState: true }) con load() fallido no lanza y deja el mundo jugable", () => {
+  withMockedConsoleError((consoleErrorCalls) => {
+    const thrownError = new Error("Fallo simulado");
+    const storage = new FakeStorage({ loadError: thrownError });
+    const { scene, ui } = createScene(storage);
+
+    assert.doesNotThrow(() =>
+      scene.enter({ restoreFromState: true }),
+    );
+
+    assert.equal(consoleErrorCalls.length, 1);
+    assert.ok(scene.map);
+    assert.ok(scene.player);
+    assert.ok(scene.camera);
+    assert.equal(ui.toasts.length, 1);
+    assert.notEqual(ui.toasts[0], "Partida cargada");
+  });
+});
+
+function createScene(storage) {
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const state = new GameState();
+  const ui = new FakeUi();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage,
+    state,
+    ui,
+  });
+
+  return { input, scenes, state, ui, scene };
+}
+
+function withMockedConsoleError(run) {
+  const originalConsoleError = console.error;
+  const consoleErrorCalls = [];
+  console.error = (...args) => {
+    consoleErrorCalls.push(args);
+  };
+
+  try {
+    run(consoleErrorCalls);
+  } finally {
+    console.error = originalConsoleError;
+  }
+}
 
 function createWorldAt(
   mapId,

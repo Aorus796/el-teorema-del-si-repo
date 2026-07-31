@@ -119,12 +119,7 @@ export class GameState {
   }
 
   getPlayerState(mapId = this.world.currentMapId) {
-    const storedState =
-      this.world.playerByMap[mapId] ??
-      DEFAULT_PLAYER_BY_MAP[mapId] ??
-      DEFAULT_PLAYER_BY_MAP[DEFAULT_MAP_ID];
-
-    return { ...storedState };
+    return readPlayerStateFromWorld(this.world, mapId);
   }
 
   setPlayerState(playerState, mapId = this.world.currentMapId) {
@@ -234,17 +229,23 @@ export class GameState {
       throw new Error("La version de la partida guardada no es compatible.");
     }
 
-    this.scene =
+    /*
+     * Construye todos los campos derivados en variables locales antes de
+     * mutar `this`. Cualquiera de estas llamadas puede lanzar (formato de
+     * catálogo/Archivo corrupto, por ejemplo); si eso ocurre, `this` no
+     * debe haberse tocado todavía, para que restore() sea atómico.
+     */
+    const scene =
       data.scene === "dev-world"
         ? "world"
         : typeof data.scene === "string"
           ? data.scene
           : "world";
 
-    this.world = restoreWorldState(data);
-    this.player = this.getPlayerState();
+    const world = restoreWorldState(data);
+    const player = readPlayerStateFromWorld(world);
 
-    this.flags = {
+    const flags = {
       examinedPrototypeSign: Boolean(
         data.flags?.examinedPrototypeSign,
       ),
@@ -270,22 +271,30 @@ export class GameState {
       epilogueUnlocked: Boolean(data.flags?.epilogueUnlocked),
     };
 
-    this.objectiveId =
+    const objectiveId =
       typeof data.objectiveId === "string"
         ? data.objectiveId
         : "review-preparations-board";
 
-    this.notebook = Array.isArray(data.notebook)
+    const notebook = Array.isArray(data.notebook)
       ? data.notebook
           .filter(isNotebookEntry)
           .map((entry) => ({ ...entry }))
       : [];
 
-    this.puzzles = {
+    const puzzles = {
       p2: new P2State(data.puzzles?.p2 ?? {}),
       libraryCatalogue: restoreLibraryCatalogue(data),
       archiveCriteria: restoreArchiveCriteria(data),
     };
+
+    this.scene = scene;
+    this.world = world;
+    this.player = player;
+    this.flags = flags;
+    this.objectiveId = objectiveId;
+    this.notebook = notebook;
+    this.puzzles = puzzles;
 
     applyLibraryCatalogueProgression(this);
     applyArchiveCriteriaProgression(this);
@@ -432,6 +441,15 @@ function hasExactArchiveCriteriaFields(archiveCriteriaData) {
       Object.hasOwn(archiveCriteriaData, field),
     )
   );
+}
+
+function readPlayerStateFromWorld(world, mapId = world.currentMapId) {
+  const storedState =
+    world.playerByMap[mapId] ??
+    DEFAULT_PLAYER_BY_MAP[mapId] ??
+    DEFAULT_PLAYER_BY_MAP[DEFAULT_MAP_ID];
+
+  return { ...storedState };
 }
 
 function cloneDefaultPlayerByMap() {

@@ -129,9 +129,10 @@ export class WorldScene {
     }
 
     if (this.input.wasPressed("load")) {
-      this.load();
-      this.setupCurrentMap();
-      this.ui.showToast("Partida cargada");
+      if (this.load()) {
+        this.setupCurrentMap();
+        this.ui.showToast("Partida cargada");
+      }
       return;
     }
 
@@ -500,15 +501,21 @@ export class WorldScene {
   }
 
   load() {
-    const saveData = this.storage.load();
+    try {
+      const saveData = this.storage.load();
 
-    if (saveData === null) {
-      this.ui.showToast("No existe una partida guardada");
+      if (saveData === null) {
+        this.ui.showToast("No existe una partida guardada");
+        return false;
+      }
+
+      this.state.restore(saveData);
+      return true;
+    } catch (error) {
+      console.error(error);
+      this.ui.showToast("No se pudo cargar la partida", 3000);
       return false;
     }
-
-    this.state.restore(saveData);
-    return true;
   }
 
   syncPlayerState() {

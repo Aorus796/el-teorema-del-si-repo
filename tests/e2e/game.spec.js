@@ -168,3 +168,56 @@ test("entra en la escena archive-criteria desde un guardado existente y vuelve a
 
   expect(errors).toEqual([]);
 });
+
+const INVALID_SAVE_VARIANTS = [
+  {
+    name: "JSON inválido",
+    rawValue: "{ esto no es JSON valido",
+  },
+  {
+    name: "formatVersion incompatible",
+    rawValue: JSON.stringify({ formatVersion: 999 }),
+  },
+];
+
+for (const variant of INVALID_SAVE_VARIANTS) {
+  test(`carga un guardado inválido (${variant.name}) sin excepciones sin capturar`, async ({
+    page,
+  }) => {
+    const errors = collectJavaScriptErrors(page);
+
+    await page.addInitScript((rawValue) => {
+      localStorage.setItem("el-teorema-del-si.save.v1", rawValue);
+    }, variant.rawValue);
+
+    await page.goto("/");
+
+    const canvas = page.locator("#game-canvas");
+    const initialFrame = await canvas.evaluate((element) =>
+      element.toDataURL(),
+    );
+
+    await page.keyboard.press("KeyL");
+
+    await expect
+      .poll(() => canvas.evaluate((element) => element.toDataURL()))
+      .not.toBe(initialFrame);
+
+    const toast = page.locator("#toast");
+
+    await expect(toast).not.toBeEmpty();
+
+    /*
+     * WorldScene.load() registra su propio console.error(error) dentro
+     * del catch por diseño (mismo patrón que save()): eso es
+     * comportamiento correcto, no un fallo. Lo que este test verifica es
+     * que ninguna excepción escapó sin capturar al runtime del
+     * navegador (pageerror), no la ausencia total de entradas en
+     * `errors`.
+     */
+    const uncaughtExceptions = errors.filter((entry) =>
+      entry.startsWith("pageerror:"),
+    );
+    expect(uncaughtExceptions).toEqual([]);
+  });
+}
