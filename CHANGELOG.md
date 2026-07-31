@@ -23,6 +23,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `investigationComplete`/`epilogueUnlocked`, objetivo `start-epilogue`,
   entrada de cuaderno `archive-final-evidence` y el guardado persistido
   en `localStorage`).
+- Prueba Playwright que resuelve realmente el segundo puzle de la
+  Biblioteca ("El catálogo perfecto") con la secuencia de teclado
+  completa: intercambia los documentos hasta el orden `A-D-R-C-M`,
+  confirma, y comprueba el avance narrativo resultante (bandera
+  `archiveUnlocked`, objetivo `inspect-archive-criteria-table`, entrada
+  de cuaderno `library-catalogue-solution` y el guardado persistido en
+  `localStorage`).
 
 ### Corregido
 
