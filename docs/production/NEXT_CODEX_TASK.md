@@ -1,5 +1,10 @@
 # Next Codex Task — Archive Criteria: tercer puzle "La pregunta correcta"
 
+**Estado: completado.** Implementado en los commits `e5e4752`, `ba1aa69`,
+`f8de07f`. Se conserva como registro histórico de la especificación técnica
+aplicada — no es una tarea activa. La selección de la siguiente tarea pasa
+ahora por `CLAUDE.md` y la skill `autopilot`.
+
 Implementa el bloque completo del tercer puzle principal: datos, validador,
 estado, controlador, escena focal, integración con `archive-criteria-table`,
 consecuencias narrativas idempotentes y migración de guardado a formato 4.

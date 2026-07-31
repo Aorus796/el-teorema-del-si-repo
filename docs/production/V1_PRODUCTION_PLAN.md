@@ -51,9 +51,9 @@ etiquetas Git al comenzar cada fase.
 ### Trabajo pendiente para `v1.0.0`
 
 - [ ] Abrir y completar la Biblioteca del Margen.
-- [ ] Diseñar e integrar el segundo puzle.
-- [ ] Crear el Archivo compacto.
-- [ ] Diseñar e integrar el tercer puzle.
+- [x] Diseñar e integrar el segundo puzle.
+- [x] Crear el Archivo compacto.
+- [x] Diseñar e integrar el tercer puzle.
 - [ ] Conectar las pistas y el cuaderno a lo largo del recorrido completo.
 - [ ] Escribir e integrar el epílogo.
 - [ ] Sustituir o pulir el arte provisional necesario.
@@ -605,8 +605,8 @@ Nunca se recortan:
 | Orden | Localización | Estado | Función de producción |
 |---|---|---|---|
 | 1 | Paseo de los Siete Puentes | P2 existente e integrado | Validar el bucle exploración → puzle → evidencia. |
-| 2 | Biblioteca del Margen | **El catálogo perfecto**, decisión cerrada ([especificación](../puzzles/LIBRARY_CATALOGUE_SPEC.md)) | Ampliar investigación, cuaderno y pistas sin elevar en exceso la dificultad. |
-| 3 | Archivo compacto | **La pregunta correcta**, decisión cerrada ([especificación](../puzzles/ARCHIVE_CRITERIA_SPEC.md)) | Resolver la investigación y activar el epílogo. |
+| 2 | Biblioteca del Margen | **El catálogo perfecto**, implementado e integrado (decisión cerrada) ([especificación](../puzzles/LIBRARY_CATALOGUE_SPEC.md)) | Ampliar investigación, cuaderno y pistas sin elevar en exceso la dificultad. |
+| 3 | Archivo compacto | **La pregunta correcta**, implementado e integrado (decisión cerrada) ([especificación](../puzzles/ARCHIVE_CRITERIA_SPEC.md)) | Resolver la investigación y activar el epílogo. |
 
 Antes del 2 de agosto, cada puzle nuevo debe fijar:
 
