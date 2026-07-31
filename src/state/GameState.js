@@ -5,12 +5,34 @@ import {
 import {
   applyLibraryCatalogueProgression,
 } from "../progression/LibraryCatalogueProgression.js";
+import {
+  ArchiveCriteriaState,
+} from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
+import {
+  applyArchiveCriteriaProgression,
+} from "../progression/ArchiveCriteriaProgression.js";
 
-export const SAVE_FORMAT_VERSION = 3;
+export const SAVE_FORMAT_VERSION = 4;
 
-const LEGACY_SAVE_FORMAT_VERSIONS = Object.freeze([1, 2]);
+/*
+ * Tres conceptos distintos, con listas separadas a propósito: reutilizar
+ * una sola lista de "formatos legacy" para libraryCatalogue y para
+ * archiveCriteria reiniciaría por error el catálogo real de una partida
+ * de formato 3 (que ya contiene datos reales del catálogo, solo carece de
+ * archiveCriteria).
+ */
+const SUPPORTED_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2, 3]);
+const LIBRARY_CATALOGUE_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2]);
+const ARCHIVE_CRITERIA_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2, 3]);
 const LIBRARY_CATALOGUE_SAVE_FIELDS = Object.freeze([
   "order",
+  "phase",
+  "hintsRead",
+  "attemptCount",
+  "failureCode",
+]);
+const ARCHIVE_CRITERIA_SAVE_FIELDS = Object.freeze([
+  "verdicts",
   "phase",
   "hintsRead",
   "attemptCount",
@@ -82,6 +104,8 @@ export class GameState {
       p2EvidenceFound: false,
       libraryObjectiveUnlocked: false,
       archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
     };
 
     this.objectiveId = "review-preparations-board";
@@ -90,6 +114,7 @@ export class GameState {
     this.puzzles = {
       p2: new P2State(),
       libraryCatalogue: new LibraryCatalogueState(),
+      archiveCriteria: new ArchiveCriteriaState(),
     };
   }
 
@@ -192,6 +217,8 @@ export class GameState {
         p2: this.puzzles.p2.toSaveData(),
         libraryCatalogue:
           this.puzzles.libraryCatalogue.toSaveData(),
+        archiveCriteria:
+          this.puzzles.archiveCriteria.toSaveData(),
       },
     };
   }
@@ -200,7 +227,7 @@ export class GameState {
     if (
       !data ||
       ![
-        ...LEGACY_SAVE_FORMAT_VERSIONS,
+        ...SUPPORTED_LEGACY_FORMAT_VERSIONS,
         SAVE_FORMAT_VERSION,
       ].includes(data.formatVersion)
     ) {
@@ -237,6 +264,10 @@ export class GameState {
         data.flags?.libraryObjectiveUnlocked,
       ),
       archiveUnlocked: Boolean(data.flags?.archiveUnlocked),
+      investigationComplete: Boolean(
+        data.flags?.investigationComplete,
+      ),
+      epilogueUnlocked: Boolean(data.flags?.epilogueUnlocked),
     };
 
     this.objectiveId =
@@ -253,9 +284,11 @@ export class GameState {
     this.puzzles = {
       p2: new P2State(data.puzzles?.p2 ?? {}),
       libraryCatalogue: restoreLibraryCatalogue(data),
+      archiveCriteria: restoreArchiveCriteria(data),
     };
 
     applyLibraryCatalogueProgression(this);
+    applyArchiveCriteriaProgression(this);
   }
 }
 
@@ -293,7 +326,7 @@ function restoreWorldState(data) {
    * sirve como fallback para fixtures o guardados incompletos de formato 2.
    */
   if (
-    data.formatVersion === LEGACY_SAVE_FORMAT_VERSIONS[0] ||
+    data.formatVersion === 1 ||
     !savedPlayerByMap?.[currentMapId]
   ) {
     playerByMap[currentMapId] = normalizePlayerState(
@@ -310,7 +343,9 @@ function restoreWorldState(data) {
 }
 
 function restoreLibraryCatalogue(data) {
-  if (LEGACY_SAVE_FORMAT_VERSIONS.includes(data.formatVersion)) {
+  if (
+    LIBRARY_CATALOGUE_LEGACY_FORMAT_VERSIONS.includes(data.formatVersion)
+  ) {
     return new LibraryCatalogueState();
   }
 
@@ -351,6 +386,50 @@ function hasExactCatalogueFields(catalogueData) {
     fields.length === LIBRARY_CATALOGUE_SAVE_FIELDS.length &&
     LIBRARY_CATALOGUE_SAVE_FIELDS.every((field) =>
       Object.hasOwn(catalogueData, field),
+    )
+  );
+}
+
+function restoreArchiveCriteria(data) {
+  if (ARCHIVE_CRITERIA_LEGACY_FORMAT_VERSIONS.includes(data.formatVersion)) {
+    return new ArchiveCriteriaState();
+  }
+
+  const hasArchiveCriteria =
+    data.puzzles &&
+    typeof data.puzzles === "object" &&
+    !Array.isArray(data.puzzles) &&
+    Object.hasOwn(data.puzzles, "archiveCriteria");
+  const archiveCriteriaData = data.puzzles?.archiveCriteria;
+
+  if (
+    !hasArchiveCriteria ||
+    !archiveCriteriaData ||
+    typeof archiveCriteriaData !== "object" ||
+    Array.isArray(archiveCriteriaData) ||
+    !hasExactArchiveCriteriaFields(archiveCriteriaData)
+  ) {
+    throw new Error(
+      "La partida guardada no contiene un criterio del Archivo válido.",
+    );
+  }
+
+  try {
+    return new ArchiveCriteriaState(archiveCriteriaData);
+  } catch (error) {
+    throw new Error(
+      `El criterio del Archivo de la partida guardada no es válido: ${error.message}`,
+    );
+  }
+}
+
+function hasExactArchiveCriteriaFields(archiveCriteriaData) {
+  const fields = Object.keys(archiveCriteriaData);
+
+  return (
+    fields.length === ARCHIVE_CRITERIA_SAVE_FIELDS.length &&
+    ARCHIVE_CRITERIA_SAVE_FIELDS.every((field) =>
+      Object.hasOwn(archiveCriteriaData, field),
     )
   );
 }

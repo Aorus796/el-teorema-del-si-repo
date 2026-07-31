@@ -10,6 +10,20 @@ import {
   LIBRARY_CATALOGUE_PHASE,
   LibraryCatalogueState,
 } from "../../src/puzzles/library-catalogue/LibraryCatalogueState.js";
+import {
+  ARCHIVE_CRITERIA_INITIAL_VERDICTS,
+  ARCHIVE_CRITERIA_SOLUTION,
+  ARCHIVE_CRITERIA_VERDICT,
+} from "../../src/puzzles/archive-criteria/ArchiveCriteriaData.js";
+import {
+  ARCHIVE_CRITERIA_FAILURE_CODE,
+  ARCHIVE_CRITERIA_PHASE,
+  ArchiveCriteriaState,
+} from "../../src/puzzles/archive-criteria/ArchiveCriteriaState.js";
+import {
+  ARCHIVE_FINAL_EVIDENCE_ENTRY,
+  START_EPILOGUE_OBJECTIVE_ID,
+} from "../../src/progression/ArchiveCriteriaProgression.js";
 
 const INITIAL_CATALOGUE_DATA = {
   order: ["C", "M", "A", "R", "D"],
@@ -20,6 +34,16 @@ const INITIAL_CATALOGUE_DATA = {
 };
 
 const SOLVED_CATALOGUE_ORDER = ["A", "D", "R", "C", "M"];
+
+function cloneInitialArchiveCriteriaData() {
+  return {
+    verdicts: { ...ARCHIVE_CRITERIA_INITIAL_VERDICTS },
+    phase: ARCHIVE_CRITERIA_PHASE.READY,
+    hintsRead: [],
+    attemptCount: 0,
+    failureCode: null,
+  };
+}
 
 test("GameState no duplica entradas del cuaderno", () => {
   const state = new GameState();
@@ -45,6 +69,7 @@ test("GameState restaura una partida valida", () => {
     },
     puzzles: {
       libraryCatalogue: { ...INITIAL_CATALOGUE_DATA },
+      archiveCriteria: cloneInitialArchiveCriteriaData(),
     },
     notebook: [
       {
@@ -282,7 +307,7 @@ test("GameState restaura las cuatro fases válidas del catálogo", () => {
   }
 });
 
-test("GameState rechaza catálogos ausentes o inválidos en formato 3", () => {
+test("GameState rechaza catálogos ausentes o inválidos en el formato vigente", () => {
   const invalidCases = [
     (saved) => {
       delete saved.puzzles.libraryCatalogue;
@@ -353,6 +378,79 @@ test("GameState rechaza catálogos ausentes o inválidos en formato 3", () => {
       () => state.restore(saved),
       /catálogo/i,
     );
+  }
+});
+
+test("GameState rechaza archiveCriteria ausente o inválido en el formato vigente", () => {
+  const invalidCases = [
+    (saved) => {
+      delete saved.puzzles.archiveCriteria;
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria = null;
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria = [];
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria = "invalid";
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria = 42;
+    },
+    (saved) => {
+      delete saved.puzzles.archiveCriteria.hintsRead;
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.focusedClaimIndex = 0;
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.verdicts = {
+        "voluntary-entry": null,
+      };
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.verdicts["voluntary-entry"] =
+        "maybe";
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.phase = "unknown";
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.hintsRead = [1, 3];
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.attemptCount = -1;
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.attemptCount = 1.5;
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.attemptCount = "1";
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.failureCode = "unknown";
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.phase =
+        ARCHIVE_CRITERIA_PHASE.FAILED;
+      saved.puzzles.archiveCriteria.failureCode = null;
+      saved.puzzles.archiveCriteria.attemptCount = 1;
+    },
+    (saved) => {
+      saved.puzzles.archiveCriteria.phase =
+        ARCHIVE_CRITERIA_PHASE.SOLVED;
+      saved.puzzles.archiveCriteria.attemptCount = 1;
+      // verdicts se quedan en el estado inicial (todo null): no es la solución.
+    },
+  ];
+
+  for (const makeInvalid of invalidCases) {
+    const saved = new GameState().toSaveData();
+    makeInvalid(saved);
+
+    const state = new GameState();
+    assert.throws(() => state.restore(saved), /Archivo/i);
   }
 });
 
@@ -455,6 +553,8 @@ test("GameState migra explícitamente los formatos 1 y 2", () => {
       true,
     );
     assert.equal(restored.flags.archiveUnlocked, false);
+    assert.equal(restored.flags.investigationComplete, false);
+    assert.equal(restored.flags.epilogueUnlocked, false);
     assert.deepEqual(
       restored.puzzles.p2.toSaveData(),
       p2Data,
@@ -462,6 +562,14 @@ test("GameState migra explícitamente los formatos 1 y 2", () => {
     assert.deepEqual(
       restored.puzzles.libraryCatalogue.toSaveData(),
       INITIAL_CATALOGUE_DATA,
+    );
+    assert.equal(
+      restored.puzzles.archiveCriteria instanceof ArchiveCriteriaState,
+      true,
+    );
+    assert.deepEqual(
+      restored.puzzles.archiveCriteria.toSaveData(),
+      cloneInitialArchiveCriteriaData(),
     );
     assert.deepEqual(restored.getPlayerState("library"), {
       x: 240,
@@ -486,7 +594,6 @@ test("GameState reconcilia un guardado v3 resuelto sin Archivo", () => {
   const restored = new GameState();
   restored.restore(saved);
 
-  assert.equal(SAVE_FORMAT_VERSION, 3);
   assert.equal(restored.flags.archiveUnlocked, true);
   assert.equal(
     restored.objectiveId,
@@ -521,5 +628,261 @@ test("GameState no retrocede un objetivo posterior al restaurar", () => {
   restored.restore(saved);
 
   assert.equal(restored.objectiveId, "start-epilogue");
+  assert.equal(restored.notebook.length, 1);
+});
+
+test("SAVE_FORMAT_VERSION es 4", () => {
+  assert.equal(SAVE_FORMAT_VERSION, 4);
+});
+
+test("GameState reset() incluye investigationComplete y epilogueUnlocked en false", () => {
+  const state = new GameState();
+
+  assert.equal(state.flags.investigationComplete, false);
+  assert.equal(state.flags.epilogueUnlocked, false);
+});
+
+test("GameState reset() incluye un archiveCriteria inicial independiente", () => {
+  const firstState = new GameState();
+  const secondState = new GameState();
+
+  assert.equal(
+    firstState.puzzles.archiveCriteria instanceof ArchiveCriteriaState,
+    true,
+  );
+  assert.deepEqual(
+    firstState.puzzles.archiveCriteria.toSaveData(),
+    cloneInitialArchiveCriteriaData(),
+  );
+  assert.notEqual(
+    firstState.puzzles.archiveCriteria,
+    secondState.puzzles.archiveCriteria,
+  );
+});
+
+test("toSaveData() incluye archiveCriteria con los cinco campos exactos", () => {
+  const state = new GameState();
+  const saved = state.toSaveData();
+
+  assert.equal(saved.formatVersion, 4);
+  assert.deepEqual(
+    Object.keys(saved.puzzles.archiveCriteria).sort(),
+    ["attemptCount", "failureCode", "hintsRead", "phase", "verdicts"],
+  );
+  assert.deepEqual(
+    saved.puzzles.archiveCriteria,
+    cloneInitialArchiveCriteriaData(),
+  );
+});
+
+test("GameState round-trip de formato 4 para las cuatro fases de archiveCriteria", () => {
+  const archiveCriteriaCases = [
+    cloneInitialArchiveCriteriaData(),
+    {
+      verdicts: {
+        ...ARCHIVE_CRITERIA_INITIAL_VERDICTS,
+        "voluntary-entry": ARCHIVE_CRITERIA_VERDICT.CONFIRMED,
+      },
+      phase: ARCHIVE_CRITERIA_PHASE.CLASSIFYING,
+      hintsRead: [1],
+      attemptCount: 2,
+      failureCode: null,
+    },
+    {
+      verdicts: { ...ARCHIVE_CRITERIA_INITIAL_VERDICTS },
+      phase: ARCHIVE_CRITERIA_PHASE.FAILED,
+      hintsRead: [1, 2],
+      attemptCount: 3,
+      failureCode:
+        ARCHIVE_CRITERIA_FAILURE_CODE.INCOMPLETE_CLASSIFICATION,
+    },
+    {
+      verdicts: { ...ARCHIVE_CRITERIA_SOLUTION },
+      phase: ARCHIVE_CRITERIA_PHASE.SOLVED,
+      hintsRead: [1, 2, 3],
+      attemptCount: 4,
+      failureCode: null,
+    },
+  ];
+
+  for (const archiveCriteriaData of archiveCriteriaCases) {
+    const saved = new GameState().toSaveData();
+    saved.puzzles.archiveCriteria = {
+      ...archiveCriteriaData,
+      verdicts: { ...archiveCriteriaData.verdicts },
+      hintsRead: [...archiveCriteriaData.hintsRead],
+    };
+
+    const restored = new GameState();
+    restored.restore(saved);
+
+    assert.equal(
+      restored.puzzles.archiveCriteria instanceof ArchiveCriteriaState,
+      true,
+    );
+    assert.deepEqual(
+      restored.puzzles.archiveCriteria.toSaveData(),
+      archiveCriteriaData,
+    );
+
+    saved.puzzles.archiveCriteria.hintsRead.push(9);
+    assert.deepEqual(
+      restored.puzzles.archiveCriteria.toSaveData(),
+      archiveCriteriaData,
+    );
+  }
+});
+
+test("un guardado real de formato 3 conserva mapa, posición, objetivo, cuaderno, banderas y el catálogo real, e inicializa únicamente archiveCriteria", () => {
+  const saved = new GameState().toSaveData();
+  saved.formatVersion = 3;
+  saved.scene = "world";
+  saved.world = {
+    currentMapId: "archive",
+    playerByMap: {
+      ...saved.world.playerByMap,
+      archive: { x: 200, y: 150, facing: "down" },
+    },
+  };
+  saved.objectiveId = "inspect-archive-criteria-table";
+  saved.notebook = [
+    {
+      id: "library-clue",
+      title: "La marca de la biblioteca",
+      text: "Texto conservado.",
+    },
+    {
+      id: "library-catalogue-solution",
+      title: "El catálogo perfecto",
+      text:
+        "El orden A-D-R-C-M ha restaurado el catálogo y revelado el acceso al Archivo.",
+    },
+  ];
+  saved.flags.archiveUnlocked = true;
+  saved.flags.libraryObjectiveUnlocked = true;
+  saved.puzzles.libraryCatalogue = {
+    order: SOLVED_CATALOGUE_ORDER,
+    phase: LIBRARY_CATALOGUE_PHASE.SOLVED,
+    hintsRead: [1, 2, 3],
+    attemptCount: 2,
+    failureCode: null,
+  };
+
+  /*
+   * Un guardado real de formato 3 nunca tuvo estas propiedades: se
+   * eliminan explícitamente para simular el fixture real (no una
+   * versión 4 con datos de más que formatVersion=3 dejaría pasar sin
+   * ejercitar de verdad la rama de migración).
+   */
+  delete saved.flags.investigationComplete;
+  delete saved.flags.epilogueUnlocked;
+  delete saved.puzzles.archiveCriteria;
+
+  assert.equal(
+    Object.hasOwn(saved.flags, "investigationComplete"),
+    false,
+  );
+  assert.equal(Object.hasOwn(saved.flags, "epilogueUnlocked"), false);
+  assert.equal(Object.hasOwn(saved.puzzles, "archiveCriteria"), false);
+
+  const expectedPreviousFlags = { ...saved.flags };
+  const expectedNotebook = saved.notebook.map((entry) => ({ ...entry }));
+  const expectedLibraryCatalogue = {
+    ...saved.puzzles.libraryCatalogue,
+    order: [...saved.puzzles.libraryCatalogue.order],
+    hintsRead: [...saved.puzzles.libraryCatalogue.hintsRead],
+  };
+  const expectedP2 = structuredClone(saved.puzzles.p2);
+
+  const restored = new GameState();
+  restored.restore(saved);
+
+  assert.equal(restored.world.currentMapId, "archive");
+  assert.deepEqual(restored.getPlayerState("archive"), {
+    x: 200,
+    y: 150,
+    facing: "down",
+  });
+  assert.equal(restored.objectiveId, "inspect-archive-criteria-table");
+
+  assert.deepEqual(restored.notebook, expectedNotebook);
+
+  assert.deepEqual(restored.flags, {
+    ...expectedPreviousFlags,
+    investigationComplete: false,
+    epilogueUnlocked: false,
+  });
+
+  assert.deepEqual(
+    restored.puzzles.libraryCatalogue.toSaveData(),
+    expectedLibraryCatalogue,
+  );
+  assert.notDeepEqual(restored.puzzles.libraryCatalogue.order, [
+    "C",
+    "M",
+    "A",
+    "R",
+    "D",
+  ]);
+
+  assert.deepEqual(restored.puzzles.p2.toSaveData(), expectedP2);
+
+  assert.equal(
+    restored.puzzles.archiveCriteria instanceof ArchiveCriteriaState,
+    true,
+  );
+  assert.deepEqual(
+    restored.puzzles.archiveCriteria.toSaveData(),
+    cloneInitialArchiveCriteriaData(),
+  );
+  assert.notEqual(
+    restored.puzzles.archiveCriteria.phase,
+    ARCHIVE_CRITERIA_PHASE.SOLVED,
+  );
+});
+
+test("restaurar un archiveCriteria solved parcialmente reconciliado repara banderas y cuaderno", () => {
+  const saved = new GameState().toSaveData();
+  saved.puzzles.archiveCriteria = {
+    verdicts: { ...ARCHIVE_CRITERIA_SOLUTION },
+    phase: ARCHIVE_CRITERIA_PHASE.SOLVED,
+    hintsRead: [],
+    attemptCount: 1,
+    failureCode: null,
+  };
+  saved.flags.investigationComplete = false;
+  saved.flags.epilogueUnlocked = false;
+
+  const restored = new GameState();
+  restored.restore(saved);
+
+  assert.equal(restored.flags.investigationComplete, true);
+  assert.equal(restored.flags.epilogueUnlocked, true);
+  assert.equal(restored.objectiveId, START_EPILOGUE_OBJECTIVE_ID);
+  assert.equal(restored.notebook.length, 1);
+  assert.equal(restored.notebook[0].id, ARCHIVE_FINAL_EVIDENCE_ENTRY.id);
+
+  restored.restore(restored.toSaveData());
+  assert.equal(restored.notebook.length, 1);
+});
+
+test("restaurar un archiveCriteria solved con epilogueUnlocked ya true conserva un objetivo posterior sin duplicar el cuaderno", () => {
+  const saved = new GameState().toSaveData();
+  saved.puzzles.archiveCriteria = {
+    verdicts: { ...ARCHIVE_CRITERIA_SOLUTION },
+    phase: ARCHIVE_CRITERIA_PHASE.SOLVED,
+    hintsRead: [],
+    attemptCount: 1,
+    failureCode: null,
+  };
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.objectiveId = "some-later-objective";
+  saved.notebook = [{ ...ARCHIVE_FINAL_EVIDENCE_ENTRY }];
+
+  const restored = new GameState();
+  restored.restore(saved);
+
+  assert.equal(restored.objectiveId, "some-later-objective");
   assert.equal(restored.notebook.length, 1);
 });
