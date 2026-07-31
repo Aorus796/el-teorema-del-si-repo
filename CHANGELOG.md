@@ -30,6 +30,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `archiveUnlocked`, objetivo `inspect-archive-criteria-table`, entrada
   de cuaderno `library-catalogue-solution` y el guardado persistido en
   `localStorage`).
+- Prueba Playwright que resuelve realmente el primer puzle de los Siete
+  Puentes ("El paseo imposible") con la secuencia de teclado completa:
+  avanza el diálogo de apertura verificando cada línea en el DOM, cierra
+  el puente B1, y recorre los seis puentes restantes (`B2-B3-B6-B7-B4-B5`)
+  desde la entrada hasta el molino, y comprueba el avance narrativo
+  resultante (objetivo `inspect-p2-evidence`, entrada de cuaderno
+  `p2-bridges-solution` y el guardado persistido en `localStorage`).
 
 ### Corregido
 

@@ -546,6 +546,214 @@ test("resuelve el segundo puzle del catálogo de la Biblioteca con teclado y des
   expect(errors).toEqual([]);
 });
 
+test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 348, y: 145, facing: "down" },
+    world: {
+      currentMapId: "seven-bridges-walk",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 348, y: 145, facing: "down" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await canvas.evaluate((element) =>
+      element.toDataURL(),
+    );
+
+    await page.keyboard.press(key);
+
+    await expect
+      .poll(() => canvas.evaluate((element) => element.toDataURL()))
+      .not.toBe(previousFrame);
+  };
+
+  const initialFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(initialFrame);
+
+  const worldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "La novia ha marcado que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  const solutionKeys = [
+    "KeyE",
+    "Enter",
+    "KeyE",
+    "KeyE",
+    "KeyE",
+    "ArrowRight",
+    "KeyE",
+    "KeyE",
+    "KeyE",
+  ];
+
+  for (const key of solutionKeys) {
+    await pressAndWaitForFrameChange(key);
+  }
+
+  const toast = page.locator("#toast");
+
+  await expect(toast).not.toBeEmpty();
+  await expect(toast).toHaveText("Nueva observacion registrada");
+
+  const solvedSceneFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(solvedSceneFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const savedRaw = await page.evaluate(() =>
+    localStorage.getItem("el-teorema-del-si.save.v1"),
+  );
+  const savedData = JSON.parse(savedRaw);
+
+  expect(savedData.puzzles.p2.phase).toBe("solved");
+  expect(savedData.puzzles.p2.closedBridgeId).toBe("B1");
+  expect(savedData.puzzles.p2.currentNode).toBe("L");
+  expect(savedData.puzzles.p2.route).toEqual([
+    "E",
+    "R",
+    "N",
+    "L",
+    "R",
+    "M",
+    "L",
+  ]);
+  expect(savedData.puzzles.p2.usedBridgeIds).toEqual([
+    "B2",
+    "B3",
+    "B6",
+    "B7",
+    "B4",
+    "B5",
+  ]);
+  expect(savedData.puzzles.p2.lifecycle.status).toBe("solved");
+  expect(savedData.puzzles.p2.lifecycle.attemptCount).toBe(1);
+  expect(savedData.objectiveId).toBe("inspect-p2-evidence");
+  expect(
+    savedData.notebook.some(
+      (entry) => entry.id === "p2-bridges-solution",
+    ),
+  ).toBe(true);
+
+  const notebook = page.locator("#notebook-panel");
+
+  await page.keyboard.press("KeyQ");
+  await expect(notebook).toBeVisible();
+
+  const entryTitle = page.locator(
+    "#notebook-content article.notebook-entry h2",
+    { hasText: "El paseo imposible" },
+  );
+
+  await expect(entryTitle).toHaveText("El paseo imposible");
+
+  await page.keyboard.press("KeyQ");
+  await expect(notebook).toBeHidden();
+
+  expect(errors).toEqual([]);
+});
+
 const INVALID_SAVE_VARIANTS = [
   {
     name: "JSON inválido",
