@@ -1,5 +1,11 @@
 # Codex Project Handoff — El Teorema del Sí
 
+> **Nota (sincronización posterior):** este documento es el historial de
+> producción del bloque **Archive Criteria**, ya completado. Se conserva
+> como referencia técnica e histórica. La selección de tareas y el flujo
+> de trabajo actuales pasan por `CLAUDE.md` y la skill
+> `.claude/skills/autopilot/SKILL.md`, no por este documento.
+
 ## Propósito
 
 Este documento permite continuar el desarrollo de **El Teorema del Sí** desde una nueva conversación de Codex sin depender del historial anterior.
@@ -34,12 +40,18 @@ feat/v1-production-scope
 Commit mínimo requerido (HEAD puede ser cualquier descendiente):
 
 ```text
-7a0c13c feat: unlock archive after catalogue puzzle
+8af49fb Merge pull request #4 from Aorus796/chore/claude-autopilot
 ```
 
-Commits recientes relevantes:
+Commits recientes relevantes (ya mergeados):
 
 ```text
+8af49fb Merge pull request #4 from Aorus796/chore/claude-autopilot
+9c7db20 chore: add Claude Code automation workflow
+f8de07f feat: add archive criteria scene
+ba1aa69 feat: persist archive criteria progression
+e5e4752 feat: add archive criteria puzzle core
+5efe41b docs: define archive criteria implementation
 7a0c13c feat: unlock archive after catalogue puzzle
 e49571b docs: relax Codex handoff head check
 5594216 docs: update Codex handoff head
@@ -75,10 +87,10 @@ Comprobar:
 - HEAD contiene el commit `7a0c13c` en su historial;
 - existencia de `AGENTS.md`;
 - existencia de los documentos de producción y especificaciones;
-- `SAVE_FORMAT_VERSION === 3` (subirá a `4` durante el bloque Archive Criteria, ver más abajo);
+- `SAVE_FORMAT_VERSION === 4`;
 - mapas registrados actuales, incluido `archive`;
 - escena `library-catalogue` registrada;
-- objeto `archive-criteria-table` presente en el mapa `archive` y todavía inerte (sin escena asociada).
+- objeto `archive-criteria-table` presente en el mapa `archive`, abre la escena `archive-criteria` (despacho por `id` en `WorldScene.interact` mediante `interactWithArchiveCriteriaTable`).
 
 La nueva sesión debe explicar lo que ha entendido antes de implementar.
 
@@ -231,30 +243,35 @@ src/state/GameState.js
 
 ## Estado global y persistencia
 
-Formato actual (antes de implementar Archive Criteria):
+Formato actual:
 
 ```js
-SAVE_FORMAT_VERSION = 3
+SAVE_FORMAT_VERSION = 4
 ```
 
 Formatos históricos soportados:
 
 - 1
 - 2
+- 3
 
-Los formatos 1 y 2 migran al formato actual.
+Los formatos 1, 2 y 3 migran al formato actual.
 
-El formato 3 contiene:
+El formato 4 contiene:
 
 - escena;
 - jugador;
 - mapa actual;
 - posiciones por mapa, incluida `archive`;
-- banderas, incluida `archiveUnlocked`;
+- banderas, incluidas `archiveUnlocked`, `investigationComplete` y
+  `epilogueUnlocked`;
 - objetivo;
 - cuaderno;
 - P2;
-- catálogo de Biblioteca (con sus consecuencias narrativas ya aplicadas).
+- catálogo de Biblioteca (con sus consecuencias narrativas ya aplicadas);
+- `archiveCriteria` — estado del tercer puzle (veredictos, fase, pistas
+  leídas, intentos y código de fallo), con sus consecuencias narrativas
+  ya aplicadas.
 
 La clave de `StorageAdapter` no cambió.
 
@@ -265,29 +282,39 @@ Posiciones independientes actuales:
 - `library`
 - `archive`
 
-### Migración prevista para el bloque Archive Criteria
+### Formato histórico 3 (contexto de migración)
 
-El bloque **Archive Criteria** (siguiente bloque, ver más abajo) subirá
-`SAVE_FORMAT_VERSION` de `3` a `4`. Es un cambio de formato aprobado y
-necesario, no accidental.
+Antes de implementar Archive Criteria, el formato vigente era `3`, que
+contenía lo mismo que el formato `4` salvo `archiveCriteria` (inexistente
+en ese formato) y sin las banderas `investigationComplete` ni
+`epilogueUnlocked`. Se documenta aquí solo como contexto histórico para
+entender la migración; no es el formato activo.
 
-Al implementarlo es obligatorio mantener **tres listas de versiones
-separadas**, no una sola:
+### Migración implementada para el bloque Archive Criteria
 
-- versiones legacy generales aceptadas por `GameState.restore()`: `[1, 2, 3]`;
-- formatos en los que `libraryCatalogue` **no** tiene datos persistidos
-  todavía: solo `[1, 2]` — el formato `3` ya contiene el catálogo real
-  (resuelto o no) y debe seguir leyéndose como dato real, nunca
-  reinicializarse;
-- formatos en los que `archiveCriteria` **no** tiene datos persistidos
-  todavía: `[1, 2, 3]` — solo el formato `4` lo contiene.
+El bloque **Archive Criteria** subió `SAVE_FORMAT_VERSION` de `3` a `4`.
+Fue un cambio de formato aprobado y necesario, no accidental.
 
-Reutilizar una única lista compartida para las tres comprobaciones es un
-error conocido: si el formato `3` se trata como "legacy" también para el
-catálogo, cualquier partida real en formato `3` (catálogo ya resuelto,
-`archiveUnlocked = true`) perdería su catálogo al cargar y volvería al
-orden inicial sin resolver. El bloque Archive Criteria debe incluir un
-test explícito que demuestre que una partida `v3` con el catálogo
+La migración implementada mantiene **tres listas de versiones
+separadas**, tal como estaba previsto, con estos nombres exactos en
+`src/state/GameState.js`:
+
+- `SUPPORTED_LEGACY_FORMAT_VERSIONS = [1, 2, 3]` — versiones legacy
+  generales aceptadas por `GameState.restore()`;
+- `LIBRARY_CATALOGUE_LEGACY_FORMAT_VERSIONS = [1, 2]` — formatos en los
+  que `libraryCatalogue` **no** tiene datos persistidos todavía: el
+  formato `3` ya contiene el catálogo real (resuelto o no) y se sigue
+  leyendo como dato real, nunca se reinicializa;
+- `ARCHIVE_CRITERIA_LEGACY_FORMAT_VERSIONS = [1, 2, 3]` — formatos en los
+  que `archiveCriteria` **no** tiene datos persistidos todavía: solo el
+  formato `4` lo contiene.
+
+Reutilizar una única lista compartida para las tres comprobaciones habría
+sido un error conocido: si el formato `3` se tratara como "legacy" también
+para el catálogo, cualquier partida real en formato `3` (catálogo ya
+resuelto, `archiveUnlocked = true`) perdería su catálogo al cargar y
+volvería al orden inicial sin resolver. El bloque Archive Criteria incluye un
+test explícito que demuestra que una partida `v3` con el catálogo
 resuelto conserva ese catálogo intacto tras migrar a `v4`, inicializando
 únicamente `archiveCriteria`.
 
@@ -509,9 +536,9 @@ El Archivo:
 
 - contiene colisiones y límites cerrados;
 - contiene estanterías y cajas decorativas reutilizando el tipo `tables`;
-- contiene el objeto `archive-criteria-table` (id estable), **visible pero
-  todavía inerte**: no abre ninguna escena, no cambia banderas, objetivo
-  ni cuaderno, no produce ninguna acción al pulsar E;
+- contiene el objeto `archive-criteria-table` (id estable), **conectada a
+  la escena `archive-criteria`**: pulsar E sobre la mesa abre el tercer
+  puzle;
 - tiene salida hacia `library`.
 
 El acceso desde la Biblioteca depende exclusivamente de:
@@ -528,9 +555,6 @@ Portales:
   del radio del portal de regreso.
 - `archive-to-library`: vuelve a `library` conservando la posición del
   Archivo, sin reabrir el catálogo ni reaplicar consecuencias.
-
-No existe todavía ninguna escena `archive-criteria`. El bloque siguiente
-la añade.
 
 ---
 
@@ -570,23 +594,36 @@ Ruta validada (bloque `7a0c13c` — Archivo), completada correctamente:
 No se detectaron bloqueos de colisión, errores de consola ni bucles de
 portal en esa ruta.
 
+El flujo completo del tercer puzle (entrar en `archive-criteria` desde la
+mesa, clasificar las seis afirmaciones, resolver con la solución única y
+guardar/cargar la partida conservando el resultado y sus consecuencias
+narrativas) quedó implementado y probado mediante la suite de pruebas
+unitarias (`tests/puzzles/ArchiveCriteria*.test.js`,
+`tests/progression/ArchiveCriteriaProgression.test.js`,
+`tests/scenes/ArchiveCriteriaScene.test.js`, `tests/state/GameState.test.js`)
+y la prueba e2e que abre la escena `archive-criteria` desde un guardado
+existente y vuelve al mundo — ver «Línea base de pruebas».
+
 ---
 
 ## Línea base de pruebas
 
-Tras `7a0c13c`:
+Tras `8af49fb`, ejecutando `docker compose run --rm game npm run check` y
+`docker compose run --rm playwright`:
 
-- 149 pruebas unitarias superadas;
+- 245 pruebas unitarias superadas;
 - 0 pruebas unitarias fallidas;
 - build estático correcto;
-- 2 pruebas Playwright superadas;
+- 3 pruebas Playwright superadas;
 - 0 pruebas Playwright fallidas;
 - `git diff --check` correcto.
 
-Pruebas E2E actuales:
+Pruebas E2E actuales (`tests/e2e/game.spec.js`):
 
-- título;
-- nueva partida y apertura del cuaderno mediante Q/Tab.
+- carga la pantalla de título sin errores;
+- inicia una partida y abre y cierra el cuaderno;
+- entra en la escena `archive-criteria` desde un guardado existente y
+  vuelve al mundo.
 
 La validación manual en navegador del acceso al Archivo y de
 `archive-criteria-table` se completó correctamente — ver «Validación
@@ -596,37 +633,25 @@ manual ya realizada».
 
 ## Siguiente bloque
 
-La siguiente tarea está definida íntegramente en:
+El bloque **Archive Criteria — "La pregunta correcta"** (el tercer y
+último puzle principal, situado en el Archivo compacto) está
+**completado**, en los commits `e5e4752`, `ba1aa69` y `f8de07f` (ver
+«Estado Git esperado»). El registro detallado de su especificación e
+implementación queda en:
 
 ```text
 docs/production/NEXT_CODEX_TASK.md
 ```
 
-Resumen: **Archive Criteria — "La pregunta correcta"**, el tercer y
-último puzle principal, situado en el Archivo compacto.
-
-Incluye:
-
-- datos, validador, estado y controlador del puzle (6 afirmaciones, 3
-  veredictos);
-- escena focal `archive-criteria` y su registro en `src/main.js`;
-- conexión de `archive-criteria-table` con la nueva escena, sin modificar
-  `src/content/worldMaps.js`;
-- subida de `SAVE_FORMAT_VERSION` de `3` a `4`, con migración explícita
-  desde `1`, `2` y `3`, manteniendo separadas las tres listas de formatos
-  descritas en «Estado global y persistencia»;
-- consecuencias narrativas idempotentes: banderas `investigationComplete`
-  y `epilogueUnlocked`, objetivo `start-epilogue`, entrada de cuaderno
-  `archive-final-evidence`.
-
-El tercer puzle **sí** debe implementarse en este bloque. Lo que queda
-fuera de alcance es el epílogo en sí (escena, `epilogueStarted`,
-`epilogueCompleted`), la personalización y Max — ver «Bloque en curso:
-Archive Criteria» más abajo.
+Según el «Orden de trabajo posterior» de este documento, la siguiente
+prioridad de producción es la **resolución final y el epílogo** (punto 3).
+Su diseño y detalle no forman parte de este documento — ver
+`docs/production/V1_PRODUCTION_PLAN.md` y la selección de tareas vigente
+en `CLAUDE.md` y la skill `autopilot`.
 
 ---
 
-## Bloque en curso: Archive Criteria
+## Bloque completado: Archive Criteria
 
 Especificación:
 
@@ -718,8 +743,8 @@ Max se implementará después del epílogo como compañero visual seguro, inicia
 
 1. ~~Consecuencias del catálogo y mapa del Archivo~~ — completado en
    `7a0c13c`.
-2. Archive Criteria: lógica, escena e integración completas — **bloque
-   actual**, ver `NEXT_CODEX_TASK.md`.
+2. ~~Archive Criteria: lógica, escena e integración completas~~ —
+   completado.
 3. Resolución final y epílogo.
 4. Personalización centralizada.
 5. Max como compañero visual.
