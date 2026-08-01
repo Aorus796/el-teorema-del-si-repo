@@ -69,6 +69,24 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `lifecycle` del guardado resultante reflejan el recorrido acumulado en
   ambas rondas — demostrando que `GameState` restauró de verdad un intento
   de P2 a medio camino en memoria, no solo que sobrevivió en `localStorage`.
+- Prueba Playwright que restaura una clasificación incompleta del Archivo
+  (fase `classifying`, dos de las seis afirmaciones ya clasificadas, una
+  pista leída, sin confirmar nunca) tras un `page.reload()` real: siembra
+  el guardado, entra a "La pregunta correcta", clasifica dos afirmaciones
+  (`voluntary-entry` y `followed-trail`, ambas `confirmed`), guarda con
+  "K", recarga la página, carga de nuevo con "L", reentra en el Archivo
+  para confirmar que reconstruir un intento `classifying` no lanza
+  excepciones, clasifica una tercera afirmación (`never-disagreed`) —
+  movimiento que solo produce el resultado correcto si las dos anteriores
+  se restauraron de verdad en memoria — y guarda una segunda vez,
+  comprobando que `phase`, `verdicts`, `hintsRead`, `attemptCount` y
+  `failureCode` del guardado resultante contienen las tres clasificaciones
+  juntas — demostrando que `GameState` restauró de verdad la clasificación
+  incompleta en memoria, no solo que sobrevivió en `localStorage`. Con esta
+  cobertura queda completo el criterio de "intento incompleto restaurable"
+  para los tres puzles del juego (catálogo de la Biblioteca en `failed`,
+  primer puzle de los Siete Puentes en `traversing`, y el Archivo en
+  `classifying`).
 
 ### Corregido
 
