@@ -1401,6 +1401,226 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
   expect(errors).toEqual([]);
 });
 
+test("restaura una clasificación incompleta del Archivo tras recargar la página", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 192, y: 145, facing: "up" },
+    world: {
+      currentMapId: "archive",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "inspect-archive-criteria-table",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["A", "D", "R", "C", "M"],
+        phase: "solved",
+        hintsRead: [],
+        attemptCount: 1,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.goto("/");
+
+  /*
+   * A diferencia de la mayoría de tests de este archivo, el fixture inicial
+   * se siembra con `page.evaluate` (no `page.addInitScript`) porque este
+   * test hace un `page.reload()` real: `addInitScript` se re-ejecuta en
+   * cada navegación posterior, incluida la del reload, y sobrescribiría en
+   * silencio el guardado real producido por "KeyK" antes de que el segundo
+   * "KeyL" pudiera leerlo. `page.evaluate` se ejecuta una sola vez, así que
+   * el localStorage sobrevive al reload sin intervención del test, que es
+   * justo lo que este test necesita demostrar.
+   */
+  await page.evaluate((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await canvas.evaluate((element) =>
+      element.toDataURL(),
+    );
+
+    await page.keyboard.press(key);
+
+    await expect
+      .poll(() => canvas.evaluate((element) => element.toDataURL()))
+      .not.toBe(previousFrame);
+  };
+
+  const readSave = async () => {
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+
+    return JSON.parse(savedRaw);
+  };
+
+  const titleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(titleFrame);
+
+  const worldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  // voluntary-entry (foco inicial): null -> confirmed
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  // Mueve el foco al índice 1 (followed-trail).
+  await pressAndWaitForFrameChange("ArrowRight");
+
+  // followed-trail: null -> confirmed
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  // Revela la primera pista sin confirmar la clasificación.
+  await pressAndWaitForFrameChange("KeyQ");
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .toBe(worldFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const firstSave = await readSave();
+
+  expect(firstSave.puzzles.archiveCriteria.phase).toBe("classifying");
+  expect(firstSave.puzzles.archiveCriteria.verdicts).toEqual({
+    "voluntary-entry": "confirmed",
+    "followed-trail": "confirmed",
+    "never-disagreed": null,
+    "someone-refuses-now": null,
+    "present-choice": null,
+    "universal-future": null,
+  });
+  expect(firstSave.puzzles.archiveCriteria.hintsRead).toEqual([1]);
+  expect(firstSave.puzzles.archiveCriteria.attemptCount).toBe(0);
+  expect(firstSave.puzzles.archiveCriteria.failureCode).toBe(null);
+
+  await page.reload();
+
+  const reloadedTitleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedTitleFrame);
+
+  const reloadedWorldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  // Reentra en el Archivo para confirmar que reconstruir un intento
+  // "classifying" desde el guardado no lanza ninguna excepción.
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedWorldFrame);
+
+  /*
+   * El foco (focusedClaimIndex) se reinicia a 0 en cada `enter()`: es
+   * estado transitorio de la escena, no persistido en el guardado. Navega
+   * desde ahí: 0 (voluntary-entry) -> 1 (followed-trail) -> 2
+   * (never-disagreed).
+   */
+  await pressAndWaitForFrameChange("ArrowRight");
+  await pressAndWaitForFrameChange("ArrowRight");
+
+  /*
+   * never-disagreed: null -> confirmed. Este movimiento solo produce el
+   * resultado esperado en el guardado final si los dos veredictos
+   * anteriores se restauraron de verdad en memoria; de lo contrario el
+   * guardado resultante no contendría las tres clasificaciones juntas.
+   */
+  await pressAndWaitForFrameChange("ArrowDown");
+
+  await pressAndWaitForFrameChange("Escape");
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const secondSave = await readSave();
+
+  expect(secondSave.puzzles.archiveCriteria.phase).toBe("classifying");
+  expect(secondSave.puzzles.archiveCriteria.verdicts).toEqual({
+    "voluntary-entry": "confirmed",
+    "followed-trail": "confirmed",
+    "never-disagreed": "confirmed",
+    "someone-refuses-now": null,
+    "present-choice": null,
+    "universal-future": null,
+  });
+  expect(secondSave.puzzles.archiveCriteria.hintsRead).toEqual([1]);
+  expect(secondSave.puzzles.archiveCriteria.attemptCount).toBe(0);
+  expect(secondSave.puzzles.archiveCriteria.failureCode).toBe(null);
+
+  expect(errors).toEqual([]);
+});
+
 const INVALID_SAVE_VARIANTS = [
   {
     name: "JSON inválido",
