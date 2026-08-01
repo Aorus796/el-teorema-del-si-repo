@@ -143,7 +143,7 @@ jugables.
   estado completo de los tres puzles.
 - [x] Un intento incompleto de cada puzle puede restaurarse o reiniciarse de
   forma segura según su diseño aprobado.
-- [ ] Los guardados compatibles de `v0.5.0` se restauran mediante migración
+- [x] Los guardados compatibles de `v0.5.0` se restauran mediante migración
   explícita y probada si cambia el formato.
 - [x] Un guardado inválido o incompatible falla de forma controlada y no
   corrompe otro progreso.
