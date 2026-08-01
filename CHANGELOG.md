@@ -57,6 +57,18 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `failureCode` del guardado resultante coinciden con el intento original —
   demostrando que `GameState` restauró de verdad el intento incompleto en
   memoria, no solo que sobrevivió en `localStorage`.
+- Prueba Playwright que restaura un intento a medias del primer puzle de
+  los Siete Puentes (fase `traversing`, recorrido `E-R` con un puente ya
+  cruzado) tras un `page.reload()` real: siembra el guardado, entra al
+  puzle, cruza un segundo puente (`B3`, `R`→`N`), guarda con "K", recarga
+  la página, carga de nuevo con "L", reabre el diálogo del mapa (sigue
+  disponible porque el recorrido no está resuelto), cruza un tercer puente
+  (`B6`, `N`→`L`) — movimiento que solo produce el resultado correcto si el
+  recorrido se reanudó de verdad en el nodo `N` — y guarda una segunda vez,
+  comprobando que `phase`, `currentNode`, `route`, `usedBridgeIds` y
+  `lifecycle` del guardado resultante reflejan el recorrido acumulado en
+  ambas rondas — demostrando que `GameState` restauró de verdad un intento
+  de P2 a medio camino en memoria, no solo que sobrevivió en `localStorage`.
 
 ### Corregido
 
