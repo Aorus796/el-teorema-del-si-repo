@@ -1621,6 +1621,207 @@ test("restaura una clasificación incompleta del Archivo tras recargar la págin
   expect(errors).toEqual([]);
 });
 
+test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles combinados tras recargar la página", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    scene: "world",
+    player: { x: 192, y: 145, facing: "up" },
+    world: {
+      currentMapId: "archive",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "inspect-archive-criteria-table",
+    notebook: [
+      {
+        id: "bride-note",
+        title: "Nota encontrada en la habitación",
+        text: "Antes de mañana tengo que comprobar una cosa. Si no he vuelto al anochecer, sigue el camino de los siete puentes. No confíes en el mapa completo: uno de ellos nunca estuvo abierto.",
+      },
+      {
+        id: "library-clue",
+        title: "La marca de la biblioteca",
+        text: "La anotación encontrada junto al embarcadero contiene dos arcos entrelazados y una referencia al archivo de mapas de la Biblioteca del Margen.",
+      },
+      {
+        id: "p2-bridges-solution",
+        title: "El paseo imposible",
+        text: "No era necesario cruzar los siete puentes. Al reconocer cuál estaba cerrado, los seis restantes formaban un recorrido posible desde la entrada hasta el molino.",
+      },
+      {
+        id: "library-catalogue-solution",
+        title: "El catálogo perfecto",
+        text: "El orden A-D-R-C-M ha restaurado el catálogo y revelado el acceso al Archivo.",
+      },
+    ],
+    puzzles: {
+      p2: {
+        lifecycle: { status: "solved", attemptCount: 1 },
+        phase: "solved",
+        closedBridgeId: "B1",
+        currentNode: "L",
+        route: ["E", "R", "N", "L", "R", "M", "L"],
+        usedBridgeIds: ["B2", "B3", "B6", "B7", "B4", "B5"],
+        hintsRead: [1],
+        failureCode: null,
+      },
+      libraryCatalogue: {
+        order: ["A", "D", "R", "C", "M"],
+        phase: "solved",
+        hintsRead: [1],
+        attemptCount: 1,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": "confirmed",
+          "followed-trail": "confirmed",
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "classifying",
+        hintsRead: [1],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  const assertCombinedState = (savedData) => {
+    expect(savedData.formatVersion).toBe(savedGame.formatVersion);
+    expect(savedData.scene).toBe(savedGame.scene);
+    expect(savedData.player).toEqual(savedGame.player);
+    expect(savedData.world).toEqual(savedGame.world);
+    expect(savedData.flags).toEqual(savedGame.flags);
+    expect(savedData.objectiveId).toBe(savedGame.objectiveId);
+    expect(savedData.notebook).toEqual(savedGame.notebook);
+
+    /*
+     * Compara la estructura persistida completa de los tres puzles contra
+     * el propio fixture de entrada, en vez de listar campos sueltos: así
+     * queda cubierto explícitamente cada campo de cada puzle (incluidos
+     * currentNode/hintsRead/failureCode de P2, hintsRead/attemptCount/
+     * failureCode del catálogo, y attemptCount/failureCode del Archivo),
+     * sin depender de que alguien recuerde añadir una aserción nueva si el
+     * formato de guardado gana un campo en el futuro.
+     *
+     * La única salvedad real es P2State: su lifecycle.toSaveData() añade
+     * el campo calculado `id` (siempre P2_GRAPH.id = "p2-bridges"),
+     * ausente del fixture de entrada porque no se lee de él. Se añade aquí
+     * explícitamente para poder seguir comparando el resto de la
+     * estructura con toEqual.
+     */
+    expect(savedData.puzzles).toEqual({
+      ...savedGame.puzzles,
+      p2: {
+        ...savedGame.puzzles.p2,
+        lifecycle: {
+          ...savedGame.puzzles.p2.lifecycle,
+          id: "p2-bridges",
+        },
+      },
+    });
+  };
+
+  await page.goto("/");
+
+  /*
+   * A diferencia de la mayoría de tests de este archivo, el fixture inicial
+   * se siembra con `page.evaluate` (no `page.addInitScript`) porque este
+   * test hace un `page.reload()` real: `addInitScript` se re-ejecuta en
+   * cada navegación posterior, incluida la del reload, y sobrescribiría en
+   * silencio el guardado real producido por "KeyK" antes de que el segundo
+   * "KeyL" pudiera leerlo. `page.evaluate` se ejecuta una sola vez, así que
+   * el localStorage sobrevive al reload sin intervención del test, que es
+   * justo lo que este test necesita demostrar.
+   */
+  await page.evaluate((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+
+  const readSave = async () => {
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+
+    return JSON.parse(savedRaw);
+  };
+
+  const titleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(titleFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const firstSave = await readSave();
+
+  assertCombinedState(firstSave);
+
+  await page.reload();
+
+  const reloadedTitleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedTitleFrame);
+
+  /*
+   * Releer localStorage aquí solo demostraría que "KeyL" no lo tocó, no
+   * que GameState se restauró de verdad en memoria. Para probar la
+   * restauración real, se vuelve a guardar desde el estado recién cargado
+   * y se ejecuta la misma comprobación completa sobre el guardado
+   * resultante (sin comparar el objeto completo: `savedAt` cambia en cada
+   * guardado).
+   */
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const secondSave = await readSave();
+
+  assertCombinedState(secondSave);
+
+  expect(errors).toEqual([]);
+});
+
 test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado", async ({
   page,
 }) => {
