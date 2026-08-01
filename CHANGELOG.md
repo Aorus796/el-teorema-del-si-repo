@@ -98,6 +98,19 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   defecto — ya que el formato 1 no los contenía —, conservando a la vez el
   `objectiveId` y la entrada de cuaderno heredados del formato legado. Sin
   errores de consola ni excepciones sin capturar durante la migración.
+- Prueba Playwright que combina en un único guardado avanzado las seis
+  dimensiones de estado a la vez (mapa, posición, las nueve banderas, el
+  objetivo, un cuaderno de cuatro entradas, y los tres puzles: P2 y el
+  catálogo de la Biblioteca resueltos, y el Archivo a medio clasificar) y
+  demuestra que sobreviven juntas a un `page.reload()` real: siembra el
+  guardado, carga con "L", guarda con "K" y comprueba campo a campo el
+  resultado, recarga la página sin sembrar nada de nuevo, carga de nuevo
+  con "L", guarda una segunda vez con "K" y repite la misma comprobación
+  completa sobre el nuevo guardado mediante una función auxiliar
+  reutilizable — demostrando que `GameState` restauró de verdad las seis
+  dimensiones combinadas en memoria, no solo que sobrevivieron por
+  separado en `localStorage`. Con esta cobertura queda cerrado el
+  criterio de "Estado y guardado" del plan de producción.
 
 ### Corregido
 

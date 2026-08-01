@@ -1621,6 +1621,256 @@ test("restaura una clasificación incompleta del Archivo tras recargar la págin
   expect(errors).toEqual([]);
 });
 
+test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles combinados tras recargar la página", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    scene: "world",
+    player: { x: 192, y: 145, facing: "up" },
+    world: {
+      currentMapId: "archive",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "inspect-archive-criteria-table",
+    notebook: [
+      {
+        id: "bride-note",
+        title: "Nota encontrada en la habitación",
+        text: "Antes de mañana tengo que comprobar una cosa. Si no he vuelto al anochecer, sigue el camino de los siete puentes. No confíes en el mapa completo: uno de ellos nunca estuvo abierto.",
+      },
+      {
+        id: "library-clue",
+        title: "La marca de la biblioteca",
+        text: "La anotación encontrada junto al embarcadero contiene dos arcos entrelazados y una referencia al archivo de mapas de la Biblioteca del Margen.",
+      },
+      {
+        id: "p2-bridges-solution",
+        title: "El paseo imposible",
+        text: "No era necesario cruzar los siete puentes. Al reconocer cuál estaba cerrado, los seis restantes formaban un recorrido posible desde la entrada hasta el molino.",
+      },
+      {
+        id: "library-catalogue-solution",
+        title: "El catálogo perfecto",
+        text: "El orden A-D-R-C-M ha restaurado el catálogo y revelado el acceso al Archivo.",
+      },
+    ],
+    puzzles: {
+      p2: {
+        lifecycle: { status: "solved", attemptCount: 1 },
+        phase: "solved",
+        closedBridgeId: "B1",
+        currentNode: "L",
+        route: ["E", "R", "N", "L", "R", "M", "L"],
+        usedBridgeIds: ["B2", "B3", "B6", "B7", "B4", "B5"],
+        hintsRead: [],
+        failureCode: null,
+      },
+      libraryCatalogue: {
+        order: ["A", "D", "R", "C", "M"],
+        phase: "solved",
+        hintsRead: [],
+        attemptCount: 1,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": "confirmed",
+          "followed-trail": "confirmed",
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "classifying",
+        hintsRead: [1],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  const assertCombinedState = (savedData) => {
+    expect(savedData.world.currentMapId).toBe("archive");
+    expect(savedData.world.playerByMap.archive).toEqual({
+      x: 192,
+      y: 145,
+      facing: "up",
+    });
+    expect(savedData.flags).toEqual({
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    });
+    expect(savedData.objectiveId).toBe(
+      "inspect-archive-criteria-table",
+    );
+    expect(savedData.notebook).toEqual([
+      {
+        id: "bride-note",
+        title: "Nota encontrada en la habitación",
+        text: "Antes de mañana tengo que comprobar una cosa. Si no he vuelto al anochecer, sigue el camino de los siete puentes. No confíes en el mapa completo: uno de ellos nunca estuvo abierto.",
+      },
+      {
+        id: "library-clue",
+        title: "La marca de la biblioteca",
+        text: "La anotación encontrada junto al embarcadero contiene dos arcos entrelazados y una referencia al archivo de mapas de la Biblioteca del Margen.",
+      },
+      {
+        id: "p2-bridges-solution",
+        title: "El paseo imposible",
+        text: "No era necesario cruzar los siete puentes. Al reconocer cuál estaba cerrado, los seis restantes formaban un recorrido posible desde la entrada hasta el molino.",
+      },
+      {
+        id: "library-catalogue-solution",
+        title: "El catálogo perfecto",
+        text: "El orden A-D-R-C-M ha restaurado el catálogo y revelado el acceso al Archivo.",
+      },
+    ]);
+    expect(savedData.puzzles.p2.phase).toBe("solved");
+    expect(savedData.puzzles.p2.closedBridgeId).toBe("B1");
+    expect(savedData.puzzles.p2.route).toEqual([
+      "E",
+      "R",
+      "N",
+      "L",
+      "R",
+      "M",
+      "L",
+    ]);
+    expect(savedData.puzzles.p2.usedBridgeIds).toEqual([
+      "B2",
+      "B3",
+      "B6",
+      "B7",
+      "B4",
+      "B5",
+    ]);
+    expect(savedData.puzzles.p2.lifecycle.status).toBe("solved");
+    expect(savedData.puzzles.libraryCatalogue.phase).toBe("solved");
+    expect(savedData.puzzles.libraryCatalogue.order).toEqual([
+      "A",
+      "D",
+      "R",
+      "C",
+      "M",
+    ]);
+    expect(savedData.puzzles.archiveCriteria.phase).toBe(
+      "classifying",
+    );
+    expect(savedData.puzzles.archiveCriteria.verdicts).toEqual({
+      "voluntary-entry": "confirmed",
+      "followed-trail": "confirmed",
+      "never-disagreed": null,
+      "someone-refuses-now": null,
+      "present-choice": null,
+      "universal-future": null,
+    });
+    expect(savedData.puzzles.archiveCriteria.hintsRead).toEqual([1]);
+  };
+
+  await page.goto("/");
+
+  /*
+   * A diferencia de la mayoría de tests de este archivo, el fixture inicial
+   * se siembra con `page.evaluate` (no `page.addInitScript`) porque este
+   * test hace un `page.reload()` real: `addInitScript` se re-ejecuta en
+   * cada navegación posterior, incluida la del reload, y sobrescribiría en
+   * silencio el guardado real producido por "KeyK" antes de que el segundo
+   * "KeyL" pudiera leerlo. `page.evaluate` se ejecuta una sola vez, así que
+   * el localStorage sobrevive al reload sin intervención del test, que es
+   * justo lo que este test necesita demostrar.
+   */
+  await page.evaluate((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+
+  const readSave = async () => {
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+
+    return JSON.parse(savedRaw);
+  };
+
+  const titleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(titleFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const firstSave = await readSave();
+
+  assertCombinedState(firstSave);
+
+  await page.reload();
+
+  const reloadedTitleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedTitleFrame);
+
+  /*
+   * Releer localStorage aquí solo demostraría que "KeyL" no lo tocó, no
+   * que GameState se restauró de verdad en memoria. Para probar la
+   * restauración real, se vuelve a guardar desde el estado recién cargado
+   * y se ejecuta la misma comprobación completa sobre el guardado
+   * resultante (sin comparar el objeto completo: `savedAt` cambia en cada
+   * guardado).
+   */
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const secondSave = await readSave();
+
+  assertCombinedState(secondSave);
+
+  expect(errors).toEqual([]);
+});
+
 test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado", async ({
   page,
 }) => {
