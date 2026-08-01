@@ -1708,7 +1708,9 @@ test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles c
   };
 
   const assertCombinedState = (savedData) => {
+    expect(savedData.formatVersion).toBe(savedGame.formatVersion);
     expect(savedData.scene).toBe(savedGame.scene);
+    expect(savedData.player).toEqual(savedGame.player);
     expect(savedData.world).toEqual(savedGame.world);
     expect(savedData.flags).toEqual(savedGame.flags);
     expect(savedData.objectiveId).toBe(savedGame.objectiveId);
