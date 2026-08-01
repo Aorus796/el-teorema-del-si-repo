@@ -1680,13 +1680,13 @@ test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles c
         currentNode: "L",
         route: ["E", "R", "N", "L", "R", "M", "L"],
         usedBridgeIds: ["B2", "B3", "B6", "B7", "B4", "B5"],
-        hintsRead: [],
+        hintsRead: [1],
         failureCode: null,
       },
       libraryCatalogue: {
         order: ["A", "D", "R", "C", "M"],
         phase: "solved",
-        hintsRead: [],
+        hintsRead: [1],
         attemptCount: 1,
         failureCode: null,
       },
@@ -1708,88 +1708,37 @@ test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles c
   };
 
   const assertCombinedState = (savedData) => {
-    expect(savedData.world.currentMapId).toBe("archive");
-    expect(savedData.world.playerByMap.archive).toEqual({
-      x: 192,
-      y: 145,
-      facing: "up",
+    expect(savedData.scene).toBe(savedGame.scene);
+    expect(savedData.world).toEqual(savedGame.world);
+    expect(savedData.flags).toEqual(savedGame.flags);
+    expect(savedData.objectiveId).toBe(savedGame.objectiveId);
+    expect(savedData.notebook).toEqual(savedGame.notebook);
+
+    /*
+     * Compara la estructura persistida completa de los tres puzles contra
+     * el propio fixture de entrada, en vez de listar campos sueltos: así
+     * queda cubierto explícitamente cada campo de cada puzle (incluidos
+     * currentNode/hintsRead/failureCode de P2, hintsRead/attemptCount/
+     * failureCode del catálogo, y attemptCount/failureCode del Archivo),
+     * sin depender de que alguien recuerde añadir una aserción nueva si el
+     * formato de guardado gana un campo en el futuro.
+     *
+     * La única salvedad real es P2State: su lifecycle.toSaveData() añade
+     * el campo calculado `id` (siempre P2_GRAPH.id = "p2-bridges"),
+     * ausente del fixture de entrada porque no se lee de él. Se añade aquí
+     * explícitamente para poder seguir comparando el resto de la
+     * estructura con toEqual.
+     */
+    expect(savedData.puzzles).toEqual({
+      ...savedGame.puzzles,
+      p2: {
+        ...savedGame.puzzles.p2,
+        lifecycle: {
+          ...savedGame.puzzles.p2.lifecycle,
+          id: "p2-bridges",
+        },
+      },
     });
-    expect(savedData.flags).toEqual({
-      examinedPrototypeSign: true,
-      preparationsBoardRead: true,
-      brideNoteReceived: true,
-      sevenBridgesUnlocked: true,
-      p2EvidenceFound: true,
-      libraryObjectiveUnlocked: true,
-      archiveUnlocked: true,
-      investigationComplete: false,
-      epilogueUnlocked: false,
-    });
-    expect(savedData.objectiveId).toBe(
-      "inspect-archive-criteria-table",
-    );
-    expect(savedData.notebook).toEqual([
-      {
-        id: "bride-note",
-        title: "Nota encontrada en la habitación",
-        text: "Antes de mañana tengo que comprobar una cosa. Si no he vuelto al anochecer, sigue el camino de los siete puentes. No confíes en el mapa completo: uno de ellos nunca estuvo abierto.",
-      },
-      {
-        id: "library-clue",
-        title: "La marca de la biblioteca",
-        text: "La anotación encontrada junto al embarcadero contiene dos arcos entrelazados y una referencia al archivo de mapas de la Biblioteca del Margen.",
-      },
-      {
-        id: "p2-bridges-solution",
-        title: "El paseo imposible",
-        text: "No era necesario cruzar los siete puentes. Al reconocer cuál estaba cerrado, los seis restantes formaban un recorrido posible desde la entrada hasta el molino.",
-      },
-      {
-        id: "library-catalogue-solution",
-        title: "El catálogo perfecto",
-        text: "El orden A-D-R-C-M ha restaurado el catálogo y revelado el acceso al Archivo.",
-      },
-    ]);
-    expect(savedData.puzzles.p2.phase).toBe("solved");
-    expect(savedData.puzzles.p2.closedBridgeId).toBe("B1");
-    expect(savedData.puzzles.p2.route).toEqual([
-      "E",
-      "R",
-      "N",
-      "L",
-      "R",
-      "M",
-      "L",
-    ]);
-    expect(savedData.puzzles.p2.usedBridgeIds).toEqual([
-      "B2",
-      "B3",
-      "B6",
-      "B7",
-      "B4",
-      "B5",
-    ]);
-    expect(savedData.puzzles.p2.lifecycle.status).toBe("solved");
-    expect(savedData.puzzles.libraryCatalogue.phase).toBe("solved");
-    expect(savedData.puzzles.libraryCatalogue.order).toEqual([
-      "A",
-      "D",
-      "R",
-      "C",
-      "M",
-    ]);
-    expect(savedData.puzzles.archiveCriteria.phase).toBe(
-      "classifying",
-    );
-    expect(savedData.puzzles.archiveCriteria.verdicts).toEqual({
-      "voluntary-entry": "confirmed",
-      "followed-trail": "confirmed",
-      "never-disagreed": null,
-      "someone-refuses-now": null,
-      "present-choice": null,
-      "universal-future": null,
-    });
-    expect(savedData.puzzles.archiveCriteria.hintsRead).toEqual([1]);
   };
 
   await page.goto("/");
