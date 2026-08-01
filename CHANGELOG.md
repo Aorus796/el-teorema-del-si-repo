@@ -87,6 +87,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   para los tres puzles del juego (catálogo de la Biblioteca en `failed`,
   primer puzle de los Siete Puentes en `traversing`, y el Archivo en
   `classifying`).
+- Prueba Playwright que migra en un navegador real un guardado del formato
+  legado más antiguo soportado (`formatVersion: 1`, sin `world.playerByMap`
+  ni `puzzles.archiveCriteria`, con un `puzzles.libraryCatalogue` inválido
+  para el formato vigente) al cargarlo con "L": comprueba que el progreso
+  de P2 migrado (fase `traversing`, recorrido `E-R` a mitad de camino) es
+  funcionalmente continuable cruzando un tercer puente (`B3`, `R`→`N`) con
+  teclado, y que el guardado resultante reescribe siempre `formatVersion: 4`
+  con `libraryCatalogue` y `archiveCriteria` reiniciados a su estado por
+  defecto — ya que el formato 1 no los contenía —, conservando a la vez el
+  `objectiveId` y la entrada de cuaderno heredados del formato legado. Sin
+  errores de consola ni excepciones sin capturar durante la migración.
 
 ### Corregido
 

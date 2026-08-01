@@ -1621,6 +1621,180 @@ test("restaura una clasificación incompleta del Archivo tras recargar la págin
   expect(errors).toEqual([]);
 });
 
+test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const legacySavedGame = {
+    formatVersion: 1,
+    scene: "world",
+    player: { x: 348, y: 145, facing: "down" },
+    world: { currentMapId: "seven-bridges-walk" },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+    },
+    objectiveId: "legacy-objective",
+    notebook: [
+      {
+        id: "legacy-entry",
+        title: "Entrada histórica",
+        text: "Contenido conservado",
+      },
+    ],
+    puzzles: {
+      p2: {
+        lifecycle: { status: "active", attemptCount: 1 },
+        phase: "traversing",
+        closedBridgeId: "B1",
+        currentNode: "R",
+        route: ["E", "R"],
+        usedBridgeIds: ["B2"],
+        hintsRead: [1],
+        failureCode: null,
+      },
+      libraryCatalogue: {
+        invalid: "Los formatos anteriores no leen este campo.",
+      },
+    },
+  };
+
+  /*
+   * Este test no hace page.reload(), así que addInitScript es la técnica
+   * correcta (a diferencia de los tests de reload de este archivo, que
+   * usan page.evaluate para que el guardado sobreviva a la navegación).
+   */
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, legacySavedGame);
+
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+  const toast = page.locator("#toast");
+
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await canvas.evaluate((element) =>
+      element.toDataURL(),
+    );
+
+    await page.keyboard.press(key);
+
+    await expect
+      .poll(() => canvas.evaluate((element) => element.toDataURL()))
+      .not.toBe(previousFrame);
+  };
+
+  const initialFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  // Carga el guardado de formato 1: dispara la migración al formato vigente.
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(initialFrame);
+
+  const worldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "La novia ha marcado que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  // Cruza B3 (R -> N): en R hay tres movimientos disponibles tras excluir
+  // B2 (usado) -- B3, B4 y B7 (B1 conecta E-N y no toca R, así que no
+  // afecta a las opciones desde aquí) -- pero selectedMoveIndex arranca
+  // en 0 y B3 es la primera en el orden de P2_GRAPH.bridges, así que un
+  // solo KeyE (sin ArrowLeft/ArrowRight) la selecciona y la cruza.
+  await pressAndWaitForFrameChange("KeyE");
+
+  const puzzleSceneFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(puzzleSceneFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const savedRaw = await page.evaluate(() =>
+    localStorage.getItem("el-teorema-del-si.save.v1"),
+  );
+  const savedData = JSON.parse(savedRaw);
+
+  expect(savedData.formatVersion).toBe(4);
+  expect(savedData.puzzles.p2.phase).toBe("traversing");
+  expect(savedData.puzzles.p2.closedBridgeId).toBe("B1");
+  expect(savedData.puzzles.p2.currentNode).toBe("N");
+  expect(savedData.puzzles.p2.route).toEqual(["E", "R", "N"]);
+  expect(savedData.puzzles.p2.usedBridgeIds).toEqual(["B2", "B3"]);
+  expect(savedData.puzzles.p2.lifecycle.status).toBe("active");
+  expect(savedData.puzzles.p2.lifecycle.attemptCount).toBe(1);
+  expect(savedData.puzzles.p2.failureCode).toBe(null);
+  expect(savedData.puzzles.libraryCatalogue.phase).toBe("ready");
+  expect(savedData.puzzles.libraryCatalogue.order).toEqual([
+    "C",
+    "M",
+    "A",
+    "R",
+    "D",
+  ]);
+  expect(savedData.puzzles.archiveCriteria.phase).toBe("ready");
+  expect(savedData.objectiveId).toBe("legacy-objective");
+  expect(
+    savedData.notebook.some(
+      (entry) =>
+        entry.id === "legacy-entry" &&
+        entry.text === "Contenido conservado",
+    ),
+  ).toBe(true);
+  expect(savedData.flags.p2EvidenceFound).toBe(true);
+  expect(savedData.flags.libraryObjectiveUnlocked).toBe(true);
+  expect(savedData.flags.archiveUnlocked).toBe(false);
+  expect(savedData.flags.investigationComplete).toBe(false);
+  expect(savedData.flags.epilogueUnlocked).toBe(false);
+
+  expect(errors).toEqual([]);
+});
+
 const INVALID_SAVE_VARIANTS = [
   {
     name: "JSON inválido",
