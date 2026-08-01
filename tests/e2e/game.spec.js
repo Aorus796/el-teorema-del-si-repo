@@ -1130,6 +1130,277 @@ test("restaura un intento fallido del catálogo de la Biblioteca tras recargar l
   expect(errors).toEqual([]);
 });
 
+test("restaura un intento a medias del primer puzle de los Siete Puentes tras recargar la página", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 348, y: 145, facing: "down" },
+    world: {
+      currentMapId: "seven-bridges-walk",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 348, y: 145, facing: "down" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: {
+      p2: {
+        phase: "traversing",
+        closedBridgeId: "B1",
+        currentNode: "R",
+        route: ["E", "R"],
+        usedBridgeIds: ["B2"],
+        hintsRead: [],
+        failureCode: null,
+        lifecycle: { status: "active", attemptCount: 1 },
+      },
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.goto("/");
+
+  /*
+   * A diferencia de la mayoría de tests de este archivo, el fixture inicial
+   * se siembra con `page.evaluate` (no `page.addInitScript`) porque este
+   * test hace un `page.reload()` real: `addInitScript` se re-ejecuta en
+   * cada navegación posterior, incluida la del reload, y sobrescribiría en
+   * silencio el guardado real producido por "KeyK" antes de que el segundo
+   * "KeyL" pudiera leerlo. `page.evaluate` se ejecuta una sola vez, así que
+   * el localStorage sobrevive al reload sin intervención del test, que es
+   * justo lo que este test necesita demostrar.
+   */
+  await page.evaluate((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await canvas.evaluate((element) =>
+      element.toDataURL(),
+    );
+
+    await page.keyboard.press(key);
+
+    await expect
+      .poll(() => canvas.evaluate((element) => element.toDataURL()))
+      .not.toBe(previousFrame);
+  };
+
+  const readSave = async () => {
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+
+    return JSON.parse(savedRaw);
+  };
+
+  const titleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(titleFrame);
+
+  const worldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "La novia ha marcado que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  // Cruza B3 (R -> N): en R hay tres salidas disponibles tras excluir B1
+  // (cerrado) y B2 (usado) -- B3, B4 y B7 -- pero selectedMoveIndex
+  // arranca en 0 y B3 es la primera en el orden de P2_GRAPH.bridges, así
+  // que un solo KeyE (sin ArrowLeft/ArrowRight) la selecciona y la cruza.
+  await pressAndWaitForFrameChange("KeyE");
+
+  const puzzleSceneFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(puzzleSceneFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const firstSave = await readSave();
+
+  expect(firstSave.puzzles.p2.phase).toBe("traversing");
+  expect(firstSave.puzzles.p2.closedBridgeId).toBe("B1");
+  expect(firstSave.puzzles.p2.currentNode).toBe("N");
+  expect(firstSave.puzzles.p2.route).toEqual(["E", "R", "N"]);
+  expect(firstSave.puzzles.p2.usedBridgeIds).toEqual(["B2", "B3"]);
+  expect(firstSave.puzzles.p2.lifecycle.status).toBe("active");
+  expect(firstSave.puzzles.p2.lifecycle.attemptCount).toBe(1);
+  expect(firstSave.puzzles.p2.failureCode).toBe(null);
+
+  await page.reload();
+
+  const reloadedTitleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedTitleFrame);
+
+  const reloadedWorldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  // Reabre el diálogo del mapa: sigue apareciendo porque phase !== "solved".
+  await page.keyboard.press("KeyE");
+
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "La novia ha marcado que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(reloadedWorldFrame);
+
+  /*
+   * Cruza B6 (N -> L): única salida disponible en N tras excluir B1
+   * (cerrado) y B3 (usado). Este movimiento solo produce el resultado
+   * esperado si el recorrido se restauró de verdad en currentNode "N";
+   * de lo contrario el puzle habría reanudado en otro nodo y esta acción
+   * fallaría o produciría un resultado distinto.
+   */
+  await pressAndWaitForFrameChange("KeyE");
+
+  const secondPuzzleSceneFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(secondPuzzleSceneFrame);
+
+  /*
+   * Releer localStorage aquí solo demostraría que "KeyL" no lo tocó, no
+   * que GameState se restauró de verdad en memoria. Para probar la
+   * restauración real, se vuelve a guardar desde el estado recién cargado
+   * y se comprueban explícitamente los campos del puzle en el guardado
+   * resultante (sin comparar el objeto completo: `savedAt` cambia en cada
+   * guardado).
+   */
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const secondSave = await readSave();
+
+  expect(secondSave.puzzles.p2.phase).toBe("traversing");
+  expect(secondSave.puzzles.p2.closedBridgeId).toBe("B1");
+  expect(secondSave.puzzles.p2.currentNode).toBe("L");
+  expect(secondSave.puzzles.p2.route).toEqual(["E", "R", "N", "L"]);
+  expect(secondSave.puzzles.p2.usedBridgeIds).toEqual([
+    "B2",
+    "B3",
+    "B6",
+  ]);
+  expect(secondSave.puzzles.p2.lifecycle.status).toBe("active");
+  expect(secondSave.puzzles.p2.lifecycle.attemptCount).toBe(1);
+  expect(secondSave.puzzles.p2.failureCode).toBe(null);
+
+  expect(errors).toEqual([]);
+});
+
 const INVALID_SAVE_VARIANTS = [
   {
     name: "JSON inválido",
