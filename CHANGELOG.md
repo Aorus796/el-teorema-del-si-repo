@@ -46,6 +46,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   con lo esperado — demostrando que `GameState` se restauró de verdad en
   memoria tras el ciclo completo de guardar → recargar la página →
   cargar, no solo que el `localStorage` quedó intacto.
+- Prueba Playwright que restaura un intento incompleto y fallido del
+  catálogo de la Biblioteca (fase `failed`, orden inválido, una pista
+  leída, un intento consumido) tras un `page.reload()` real: siembra el
+  guardado, entra al catálogo, intercambia dos documentos y confirma un
+  orden que incumple las reglas, guarda con "K", recarga la página, carga
+  de nuevo con "L", reentra en el catálogo para confirmar que reconstruir
+  un intento `failed` no lanza excepciones, y guarda una segunda vez,
+  comprobando que `phase`, `order`, `hintsRead`, `attemptCount` y
+  `failureCode` del guardado resultante coinciden con el intento original —
+  demostrando que `GameState` restauró de verdad el intento incompleto en
+  memoria, no solo que sobrevivió en `localStorage`.
 
 ### Corregido
 
