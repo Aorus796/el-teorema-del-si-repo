@@ -401,13 +401,19 @@ export class WorldScene {
       return;
     }
 
-    this.ui.beginDialogue({
-      speaker: "Mecanismo del regalo",
-      lines: [
-        "El mecanismo ya está engrasado y los anillos giran con suavidad.",
-        "Aún falta encajar la combinación que lo abra por completo.",
-      ],
-    });
+    if (this.state.flags.giftCodeSolved) {
+      this.ui.beginDialogue({
+        speaker: "Mecanismo del regalo",
+        lines: [
+          "Los anillos ya no giran: la pieza quedó fija en su posición final.",
+          "No hay nada más que ajustar aquí.",
+        ],
+      });
+      return;
+    }
+
+    this.syncPlayerState();
+    this.scenes.change("epilogue-gift-code");
   }
 
   interactWithBlockedExit(object) {

@@ -346,17 +346,45 @@ test("el mecanismo del regalo sin epílogo desbloqueado no cambia estado ni mapa
   assert.deepEqual(stateAfter, stateBefore);
 });
 
-test("el mecanismo del regalo con epílogo desbloqueado muestra un diálogo distinto sin adelantar el epílogo", () => {
+test("el mecanismo del regalo con epílogo desbloqueado y sin resolver cambia a epilogue-gift-code sin diálogo", () => {
   const setup = createWorldAt("axiom-plaza");
   const mechanism = findObject(
     "axiom-plaza",
     "epilogue-gift-mechanism",
   );
-  const setupBefore = createWorldAt("axiom-plaza");
-  setupBefore.scene.interact(mechanism);
-  const linesBefore = setupBefore.ui.dialogue.lines;
-
   setup.state.flags.epilogueUnlocked = true;
+  setup.scene.player.x = 300;
+  setup.scene.player.y = 250;
+  setup.scene.player.facing = "up";
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
+
+  setup.scene.interact(mechanism);
+
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "epilogue-gift-code", payload: {} },
+  ]);
+  assert.equal(setup.ui.dialogue, null);
+  assert.deepEqual(
+    setup.state.getPlayerState("axiom-plaza"),
+    { x: 300, y: 250, facing: "up" },
+  );
+  stateBefore.player = stateAfter.player;
+  stateBefore.world = stateAfter.world;
+  assert.deepEqual(stateAfter, stateBefore);
+});
+
+test("el mecanismo del regalo con giftCodeSolved muestra un diálogo distinto sin cambiar de escena", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const mechanism = findObject(
+    "axiom-plaza",
+    "epilogue-gift-mechanism",
+  );
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.giftCodeSolved = true;
   const stateBefore = structuredClone(setup.state.toSaveData());
   delete stateBefore.savedAt;
 
@@ -367,7 +395,6 @@ test("el mecanismo del regalo con epílogo desbloqueado muestra un diálogo dist
 
   assert.deepEqual(setup.scenes.changes, []);
   assert.ok(setup.ui.dialogue !== null);
-  assert.notDeepEqual(setup.ui.dialogue.lines, linesBefore);
   assert.deepEqual(stateAfter, stateBefore);
 });
 
