@@ -333,30 +333,17 @@ test("el mecanismo del regalo sin epílogo desbloqueado no cambia estado ni mapa
     "axiom-plaza",
     "epilogue-gift-mechanism",
   );
-  const flagsBefore = { ...setup.state.flags };
-  const objectiveBefore = setup.state.objectiveId;
-  const notebookBefore = structuredClone(setup.state.notebook);
-  const catalogueBefore =
-    setup.state.puzzles.libraryCatalogue.toSaveData();
-  const archiveCriteriaBefore =
-    setup.state.puzzles.archiveCriteria.toSaveData();
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
 
   setup.scene.interact(mechanism);
 
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
   assert.deepEqual(setup.scenes.changes, []);
-  assert.equal(setup.state.world.currentMapId, "axiom-plaza");
   assert.ok(setup.ui.dialogue !== null);
-  assert.deepEqual(setup.state.flags, flagsBefore);
-  assert.equal(setup.state.objectiveId, objectiveBefore);
-  assert.deepEqual(setup.state.notebook, notebookBefore);
-  assert.deepEqual(
-    setup.state.puzzles.libraryCatalogue.toSaveData(),
-    catalogueBefore,
-  );
-  assert.deepEqual(
-    setup.state.puzzles.archiveCriteria.toSaveData(),
-    archiveCriteriaBefore,
-  );
+  assert.deepEqual(stateAfter, stateBefore);
 });
 
 test("el mecanismo del regalo con epílogo desbloqueado muestra un diálogo distinto sin adelantar el epílogo", () => {
@@ -370,32 +357,18 @@ test("el mecanismo del regalo con epílogo desbloqueado muestra un diálogo dist
   const linesBefore = setupBefore.ui.dialogue.lines;
 
   setup.state.flags.epilogueUnlocked = true;
-  const flagsBefore = { ...setup.state.flags };
-  const objectiveBefore = setup.state.objectiveId;
-  const notebookBefore = structuredClone(setup.state.notebook);
-  const catalogueBefore =
-    setup.state.puzzles.libraryCatalogue.toSaveData();
-  const archiveCriteriaBefore =
-    setup.state.puzzles.archiveCriteria.toSaveData();
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
 
   setup.scene.interact(mechanism);
 
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
   assert.deepEqual(setup.scenes.changes, []);
-  assert.equal(setup.state.world.currentMapId, "axiom-plaza");
   assert.ok(setup.ui.dialogue !== null);
   assert.notDeepEqual(setup.ui.dialogue.lines, linesBefore);
-  assert.equal(setup.state.flags.epilogueStarted, false);
-  assert.deepEqual(setup.state.flags, flagsBefore);
-  assert.equal(setup.state.objectiveId, objectiveBefore);
-  assert.deepEqual(setup.state.notebook, notebookBefore);
-  assert.deepEqual(
-    setup.state.puzzles.libraryCatalogue.toSaveData(),
-    catalogueBefore,
-  );
-  assert.deepEqual(
-    setup.state.puzzles.archiveCriteria.toSaveData(),
-    archiveCriteriaBefore,
-  );
+  assert.deepEqual(stateAfter, stateBefore);
 });
 
 test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {
