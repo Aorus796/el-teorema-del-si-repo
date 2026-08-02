@@ -360,7 +360,7 @@ Ninguna está completada todavía.
 - [ ] 4. Configuración centralizada de la combinación (§18.4; sin
   dependencias).
 - [ ] 5. Interfaz y lógica del selector de cuatro cifras (§18.5; depende
-  de las tareas 3 y 4).
+  de las tareas 1, 3 y 4).
 - [ ] 6. Comportamiento de combinación incorrecta y correcta (§18.6;
   depende de la tarea 5).
 - [ ] 7. Persistencia y restauración de `giftCodeSolved` (§18.7; depende
