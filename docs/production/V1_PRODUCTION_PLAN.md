@@ -349,9 +349,8 @@ Especificación aprobada y cerrada:
 implementa y valida de forma independiente con el flujo completo de
 `CLAUDE.md` (`planner` → `developer` → `qa` → quality gate → `reviewer`
 → commit → PR), respetando las dependencias indicadas entre paréntesis.
-Ninguna está completada todavía.
 
-- [ ] 1. Estado persistente y migración de las nuevas banderas
+- [x] 1. Estado persistente y migración de las nuevas banderas
   (`EPILOGUE_SPEC.md` §18.1; sin dependencias).
 - [ ] 2. Desbloqueo del epílogo y actualización del objetivo/cuaderno al
   resolver el Archivo (§18.2; depende de las tareas 1 y 4).

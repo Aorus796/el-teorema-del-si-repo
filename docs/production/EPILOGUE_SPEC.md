@@ -11,8 +11,11 @@ Este documento fija la narrativa aprobada, el contrato de estado
 persistente, el flujo de interacción y la descomposición en tareas
 pequeñas para implementarlo con el flujo obligatorio de `CLAUDE.md`
 (`planner` → `developer` → `qa` → `reviewer`) en varias ejecuciones de
-`autopilot`. **No implementa nada todavía.** Ningún archivo de `src/` ni
-`tests/` se modifica como parte de esta tarea.
+`autopilot`. **Nació como especificación cerrada, sin implementación
+todavía.** El progreso real de cada una de las 16 tareas de la sección 18
+no se registra en este documento, sino en
+`docs/production/V1_PRODUCTION_PLAN.md` — consúltalo para saber qué está
+implementado en un momento dado.
 
 Sigue la misma convención que
 [`../puzzles/LIBRARY_CATALOGUE_SPEC.md`](../puzzles/LIBRARY_CATALOGUE_SPEC.md)
@@ -32,13 +35,15 @@ un archivo `src/scenes/EpilogueScene.js` todavía no creado. Este documento
 real ahora aprobado. La única bandera nueva que ese documento no anticipaba
 es `giftCodeSolved` (sección 13).
 
-Verificado contra el código real antes de escribir esto: `src/state/GameState.js`
-todavía no contiene `epilogueStarted`, `giftCodeSolved` ni `epilogueCompleted`
-(solo existen `investigationComplete` y `epilogueUnlocked`); no existe
-ninguna escena de epílogo, ningún sistema de audio (`src/` no tiene ningún
-gestor de audio ni el `index.html` un elemento `<audio>`), y no existe
-ninguna pantalla de créditos. Todo lo que sigue es una propuesta para
-construir esas piezas, no una descripción de algo ya implementado.
+Estado verificado contra el código real: `src/state/GameState.js` ya
+contiene `epilogueStarted`, `giftCodeSolved` y `epilogueCompleted`, junto
+con las cuatro invariantes de implicación entre ellas (sección 13) —
+implementadas por la tarea 1 de la sección 18. Ninguna escena de
+epílogo, ningún sistema de audio (`src/` no tiene ningún gestor de audio
+ni el `index.html` un elemento `<audio>`) ni ninguna pantalla de
+créditos existen todavía. El resto de lo que sigue es una propuesta para
+construir esas piezas pendientes; el estado vigente de cada tarea se
+consulta en `docs/production/V1_PRODUCTION_PLAN.md`.
 
 ## 1. Objetivo del epílogo
 
@@ -805,9 +810,10 @@ contradice esto para v1.0.0).
 
 Cada tarea debe ejecutarse de forma independiente con el flujo completo
 de `CLAUDE.md` (`planner` → `developer` → `qa` → quality gate →
-`reviewer` → commit → PR), en el orden de dependencias indicado. Ninguna
-tarea de esta lista está marcada como completada en
-`docs/production/V1_PRODUCTION_PLAN.md` — ver sección 19.
+`reviewer` → commit → PR), en el orden de dependencias indicado. El
+estado vigente de cada tarea se consulta en
+`docs/production/V1_PRODUCTION_PLAN.md` (sección 19): la tarea 1 está
+completada; las demás continúan pendientes según sus dependencias.
 
 ### 1. Estado persistente y migración de las nuevas banderas
 

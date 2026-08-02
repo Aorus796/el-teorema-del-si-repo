@@ -106,6 +106,9 @@ export class GameState {
       archiveUnlocked: false,
       investigationComplete: false,
       epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
     };
 
     this.objectiveId = "review-preparations-board";
@@ -269,7 +272,12 @@ export class GameState {
         data.flags?.investigationComplete,
       ),
       epilogueUnlocked: Boolean(data.flags?.epilogueUnlocked),
+      epilogueStarted: Boolean(data.flags?.epilogueStarted),
+      giftCodeSolved: Boolean(data.flags?.giftCodeSolved),
+      epilogueCompleted: Boolean(data.flags?.epilogueCompleted),
     };
+
+    assertEpilogueFlagInvariants(flags);
 
     const objectiveId =
       typeof data.objectiveId === "string"
@@ -298,6 +306,32 @@ export class GameState {
 
     applyLibraryCatalogueProgression(this);
     applyArchiveCriteriaProgression(this);
+  }
+}
+
+function assertEpilogueFlagInvariants(flags) {
+  if (flags.epilogueUnlocked && !flags.investigationComplete) {
+    throw new Error(
+      "La partida guardada tiene el epílogo desbloqueado sin haber completado la investigación.",
+    );
+  }
+
+  if (flags.epilogueStarted && !flags.epilogueUnlocked) {
+    throw new Error(
+      "La partida guardada tiene el epílogo iniciado sin estar desbloqueado.",
+    );
+  }
+
+  if (flags.giftCodeSolved && !flags.epilogueStarted) {
+    throw new Error(
+      "La partida guardada tiene el código de regalo del epílogo resuelto sin haber iniciado el epílogo.",
+    );
+  }
+
+  if (flags.epilogueCompleted && !flags.giftCodeSolved) {
+    throw new Error(
+      "La partida guardada tiene el epílogo completado sin haber resuelto el código de regalo.",
+    );
   }
 }
 
