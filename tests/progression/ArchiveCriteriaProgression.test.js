@@ -57,7 +57,7 @@ test("primera resolución establece ambas banderas, el objetivo y el cuaderno", 
   ]);
 });
 
-test("la entrada de la combinación contiene las cuatro líneas de GIFT_CODE_CLUE_LINES", () => {
+test("la entrada de la combinación reproduce exactamente GIFT_CODE_CLUE_LINES", () => {
   const state = new GameState();
   state.puzzles.archiveCriteria = solvedState();
 
@@ -68,10 +68,7 @@ test("la entrada de la combinación contiene las cuatro líneas de GIFT_CODE_CLU
   );
 
   assert.ok(entry, "la entrada de la combinación debe existir");
-  assert.ok(
-    GIFT_CODE_CLUE_LINES.every((line) => entry.text.includes(line)),
-    "el texto debe incluir las cuatro líneas de la pista",
-  );
+  assert.equal(entry.text, GIFT_CODE_CLUE_LINES.join("\n"));
 });
 
 test("una segunda aplicación no repite consecuencias ni duplica el cuaderno", () => {
@@ -158,16 +155,23 @@ test("las banderas del epílogo permanecen intactas al reaplicar sobre un estado
   state.puzzles.archiveCriteria = solvedState();
   state.flags.investigationComplete = true;
   state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+  state.flags.epilogueCompleted = true;
   state.objectiveId = "some-later-objective";
   state.addNotebookEntry(ARCHIVE_FINAL_EVIDENCE_ENTRY);
   state.addNotebookEntry(EPILOGUE_COMBINATION_CLUE_ENTRY);
-  state.flags.epilogueStarted = true;
 
-  applyArchiveCriteriaProgression(state);
+  const result = applyArchiveCriteriaProgression(state);
 
+  assert.deepEqual(result, { applied: false });
+  assert.equal(state.flags.investigationComplete, true);
+  assert.equal(state.flags.epilogueUnlocked, true);
   assert.equal(state.flags.epilogueStarted, true);
-  assert.equal(state.flags.giftCodeSolved, false);
-  assert.equal(state.flags.epilogueCompleted, false);
+  assert.equal(state.flags.giftCodeSolved, true);
+  assert.equal(state.flags.epilogueCompleted, true);
+  assert.equal(state.objectiveId, "some-later-objective");
+  assert.equal(state.notebook.length, 2);
 });
 
 test("las banderas del epílogo no se crean como efecto colateral de la primera resolución", () => {
