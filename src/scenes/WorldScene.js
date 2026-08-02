@@ -196,6 +196,11 @@ export class WorldScene {
       return;
     }
 
+    if (object.id === "epilogue-gift-mechanism") {
+      this.interactWithEpilogueGiftMechanism();
+      return;
+    }
+
     if (object.type === "exit") {
       this.interactWithExit(object);
       return;
@@ -382,6 +387,27 @@ export class WorldScene {
   interactWithArchiveCriteriaTable() {
     this.syncPlayerState();
     this.scenes.change("archive-criteria");
+  }
+
+  interactWithEpilogueGiftMechanism() {
+    if (!this.state.flags.epilogueUnlocked) {
+      this.ui.beginDialogue({
+        speaker: "Mecanismo del regalo",
+        lines: [
+          "Una pieza metálica descansa sobre un soporte de piedra, cerrada con un mecanismo de anillos.",
+          "No hay nada que examinar todavía.",
+        ],
+      });
+      return;
+    }
+
+    this.ui.beginDialogue({
+      speaker: "Mecanismo del regalo",
+      lines: [
+        "El mecanismo ya está engrasado y los anillos giran con suavidad.",
+        "Aún falta encajar la combinación que lo abra por completo.",
+      ],
+    });
   }
 
   interactWithBlockedExit(object) {

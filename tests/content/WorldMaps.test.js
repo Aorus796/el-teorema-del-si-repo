@@ -114,6 +114,21 @@ test("la posición inicial de seven-bridges-walk es transitable y no solapa obje
   assertSpawnIsClear("seven-bridges-walk");
 });
 
+test("axiom-plaza tiene el mecanismo del regalo del epílogo como mesa inerte", () => {
+  const map = getWorldMap("axiom-plaza");
+  const mechanism = map.objects.find(
+    (object) => object.id === "epilogue-gift-mechanism",
+  );
+
+  assert.equal(mechanism?.type, "table");
+  assert.equal(typeof mechanism?.label, "string");
+  assert.ok(mechanism.label.length > 0);
+});
+
+test("el mecanismo del regalo del epílogo no colisiona ni solapa nada en axiom-plaza", () => {
+  assertObjectIsClear("axiom-plaza", "epilogue-gift-mechanism");
+});
+
 function assertSpawnIsClear(mapId) {
   const map = getWorldMap(mapId);
   const playerState = new GameState().getPlayerState(mapId);
@@ -137,6 +152,48 @@ function assertSpawnIsClear(mapId) {
       rectanglesOverlap(playerBounds, object),
       false,
       `La aparición solapa ${object.id}`,
+    );
+  }
+}
+
+function assertObjectIsClear(mapId, objectId) {
+  const map = getWorldMap(mapId);
+  const object = map.objects.find((entry) => entry.id === objectId);
+
+  assert.ok(object, `No existe ${mapId}:${objectId}`);
+
+  const collisionMap = new CollisionMap({
+    width: map.width,
+    height: map.height,
+    tileSize: map.tileSize,
+    solidTiles: map.solidTiles,
+  });
+  const objectBounds = {
+    x: object.x,
+    y: object.y,
+    width: object.width,
+    height: object.height,
+  };
+
+  assert.equal(collisionMap.collides(objectBounds), false);
+
+  for (const other of map.objects) {
+    if (other.id === objectId) {
+      continue;
+    }
+
+    assert.equal(
+      rectanglesOverlap(objectBounds, other),
+      false,
+      `${objectId} solapa el objeto ${other.id}`,
+    );
+  }
+
+  for (const decoration of map.decorations) {
+    assert.equal(
+      rectanglesOverlap(objectBounds, decoration),
+      false,
+      `${objectId} solapa la decoración ${decoration.id}`,
     );
   }
 }
