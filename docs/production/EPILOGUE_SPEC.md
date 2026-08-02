@@ -812,8 +812,8 @@ Cada tarea debe ejecutarse de forma independiente con el flujo completo
 de `CLAUDE.md` (`planner` → `developer` → `qa` → quality gate →
 `reviewer` → commit → PR), en el orden de dependencias indicado. El
 estado vigente de cada tarea se consulta en
-`docs/production/V1_PRODUCTION_PLAN.md` (sección 19): la tarea 1 está
-completada; las demás continúan pendientes según sus dependencias.
+`docs/production/V1_PRODUCTION_PLAN.md` (sección 19), no en este
+documento.
 
 ### 1. Estado persistente y migración de las nuevas banderas
 

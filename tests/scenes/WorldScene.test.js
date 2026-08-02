@@ -335,7 +335,7 @@ test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {
   assert.doesNotThrow(() => setup.scene.render(context));
   assert.equal(
     context.texts.some((text) =>
-      text.includes("La investigación ha terminado."),
+      text.includes("Regresa al lugar donde comenzó la demostración."),
     ),
     true,
   );

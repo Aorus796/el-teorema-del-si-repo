@@ -21,6 +21,7 @@ import {
 } from "../../src/puzzles/archive-criteria/ArchiveCriteriaState.js";
 import {
   ARCHIVE_FINAL_EVIDENCE_ENTRY,
+  EPILOGUE_COMBINATION_CLUE_ENTRY,
   START_EPILOGUE_OBJECTIVE_ID,
 } from "../../src/progression/ArchiveCriteriaProgression.js";
 import { GameState } from "../../src/state/GameState.js";
@@ -260,8 +261,9 @@ test("resolver el criterio aplica la progresión y muestra el toast una sola vez
   assert.equal(state.flags.investigationComplete, true);
   assert.equal(state.flags.epilogueUnlocked, true);
   assert.equal(state.objectiveId, START_EPILOGUE_OBJECTIVE_ID);
-  assert.equal(state.notebook.length, 1);
+  assert.equal(state.notebook.length, 2);
   assert.equal(state.notebook[0].id, ARCHIVE_FINAL_EVIDENCE_ENTRY.id);
+  assert.equal(state.notebook[1].id, EPILOGUE_COMBINATION_CLUE_ENTRY.id);
   assert.equal(scene.statusMessage, "Criterio aceptado.");
   assert.deepEqual(ui.toasts, ["La investigación ha terminado"]);
 
@@ -281,7 +283,13 @@ test("si epilogueUnlocked ya era true, repara el cuaderno sin tocar el objetivo 
 
   press(scene, input, "startPuzzleAttempt");
 
-  assert.equal(state.notebook.length, 1);
+  assert.equal(state.notebook.length, 2);
+  assert.equal(
+    state.notebook.some(
+      (entry) => entry.id === EPILOGUE_COMBINATION_CLUE_ENTRY.id,
+    ),
+    true,
+  );
   assert.equal(state.objectiveId, "some-later-objective");
   assert.deepEqual(ui.toasts, []);
 });

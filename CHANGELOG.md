@@ -132,6 +132,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   momento un módulo huérfano sin conectar todavía a ninguna escena, al
   cuaderno ni a `GameState`; solo evita que futuras tareas dupliquen estos
   valores.
+- Al resolver el tercer puzle del Archivo ("La pregunta correcta"), además
+  de las cuatro consecuencias ya existentes, la etiqueta del objetivo HUD
+  `start-epilogue` cambia a "Regresa al lugar donde comenzó la
+  demostración." y se añade una nueva entrada al cuaderno,
+  `epilogue-combination-clue` ("La combinación del candado"), con el texto
+  de la pista de la combinación construido a partir de
+  `GIFT_CODE_CLUE_LINES` (`EPILOGUE_SPEC.md` §18.2).
 
 ### Corregido
 

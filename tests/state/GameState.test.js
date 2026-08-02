@@ -22,6 +22,7 @@ import {
 } from "../../src/puzzles/archive-criteria/ArchiveCriteriaState.js";
 import {
   ARCHIVE_FINAL_EVIDENCE_ENTRY,
+  EPILOGUE_COMBINATION_CLUE_ENTRY,
   START_EPILOGUE_OBJECTIVE_ID,
 } from "../../src/progression/ArchiveCriteriaProgression.js";
 
@@ -947,11 +948,12 @@ test("restaurar un archiveCriteria solved parcialmente reconciliado repara bande
   assert.equal(restored.flags.investigationComplete, true);
   assert.equal(restored.flags.epilogueUnlocked, true);
   assert.equal(restored.objectiveId, START_EPILOGUE_OBJECTIVE_ID);
-  assert.equal(restored.notebook.length, 1);
+  assert.equal(restored.notebook.length, 2);
   assert.equal(restored.notebook[0].id, ARCHIVE_FINAL_EVIDENCE_ENTRY.id);
+  assert.equal(restored.notebook[1].id, EPILOGUE_COMBINATION_CLUE_ENTRY.id);
 
   restored.restore(restored.toSaveData());
-  assert.equal(restored.notebook.length, 1);
+  assert.equal(restored.notebook.length, 2);
 });
 
 test("restaurar un archiveCriteria solved con epilogueUnlocked ya true conserva un objetivo posterior sin duplicar el cuaderno", () => {
@@ -972,7 +974,13 @@ test("restaurar un archiveCriteria solved con epilogueUnlocked ya true conserva 
   restored.restore(saved);
 
   assert.equal(restored.objectiveId, "some-later-objective");
-  assert.equal(restored.notebook.length, 1);
+  assert.equal(restored.notebook.length, 2);
+  assert.equal(
+    restored.notebook.some(
+      (entry) => entry.id === EPILOGUE_COMBINATION_CLUE_ENTRY.id,
+    ),
+    true,
+  );
 });
 
 test("GameState.restore() no muta el receptor cuando el catálogo es inválido (estado por defecto)", () => {
