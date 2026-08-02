@@ -55,11 +55,24 @@ class FakeUi {
 class FakeCanvasContext {
   constructor() {
     this.texts = [];
+    this.fillRects = [];
+    this.strokeRects = [];
   }
 
-  fillRect() {}
+  fillRect(x, y, width, height) {
+    this.fillRects.push({ x, y, width, height });
+  }
 
-  strokeRect() {}
+  strokeRect(x, y, width, height) {
+    this.strokeRects.push({
+      x,
+      y,
+      width,
+      height,
+      lineWidth: this.lineWidth,
+      strokeStyle: this.strokeStyle,
+    });
+  }
 
   fillText(text) {
     this.texts.push(String(text));
@@ -234,11 +247,70 @@ test("render no lanza excepción", () => {
   assert.doesNotThrow(() => scene.render(new FakeCanvasContext()));
 });
 
+test("render dibuja las cuatro cifras y un único marco de foco que rodea la cifra enfocada y se desplaza con ella", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  assert.equal(
+    context.texts.filter((text) => /^\d$/.test(text)).length,
+    4,
+  );
+
+  const baseRects = context.strokeRects.filter(
+    (rect) => rect.lineWidth === 2,
+  );
+  const focusRects = context.strokeRects.filter(
+    (rect) => rect.lineWidth !== 2,
+  );
+
+  assert.equal(baseRects.length, 4);
+  assert.equal(focusRects.length, 1);
+  assertSurrounds(focusRects[0], baseRects[scene.focusedDigitIndex]);
+
+  press(scene, input, "moveRight");
+
+  const contextAfterMove = new FakeCanvasContext();
+  scene.render(contextAfterMove);
+
+  const baseRectsAfterMove = contextAfterMove.strokeRects.filter(
+    (rect) => rect.lineWidth === 2,
+  );
+  const focusRectsAfterMove = contextAfterMove.strokeRects.filter(
+    (rect) => rect.lineWidth !== 2,
+  );
+
+  assert.equal(focusRectsAfterMove.length, 1);
+  assert.notDeepEqual(focusRectsAfterMove[0], focusRects[0]);
+  assertSurrounds(
+    focusRectsAfterMove[0],
+    baseRectsAfterMove[scene.focusedDigitIndex],
+  );
+});
+
+function assertSurrounds(outer, inner) {
+  assert.ok(outer.x < inner.x, "el marco de foco debe empezar antes en x");
+  assert.ok(outer.y < inner.y, "el marco de foco debe empezar antes en y");
+  assert.ok(
+    outer.x + outer.width > inner.x + inner.width,
+    "el marco de foco debe terminar después en x",
+  );
+  assert.ok(
+    outer.y + outer.height > inner.y + inner.height,
+    "el marco de foco debe terminar después en y",
+  );
+}
+
 function createScene() {
   const input = new FakeInput();
   const scenes = new FakeScenes();
   const state = new GameState();
   const ui = new FakeUi();
+
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
 
   return {
     input,

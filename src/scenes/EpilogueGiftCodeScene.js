@@ -99,6 +99,9 @@ function drawHeader(context) {
   context.fillText("MECANISMO DEL REGALO", 12, 18);
 }
 
+const DIGIT_BOX_SIZE = 60;
+const FOCUS_FRAME_PADDING = 8;
+
 function drawDigits(context, scene) {
   const digitWidth = 90;
   const startX = 240 - (digitWidth * DIGIT_COUNT) / 2;
@@ -111,11 +114,32 @@ function drawDigits(context, scene) {
     const isCurrent = index === scene.focusedDigitIndex;
 
     context.fillStyle = isCurrent ? "#7b557d" : "#2a2333";
-    context.fillRect(x - 30, 110, 60, 60);
+    context.fillRect(
+      x - DIGIT_BOX_SIZE / 2,
+      110,
+      DIGIT_BOX_SIZE,
+      DIGIT_BOX_SIZE,
+    );
 
     context.strokeStyle = isCurrent ? "#fff4d2" : "#544a63";
     context.lineWidth = 2;
-    context.strokeRect(x - 30, 110, 60, 60);
+    context.strokeRect(
+      x - DIGIT_BOX_SIZE / 2,
+      110,
+      DIGIT_BOX_SIZE,
+      DIGIT_BOX_SIZE,
+    );
+
+    if (isCurrent) {
+      context.strokeStyle = "#fff4d2";
+      context.lineWidth = 4;
+      context.strokeRect(
+        x - DIGIT_BOX_SIZE / 2 - FOCUS_FRAME_PADDING,
+        110 - FOCUS_FRAME_PADDING,
+        DIGIT_BOX_SIZE + FOCUS_FRAME_PADDING * 2,
+        DIGIT_BOX_SIZE + FOCUS_FRAME_PADDING * 2,
+      );
+    }
 
     context.fillStyle = isCurrent ? "#fff4d2" : "#cbb8d8";
     context.fillText(String(scene.digits[index]), x, 150);

@@ -352,6 +352,7 @@ test("el mecanismo del regalo con epílogo desbloqueado y sin resolver cambia a 
     "axiom-plaza",
     "epilogue-gift-mechanism",
   );
+  setup.state.flags.investigationComplete = true;
   setup.state.flags.epilogueUnlocked = true;
   setup.scene.player.x = 300;
   setup.scene.player.y = 250;
@@ -368,13 +369,16 @@ test("el mecanismo del regalo con epílogo desbloqueado y sin resolver cambia a 
     { name: "epilogue-gift-code", payload: {} },
   ]);
   assert.equal(setup.ui.dialogue, null);
-  assert.deepEqual(
-    setup.state.getPlayerState("axiom-plaza"),
-    { x: 300, y: 250, facing: "up" },
-  );
-  stateBefore.player = stateAfter.player;
-  stateBefore.world = stateAfter.world;
-  assert.deepEqual(stateAfter, stateBefore);
+
+  const expected = structuredClone(stateBefore);
+  expected.player = { x: 300, y: 250, facing: "up" };
+  expected.world.playerByMap["axiom-plaza"] = {
+    x: 300,
+    y: 250,
+    facing: "up",
+  };
+
+  assert.deepEqual(stateAfter, expected);
 });
 
 test("el mecanismo del regalo con giftCodeSolved muestra un diálogo distinto sin cambiar de escena", () => {
@@ -383,8 +387,11 @@ test("el mecanismo del regalo con giftCodeSolved muestra un diálogo distinto si
     "axiom-plaza",
     "epilogue-gift-mechanism",
   );
+  setup.state.flags.investigationComplete = true;
   setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
   setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
   const stateBefore = structuredClone(setup.state.toSaveData());
   delete stateBefore.savedAt;
 
