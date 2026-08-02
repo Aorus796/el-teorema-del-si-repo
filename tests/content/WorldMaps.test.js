@@ -106,6 +106,14 @@ test("la posición inicial de library es transitable y no solapa objetos", () =>
   assertSpawnIsClear("library");
 });
 
+test("la posición inicial de axiom-plaza es transitable y no solapa objetos", () => {
+  assertSpawnIsClear("axiom-plaza");
+});
+
+test("la posición inicial de seven-bridges-walk es transitable y no solapa objetos", () => {
+  assertSpawnIsClear("seven-bridges-walk");
+});
+
 function assertSpawnIsClear(mapId) {
   const map = getWorldMap(mapId);
   const playerState = new GameState().getPlayerState(mapId);

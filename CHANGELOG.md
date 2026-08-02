@@ -111,6 +111,12 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   dimensiones combinadas en memoria, no solo que sobrevivieron por
   separado en `localStorage`. Con esta cobertura queda cerrado el
   criterio de "Estado y guardado" del plan de producción.
+- Pruebas unitarias que verifican que la posición inicial de aparición en
+  la Plaza del Axioma y el Paseo de los Siete Puentes es transitable y no
+  solapa ningún objeto del mapa, replicando en `tests/content/WorldMaps.test.js`
+  el mismo patrón ya usado para la Biblioteca y el Archivo — las cuatro
+  localizaciones obligatorias quedan así cubiertas por igual frente a
+  bloqueos accidentales en el punto de aparición.
 
 ### Corregido
 
