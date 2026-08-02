@@ -87,6 +87,15 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   para los tres puzles del juego (catálogo de la Biblioteca en `failed`,
   primer puzle de los Siete Puentes en `traversing`, y el Archivo en
   `classifying`).
+- Tres banderas nuevas del epílogo en el estado persistente de
+  `GameState` (`epilogueStarted`, `giftCodeSolved`, `epilogueCompleted`),
+  con validación atómica en `restore()` de las cuatro invariantes de
+  implicación entre banderas del epílogo (`EPILOGUE_SPEC.md` §13):
+  `epilogueUnlocked ⟹ investigationComplete`,
+  `epilogueStarted ⟹ epilogueUnlocked`,
+  `giftCodeSolved ⟹ epilogueStarted` y
+  `epilogueCompleted ⟹ giftCodeSolved` — un guardado que viole cualquiera
+  de las cuatro hace que `restore()` lance sin mutar el estado receptor.
 - Prueba Playwright que migra en un navegador real un guardado del formato
   legado más antiguo soportado (`formatVersion: 1`, sin `world.playerByMap`
   ni `puzzles.archiveCriteria`, con un `puzzles.libraryCatalogue` inválido

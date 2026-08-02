@@ -169,6 +169,33 @@ const ARCHIVE_CRITERIA_INVALID_CASES = [
   },
 ];
 
+/*
+ * Cada mutador viola exactamente una de las cuatro invariantes de
+ * implicación entre banderas del epílogo (EPILOGUE_SPEC.md §13):
+ * epilogueUnlocked ⟹ investigationComplete
+ * epilogueStarted  ⟹ epilogueUnlocked
+ * giftCodeSolved   ⟹ epilogueStarted
+ * epilogueCompleted ⟹ giftCodeSolved
+ */
+const EPILOGUE_FLAG_INVARIANT_INVALID_CASES = [
+  (saved) => {
+    saved.flags.investigationComplete = false;
+    saved.flags.epilogueUnlocked = true;
+  },
+  (saved) => {
+    saved.flags.epilogueUnlocked = false;
+    saved.flags.epilogueStarted = true;
+  },
+  (saved) => {
+    saved.flags.epilogueStarted = false;
+    saved.flags.giftCodeSolved = true;
+  },
+  (saved) => {
+    saved.flags.giftCodeSolved = false;
+    saved.flags.epilogueCompleted = true;
+  },
+];
+
 function captureObservableState(state) {
   return {
     scene: state.scene,
@@ -1020,4 +1047,161 @@ test("GameState.restore() no muta el receptor cuando formatVersion no es soporta
     /no es compatible/,
   );
   assert.deepEqual(captureObservableState(state), before);
+});
+
+test("GameState reset() incluye las tres nuevas banderas del epílogo en false sin alterar las nueve existentes", () => {
+  const state = new GameState();
+
+  assert.deepEqual(state.flags, {
+    examinedPrototypeSign: false,
+    preparationsBoardRead: false,
+    brideNoteReceived: false,
+    sevenBridgesUnlocked: false,
+    p2EvidenceFound: false,
+    libraryObjectiveUnlocked: false,
+    archiveUnlocked: false,
+    investigationComplete: false,
+    epilogueUnlocked: false,
+    epilogueStarted: false,
+    giftCodeSolved: false,
+    epilogueCompleted: false,
+  });
+});
+
+test("toSaveData() incluye las tres nuevas banderas del epílogo con el mismo valor que state.flags", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = false;
+  state.flags.epilogueCompleted = false;
+
+  const saved = state.toSaveData();
+
+  assert.equal(saved.flags.epilogueStarted, state.flags.epilogueStarted);
+  assert.equal(saved.flags.giftCodeSolved, state.flags.giftCodeSolved);
+  assert.equal(
+    saved.flags.epilogueCompleted,
+    state.flags.epilogueCompleted,
+  );
+  assert.deepEqual(saved.flags, state.flags);
+});
+
+test("un guardado sin las tres banderas nuevas del epílogo las restaura en false para los formatos 1, 2, 3 y 4", () => {
+  for (const formatVersion of [1, 2, 3, 4]) {
+    const saved = new GameState().toSaveData();
+    saved.formatVersion = formatVersion;
+    delete saved.flags.epilogueStarted;
+    delete saved.flags.giftCodeSolved;
+    delete saved.flags.epilogueCompleted;
+
+    const state = new GameState();
+
+    assert.doesNotThrow(() => state.restore(saved));
+    assert.equal(state.flags.epilogueStarted, false);
+    assert.equal(state.flags.giftCodeSolved, false);
+    assert.equal(state.flags.epilogueCompleted, false);
+  }
+});
+
+test("un guardado de formato 4 con la cadena completa de banderas del epílogo se restaura exactamente", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = true;
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.flags.investigationComplete, true);
+  assert.equal(state.flags.epilogueUnlocked, true);
+  assert.equal(state.flags.epilogueStarted, true);
+  assert.equal(state.flags.giftCodeSolved, true);
+  assert.equal(state.flags.epilogueCompleted, true);
+});
+
+test("GameState conserva combinaciones parciales válidas de las banderas del epílogo", () => {
+  const partialCases = [
+    {
+      investigationComplete: true,
+      epilogueUnlocked: true,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    {
+      investigationComplete: true,
+      epilogueUnlocked: true,
+      epilogueStarted: true,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+  ];
+
+  for (const partialFlags of partialCases) {
+    const saved = new GameState().toSaveData();
+    Object.assign(saved.flags, partialFlags);
+
+    const state = new GameState();
+    state.restore(saved);
+
+    assert.equal(
+      state.flags.investigationComplete,
+      partialFlags.investigationComplete,
+    );
+    assert.equal(
+      state.flags.epilogueUnlocked,
+      partialFlags.epilogueUnlocked,
+    );
+    assert.equal(
+      state.flags.epilogueStarted,
+      partialFlags.epilogueStarted,
+    );
+    assert.equal(
+      state.flags.giftCodeSolved,
+      partialFlags.giftCodeSolved,
+    );
+    assert.equal(
+      state.flags.epilogueCompleted,
+      partialFlags.epilogueCompleted,
+    );
+  }
+});
+
+test("GameState rechaza banderas del epílogo que violan las invariantes de implicación", () => {
+  for (const makeInvalid of EPILOGUE_FLAG_INVARIANT_INVALID_CASES) {
+    const saved = new GameState().toSaveData();
+    makeInvalid(saved);
+
+    const state = new GameState();
+    assert.throws(() => state.restore(saved), /epílogo/i);
+  }
+});
+
+test("GameState.restore() no muta el receptor cuando las banderas del epílogo violan las invariantes (estado por defecto)", () => {
+  for (const makeInvalid of EPILOGUE_FLAG_INVARIANT_INVALID_CASES) {
+    const saved = new GameState().toSaveData();
+    makeInvalid(saved);
+
+    const state = new GameState();
+    const before = captureObservableState(state);
+
+    assert.throws(() => state.restore(saved), /epílogo/i);
+    assert.deepEqual(captureObservableState(state), before);
+  }
+});
+
+test("GameState.restore() no muta el receptor cuando las banderas del epílogo violan las invariantes (progreso previo real)", () => {
+  for (const makeInvalid of EPILOGUE_FLAG_INVARIANT_INVALID_CASES) {
+    const saved = new GameState().toSaveData();
+    makeInvalid(saved);
+
+    const state = buildProgressedState();
+    const before = captureObservableState(state);
+
+    assert.throws(() => state.restore(saved), /epílogo/i);
+    assert.deepEqual(captureObservableState(state), before);
+  }
 });

@@ -1648,6 +1648,9 @@ test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles c
       archiveUnlocked: true,
       investigationComplete: false,
       epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
     },
     objectiveId: "inspect-archive-criteria-table",
     notebook: [
