@@ -354,7 +354,7 @@ implementa y valida de forma independiente con el flujo completo de
   (`EPILOGUE_SPEC.md` §18.1; sin dependencias).
 - [x] 2. Desbloqueo del epílogo y actualización del objetivo/cuaderno al
   resolver el Archivo (§18.2; depende de las tareas 1 y 4).
-- [ ] 3. Punto interactivo del mecanismo en la Plaza (§18.3; depende de
+- [x] 3. Punto interactivo del mecanismo en la Plaza (§18.3; depende de
   la tarea 1).
 - [x] 4. Configuración centralizada de la combinación (§18.4; sin
   dependencias).

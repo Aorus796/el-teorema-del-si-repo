@@ -327,6 +327,50 @@ test("interactuar con la mesa de criterios cambia a archive-criteria sin modific
   );
 });
 
+test("el mecanismo del regalo sin epílogo desbloqueado no cambia estado ni mapa", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const mechanism = findObject(
+    "axiom-plaza",
+    "epilogue-gift-mechanism",
+  );
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
+
+  setup.scene.interact(mechanism);
+
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(setup.scenes.changes, []);
+  assert.ok(setup.ui.dialogue !== null);
+  assert.deepEqual(stateAfter, stateBefore);
+});
+
+test("el mecanismo del regalo con epílogo desbloqueado muestra un diálogo distinto sin adelantar el epílogo", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const mechanism = findObject(
+    "axiom-plaza",
+    "epilogue-gift-mechanism",
+  );
+  const setupBefore = createWorldAt("axiom-plaza");
+  setupBefore.scene.interact(mechanism);
+  const linesBefore = setupBefore.ui.dialogue.lines;
+
+  setup.state.flags.epilogueUnlocked = true;
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
+
+  setup.scene.interact(mechanism);
+
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(setup.scenes.changes, []);
+  assert.ok(setup.ui.dialogue !== null);
+  assert.notDeepEqual(setup.ui.dialogue.lines, linesBefore);
+  assert.deepEqual(stateAfter, stateBefore);
+});
+
 test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {
   const setup = createWorldAt("archive");
   setup.state.objectiveId = "start-epilogue";

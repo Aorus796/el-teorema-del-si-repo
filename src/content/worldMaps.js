@@ -115,6 +115,16 @@ const AXIOM_PLAZA = createMap({
       interactionRadius: 30,
       label: "Molino",
     },
+    {
+      id: "epilogue-gift-mechanism",
+      type: "table",
+      x: 560,
+      y: 296,
+      width: 32,
+      height: 24,
+      interactionRadius: 30,
+      label: "Mecanismo del regalo",
+    },
   ],
   decorations: [
     {

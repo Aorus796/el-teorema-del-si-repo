@@ -139,6 +139,11 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `epilogue-combination-clue` ("La combinación del candado"), con el texto
   de la pista de la combinación construido a partir de
   `GIFT_CODE_CLUE_LINES` (`EPILOGUE_SPEC.md` §18.2).
+- Objeto interactivo `epilogue-gift-mechanism` en la Plaza del Axioma
+  (`EPILOGUE_SPEC.md` §18.3): siempre presente, responde con un diálogo
+  neutro distinto según `state.flags.epilogueUnlocked` sea `false` o
+  `true`, sin cambiar de mapa ni mutar ningún estado en ninguno de los dos
+  casos.
 
 ### Corregido
 
