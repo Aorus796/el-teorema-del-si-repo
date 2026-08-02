@@ -352,7 +352,7 @@ implementa y valida de forma independiente con el flujo completo de
 
 - [x] 1. Estado persistente y migración de las nuevas banderas
   (`EPILOGUE_SPEC.md` §18.1; sin dependencias).
-- [ ] 2. Desbloqueo del epílogo y actualización del objetivo/cuaderno al
+- [x] 2. Desbloqueo del epílogo y actualización del objetivo/cuaderno al
   resolver el Archivo (§18.2; depende de las tareas 1 y 4).
 - [ ] 3. Punto interactivo del mecanismo en la Plaza (§18.3; depende de
   la tarea 1).

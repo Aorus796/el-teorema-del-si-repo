@@ -30,7 +30,7 @@ const OBJECTIVE_LABELS = {
   "go-to-library": "Dirígete a la Biblioteca del Margen",
   "inspect-archive-criteria-table":
     "Entra en el Archivo y examina la mesa de criterios.",
-  "start-epilogue": "La investigación ha terminado.",
+  "start-epilogue": "Regresa al lugar donde comenzó la demostración.",
 };
 
 export class WorldScene {
