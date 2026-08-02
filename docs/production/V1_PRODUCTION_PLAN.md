@@ -356,7 +356,7 @@ implementa y valida de forma independiente con el flujo completo de
   resolver el Archivo (§18.2; depende de las tareas 1 y 4).
 - [ ] 3. Punto interactivo del mecanismo en la Plaza (§18.3; depende de
   la tarea 1).
-- [ ] 4. Configuración centralizada de la combinación (§18.4; sin
+- [x] 4. Configuración centralizada de la combinación (§18.4; sin
   dependencias).
 - [ ] 5. Interfaz y lógica del selector de cuatro cifras (§18.5; depende
   de las tareas 1, 3 y 4).

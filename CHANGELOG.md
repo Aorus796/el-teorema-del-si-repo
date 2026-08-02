@@ -126,6 +126,12 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   el mismo patrón ya usado para la Biblioteca y el Archivo — las cuatro
   localizaciones obligatorias quedan así cubiertas por igual frente a
   bloqueos accidentales en el punto de aparición.
+- Módulo `src/content/epilogueConfig.js` que centraliza la combinación del
+  candado del epílogo (`GIFT_CODE_DIGITS`) y el texto de su pista
+  (`GIFT_CODE_CLUE_LINES`), siguiendo `EPILOGUE_SPEC.md` §5 y §18.4 — de
+  momento un módulo huérfano sin conectar todavía a ninguna escena, al
+  cuaderno ni a `GameState`; solo evita que futuras tareas dupliquen estos
+  valores.
 
 ### Corregido
 
