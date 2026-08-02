@@ -354,7 +354,7 @@ Ninguna está completada todavía.
 - [ ] 1. Estado persistente y migración de las nuevas banderas
   (`EPILOGUE_SPEC.md` §18.1; sin dependencias).
 - [ ] 2. Desbloqueo del epílogo y actualización del objetivo/cuaderno al
-  resolver el Archivo (§18.2; depende de la tarea 1).
+  resolver el Archivo (§18.2; depende de las tareas 1 y 4).
 - [ ] 3. Punto interactivo del mecanismo en la Plaza (§18.3; depende de
   la tarea 1).
 - [ ] 4. Configuración centralizada de la combinación (§18.4; sin
@@ -367,15 +367,17 @@ Ninguna está completada todavía.
   de las tareas 1 y 6).
 - [ ] 8. Estado visual de amanecer en la Plaza (§18.8; depende de la
   tarea 6).
-- [ ] 9. Aparición e interacción con la novia (§18.9; depende de las
+- [ ] 9. Aparición de la novia en la Plaza (§18.9; depende de las
   tareas 6 y 8).
-- [ ] 10. Diálogo final aprobado (§18.10; depende de la tarea 9).
+- [ ] 10. Interacción con la novia y diálogo final aprobado (§18.10;
+  depende de la tarea 9).
 - [ ] 11. Pantalla inequívoca con la combinación del candado real
   (§18.11; depende de la tarea 6; puede fusionarse con ella).
 - [ ] 12. Música del epílogo con recurso sustituible (§18.12; depende de
   la tarea 10, o puede adelantarse).
 - [ ] 13. Tarjetas finales y créditos (§18.13; depende de la tarea 10).
-- [ ] 14. Retorno seguro al menú (§18.14; depende de las tareas 1 y 13).
+- [ ] 14. Transición atómica de cierre y retorno seguro al menú (§18.14;
+  depende de las tareas 1 y 13).
 - [ ] 15. Pruebas unitarias, de contenido y E2E del recorrido completo
   (§18.15; depende de las tareas 1–14).
 - [ ] 16. Revisión manual de duración, legibilidad, audio y empaquetado

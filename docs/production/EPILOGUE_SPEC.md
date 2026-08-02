@@ -83,7 +83,8 @@ hace `applyArchiveCriteriaProgression`, deben ocurrir dos cosas nuevas
    necesidad — el identificador no se muestra al jugador, solo la
    etiqueta.
 2. Añadir al cuaderno, junto a `archive-final-evidence`, una entrada nueva
-   con la pista de la combinación (sección 4). Título propuesto:
+   con la pista de la combinación, consumiendo `GIFT_CODE_CLUE_LINES`
+   (sección 5) en vez de un texto literal aparte. Título propuesto:
    `"La combinación del candado"`, `id` propuesto:
    `epilogue-combination-clue`. Ambos son detalles de interfaz, no
    narrativos; pueden ajustarse en la implementación sin volver a esta
@@ -108,22 +109,46 @@ Pista para el cuaderno (texto narrativo aprobado, no debe alterarse):
 > Cinco nombres recuperaron su lugar.
 > Solo dos verdades resistieron al Archivo.
 
+Este texto se centraliza como `GIFT_CODE_CLUE_LINES` (sección 5), junto a
+la propia combinación — no se escribe de forma literal en la lógica de la
+entrada de cuaderno (tarea 2, sección 18).
+
 ## 5. Configuración centralizada de la combinación
 
 **Decisión técnica propuesta** (tarea 4, sección 18): un único módulo,
-por ejemplo `src/content/epilogueConfig.js`, exporta la combinación como
-dato inmutable:
+por ejemplo `src/content/epilogueConfig.js`, centraliza todo el contenido
+que depende de la combinación aprobada — no solo los dígitos:
 
 ```js
 export const GIFT_CODE_DIGITS = Object.freeze([7, 1, 5, 2]);
+
+export const GIFT_CODE_CLUE_LINES = Object.freeze([
+  "Siete caminos parecían posibles.",
+  "Uno nunca lo fue.",
+  "Cinco nombres recuperaron su lugar.",
+  "Solo dos verdades resistieron al Archivo.",
+]);
 ```
 
-Ningún otro archivo (lógica del selector, diálogos, pistas) debe repetir
-los dígitos de forma literal; todos deben importar esta constante. Cambiar
-la combinación en el futuro se reduce a editar este único archivo. El
-texto de la pista (sección 4) puede seguir siendo prosa libre en el
-cuaderno — no depende de esta constante — porque describe el significado,
-no los dígitos en sí.
+Ningún otro archivo de `src/` (lógica del selector, comparación de la
+combinación, texto de la pantalla de acierto, entrada de cuaderno) debe
+repetir los dígitos ni las líneas de la pista de forma literal; todos
+deben importar estas constantes. Cambiar la combinación o su pista en el
+futuro se reduce a editar este único archivo.
+
+La representación visual de la pantalla de acierto (`"7 · 1 · 5 · 2"`,
+sección 8) se **deriva** de `GIFT_CODE_DIGITS` en tiempo de ejecución
+(por ejemplo `GIFT_CODE_DIGITS.join(" · ")`), nunca como una segunda
+cadena literal escrita aparte. La lógica de producción no debe contener
+ninguna segunda copia de los dígitos ni del texto de la pista.
+
+Esta regla se aplica solo a `src/`. Este documento, sus ejemplos, los
+comentarios de código y los propios tests sí pueden y deben mostrar el
+valor aprobado de forma literal (`7152`, `"7 · 1 · 5 · 2"`, el texto
+completo de la pista) para que quede claro qué se está verificando — la
+prohibición de repetición es sobre el comportamiento de producción, no
+sobre la documentación ni sobre las aserciones de las pruebas, que deben
+poder citar el valor exacto para comprobarlo.
 
 ## 6. Punto interactivo del mecanismo en la Plaza
 
@@ -251,6 +276,9 @@ Al acertar:
   7 · 1 · 5 · 2
   ```
 
+  La segunda línea se deriva de `GIFT_CODE_DIGITS` (sección 5) en tiempo
+  de ejecución; no es una cadena literal duplicada en la escena.
+
 - Esta pantalla permanece hasta una confirmación explícita del jugador
   (por ejemplo `Enter` o `E`/`interact`, a definir en implementación) —
   no se cierra sola ni por temporizador.
@@ -334,28 +362,38 @@ del juego.
 
 ### Aparición e interacción con la novia
 
-**Decisión técnica propuesta** (tarea 9, sección 18): un objeto NPC
-nuevo en `AXIOM_PLAZA.objects`, `id` propuesto `bride-epilogue`, `type:
-"npc"`, en una posición transitable, accesible y sin solapes (mismo
-requisito de test de mapa que la sección 6).
+**Decisión técnica propuesta — aparición (tarea 9, sección 18):** un
+objeto NPC nuevo en `AXIOM_PLAZA.objects`, `id` propuesto
+`bride-epilogue`, `type: "npc"`, en una posición transitable, accesible
+y sin solapes (mismo requisito de test de mapa que la sección 6). La
+tarea 9 cubre exclusivamente su aparición condicionada, renderizado,
+posición y accesibilidad — **no** implementa todavía su diálogo (eso es
+la tarea 10).
 
 Como el objeto vive en datos estáticos (`worldMaps.js`) pero solo debe
-ser interactuable — y visualmente presente — después de
-`giftCodeSolved`, se propone una convención declarativa nueva y genérica
-en la forma del objeto: un campo opcional `requiresFlag` (por ejemplo
-`requiresFlag: "giftCodeSolved"`), que `WorldScene.js` consulta tanto en
-`findNearbyObject()`/el bucle de interacción como en `renderObjects()`
-para omitir el objeto por completo mientras la bandera indicada sea
-`false`. Es una generalización mínima y reutilizable (no un caso
-especial hardcodeado por `id`), coherente con cómo ya se gatean otras
-interacciones por bandera dentro de `interact()` — pero al tratarse de
-un cambio en la lógica compartida de `WorldScene.js` (no solo en datos),
-debe revisarse explícitamente en el `planner`/`reviewer` de esa tarea
-antes de darse por buena.
+ser visible y accesible después de `giftCodeSolved`, se propone una
+convención declarativa nueva y genérica en la forma del objeto: un campo
+opcional `requiresFlag` (por ejemplo `requiresFlag: "giftCodeSolved"`),
+que `WorldScene.js` consulta tanto en `findNearbyObject()`/el bucle de
+interacción como en `renderObjects()` para omitir el objeto por completo
+mientras la bandera indicada sea `false`. Es una generalización mínima y
+reutilizable (no un caso especial hardcodeado por `id`), coherente con
+cómo ya se gatean otras interacciones por bandera dentro de `interact()`
+— pero al tratarse de un cambio en la lógica compartida de
+`WorldScene.js` (no solo en datos), debe revisarse explícitamente en el
+`planner`/`reviewer` de esa tarea antes de darse por buena.
 
-Al interactuar con `bride-epilogue` (una vez visible): `syncPlayerState()`
-y arranque del diálogo final (sección 10), seguido del cierre (sección
-12).
+**Decisión técnica propuesta — interacción y diálogo (tarea 10, sección
+18):** el manejador de `interact()` para `bride-epilogue` (añadido en
+esta tarea, no en la 9) hace `syncPlayerState()` y arranca el diálogo
+final (sección 10) mediante `UiController.beginDialogue()`, con la
+guarda de `epilogueCompleted` descrita en la sección 15 («Estado
+terminal sin objetivo ni diálogo pendientes»). Al completarse el diálogo
+(`onComplete`), la tarea 10 debe exponer o ejecutar la transición hacia
+el cierre — es decir, iniciar la música (tarea 12) y encadenar hacia la
+escena de créditos (tarea 13) — **no** hacia la pantalla de la
+combinación del candado (tarea 11), que ya ocurrió cronológicamente
+antes, al resolver el mecanismo (sección 8).
 
 ### Estado visual de amanecer
 
@@ -370,10 +408,16 @@ nuevos assets grandes ni cambios de geometría del mapa.
 
 *(Contenido narrativo cerrado.)*
 
-La última escena muestra a ambos personajes juntos en la Plaza del
-Axioma al amanecer, encaminándose hacia la boda.
+Antes de las tarjetas finales, un breve plano de cierre — sin cinemática
+compleja ni ilustraciones nuevas, reutilizando el mapa `axiom-plaza` y
+los sprites existentes — muestra:
 
-Última frase:
+- al protagonista y a la novia juntos en la Plaza del Axioma al
+  amanecer;
+- una composición o movimiento mínimo (por ejemplo, ambos personajes
+  caminando juntos hacia una salida de la Plaza) que indique que se
+  encaminan hacia la boda, sin necesidad de una animación elaborada;
+- la última frase, mostrada en ese mismo plano:
 
 > No existe un sí para siempre. Existen dos personas que pueden volver a
 > elegirse cada día.
@@ -398,12 +442,13 @@ trabajo posterior»).
 Después se muestran los créditos y se vuelve al menú principal (escena
 `"title"`, ya existente).
 
-**Decisión técnica propuesta** (tareas 13–14, sección 18): una escena
-nueva, por ejemplo `src/scenes/CreditsScene.js` (registrada como
-`"credits"`), que presenta en secuencia la frase final, el título, la
-tarjeta de dedicatoria y los créditos, y termina con
-`scenes.change("title")`. `epilogueCompleted` pasa a `true` exactamente
-cuando esta secuencia termina, no antes.
+**Decisión técnica propuesta** (tarea 13, sección 18): una escena nueva,
+por ejemplo `src/scenes/CreditsScene.js` (registrada como `"credits"`),
+que presenta en secuencia el plano de cierre, el título, la tarjeta de
+dedicatoria y los créditos. Esta escena presenta la secuencia visual y de
+texto — **no** es responsable de marcar `epilogueCompleted`, guardar la
+partida ni decidir el retorno al título: esa transición atómica completa
+es responsabilidad de la tarea 14 (sección 15).
 
 ## 13. Estado persistente
 
@@ -425,6 +470,34 @@ forman, junto con `epilogueUnlocked`, una progresión estrictamente lineal
 sub-objeto `puzzles.epilogue`: el propio conjunto de banderas booleanas
 ya identifica sin ambigüedad en qué punto del epílogo está la partida.
 
+### Invariantes obligatorias entre banderas
+
+Las cuatro banderas del epílogo, además de ser monótonas (sección 14),
+forman una cadena de implicación lógica estricta:
+
+```text
+epilogueUnlocked   ⟹ investigationComplete
+epilogueStarted    ⟹ epilogueUnlocked
+giftCodeSolved     ⟹ epilogueStarted
+epilogueCompleted  ⟹ giftCodeSolved
+```
+
+`GameState.restore()` debe comprobar estas cuatro implicaciones como
+parte de la validación estructural de las banderas, en la misma fase de
+construcción de variables locales que ya usa hoy para el resto de la
+validación atómica (`src/state/GameState.js`, el mismo patrón usado para
+`formatVersion`, `libraryCatalogue` y `archiveCriteria`: construir y
+validar todo antes de mutar `this`). Un guardado que viole cualquiera de
+las cuatro implicaciones debe **rechazarse como inválido de forma
+atómica** — lanzar antes de tocar `this`, dejando el estado previo de
+`GameState` completamente intacto, igual que ya hace la validación de
+`formatVersion` o de los campos exactos de `libraryCatalogue`/
+`archiveCriteria`. No se «repara» silenciosamente una combinación
+imposible (por ejemplo, forzando `epilogueUnlocked = true` cuando
+`epilogueStarted` ya llegó en `true` pero `epilogueUnlocked` llegó en
+`false`) — eso ocultaría una corrupción de guardado real en vez de
+rechazarla.
+
 **Decisión técnica propuesta sobre el formato de guardado:** las tres
 banderas nuevas pueden añadirse **sin incrementar `SAVE_FORMAT_VERSION`**
 (se mantiene en `4`). A diferencia de `libraryCatalogue`/`archiveCriteria`
@@ -435,11 +508,16 @@ seguro por defecto — el mismo mecanismo que ya hizo innecesaria una lista
 de «formatos legado» separada para las banderas al añadir
 `investigationComplete`/`epilogueUnlocked`. Una partida de cualquier
 formato ya soportado (`1`–`4`) que no contenga estas tres claves las
-restaurará como `false` sin lanzar ni requerir ninguna lista nueva. Si en
-la implementación aparece una razón real para incrementar la versión de
-todos modos (por ejemplo, si se decide añadir un sub-objeto adicional no
-previsto aquí), debe tratarse como una decisión técnica explícita de esa
-tarea, no como algo ya decidido por este documento.
+restaurará como `false` sin lanzar ni requerir ninguna lista nueva —
+las cuatro invariantes anteriores se cumplen trivialmente cuando todo
+está en `false`. Comprobar esas invariantes tampoco requiere una lista
+de formatos legado adicional: es una validación cruzada entre campos que
+vive enteramente dentro de la lógica de `restore()`, no ligada a
+`formatVersion`. Si en la implementación aparece una razón real para
+incrementar la versión de todos modos (por ejemplo, si se decide añadir
+un sub-objeto adicional no previsto aquí), debe tratarse como una
+decisión técnica explícita de esa tarea, no como algo ya decidido por
+este documento.
 
 El selector temporal de cuatro cifras (sección 7) **no** se guarda en
 ningún campo — no existe hoy y esta especificación no lo introduce.
@@ -460,7 +538,98 @@ revés, y cada transición ocurre en un único punto del código (sección
 retrocede ni repite banderas ya verdaderas — mismo principio ya aplicado
 por `applyLibraryCatalogueProgression`/`applyArchiveCriteriaProgression`.
 
-## 15. Conducta de una partida ya completada (decisión técnica explícita)
+## 15. Transición final y conducta de una partida ya completada (decisión técnica explícita)
+
+### Transición atómica al terminar los créditos
+
+En el instante en que termina la secuencia obligatoria de créditos
+(tarea 14, no la 13 — ver más abajo por qué), debe ejecutarse una única
+transición atómica, en este orden:
+
+1. `epilogueCompleted` pasa a `true` — una sola vez; si ya era `true`
+   (reentrada imposible en el flujo normal, pero defensivamente), no se
+   repite ningún efecto adicional.
+2. Se establece un estado terminal coherente en `world`/`axiom-plaza`:
+   `scene = "world"`, `world.currentMapId = "axiom-plaza"`.
+3. Se sincronizan el alias raíz `player` y `world.playerByMap` con la
+   posición final válida en `axiom-plaza` (ver «Posición al restaurar
+   una partida completada» más abajo), usando el mismo mecanismo que ya
+   mantiene ambos sincronizados (`src/state/GameState.js`) — no se
+   introduce un mecanismo nuevo de sincronización.
+4. Se elimina el objetivo pendiente `epilogue-meet-bride`: `objectiveId`
+   pasa a un identificador terminal nuevo, `epilogue-completed`, con
+   etiqueta propuesta `"La demostración ha terminado."` — la
+   representación terminal mínima compatible con la arquitectura actual,
+   ya que `WorldScene` siempre requiere un `objectiveId` con etiqueta
+   (`OBJECTIVE_LABELS`) y hoy no existe ningún estado «sin objetivo».
+5. Se guarda automáticamente (mismo `StorageAdapter` ya usado por
+   `WorldScene.save()`, con el mismo patrón de captura de errores:
+   `try/catch`, sin excepción sin capturar, con una respuesta visible o
+   controlada si falla — el mismo tipo de aviso explícito que ya usa
+   `WorldScene.save()`, no un fallo silencioso).
+6. **Solo después** de que los pasos 1–5 hayan ocurrido (incluido el
+   intento de guardado, tenga éxito o falle de forma controlada), se
+   ejecuta `scenes.change("title")`.
+
+Esta secuencia completa es responsabilidad de la **tarea 14**, no de la
+tarea 13. `CreditsScene` (tarea 13) se limita a presentar el plano de
+cierre, el título, la tarjeta y los créditos; no debe afirmar por sí sola
+que completa ni persiste el epílogo — esa responsabilidad, incluida la
+propia transición de `epilogueCompleted`, pertenece íntegramente a la
+tarea 14, que orquesta el paso de «créditos terminados» a «vuelta al
+título» de forma atómica.
+
+### Posición al restaurar una partida completada
+
+Para `epilogueCompleted = true`, la partida debe restaurarse siempre en
+una posición **válida** de `axiom-plaza`:
+
+- Si la posición guardada en `world.playerByMap["axiom-plaza"]` es
+  válida (numéricamente finita y con una orientación reconocida), se
+  conserva tal cual — no se fuerza una posición fija distinta de donde
+  el jugador terminó la partida.
+- Si no es válida (guardado corrupto o incompleto), se usa el spawn
+  seguro por defecto de `axiom-plaza`
+  (`DEFAULT_PLAYER_BY_MAP["axiom-plaza"]`, `src/state/GameState.js`) —
+  el mismo mecanismo de reserva que `normalizePlayerState()` ya aplica
+  hoy a cualquier posición inválida, sin necesitar lógica nueva.
+- El alias raíz `player` y `world.playerByMap` deben quedar
+  sincronizados tras la restauración — ya lo garantiza
+  `GameState.restore()` actual (`this.player =
+  readPlayerStateFromWorld(world)`, ejecutado después de construir
+  `world`); esta especificación no introduce una segunda fuente de
+  verdad para la posición.
+- `world.currentMapId` se fuerza a `"axiom-plaza"` para cualquier
+  guardado con `epilogueCompleted = true`, con independencia de lo que
+  contenga literalmente ese campo — es una corrección defensiva, no un
+  rechazo: a diferencia de las cuatro invariantes de banderas (sección
+  13, que si se violan rechazan el guardado), aquí el objetivo es que
+  una partida completada sea siempre jugable en la Plaza, incluso ante
+  un dato de mapa inconsistente.
+
+### Estado terminal sin objetivo ni diálogo pendientes
+
+Una partida con `epilogueCompleted = true` **no** debe:
+
+- mostrar como objetivo visible `"Acércate a ella en la Plaza."`
+  (`epilogue-meet-bride`) — ya fue sustituido por `epilogue-completed`
+  en el paso 4 de la transición atómica anterior;
+- volver a ofrecer el diálogo final al interactuar con `bride-epilogue`.
+
+**Decisión técnica propuesta:** el manejador de interacción con
+`bride-epilogue` (tarea 10) debe comprobar `state.flags.epilogueCompleted`
+antes de iniciar el diálogo. Si ya es `true`, la interacción no reabre
+`UiController.beginDialogue()` con el núcleo aprobado (sección 10) — se
+limita, como máximo, a una respuesta neutra sin contenido narrativo
+nuevo (mismo patrón ya usado para el mecanismo antes de
+`epilogueUnlocked`, sección 6), o directamente no ofrece ningún prompt de
+interacción. `bride-epilogue` sigue siendo visible (su renderizado
+permanece gobernado por `giftCodeSolved`, tarea 9, que ya es `true` en
+este punto) — lo que cambia es exclusivamente si su interacción puede
+volver a disparar el diálogo, no su presencia visual en la escena final
+ya vista.
+
+### Conducta al cargar una partida ya completada
 
 La especificación aprobada exige que **no exista ningún bucle que
 reproduzca automáticamente los créditos al cargar una partida
@@ -470,12 +639,12 @@ compatible con la arquitectura actual.
 
 **Decisión recomendada:** cuando `epilogueCompleted === true`, cargar la
 partida (`KeyL`, tanto desde el título como desde dentro del mundo) debe
-restaurar siempre en la escena `"world"`, en el mapa `axiom-plaza`, en su
-estado de amanecer (derivado de `giftCodeSolved`, ya `true` en este
-punto) — **nunca** en `"epilogue-gift-code"` ni en `"credits"`. La
-partida queda jugable en un estado terminal estable: el jugador puede
-moverse por la Plaza, abrir el cuaderno y volver a guardar, pero no hay
-ya ninguna secuencia que se reproduzca sola.
+restaurar siempre en la escena `"world"`, en el mapa `axiom-plaza`, en la
+posición descrita arriba, con el objetivo terminal `epilogue-completed`
+— **nunca** en `"epilogue-gift-code"` ni en `"credits"`. La partida queda
+jugable en un estado terminal estable: el jugador puede moverse por la
+Plaza, abrir el cuaderno y volver a guardar, pero no hay ya ninguna
+secuencia que se reproduzca sola.
 
 Justificación de por qué es la opción mínima compatible:
 
@@ -493,14 +662,24 @@ Justificación de por qué es la opción mínima compatible:
   cargar, solo al completar la secuencia por primera vez en tiempo real.
 - Es simétrica con el caso `giftCodeSolved=true, epilogueCompleted=false`
   (sección 14): ambos casos terminan aterrizando en el mundo, en la
-  Plaza en su estado de amanecer; la única diferencia es si la novia
-  sigue ofreciendo el diálogo final (no completada) o ya no hay ninguna
-  interacción narrativa pendiente (completada).
+  Plaza; la única diferencia es si la novia sigue ofreciendo el diálogo
+  final (no completada) o ya no lo ofrece (completada, ver «Estado
+  terminal sin objetivo ni diálogo pendientes» más arriba).
 
 Si una implementación futura decide en cambio que una partida completada
 deba poder «volver a ver» los créditos bajo demanda (por ejemplo, una
 opción explícita en el menú, no automática), eso sería una ampliación de
 alcance nueva y debe tratarse como tal, no como parte de esta tarea.
+
+### Verificación exigida
+
+Debe existir al menos una prueba (unitaria o E2E, tarea 14/15) que:
+
+- guarde o siembre una partida con `epilogueCompleted = true` y lea de
+  vuelta el guardado en `localStorage` confirmando ese valor exacto;
+- cargue esa partida y confirme que la escena resultante es `"world"` en
+  `axiom-plaza`, sin ningún cambio de escena posterior hacia `"credits"`
+  ni ninguna reproducción de la secuencia de créditos.
 
 ## 16. Recursos
 
@@ -558,32 +737,48 @@ tarea de esta lista está marcada como completada en
 
 - **Qué hace:** añade `epilogueStarted`, `giftCodeSolved`,
   `epilogueCompleted` a `GameState.reset()`, `toSaveData()` y `restore()`
-  (sección 13).
+  (sección 13), incluida la validación atómica de las cuatro invariantes
+  de implicación entre banderas (sección 13, «Invariantes obligatorias
+  entre banderas»).
 - **Depende de:** nada (puede implementarse antes que el resto).
 - **Criterios de aceptación:**
   - Las tres banderas existen en el estado por defecto (`false`).
   - `toSaveData()` las serializa; `restore()` las lee con `Boolean(...)`
     y valor por defecto `false`.
   - Guardados de formato `1`–`4` sin estas claves restauran las tres en
-    `false` sin lanzar.
-  - Un guardado de formato `4` que ya las incluya las conserva
-    exactamente.
+    `false` sin lanzar (las cuatro invariantes se cumplen trivialmente
+    con todo en `false`).
+  - Un guardado de formato `4` que ya incluya una combinación válida de
+    las cuatro banderas (por ejemplo, la cadena completa hasta
+    `epilogueCompleted=true`) la conserva exactamente.
+  - Un guardado con una combinación imposible según las invariantes de
+    la sección 13 (por ejemplo `epilogueStarted=true` con
+    `epilogueUnlocked=false`, o `epilogueCompleted=true` con
+    `giftCodeSolved=false`) hace que `restore()` lance, sin excepción
+    silenciada.
+  - Tras un `restore()` fallido por una invariante violada, el estado
+    previo del `GameState` (mapa, posición, banderas, cuaderno, puzles)
+    permanece exactamente igual que antes de la llamada — mismo patrón
+    de atomicidad ya verificado en `tests/state/GameState.test.js` para
+    los rechazos de formato existentes.
   - Pruebas unitarias nuevas en `tests/state/GameState.test.js` cubren
-    ambos casos.
+    los cinco casos anteriores.
 - **No incluye:** ninguna lógica de activación, escena ni interacción.
 
 ### 2. Desbloqueo del epílogo y actualización del objetivo/cuaderno al resolver el Archivo
 
 - **Qué hace:** actualiza la etiqueta de `start-epilogue` en
-  `OBJECTIVE_LABELS` (sección 3) y añade la entrada de cuaderno de la
-  pista de la combinación (sección 4) en el mismo punto donde
+  `OBJECTIVE_LABELS` (sección 3) y añade la entrada de cuaderno con la
+  pista de la combinación, consumiendo `GIFT_CODE_CLUE_LINES` (sección 5)
+  en vez de un texto literal, en el mismo punto donde
   `applyArchiveCriteriaProgression` ya añade `archive-final-evidence`.
-- **Depende de:** tarea 1.
+- **Depende de:** tareas 1 y 4 (necesita las banderas de la tarea 1 y la
+  pista centralizada de la tarea 4).
 - **Criterios de aceptación:**
   - Resolver el Archivo muestra en el HUD
     `"Regresa al lugar donde comenzó la demostración."`.
   - El cuaderno contiene, sin duplicados, la nueva entrada con el texto
-    exacto de la sección 4.
+    exacto de `GIFT_CODE_CLUE_LINES` (sección 4), no un literal aparte.
   - No se toca ninguna consecuencia ya existente de
     `applyArchiveCriteriaProgression` (idempotencia conservada).
   - Test unitario y de progresión actualizados.
@@ -605,12 +800,16 @@ tarea de esta lista está marcada como completada en
 ### 4. Configuración centralizada de la combinación
 
 - **Qué hace:** crea `src/content/epilogueConfig.js` con
-  `GIFT_CODE_DIGITS` (sección 5).
+  `GIFT_CODE_DIGITS` y `GIFT_CODE_CLUE_LINES` (sección 5).
 - **Depende de:** nada.
 - **Criterios de aceptación:**
-  - Un único archivo exporta la combinación.
-  - Test unitario confirma la forma exacta del dato (array de 4 dígitos
-    `[7, 1, 5, 2]`).
+  - Un único archivo exporta ambos datos.
+  - Test unitario confirma la forma exacta de `GIFT_CODE_DIGITS`
+    (array de 4 dígitos `[7, 1, 5, 2]`) y de `GIFT_CODE_CLUE_LINES` (las
+    cuatro líneas exactas de la sección 4).
+  - Ningún otro archivo de `src/` repite los dígitos ni las líneas de la
+    pista de forma literal (comprobable por inspección del diff en
+    `reviewer`).
 
 ### 5. Interfaz y lógica del selector de cuatro cifras
 
@@ -635,8 +834,9 @@ tarea de esta lista está marcada como completada en
   - Una combinación incorrecta no reinicia progreso ni penaliza, y
     remite al cuaderno/pistas.
   - La combinación correcta muestra el texto exacto
-    `"COMBINACIÓN DEL CANDADO REAL"` / `"7 · 1 · 5 · 2"`, estable hasta
-    confirmación explícita.
+    `"COMBINACIÓN DEL CANDADO REAL"` / `"7 · 1 · 5 · 2"`, esta última
+    derivada de `GIFT_CODE_DIGITS` (sección 5, tarea 4) y no repetida de
+    forma literal, estable hasta confirmación explícita.
   - `giftCodeSolved` pasa a `true` una sola vez.
   - Pruebas unitarias cubren ambos casos y la idempotencia.
 
@@ -663,33 +863,47 @@ tarea de esta lista está marcada como completada en
   - Prueba manual o de render documentada (no requiere snapshot
     de píxeles exacto).
 
-### 9. Aparición e interacción con la novia
+### 9. Aparición de la novia en la Plaza
 
-- **Qué hace:** objeto `bride-epilogue` (sección 11), visible e
-  interactuable solo con `giftCodeSolved=true`, mediante el mecanismo
-  declarativo `requiresFlag` (o el que decida el `planner` de esa tarea).
+- **Qué hace:** objeto `bride-epilogue` (sección 11): aparición
+  condicionada, renderizado, posición y accesibilidad, mediante el
+  mecanismo declarativo `requiresFlag` (o el que decida el `planner` de
+  esa tarea). **No** implementa su interacción ni su diálogo — eso es la
+  tarea 10.
 - **Depende de:** tareas 6, 8.
 - **Criterios de aceptación:**
   - Test de mapa análogo al de la tarea 3.
-  - El objeto no aparece ni es interactuable antes de `giftCodeSolved`.
-  - Interactuar con ella dispara el diálogo final (tarea 10).
+  - El objeto no aparece ni es accesible antes de `giftCodeSolved`.
+  - No añade ningún manejador de `interact()` para `bride-epilogue`
+    todavía — esa lógica es explícitamente responsabilidad de la tarea
+    10.
 
-### 10. Diálogo final aprobado
+### 10. Interacción con la novia y diálogo final aprobado
 
-- **Qué hace:** implementa el diálogo exacto de la sección 10 mediante
-  `UiController.beginDialogue()`.
+- **Qué hace:** añade el manejador de `interact()` para
+  `bride-epilogue` (`syncPlayerState()` + `UiController.beginDialogue()`
+  con el texto exacto de la sección 10), incluida la guarda de
+  `epilogueCompleted` (sección 15, «Estado terminal sin objetivo ni
+  diálogo pendientes») que impide reabrir el diálogo en una partida ya
+  completada.
 - **Depende de:** tarea 9.
 - **Criterios de aceptación:**
   - El texto coincide exactamente con la sección 10 (o una revisión
     autorizada que conserve las mismas ideas, ver nota de esa sección).
-  - Al completarse, encadena hacia el cierre (tarea 11 en adelante).
+  - Interactuar con `bride-epilogue` antes de `epilogueCompleted` abre
+    el diálogo; interactuar después no lo reabre (sección 15).
+  - Al completarse el diálogo por primera vez, se expone o ejecuta la
+    transición hacia la música (tarea 12) y los créditos (tarea 13) —
+    no hacia la pantalla de la combinación (tarea 11), que ya ocurrió
+    antes en el recorrido.
 
 ### 11. Pantalla inequívoca con la combinación del candado real
 
 - **Qué hace:** aunque descrita junto a la tarea 6, si la implementación
   la separa por claridad de UI, esta tarea cubre específicamente que la
   pantalla de la sección 8 permanezca hasta confirmación explícita y sea
-  legible a 480×270.
+  legible a 480×270. Ocurre cronológicamente al resolver el mecanismo,
+  **antes** del encuentro con la novia (tareas 9–10), no después.
 - **Depende de:** tarea 6.
 - **Criterios de aceptación:** igual que el segundo bloque de la tarea 6;
   puede fusionarse con ella si el `planner` correspondiente lo considera
@@ -708,27 +922,55 @@ tarea de esta lista está marcada como completada en
 
 ### 13. Tarjetas finales y créditos
 
-- **Qué hace:** `CreditsScene` (sección 12): frase final, título,
-  tarjeta de dedicatoria genérica, créditos.
+- **Qué hace:** `CreditsScene` (sección 12): plano de cierre breve,
+  título, tarjeta de dedicatoria genérica, créditos. Presenta la
+  secuencia visual y de texto — no marca `epilogueCompleted` ni decide
+  el retorno al título (eso es la tarea 14).
 - **Depende de:** tarea 10.
 - **Criterios de aceptación:**
-  - Los tres textos coinciden exactamente con la sección 12.
+  - El plano de cierre muestra a ambos personajes juntos en la Plaza al
+    amanecer, con una composición o movimiento mínimo que indique que se
+    encaminan hacia la boda, y la última frase exacta de la sección 12
+    — sin cinemática compleja ni ilustraciones nuevas.
+  - Los tres textos posteriores (título, tarjeta, créditos) coinciden
+    exactamente con la sección 12.
   - No reutiliza ni anticipa el marcador `{{FINAL_DEDICATION}}`
     personalizado.
-  - Al terminar, establece `epilogueCompleted = true` una sola vez.
+  - No establece `epilogueCompleted`, no guarda la partida y no decide
+    la transición a `"title"` por sí sola — delega esa responsabilidad
+    en la tarea 14.
 
-### 14. Retorno seguro al menú
+### 14. Transición atómica de cierre y retorno seguro al menú
 
-- **Qué hace:** al terminar los créditos, `scenes.change("title")`; y la
-  conducta de carga de una partida completada (sección 15).
+- **Qué hace:** al terminar la secuencia de `CreditsScene` (tarea 13),
+  ejecuta la transición atómica completa descrita en la sección 15
+  («Transición atómica al terminar los créditos»): marca
+  `epilogueCompleted = true`, sincroniza `scene`/`currentMapId`/
+  `player`/`playerByMap` a un estado terminal válido en `axiom-plaza`,
+  sustituye el objetivo `epilogue-meet-bride` por el terminal
+  `epilogue-completed`, guarda automáticamente con manejo de errores
+  controlado, y solo entonces ejecuta `scenes.change("title")`. También
+  implementa la conducta de carga de una partida completada (sección 15,
+  «Conducta al cargar una partida ya completada»).
 - **Depende de:** tareas 1, 13.
 - **Criterios de aceptación:**
-  - Terminar los créditos vuelve siempre a `"title"`.
+  - Terminar los créditos ejecuta los seis pasos de la transición
+    atómica en el orden exacto de la sección 15, y solo después vuelve a
+    `"title"`.
+  - Un fallo del guardado automático no lanza una excepción sin
+    capturar y produce una respuesta visible o controlada (mismo patrón
+    que `WorldScene.save()`).
+  - El guardado resultante, tras completar el epílogo, contiene
+    `flags.epilogueCompleted === true`, `scene === "world"`,
+    `world.currentMapId === "axiom-plaza"` y
+    `objectiveId === "epilogue-completed"`.
   - Cargar una partida con `epilogueCompleted=true` restaura en
-    `"world"`/`axiom-plaza` (amanecer), nunca reproduce los créditos
-    automáticamente.
-  - Test de `GameState`/e2e que carga ese estado y confirma la ausencia
-    de cualquier transición automática hacia `"credits"`.
+    `"world"`/`axiom-plaza`, en una posición válida (sección 15,
+    «Posición al restaurar una partida completada»), sin reproducir los
+    créditos ni reabrir el diálogo final.
+  - Test de `GameState`/`WorldScene`/E2E que carga ese estado y confirma
+    la ausencia de cualquier transición automática hacia `"credits"` ni
+    `"epilogue-gift-code"`.
 
 ### 15. Pruebas unitarias, de contenido y E2E del recorrido completo
 
@@ -766,4 +1008,3 @@ como completada — solo introduce, en la Fase 3 de
 y una nota de estado para que las 16 tareas de la sección 18 puedan
 seleccionarse una a una en futuras ejecuciones de `autopilot`. Ver el
 diff de ese archivo en esta misma Pull Request.
-</content>
