@@ -364,7 +364,7 @@ implementa y valida de forma independiente con el flujo completo de
   depende de la tarea 5).
 - [x] 7. Persistencia y restauración de `giftCodeSolved` (§18.7; depende
   de las tareas 1 y 6).
-- [ ] 8. Estado visual de amanecer en la Plaza (§18.8; depende de la
+- [x] 8. Estado visual de amanecer en la Plaza (§18.8; depende de la
   tarea 6).
 - [ ] 9. Aparición de la novia en la Plaza (§18.9; depende de las
   tareas 6 y 8).

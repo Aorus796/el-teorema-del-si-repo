@@ -12,6 +12,13 @@ const AXIOM_PLAZA = createMap({
     wallTop: "#91836d",
     water: "#4f9da6",
   },
+  dawnPalette: {
+    groundA: "#f0b878",
+    groundB: "#f7d29a",
+    wall: "#c98a63",
+    wallTop: "#e8b07a",
+    water: "#f3a583",
+  },
   solidRegions: [
     { x: 19, y: 4, width: 10, height: 2 },
     { x: 21, y: 13, width: 6, height: 5 },
@@ -487,6 +494,7 @@ function createMap({
   width,
   height,
   palette,
+  dawnPalette = null,
   solidRegions = [],
   objects = [],
   decorations = [],
@@ -507,6 +515,7 @@ function createMap({
     worldHeight: height * TILE_SIZE,
     solidTiles: [...solidTiles],
     palette,
+    dawnPalette,
     objects,
     decorations,
   };
