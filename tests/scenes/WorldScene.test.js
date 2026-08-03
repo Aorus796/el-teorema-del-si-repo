@@ -458,6 +458,61 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved no
   );
 });
 
+test("bride-epilogue no se encuentra por proximidad antes de giftCodeSolved", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+
+  setup.scene.player.x = bride.x + bride.width / 2;
+  setup.scene.player.y = bride.y + bride.height / 2;
+  setup.scene.update(0);
+
+  assert.equal(setup.scene.nearbyObject, null);
+});
+
+test("bride-epilogue se encuentra por proximidad tras giftCodeSolved", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  setup.scene.player.x = bride.x + bride.width / 2;
+  setup.scene.player.y = bride.y + bride.height / 2;
+  setup.scene.update(0);
+
+  assert.equal(setup.scene.nearbyObject?.id, "bride-epilogue");
+});
+
+test("interactuar con bride-epilogue no hace nada, con o sin giftCodeSolved (aún no tiene manejador)", () => {
+  for (const giftCodeSolved of [false, true]) {
+    const setup = createWorldAt("axiom-plaza");
+    const bride = findObject("axiom-plaza", "bride-epilogue");
+
+    if (giftCodeSolved) {
+      setup.state.flags.investigationComplete = true;
+      setup.state.flags.epilogueUnlocked = true;
+      setup.state.flags.epilogueStarted = true;
+      setup.state.flags.giftCodeSolved = true;
+      setup.state.flags.epilogueCompleted = false;
+    }
+
+    const stateBefore = structuredClone(setup.state.toSaveData());
+    delete stateBefore.savedAt;
+
+    setup.scene.interact(bride);
+
+    const stateAfter = structuredClone(setup.state.toSaveData());
+    delete stateAfter.savedAt;
+
+    assert.deepEqual(setup.scenes.changes, []);
+    assert.equal(setup.ui.dialogue, null);
+    assert.deepEqual(stateAfter, stateBefore);
+  }
+});
+
 test("render() en axiom-plaza sin giftCodeSolved usa la paleta normal", () => {
   const setup = createWorldAt("axiom-plaza");
   const context = new FakeCanvasContext();
@@ -621,6 +676,140 @@ test("los objetos y decoraciones de axiom-plaza no cambian con giftCodeSolved", 
     setup.scene.map.decorations,
     getWorldMap("axiom-plaza").decorations,
   );
+});
+
+test("render() en axiom-plaza sin giftCodeSolved dibuja tres NPC, sin bride-epilogue", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  const silhouettes = context.fillRects.filter(
+    (rect) => rect.fillStyle === "#302637",
+  );
+
+  assert.equal(silhouettes.length, 3);
+});
+
+test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bride-epilogue", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  // Posiciona a la jugadora a medio camino entre los cuatro NPC de
+  // axiom-plaza para que la cámara (viewport de 480x270, clamped al
+  // tamaño del mapa) los muestre todos a la vez, incluida bride-epilogue.
+  setup.scene.player.x = 445;
+  setup.scene.player.y = 220;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const silhouettes = context.fillRects.filter(
+    (rect) => rect.fillStyle === "#302637",
+  );
+
+  assert.equal(silhouettes.length, 4);
+});
+
+test("render() repetido con giftCodeSolved sigue mostrando bride-epilogue de forma idéntica", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  const contextFirst = new FakeCanvasContext();
+  const contextSecond = new FakeCanvasContext();
+
+  setup.scene.render(contextFirst);
+  setup.scene.render(contextSecond);
+
+  assert.deepEqual(contextFirst.fillRects, contextSecond.fillRects);
+});
+
+test("render() con bride-epilogue visible no modifica el estado guardable", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
+
+  setup.scene.render(new FakeCanvasContext());
+
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(stateAfter, stateBefore);
+});
+
+test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved muestra bride-epilogue directamente", () => {
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = false;
+  saved.objectiveId = "epilogue-meet-bride";
+  saved.scene = "world";
+  saved.world.currentMapId = "axiom-plaza";
+  saved.world.playerByMap["axiom-plaza"] = {
+    x: bride.x + bride.width / 2,
+    y: bride.y + bride.height / 2,
+    facing: "up",
+  };
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage(),
+    state,
+    ui,
+  });
+
+  scene.enter();
+  scene.update(0);
+
+  assert.equal(scene.nearbyObject?.id, "bride-epilogue");
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  // La jugadora está pegada al borde derecho del mapa (necesario para
+  // quedar dentro del radio de interacción de bride-epilogue), así que la
+  // cámara satura contra ese borde y dos NPC lejanos (mayor-corolaria y
+  // plaza-worker) quedan fuera del viewport. Se comprueba, en su lugar,
+  // que la silueta de bride-epilogue se dibuja de verdad en su posición
+  // real de pantalla, calculada a partir del estado real de la cámara con
+  // el mismo desplazamiento fijo que usa WorldScene.renderNpc.
+  const brideScreenX = Math.round(bride.x - scene.camera.x);
+  const brideScreenY = Math.round(bride.y - scene.camera.y);
+  const brideSilhouetteVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#302637" &&
+      rect.x === brideScreenX + 1 &&
+      rect.y === brideScreenY + 5 &&
+      rect.width === 12 &&
+      rect.height === 14,
+  );
+
+  assert.equal(brideSilhouetteVisible, true);
 });
 
 test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {

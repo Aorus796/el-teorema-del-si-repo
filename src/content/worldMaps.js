@@ -132,6 +132,17 @@ const AXIOM_PLAZA = createMap({
       interactionRadius: 30,
       label: "Mecanismo del regalo",
     },
+    {
+      id: "bride-epilogue",
+      type: "npc",
+      x: 650,
+      y: 260,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "La Investigadora",
+      requiresFlag: "giftCodeSolved",
+    },
   ],
   decorations: [
     {

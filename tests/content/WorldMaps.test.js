@@ -138,6 +138,43 @@ test("el mecanismo del regalo del epílogo es alcanzable a pie desde el punto de
   assertObjectIsReachable("axiom-plaza", "epilogue-gift-mechanism");
 });
 
+test("axiom-plaza tiene exactamente un bride-epilogue como npc con requiresFlag giftCodeSolved", () => {
+  const map = getWorldMap("axiom-plaza");
+  const brides = map.objects.filter(
+    (object) => object.id === "bride-epilogue",
+  );
+
+  assert.equal(brides.length, 1);
+
+  const [bride] = brides;
+
+  assert.equal(bride.type, "npc");
+  assert.equal(bride.requiresFlag, "giftCodeSolved");
+  assert.equal(typeof bride.label, "string");
+  assert.ok(bride.label.length > 0);
+  assert.ok(bride.interactionRadius > 0);
+});
+
+test("bride-epilogue no colisiona ni solapa nada en axiom-plaza", () => {
+  assertObjectIsClear("axiom-plaza", "bride-epilogue");
+});
+
+test("bride-epilogue es alcanzable a pie desde el punto de aparición de axiom-plaza", () => {
+  assertObjectIsReachable("axiom-plaza", "bride-epilogue");
+});
+
+test("ningún mapa distinto de axiom-plaza contiene bride-epilogue", () => {
+  for (const mapId of ["library", "archive", "seven-bridges-walk"]) {
+    const map = getWorldMap(mapId);
+
+    assert.equal(
+      map.objects.some((object) => object.id === "bride-epilogue"),
+      false,
+      `${mapId} no debería contener bride-epilogue`,
+    );
+  }
+});
+
 test("axiom-plaza tiene un dawnPalette distinto de su palette normal en las cinco claves", () => {
   const map = getWorldMap("axiom-plaza");
 
