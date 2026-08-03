@@ -17,6 +17,7 @@ import {
 import {
   EpilogueGiftCodeScene,
 } from "./scenes/EpilogueGiftCodeScene.js";
+import { CreditsScene } from "./scenes/CreditsScene.js";
 
 const canvas = document.querySelector("#game-canvas");
 if (!(canvas instanceof HTMLCanvasElement)) {
@@ -58,6 +59,11 @@ scenes.register(
 scenes.register(
   "epilogue-gift-code",
   new EpilogueGiftCodeScene({ scenes, input, state, ui }),
+);
+
+scenes.register(
+  "credits",
+  new CreditsScene({ input, ui }),
 );
 
 const game = new Game({

@@ -478,12 +478,9 @@ export class WorldScene {
   }
 
   completeBrideDialogue() {
-    // Punto de extensión para los créditos (tarea 13, todavía no
-    // implementada). AudioService.playEpilogueTheme() es seguro por
-    // contrato propio (nunca lanza ni deja una promesa sin capturar), así
-    // que no necesita try/catch aquí. No cambia de escena, no muta
-    // banderas, objetivo, cuaderno ni guarda la partida.
     this.audio.playEpilogueTheme();
+    this.syncPlayerState();
+    this.scenes.change("credits");
   }
 
   interactWithBlockedExit(object) {

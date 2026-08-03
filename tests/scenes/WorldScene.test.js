@@ -697,7 +697,7 @@ test("completar el diálogo de bride-epilogue invoca completeBrideDialogue exact
   assert.equal(calls, 1);
 });
 
-test("completar el diálogo de bride-epilogue no cambia de escena, objetivo ni banderas", () => {
+test("completar el diálogo de bride-epilogue cambia una sola vez a credits sin modificar objetivo ni banderas", () => {
   const setup = createWorldAt("axiom-plaza");
   const bride = findObject("axiom-plaza", "bride-epilogue");
   setup.state.flags.investigationComplete = true;
@@ -713,7 +713,9 @@ test("completar el diálogo de bride-epilogue no cambia de escena, objetivo ni b
     setup.ui.dialogue?.onComplete();
   }
 
-  assert.deepEqual(setup.scenes.changes, []);
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "credits", payload: {} },
+  ]);
   assert.equal(setup.state.objectiveId, "epilogue-meet-bride");
   assert.equal(setup.state.flags.giftCodeSolved, true);
   assert.equal(setup.state.flags.epilogueCompleted, false);

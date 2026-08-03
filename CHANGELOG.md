@@ -217,6 +217,16 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   build (`tools/build.mjs`) verifica que el recurso llegue a la salida
   servida, y la degradación segura del servicio sigue cubriendo cualquier
   fallo real de reproducción sin lanzar ni dejar promesas sin capturar.
+- Nueva escena `CreditsScene` (`"credits"`, `EPILOGUE_SPEC.md` §18.13):
+  presenta los cinco pasos exactos del cierre narrativo (`EPILOGUE_SPEC.md`
+  §12) — plano final con los dos personajes sobre el amanecer de
+  `axiom-plaza`, título, dedicatoria, créditos y tarjeta final —
+  avanzando solo por confirmación explícita del jugador, sin Escape ni
+  temporizadores. `WorldScene.completeBrideDialogue()` ahora cambia a
+  `"credits"` tras iniciar la música del epílogo. La tarjeta final expone
+  `confirmFinalCard()`, un punto de extensión intencionalmente vacío
+  reservado para la tarea 14 (transición terminal y guardado bloqueante,
+  `EPILOGUE_SPEC.md` §15).
 
 ### Corregido
 
