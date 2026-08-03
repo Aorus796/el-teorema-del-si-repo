@@ -63,7 +63,16 @@ class FakeUi {
   }
 
   beginDialogue(dialogue) {
-    this.dialogue = dialogue;
+    // Modela el comportamiento real de UiController: al llegar al final
+    // del diálogo se limpia this.dialogue antes de invocar onComplete().
+    const onDialogueComplete = dialogue.onComplete;
+    this.dialogue = {
+      ...dialogue,
+      onComplete: () => {
+        this.dialogue = null;
+        onDialogueComplete?.();
+      },
+    };
   }
 
   advanceDialogue() {}
@@ -486,31 +495,255 @@ test("bride-epilogue se encuentra por proximidad tras giftCodeSolved", () => {
   assert.equal(setup.scene.nearbyObject?.id, "bride-epilogue");
 });
 
-test("interactuar con bride-epilogue no hace nada, con o sin giftCodeSolved (aún no tiene manejador)", () => {
-  for (const giftCodeSolved of [false, true]) {
-    const setup = createWorldAt("axiom-plaza");
-    const bride = findObject("axiom-plaza", "bride-epilogue");
+test("interactuar con bride-epilogue sin giftCodeSolved sigue siendo un no-op defensivo", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
 
-    if (giftCodeSolved) {
-      setup.state.flags.investigationComplete = true;
-      setup.state.flags.epilogueUnlocked = true;
-      setup.state.flags.epilogueStarted = true;
-      setup.state.flags.giftCodeSolved = true;
-      setup.state.flags.epilogueCompleted = false;
-    }
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
 
-    const stateBefore = structuredClone(setup.state.toSaveData());
-    delete stateBefore.savedAt;
+  setup.scene.interact(bride);
 
-    setup.scene.interact(bride);
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
 
-    const stateAfter = structuredClone(setup.state.toSaveData());
-    delete stateAfter.savedAt;
+  assert.deepEqual(setup.scenes.changes, []);
+  assert.equal(setup.ui.dialogue, null);
+  assert.deepEqual(stateAfter, stateBefore);
+});
 
-    assert.deepEqual(setup.scenes.changes, []);
-    assert.equal(setup.ui.dialogue, null);
-    assert.deepEqual(stateAfter, stateBefore);
+test("interact() invoca interactWithBrideEpilogue exactamente una vez para bride-epilogue", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  let calls = 0;
+  setup.scene.interactWithBrideEpilogue = () => {
+    calls += 1;
+  };
+
+  setup.scene.interact(bride);
+
+  assert.equal(calls, 1);
+});
+
+test("bride-epilogue con la cadena válida sincroniza al jugador y abre el primer turno del diálogo", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+  setup.scene.player.x = 300;
+  setup.scene.player.y = 250;
+  setup.scene.player.facing = "up";
+
+  setup.scene.interact(bride);
+
+  assert.equal(setup.state.player.x, 300);
+  assert.equal(setup.state.player.y, 250);
+  assert.equal(
+    setup.state.world.playerByMap["axiom-plaza"].x,
+    300,
+  );
+  assert.equal(
+    setup.state.world.playerByMap["axiom-plaza"].y,
+    250,
+  );
+  assert.ok(setup.ui.dialogue !== null);
+  assert.equal(setup.ui.dialogue.speaker, "Novia");
+  assert.deepEqual(setup.ui.dialogue.lines, [
+    "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
+  ]);
+});
+
+test("el diálogo de bride-epilogue reproduce exactamente los cinco turnos aprobados en orden", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  const expectedTurns = [
+    {
+      speaker: "Novia",
+      lines: [
+        "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
+      ],
+    },
+    { speaker: "Protagonista", lines: ["Y aun así he venido."] },
+    {
+      speaker: "Novia",
+      lines: ["Entonces dime qué demuestra el teorema."],
+    },
+    {
+      speaker: "Protagonista",
+      lines: [
+        "Que ningún sí vale para siempre solo porque se pronunció una vez. Vale porque, pudiendo decir que no, hoy volvemos a elegirlo.",
+      ],
+    },
+    {
+      speaker: "Novia",
+      lines: [
+        "Eso era lo único que necesitaba comprobar antes de mañana.",
+      ],
+    },
+  ];
+
+  setup.scene.interact(bride);
+
+  const observedTurns = [];
+  for (let i = 0; i < expectedTurns.length; i += 1) {
+    assert.ok(setup.ui.dialogue !== null, `falta el turno ${i}`);
+    observedTurns.push({
+      speaker: setup.ui.dialogue.speaker,
+      lines: setup.ui.dialogue.lines,
+    });
+    setup.ui.dialogue.onComplete();
   }
+
+  assert.deepEqual(observedTurns, expectedTurns);
+});
+
+test("abrir el diálogo de bride-epilogue no modifica el estado salvo la sincronización del jugador", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
+
+  setup.scene.interact(bride);
+
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
+  const expected = structuredClone(stateBefore);
+  expected.player = { ...setup.state.player };
+  expected.world.playerByMap["axiom-plaza"] = {
+    ...setup.state.player,
+  };
+
+  assert.deepEqual(stateAfter, expected);
+});
+
+test("completar el diálogo de bride-epilogue invoca completeBrideDialogue exactamente una vez", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  let calls = 0;
+  setup.scene.completeBrideDialogue = () => {
+    calls += 1;
+  };
+
+  setup.scene.interact(bride);
+
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal(calls, 0, `no debe llamarse antes del último turno (paso ${i})`);
+    setup.ui.dialogue.onComplete();
+  }
+
+  assert.equal(calls, 1);
+});
+
+test("completar el diálogo de bride-epilogue no cambia de escena, objetivo ni banderas", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+  setup.state.objectiveId = "epilogue-meet-bride";
+
+  setup.scene.interact(bride);
+
+  for (let i = 0; i < 5; i += 1) {
+    setup.ui.dialogue?.onComplete();
+  }
+
+  assert.deepEqual(setup.scenes.changes, []);
+  assert.equal(setup.state.objectiveId, "epilogue-meet-bride");
+  assert.equal(setup.state.flags.giftCodeSolved, true);
+  assert.equal(setup.state.flags.epilogueCompleted, false);
+  assert.equal(setup.ui.dialogue, null);
+});
+
+test("reinteractuar con bride-epilogue durante el diálogo no duplica completeBrideDialogue", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  let calls = 0;
+  setup.scene.completeBrideDialogue = () => {
+    calls += 1;
+  };
+
+  setup.scene.interact(bride);
+  setup.scene.interact(bride);
+
+  for (let i = 0; i < 5; i += 1) {
+    setup.ui.dialogue?.onComplete();
+  }
+
+  assert.equal(calls, 1);
+});
+
+test("bride-epilogue con epilogueCompleted no reabre el diálogo ni modifica el estado, incluida la posición del jugador", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = true;
+
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
+
+  setup.scene.interact(bride);
+
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(setup.scenes.changes, []);
+  assert.equal(setup.ui.dialogue, null);
+  assert.deepEqual(stateAfter, stateBefore);
+});
+
+test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = true;
+  setup.scene.player.x = 445;
+  setup.scene.player.y = 220;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const silhouettes = context.fillRects.filter(
+    (rect) => rect.fillStyle === "#302637",
+  );
+
+  assert.equal(silhouettes.length, 4);
 });
 
 test("render() en axiom-plaza sin giftCodeSolved usa la paleta normal", () => {

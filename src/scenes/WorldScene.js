@@ -21,6 +21,33 @@ const LIBRARY_CLUE_ENTRY = {
     "La anotación encontrada junto al embarcadero contiene dos arcos entrelazados y una referencia al archivo de mapas de la Biblioteca del Margen.",
 };
 
+const BRIDE_EPILOGUE_DIALOGUE_TURNS = [
+  {
+    speaker: "Novia",
+    lines: [
+      "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
+    ],
+  },
+  {
+    speaker: "Protagonista",
+    lines: ["Y aun así he venido."],
+  },
+  {
+    speaker: "Novia",
+    lines: ["Entonces dime qué demuestra el teorema."],
+  },
+  {
+    speaker: "Protagonista",
+    lines: [
+      "Que ningún sí vale para siempre solo porque se pronunció una vez. Vale porque, pudiendo decir que no, hoy volvemos a elegirlo.",
+    ],
+  },
+  {
+    speaker: "Novia",
+    lines: ["Eso era lo único que necesitaba comprobar antes de mañana."],
+  },
+];
+
 const OBJECTIVE_LABELS = {
   "review-preparations-board": "Revisa el tablón de preparativos",
   "speak-to-corolaria": "Habla con la alcaldesa Corolaria",
@@ -200,6 +227,11 @@ export class WorldScene {
 
     if (object.id === "epilogue-gift-mechanism") {
       this.interactWithEpilogueGiftMechanism();
+      return;
+    }
+
+    if (object.id === "bride-epilogue") {
+      this.interactWithBrideEpilogue();
       return;
     }
 
@@ -416,6 +448,43 @@ export class WorldScene {
 
     this.syncPlayerState();
     this.scenes.change("epilogue-gift-code");
+  }
+
+  interactWithBrideEpilogue() {
+    if (!this.state.flags.giftCodeSolved) {
+      return;
+    }
+
+    if (this.state.flags.epilogueCompleted) {
+      return;
+    }
+
+    this.syncPlayerState();
+    this.playBrideDialogueTurn(0);
+  }
+
+  playBrideDialogueTurn(turnIndex) {
+    const turn = BRIDE_EPILOGUE_DIALOGUE_TURNS[turnIndex];
+    const isLastTurn = turnIndex === BRIDE_EPILOGUE_DIALOGUE_TURNS.length - 1;
+
+    this.ui.beginDialogue({
+      speaker: turn.speaker,
+      lines: turn.lines,
+      onComplete: () => {
+        if (isLastTurn) {
+          this.completeBrideDialogue();
+          return;
+        }
+
+        this.playBrideDialogueTurn(turnIndex + 1);
+      },
+    });
+  }
+
+  completeBrideDialogue() {
+    // Punto de extensión para la música (tarea 12) y los créditos
+    // (tarea 13). Intencionalmente vacío en esta tarea: no cambia de
+    // escena, no muta banderas, objetivo, cuaderno ni guarda la partida.
   }
 
   interactWithBlockedExit(object) {
