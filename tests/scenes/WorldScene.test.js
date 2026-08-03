@@ -393,7 +393,7 @@ test("el mecanismo del regalo con epílogo desbloqueado y sin resolver cambia a 
   assert.deepEqual(stateAfter, expected);
 });
 
-test("el mecanismo del regalo con giftCodeSolved muestra un diálogo distinto sin cambiar de escena", () => {
+test("el mecanismo del regalo con giftCodeSolved sincroniza al jugador y cambia a epilogue-gift-code en modo de solo lectura", () => {
   const setup = createWorldAt("axiom-plaza");
   const mechanism = findObject(
     "axiom-plaza",
@@ -404,6 +404,9 @@ test("el mecanismo del regalo con giftCodeSolved muestra un diálogo distinto si
   setup.state.flags.epilogueStarted = true;
   setup.state.flags.giftCodeSolved = true;
   setup.state.flags.epilogueCompleted = false;
+  setup.scene.player.x = 300;
+  setup.scene.player.y = 250;
+  setup.scene.player.facing = "up";
   const stateBefore = structuredClone(setup.state.toSaveData());
   delete stateBefore.savedAt;
 
@@ -412,12 +415,43 @@ test("el mecanismo del regalo con giftCodeSolved muestra un diálogo distinto si
   const stateAfter = structuredClone(setup.state.toSaveData());
   delete stateAfter.savedAt;
 
-  assert.deepEqual(setup.scenes.changes, []);
-  assert.ok(setup.ui.dialogue !== null);
-  assert.deepEqual(stateAfter, stateBefore);
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "epilogue-gift-code", payload: { readOnly: true } },
+  ]);
+  assert.equal(setup.ui.dialogue, null);
+
+  const expected = structuredClone(stateBefore);
+  expected.player = { x: 300, y: 250, facing: "up" };
+  expected.world.playerByMap["axiom-plaza"] = {
+    x: 300,
+    y: 250,
+    facing: "up",
+  };
+
+  assert.deepEqual(stateAfter, expected);
 });
 
-test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved no cambia de escena al entrar ni al interactuar con el mecanismo del regalo ya resuelto", () => {
+test("el mecanismo del regalo con giftCodeSolved y epilogueCompleted también cambia a epilogue-gift-code en modo de solo lectura", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const mechanism = findObject(
+    "axiom-plaza",
+    "epilogue-gift-mechanism",
+  );
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = true;
+
+  setup.scene.interact(mechanism);
+
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "epilogue-gift-code", payload: { readOnly: true } },
+  ]);
+  assert.equal(setup.ui.dialogue, null);
+});
+
+test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved no cambia de escena al entrar, e interactuar con el mecanismo del regalo ya resuelto cambia a epilogue-gift-code en modo de solo lectura", () => {
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
   saved.flags.epilogueUnlocked = true;
@@ -458,13 +492,10 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved no
 
   scene.interact(mechanism);
 
-  assert.deepEqual(scenes.changes, []);
-  assert.ok(ui.dialogue !== null);
-  assert.ok(
-    ui.dialogue.lines.some((line) =>
-      line.includes("Los anillos ya no giran"),
-    ),
-  );
+  assert.deepEqual(scenes.changes, [
+    { name: "epilogue-gift-code", payload: { readOnly: true } },
+  ]);
+  assert.equal(ui.dialogue, null);
 });
 
 test("bride-epilogue no se encuentra por proximidad antes de giftCodeSolved", () => {

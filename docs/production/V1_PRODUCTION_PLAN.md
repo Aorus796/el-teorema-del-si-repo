@@ -370,7 +370,7 @@ implementa y valida de forma independiente con el flujo completo de
   tareas 6 y 8).
 - [x] 10. Interacción con la novia y diálogo final aprobado (§18.10;
   depende de la tarea 9).
-- [ ] 11. Pantalla inequívoca con la combinación del candado real
+- [x] 11. Pantalla inequívoca con la combinación del candado real
   (§18.11; depende de la tarea 6; puede fusionarse con ella).
 - [ ] 12. Música del epílogo con recurso sustituible (§18.12; depende de
   la tarea 10, o puede adelantarse).

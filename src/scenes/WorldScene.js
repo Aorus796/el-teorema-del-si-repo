@@ -435,18 +435,13 @@ export class WorldScene {
       return;
     }
 
+    this.syncPlayerState();
+
     if (this.state.flags.giftCodeSolved) {
-      this.ui.beginDialogue({
-        speaker: "Mecanismo del regalo",
-        lines: [
-          "Los anillos ya no giran: la pieza quedó fija en su posición final.",
-          "No hay nada más que ajustar aquí.",
-        ],
-      });
+      this.scenes.change("epilogue-gift-code", { readOnly: true });
       return;
     }
 
-    this.syncPlayerState();
     this.scenes.change("epilogue-gift-code");
   }
 

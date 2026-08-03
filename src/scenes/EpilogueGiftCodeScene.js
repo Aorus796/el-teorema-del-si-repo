@@ -18,13 +18,14 @@ export class EpilogueGiftCodeScene {
     this.lastAttemptFailed = false;
   }
 
-  enter() {
+  enter({ readOnly = false } = {}) {
     this.ui.closeAll();
 
-    if (!this.state.flags.epilogueStarted) {
+    if (!readOnly && !this.state.flags.epilogueStarted) {
       this.state.flags.epilogueStarted = true;
     }
 
+    this.readOnly = readOnly;
     this.focusedDigitIndex = 0;
     this.digits = [0, 0, 0, 0];
     this.lastAttemptFailed = false;
@@ -36,7 +37,7 @@ export class EpilogueGiftCodeScene {
       return;
     }
 
-    if (!this.state.flags.giftCodeSolved) {
+    if (!this.readOnly) {
       if (this.input.wasPressed("moveLeft")) {
         this.moveFocus(-1);
         return;
@@ -74,7 +75,7 @@ export class EpilogueGiftCodeScene {
   }
 
   confirmAttempt() {
-    if (this.state.flags.giftCodeSolved) {
+    if (this.readOnly) {
       this.scenes.change("world");
       return;
     }
@@ -91,10 +92,11 @@ export class EpilogueGiftCodeScene {
     this.lastAttemptFailed = false;
     this.state.flags.giftCodeSolved = true;
     this.state.objectiveId = "epilogue-meet-bride";
+    this.readOnly = true;
   }
 
   render(context) {
-    if (this.state.flags.giftCodeSolved) {
+    if (this.readOnly) {
       drawBackground(context);
       drawHeader(context);
       drawSuccess(context);
