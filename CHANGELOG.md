@@ -161,6 +161,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   la Plaza.") y muestra una pantalla de éxito con la combinación real
   (derivada de `GIFT_CODE_DIGITS`), bloqueando la edición de cifras hasta
   una segunda confirmación explícita con Enter que regresa al mundo.
+- `GameState.restore()` normaliza escena, mapa y posición cuando el
+  guardado trae `state.flags.giftCodeSolved` en `true`
+  (`EPILOGUE_SPEC.md` §18.7): fuerza `scene` a `"world"` y
+  `world.currentMapId` a `"axiom-plaza"` sin importar lo que traiga el
+  guardado en esos campos, conservando la posición guardada del jugador
+  en `axiom-plaza` si es válida o cayendo en su punto de aparición por
+  defecto en caso contrario.
 
 ### Corregido
 

@@ -1213,3 +1213,243 @@ test("GameState.restore() no muta el receptor cuando las banderas del epílogo v
     assert.deepEqual(captureObservableState(state), before);
   }
 });
+
+function buildGiftCodeSolvedSaveData() {
+  const saved = new GameState().toSaveData();
+
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = false;
+  saved.objectiveId = "epilogue-meet-bride";
+  saved.scene = "world";
+  saved.world.currentMapId = "axiom-plaza";
+  saved.world.playerByMap["axiom-plaza"] = {
+    x: 111,
+    y: 222,
+    facing: "left",
+  };
+  saved.player = { ...saved.world.playerByMap["axiom-plaza"] };
+
+  return saved;
+}
+
+test("un guardado con giftCodeSolved=true hace un round-trip exacto", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const firstSave = state.toSaveData();
+  delete firstSave.savedAt;
+
+  const secondState = new GameState();
+  secondState.restore(firstSave);
+  const secondSave = secondState.toSaveData();
+  delete secondSave.savedAt;
+
+  assert.deepEqual(secondSave, firstSave);
+});
+
+test("giftCodeSolved=true fuerza scene a world aunque el guardado traiga otra escena", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.scene = "dev-world";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.scene, "world");
+});
+
+test("giftCodeSolved=true fuerza el mapa actual a axiom-plaza aunque el guardado traiga otro mapa", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.world.currentMapId = "library";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.world.currentMapId, "axiom-plaza");
+});
+
+test("giftCodeSolved=true con currentMapId distinto conserva la posición guardada de axiom-plaza", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.world.currentMapId = "library";
+  saved.world.playerByMap["axiom-plaza"] = {
+    x: 333,
+    y: 444,
+    facing: "right",
+  };
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 333,
+    y: 444,
+    facing: "right",
+  });
+});
+
+test("giftCodeSolved=true sin una posición válida en axiom-plaza cae en el spawn por defecto", () => {
+  /*
+   * Cada caso invalida por completo la posición de axiom-plaza (los tres
+   * ejes a la vez, y el alias legacy `player`) para que normalizePlayerState
+   * no tenga ningún eje válido del que tirar como fallback parcial.
+   */
+  const invalidPositionCases = [
+    (saved) => {
+      delete saved.world.playerByMap["axiom-plaza"];
+      delete saved.player;
+    },
+    (saved) => {
+      saved.world.playerByMap["axiom-plaza"] = {
+        x: Number.NaN,
+        y: Number.NaN,
+        facing: "diagonal",
+      };
+    },
+    (saved) => {
+      saved.world.playerByMap["axiom-plaza"] = {
+        x: Number.POSITIVE_INFINITY,
+        y: Number.NEGATIVE_INFINITY,
+        facing: "diagonal",
+      };
+    },
+    (saved) => {
+      saved.world.playerByMap["axiom-plaza"] = {
+        x: Number.NaN,
+        y: Number.POSITIVE_INFINITY,
+        facing: 123,
+      };
+    },
+  ];
+
+  for (const makeInvalid of invalidPositionCases) {
+    const saved = buildGiftCodeSolvedSaveData();
+    saved.world.currentMapId = "library";
+    makeInvalid(saved);
+
+    const state = new GameState();
+    state.restore(saved);
+
+    assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+      x: 240,
+      y: 192,
+      facing: "up",
+    });
+  }
+});
+
+test("giftCodeSolved=true sin world.playerByMap['axiom-plaza'] no reutiliza la posición del mapa original guardado", () => {
+  /*
+   * Guardado realista: la partida estaba en library, con una posición
+   * propia de library tanto en el alias legacy `player` como en
+   * world.playerByMap["library"], y sin ninguna entrada previa para
+   * axiom-plaza (el jugador nunca guardó estando allí). Al normalizar
+   * hacia axiom-plaza por giftCodeSolved=true, esa posición de library no
+   * debe reutilizarse: axiom-plaza debe caer en su propio spawn seguro.
+   */
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.world.currentMapId = "library";
+  const libraryPosition = { x: 77, y: 88, facing: "down" };
+  saved.world.playerByMap.library = { ...libraryPosition };
+  saved.player = { ...libraryPosition };
+  delete saved.world.playerByMap["axiom-plaza"];
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 240,
+    y: 192,
+    facing: "up",
+  });
+  assert.deepEqual(state.player, state.world.playerByMap["axiom-plaza"]);
+});
+
+test("giftCodeSolved=true conserva sin cambios las posiciones guardadas de library, archive y seven-bridges-walk al normalizar hacia axiom-plaza", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.world.currentMapId = "library";
+  const positions = {
+    library: { x: 77, y: 88, facing: "down" },
+    archive: { x: 55, y: 66, facing: "left" },
+    "seven-bridges-walk": { x: 33, y: 44, facing: "right" },
+  };
+
+  for (const [mapId, position] of Object.entries(positions)) {
+    saved.world.playerByMap[mapId] = { ...position };
+  }
+
+  saved.player = { ...positions.library };
+  delete saved.world.playerByMap["axiom-plaza"];
+
+  const state = new GameState();
+  state.restore(saved);
+
+  for (const [mapId, position] of Object.entries(positions)) {
+    assert.deepEqual(state.world.playerByMap[mapId], position);
+  }
+});
+
+test("giftCodeSolved=true deja state.player idéntico a state.world.playerByMap['axiom-plaza']", () => {
+  const cases = [
+    (saved) => saved,
+    (saved) => {
+      saved.world.currentMapId = "library";
+      return saved;
+    },
+    (saved) => {
+      saved.world.currentMapId = "library";
+      delete saved.world.playerByMap["axiom-plaza"];
+      return saved;
+    },
+  ];
+
+  for (const makeCase of cases) {
+    const saved = makeCase(buildGiftCodeSolvedSaveData());
+
+    const state = new GameState();
+    state.restore(saved);
+
+    assert.deepEqual(state.player, state.world.playerByMap["axiom-plaza"]);
+  }
+});
+
+test("giftCodeSolved=true conserva objectiveId exactamente como venía en el guardado", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.world.currentMapId = "library";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.objectiveId, "epilogue-meet-bride");
+});
+
+test("guardar y restaurar dos veces con giftCodeSolved=true produce el mismo resultado en ambas restauraciones", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.world.currentMapId = "library";
+
+  const firstState = new GameState();
+  firstState.restore(saved);
+  const firstResult = captureObservableState(firstState);
+
+  const secondState = new GameState();
+  secondState.restore(saved);
+  const secondResult = captureObservableState(secondState);
+
+  assert.deepEqual(secondResult, firstResult);
+});
+
+test("GameState.restore() no muta el receptor cuando giftCodeSolved=true coincide con un catálogo inválido", () => {
+  for (const makeInvalid of LIBRARY_CATALOGUE_INVALID_CASES) {
+    const saved = buildGiftCodeSolvedSaveData();
+    makeInvalid(saved);
+
+    const state = new GameState();
+    const before = captureObservableState(state);
+
+    assert.throws(() => state.restore(saved), /catálogo/i);
+    assert.deepEqual(captureObservableState(state), before);
+  }
+});

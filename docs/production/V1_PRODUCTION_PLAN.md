@@ -362,7 +362,7 @@ implementa y valida de forma independiente con el flujo completo de
   de las tareas 1, 3 y 4).
 - [x] 6. Comportamiento de combinación incorrecta y correcta (§18.6;
   depende de la tarea 5).
-- [ ] 7. Persistencia y restauración de `giftCodeSolved` (§18.7; depende
+- [x] 7. Persistencia y restauración de `giftCodeSolved` (§18.7; depende
   de las tareas 1 y 6).
 - [ ] 8. Estado visual de amanecer en la Plaza (§18.8; depende de la
   tarea 6).
