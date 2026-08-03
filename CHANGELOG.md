@@ -144,6 +144,14 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   neutro distinto según `state.flags.epilogueUnlocked` sea `false` o
   `true`, sin cambiar de mapa ni mutar ningún estado en ninguno de los dos
   casos.
+- Nueva escena `epilogue-gift-code` (`EPILOGUE_SPEC.md` §18.5): un
+  selector de cuatro cifras navegable con las flechas (foco circular
+  izquierda/derecha, cada cifra ajustable circularmente arriba/abajo) y
+  confirmable con Enter. Interactuar con `epilogue-gift-mechanism` ahora
+  cambia a esta escena cuando el epílogo está desbloqueado y el mecanismo
+  aún no se ha resuelto (`state.flags.giftCodeSolved` en `false`), en vez
+  de mostrar el diálogo neutro anterior; si ya está resuelto, muestra un
+  diálogo distinto que no repite el proceso ni revela la combinación.
 
 ### Corregido
 

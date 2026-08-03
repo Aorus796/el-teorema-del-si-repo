@@ -13,6 +13,9 @@ import {
 import {
   ArchiveCriteriaScene,
 } from "./scenes/ArchiveCriteriaScene.js";
+import {
+  EpilogueGiftCodeScene,
+} from "./scenes/EpilogueGiftCodeScene.js";
 
 const canvas = document.querySelector("#game-canvas");
 if (!(canvas instanceof HTMLCanvasElement)) {
@@ -48,6 +51,11 @@ scenes.register(
 scenes.register(
   "archive-criteria",
   new ArchiveCriteriaScene({ scenes, input, state, ui }),
+);
+
+scenes.register(
+  "epilogue-gift-code",
+  new EpilogueGiftCodeScene({ scenes, input, state, ui }),
 );
 
 const game = new Game({

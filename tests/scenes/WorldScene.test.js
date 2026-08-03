@@ -346,17 +346,52 @@ test("el mecanismo del regalo sin epílogo desbloqueado no cambia estado ni mapa
   assert.deepEqual(stateAfter, stateBefore);
 });
 
-test("el mecanismo del regalo con epílogo desbloqueado muestra un diálogo distinto sin adelantar el epílogo", () => {
+test("el mecanismo del regalo con epílogo desbloqueado y sin resolver cambia a epilogue-gift-code sin diálogo", () => {
   const setup = createWorldAt("axiom-plaza");
   const mechanism = findObject(
     "axiom-plaza",
     "epilogue-gift-mechanism",
   );
-  const setupBefore = createWorldAt("axiom-plaza");
-  setupBefore.scene.interact(mechanism);
-  const linesBefore = setupBefore.ui.dialogue.lines;
-
+  setup.state.flags.investigationComplete = true;
   setup.state.flags.epilogueUnlocked = true;
+  setup.scene.player.x = 300;
+  setup.scene.player.y = 250;
+  setup.scene.player.facing = "up";
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
+
+  setup.scene.interact(mechanism);
+
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "epilogue-gift-code", payload: {} },
+  ]);
+  assert.equal(setup.ui.dialogue, null);
+
+  const expected = structuredClone(stateBefore);
+  expected.player = { x: 300, y: 250, facing: "up" };
+  expected.world.playerByMap["axiom-plaza"] = {
+    x: 300,
+    y: 250,
+    facing: "up",
+  };
+
+  assert.deepEqual(stateAfter, expected);
+});
+
+test("el mecanismo del regalo con giftCodeSolved muestra un diálogo distinto sin cambiar de escena", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const mechanism = findObject(
+    "axiom-plaza",
+    "epilogue-gift-mechanism",
+  );
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
   const stateBefore = structuredClone(setup.state.toSaveData());
   delete stateBefore.savedAt;
 
@@ -367,7 +402,6 @@ test("el mecanismo del regalo con epílogo desbloqueado muestra un diálogo dist
 
   assert.deepEqual(setup.scenes.changes, []);
   assert.ok(setup.ui.dialogue !== null);
-  assert.notDeepEqual(setup.ui.dialogue.lines, linesBefore);
   assert.deepEqual(stateAfter, stateBefore);
 });
 

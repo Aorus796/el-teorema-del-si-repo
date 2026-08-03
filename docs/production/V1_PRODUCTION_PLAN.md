@@ -358,7 +358,7 @@ implementa y valida de forma independiente con el flujo completo de
   la tarea 1).
 - [x] 4. Configuración centralizada de la combinación (§18.4; sin
   dependencias).
-- [ ] 5. Interfaz y lógica del selector de cuatro cifras (§18.5; depende
+- [x] 5. Interfaz y lógica del selector de cuatro cifras (§18.5; depende
   de las tareas 1, 3 y 4).
 - [ ] 6. Comportamiento de combinación incorrecta y correcta (§18.6;
   depende de la tarea 5).
