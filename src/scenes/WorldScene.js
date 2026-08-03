@@ -62,12 +62,13 @@ const OBJECTIVE_LABELS = {
 };
 
 export class WorldScene {
-  constructor({ scenes, input, storage, state, ui }) {
+  constructor({ scenes, input, storage, state, ui, audio }) {
     this.scenes = scenes;
     this.input = input;
     this.storage = storage;
     this.state = state;
     this.ui = ui;
+    this.audio = audio;
     this.map = null;
     this.player = null;
     this.camera = null;
@@ -477,9 +478,12 @@ export class WorldScene {
   }
 
   completeBrideDialogue() {
-    // Punto de extensión para la música (tarea 12) y los créditos
-    // (tarea 13). Intencionalmente vacío en esta tarea: no cambia de
-    // escena, no muta banderas, objetivo, cuaderno ni guarda la partida.
+    // Punto de extensión para los créditos (tarea 13, todavía no
+    // implementada). AudioService.playEpilogueTheme() es seguro por
+    // contrato propio (nunca lanza ni deja una promesa sin capturar), así
+    // que no necesita try/catch aquí. No cambia de escena, no muta
+    // banderas, objetivo, cuaderno ni guarda la partida.
+    this.audio.playEpilogueTheme();
   }
 
   interactWithBlockedExit(object) {

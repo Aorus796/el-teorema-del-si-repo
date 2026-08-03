@@ -202,6 +202,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   reservado para la música (tarea 12) y los créditos (tarea 13): esta
   tarea no cambia de escena ni muta ninguna bandera, objetivo, cuaderno o
   guardado.
+- Infraestructura mínima de audio para el epílogo (`EPILOGUE_SPEC.md`
+  §18.12): `AudioService` (`src/platform/AudioService.js`), basado en
+  `HTMLAudioElement` nativo e inyectado una única vez desde `main.js` en
+  `WorldScene`. `completeBrideDialogue()` invoca ahora
+  `audio.playEpilogueTheme()` tras el quinto y último turno del diálogo
+  final. La ruta del recurso queda centralizada en
+  `src/content/epilogueAudioConfig.js` (`EPILOGUE_THEME_PATH`) y está
+  marcada como provisional: el archivo de audio real todavía no existe en
+  el repositorio, y su ausencia queda cubierta por la degradación segura
+  del servicio, que nunca lanza ni deja promesas de reproducción sin
+  capturar.
 
 ### Corregido
 

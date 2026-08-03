@@ -2,6 +2,7 @@ import { Game } from "./core/Game.js";
 import { SceneManager } from "./core/SceneManager.js";
 import { InputManager } from "./core/InputManager.js";
 import { StorageAdapter } from "./platform/StorageAdapter.js";
+import { AudioService } from "./platform/AudioService.js";
 import { GameState } from "./state/GameState.js";
 import { UiController } from "./ui/UiController.js";
 import { TitleScene } from "./scenes/TitleScene.js";
@@ -26,6 +27,7 @@ const input = new InputManager(window);
 const storage = new StorageAdapter(window.localStorage);
 const state = new GameState();
 const ui = new UiController(document);
+const audio = new AudioService(window.Audio);
 const scenes = new SceneManager();
 
 scenes.register(
@@ -35,7 +37,7 @@ scenes.register(
 
 scenes.register(
   "world",
-  new WorldScene({ scenes, input, storage, state, ui }),
+  new WorldScene({ scenes, input, storage, state, ui, audio }),
 );
 
 scenes.register(
