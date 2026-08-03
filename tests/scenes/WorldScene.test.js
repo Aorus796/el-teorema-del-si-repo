@@ -405,6 +405,56 @@ test("el mecanismo del regalo con giftCodeSolved muestra un diálogo distinto si
   assert.deepEqual(stateAfter, stateBefore);
 });
 
+test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved no cambia de escena al entrar ni al interactuar con el mecanismo del regalo ya resuelto", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = false;
+  saved.objectiveId = "epilogue-meet-bride";
+  saved.scene = "world";
+  saved.world.currentMapId = "axiom-plaza";
+  saved.world.playerByMap["axiom-plaza"] = {
+    x: 240,
+    y: 192,
+    facing: "up",
+  };
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage(),
+    state,
+    ui,
+  });
+
+  scene.enter();
+
+  assert.deepEqual(scenes.changes, []);
+
+  const mechanism = findObject(
+    "axiom-plaza",
+    "epilogue-gift-mechanism",
+  );
+
+  scene.interact(mechanism);
+
+  assert.deepEqual(scenes.changes, []);
+  assert.ok(ui.dialogue !== null);
+  assert.ok(
+    ui.dialogue.lines.some((line) =>
+      line.includes("Los anillos ya no giran"),
+    ),
+  );
+});
+
 test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {
   const setup = createWorldAt("archive");
   setup.state.objectiveId = "start-epilogue";

@@ -238,14 +238,17 @@ export class GameState {
      * catálogo/Archivo corrupto, por ejemplo); si eso ocurre, `this` no
      * debe haberse tocado todavía, para que restore() sea atómico.
      */
-    const scene =
-      data.scene === "dev-world"
+    const giftCodeSolved = Boolean(data.flags?.giftCodeSolved);
+
+    const scene = giftCodeSolved
+      ? "world"
+      : data.scene === "dev-world"
         ? "world"
         : typeof data.scene === "string"
           ? data.scene
           : "world";
 
-    const world = restoreWorldState(data);
+    const world = restoreWorldState(data, giftCodeSolved);
     const player = readPlayerStateFromWorld(world);
 
     const flags = {
@@ -273,7 +276,7 @@ export class GameState {
       ),
       epilogueUnlocked: Boolean(data.flags?.epilogueUnlocked),
       epilogueStarted: Boolean(data.flags?.epilogueStarted),
-      giftCodeSolved: Boolean(data.flags?.giftCodeSolved),
+      giftCodeSolved,
       epilogueCompleted: Boolean(data.flags?.epilogueCompleted),
     };
 
@@ -335,9 +338,10 @@ function assertEpilogueFlagInvariants(flags) {
   }
 }
 
-function restoreWorldState(data) {
-  const currentMapId =
-    typeof data.world?.currentMapId === "string"
+function restoreWorldState(data, giftCodeSolved) {
+  const currentMapId = giftCodeSolved
+    ? DEFAULT_MAP_ID
+    : typeof data.world?.currentMapId === "string"
       ? data.world.currentMapId
       : DEFAULT_MAP_ID;
 
