@@ -339,11 +339,12 @@ function assertEpilogueFlagInvariants(flags) {
 }
 
 function restoreWorldState(data, giftCodeSolved) {
-  const currentMapId = giftCodeSolved
-    ? DEFAULT_MAP_ID
-    : typeof data.world?.currentMapId === "string"
+  const originalMapId =
+    typeof data.world?.currentMapId === "string"
       ? data.world.currentMapId
       : DEFAULT_MAP_ID;
+
+  const currentMapId = giftCodeSolved ? DEFAULT_MAP_ID : originalMapId;
 
   const playerByMap = cloneDefaultPlayerByMap();
   const savedPlayerByMap = data.world?.playerByMap;
@@ -369,12 +370,25 @@ function restoreWorldState(data, giftCodeSolved) {
   }
 
   /*
-   * Las partidas de formato 1 solo tenían una posición global. También
-   * sirve como fallback para fixtures o guardados incompletos de formato 2.
+   * `data.player` (el alias legacy de nivel superior) solo representa la
+   * posición del mapa que de verdad estaba activo en el guardado
+   * (originalMapId) — nunca la de `currentMapId` cuando éste se forzó a
+   * un mapa distinto (por ejemplo, axiom-plaza al restaurar
+   * giftCodeSolved=true desde un guardado hecho en otro mapa). Usarlo
+   * fuera de `originalMapId` mezclaría las coordenadas de un mapa con la
+   * geometría de otro. Las partidas de formato 1 solo tenían esta
+   * posición global y ningún `world.currentMapId` propio, así que
+   * `originalMapId` y `currentMapId` siempre coinciden por definición
+   * (ambos caen en `DEFAULT_MAP_ID`) y conservan su comportamiento exacto
+   * de siempre; también sirve como fallback para fixtures o guardados
+   * incompletos de formato 2.
    */
+  const legacyPlayerMatchesCurrentMap =
+    data.formatVersion === 1 || originalMapId === currentMapId;
+
   if (
-    data.formatVersion === 1 ||
-    !savedPlayerByMap?.[currentMapId]
+    legacyPlayerMatchesCurrentMap &&
+    (data.formatVersion === 1 || !savedPlayerByMap?.[currentMapId])
   ) {
     playerByMap[currentMapId] = normalizePlayerState(
       data.player,

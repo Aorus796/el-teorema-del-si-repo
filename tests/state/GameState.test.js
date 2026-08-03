@@ -1341,6 +1341,57 @@ test("giftCodeSolved=true sin una posición válida en axiom-plaza cae en el spa
   }
 });
 
+test("giftCodeSolved=true sin world.playerByMap['axiom-plaza'] no reutiliza la posición del mapa original guardado", () => {
+  /*
+   * Guardado realista: la partida estaba en library, con una posición
+   * propia de library tanto en el alias legacy `player` como en
+   * world.playerByMap["library"], y sin ninguna entrada previa para
+   * axiom-plaza (el jugador nunca guardó estando allí). Al normalizar
+   * hacia axiom-plaza por giftCodeSolved=true, esa posición de library no
+   * debe reutilizarse: axiom-plaza debe caer en su propio spawn seguro.
+   */
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.world.currentMapId = "library";
+  const libraryPosition = { x: 77, y: 88, facing: "down" };
+  saved.world.playerByMap.library = { ...libraryPosition };
+  saved.player = { ...libraryPosition };
+  delete saved.world.playerByMap["axiom-plaza"];
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 240,
+    y: 192,
+    facing: "up",
+  });
+  assert.deepEqual(state.player, state.world.playerByMap["axiom-plaza"]);
+});
+
+test("giftCodeSolved=true conserva sin cambios las posiciones guardadas de library, archive y seven-bridges-walk al normalizar hacia axiom-plaza", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.world.currentMapId = "library";
+  const positions = {
+    library: { x: 77, y: 88, facing: "down" },
+    archive: { x: 55, y: 66, facing: "left" },
+    "seven-bridges-walk": { x: 33, y: 44, facing: "right" },
+  };
+
+  for (const [mapId, position] of Object.entries(positions)) {
+    saved.world.playerByMap[mapId] = { ...position };
+  }
+
+  saved.player = { ...positions.library };
+  delete saved.world.playerByMap["axiom-plaza"];
+
+  const state = new GameState();
+  state.restore(saved);
+
+  for (const [mapId, position] of Object.entries(positions)) {
+    assert.deepEqual(state.world.playerByMap[mapId], position);
+  }
+});
+
 test("giftCodeSolved=true deja state.player idéntico a state.world.playerByMap['axiom-plaza']", () => {
   const cases = [
     (saved) => saved,
