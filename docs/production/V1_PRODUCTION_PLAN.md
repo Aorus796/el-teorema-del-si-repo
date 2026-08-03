@@ -360,7 +360,7 @@ implementa y valida de forma independiente con el flujo completo de
   dependencias).
 - [x] 5. Interfaz y lógica del selector de cuatro cifras (§18.5; depende
   de las tareas 1, 3 y 4).
-- [ ] 6. Comportamiento de combinación incorrecta y correcta (§18.6;
+- [x] 6. Comportamiento de combinación incorrecta y correcta (§18.6;
   depende de la tarea 5).
 - [ ] 7. Persistencia y restauración de `giftCodeSolved` (§18.7; depende
   de las tareas 1 y 6).

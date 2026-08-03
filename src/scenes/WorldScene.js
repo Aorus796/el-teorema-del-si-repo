@@ -31,6 +31,7 @@ const OBJECTIVE_LABELS = {
   "inspect-archive-criteria-table":
     "Entra en el Archivo y examina la mesa de criterios.",
   "start-epilogue": "Regresa al lugar donde comenzó la demostración.",
+  "epilogue-meet-bride": "Acércate a ella en la Plaza.",
 };
 
 export class WorldScene {
