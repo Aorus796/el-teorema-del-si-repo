@@ -524,8 +524,7 @@ test("Escape tras acertar, antes de la segunda confirmación, vuelve a world sin
 
 test("enter con readOnly no entra en modo editable: las teclas de movimiento no tienen efecto", () => {
   const { scene, input, state } = createScene();
-  state.flags.epilogueStarted = true;
-  state.flags.giftCodeSolved = true;
+  applyValidGiftCodeSolvedFlags(state);
   scene.enter({ readOnly: true });
 
   const digitsBefore = [...scene.digits];
@@ -542,8 +541,7 @@ test("enter con readOnly no entra en modo editable: las teclas de movimiento no 
 
 test("enter con readOnly no modifica epilogueStarted ni ningún otro dato persistente", () => {
   const { scene, state } = createScene();
-  state.flags.epilogueStarted = true;
-  state.flags.giftCodeSolved = true;
+  applyValidGiftCodeSolvedFlags(state);
   const stateBefore = structuredClone(state.toSaveData());
   delete stateBefore.savedAt;
 
@@ -564,8 +562,7 @@ test("enter sin payload produce readOnly en false", () => {
 
 test("render en modo readOnly muestra el título exacto y el código derivado de GIFT_CODE_DIGITS, sin cajas editables ni marco de foco", () => {
   const { scene, state } = createScene();
-  state.flags.epilogueStarted = true;
-  state.flags.giftCodeSolved = true;
+  applyValidGiftCodeSolvedFlags(state);
   scene.enter({ readOnly: true });
 
   const context = new FakeCanvasContext();
@@ -586,8 +583,7 @@ test("render en modo readOnly muestra el título exacto y el código derivado de
 
 test("startPuzzleAttempt en modo readOnly vuelve a world sin modificar el estado", () => {
   const { scene, input, state, scenes } = createScene();
-  state.flags.epilogueStarted = true;
-  state.flags.giftCodeSolved = true;
+  applyValidGiftCodeSolvedFlags(state);
   scene.enter({ readOnly: true });
   const stateBefore = structuredClone(state.toSaveData());
   delete stateBefore.savedAt;
@@ -603,8 +599,7 @@ test("startPuzzleAttempt en modo readOnly vuelve a world sin modificar el estado
 
 test("cancel en modo readOnly vuelve a world sin modificar el estado", () => {
   const { scene, input, state, scenes } = createScene();
-  state.flags.epilogueStarted = true;
-  state.flags.giftCodeSolved = true;
+  applyValidGiftCodeSolvedFlags(state);
   scene.enter({ readOnly: true });
   const stateBefore = structuredClone(state.toSaveData());
   delete stateBefore.savedAt;
@@ -620,8 +615,7 @@ test("cancel en modo readOnly vuelve a world sin modificar el estado", () => {
 
 test("varias reconsultas sucesivas en modo readOnly son idempotentes", () => {
   const { scene, state } = createScene();
-  state.flags.epilogueStarted = true;
-  state.flags.giftCodeSolved = true;
+  applyValidGiftCodeSolvedFlags(state);
 
   scene.enter({ readOnly: true });
   const contextFirst = new FakeCanvasContext();
@@ -641,9 +635,7 @@ test("varias reconsultas sucesivas en modo readOnly son idempotentes", () => {
 
 test("el modo readOnly se mantiene igual con epilogueCompleted en true", () => {
   const { scene, state } = createScene();
-  state.flags.epilogueStarted = true;
-  state.flags.giftCodeSolved = true;
-  state.flags.epilogueCompleted = true;
+  applyValidGiftCodeSolvedFlags(state, { epilogueCompleted: true });
   scene.enter({ readOnly: true });
 
   const context = new FakeCanvasContext();
@@ -686,6 +678,18 @@ function assertSurrounds(outer, inner) {
     outer.y + outer.height > inner.y + inner.height,
     "el marco de foco debe terminar después en y",
   );
+}
+
+function applyValidGiftCodeSolvedFlags(state, { epilogueCompleted = false } = {}) {
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+  state.flags.epilogueCompleted = epilogueCompleted;
+
+  if (!epilogueCompleted) {
+    state.objectiveId = "epilogue-meet-bride";
+  }
 }
 
 function createScene() {
