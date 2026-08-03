@@ -63,7 +63,7 @@ scenes.register(
 
 scenes.register(
   "credits",
-  new CreditsScene({ input, ui }),
+  new CreditsScene({ input, ui, state, storage, scenes }),
 );
 
 const game = new Game({

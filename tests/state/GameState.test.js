@@ -1453,3 +1453,66 @@ test("GameState.restore() no muta el receptor cuando giftCodeSolved=true coincid
     assert.deepEqual(captureObservableState(state), before);
   }
 });
+
+test("epilogueCompleted=true fuerza objectiveId a epilogue-completed aunque el guardado traiga otro objectiveId", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.flags.epilogueCompleted = true;
+  saved.objectiveId = "review-preparations-board";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.objectiveId, "epilogue-completed");
+});
+
+test("epilogueCompleted=true con objectiveId ya correcto lo conserva", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.flags.epilogueCompleted = true;
+  saved.objectiveId = "epilogue-completed";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.objectiveId, "epilogue-completed");
+});
+
+test("epilogueCompleted=false respeta el objectiveId literal del guardado (el fix no contamina el camino no terminal)", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.flags.epilogueCompleted = false;
+  saved.objectiveId = "epilogue-meet-bride";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.objectiveId, "epilogue-meet-bride");
+});
+
+test("un round-trip toSaveData() -> restore() con epilogueCompleted=true conserva objectiveId=epilogue-completed", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+  state.flags.epilogueCompleted = true;
+  state.objectiveId = "epilogue-completed";
+
+  const saved = state.toSaveData();
+
+  const restoredState = new GameState();
+  restoredState.restore(saved);
+
+  assert.equal(restoredState.objectiveId, "epilogue-completed");
+});
+
+test("epilogueCompleted=true fuerza scene a world y el mapa actual a axiom-plaza aunque el guardado traiga otros valores (tarea 14)", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.flags.epilogueCompleted = true;
+  saved.scene = "library-catalogue";
+  saved.world.currentMapId = "library";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.scene, "world");
+  assert.equal(state.world.currentMapId, "axiom-plaza");
+});

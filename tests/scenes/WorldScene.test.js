@@ -1178,6 +1178,53 @@ test("OBJECTIVE_LABELS reconoce epilogue-meet-bride en el HUD renderizado", () =
   );
 });
 
+test("OBJECTIVE_LABELS reconoce epilogue-completed en el HUD renderizado", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.objectiveId = "epilogue-completed";
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  assert.ok(
+    context.texts.some((text) =>
+      text.includes("La demostración ha terminado."),
+    ),
+  );
+});
+
+test("restaurar una partida con epilogueCompleted=true no dispara ningún cambio de escena", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = true;
+  saved.objectiveId = "review-preparations-board";
+  saved.scene = "library-catalogue";
+  saved.world.currentMapId = "library";
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const state = new GameState();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage({ loadResult: saved }),
+    state,
+    ui,
+    audio: { playEpilogueTheme: () => {} },
+  });
+
+  scene.enter({ restoreFromState: true });
+  scene.update(0);
+
+  assert.deepEqual(scenes.changes, []);
+  assert.equal(state.scene, "world");
+  assert.equal(state.world.currentMapId, "axiom-plaza");
+  assert.equal(state.objectiveId, "epilogue-completed");
+});
+
 test("volver del catálogo conserva mapa, posición y datos persistentes", () => {
   const input = new FakeInput();
   const scenes = new SceneManager();

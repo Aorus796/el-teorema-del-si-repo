@@ -282,8 +282,9 @@ export class GameState {
 
     assertEpilogueFlagInvariants(flags);
 
-    const objectiveId =
-      typeof data.objectiveId === "string"
+    const objectiveId = flags.epilogueCompleted
+      ? "epilogue-completed"
+      : typeof data.objectiveId === "string"
         ? data.objectiveId
         : "review-preparations-board";
 

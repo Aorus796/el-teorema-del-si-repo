@@ -227,6 +227,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `confirmFinalCard()`, un punto de extensión intencionalmente vacío
   reservado para la tarea 14 (transición terminal y guardado bloqueante,
   `EPILOGUE_SPEC.md` §15).
+- `CreditsScene.confirmFinalCard()` ahora ejecuta la transición atómica de
+  cierre (`EPILOGUE_SPEC.md` §15): prepara en memoria
+  `epilogueCompleted=true`, `objectiveId="epilogue-completed"`,
+  `scene="world"`, `world.currentMapId="axiom-plaza"` y la sincronización
+  de `player`/`playerByMap`, intenta guardar con `StorageAdapter` y solo
+  tras un guardado exitoso cambia a `"title"`; un fallo mantiene la
+  tarjeta final visible con el mensaje "No se pudo guardar el final.
+  Vuelve a intentarlo." y permite reintentar sin repetir la preparación en
+  memoria; `GameState.restore()` ahora fuerza
+  `objectiveId="epilogue-completed"` cuando `epilogueCompleted=true`, con
+  independencia de lo que contuviera el guardado.
 
 ### Corregido
 

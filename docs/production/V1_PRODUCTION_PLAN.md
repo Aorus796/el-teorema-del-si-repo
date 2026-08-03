@@ -375,7 +375,7 @@ implementa y valida de forma independiente con el flujo completo de
 - [x] 12. Música del epílogo con recurso sustituible (§18.12; depende de
   la tarea 10, o puede adelantarse).
 - [x] 13. Tarjetas finales y créditos (§18.13; depende de la tarea 10).
-- [ ] 14. Transición atómica de cierre y retorno seguro al menú (§18.14;
+- [x] 14. Transición atómica de cierre y retorno seguro al menú (§18.14;
   depende de las tareas 1 y 13).
 - [ ] 15. Pruebas unitarias, de contenido y E2E del recorrido completo
   (§18.15; depende de las tareas 1–14).

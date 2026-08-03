@@ -244,31 +244,40 @@ test("Escape no cambia de paso en ningún punto de la secuencia", () => {
   }
 });
 
-test("recorrer los cinco pasos y confirmar la tarjeta final dos veces no modifica un GameState independiente", () => {
-  const { scene, input } = createScene();
+test("confirmar la tarjeta final varias veces tras un guardado exitoso no corrompe el estado ni repite efectos", () => {
   const state = new GameState();
-  const stateBefore = structuredClone(state.toSaveData());
-  delete stateBefore.savedAt;
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage();
+  const { scene, input } = createScene({ state, storage });
 
   scene.enter();
   for (let i = 0; i < 4; i += 1) {
     press(scene, input);
   }
   press(scene, input);
-  press(scene, input);
 
-  const stateAfter = structuredClone(state.toSaveData());
-  delete stateAfter.savedAt;
+  const stateAfterFirst = structuredClone(state.toSaveData());
+  delete stateAfterFirst.savedAt;
 
-  assert.deepEqual(stateAfter, stateBefore);
+  scene.confirmFinalCard();
+
+  const stateAfterSecond = structuredClone(state.toSaveData());
+  delete stateAfterSecond.savedAt;
+
+  assert.deepEqual(stateAfterSecond, stateAfterFirst);
 });
 
-test("CreditsScene no recibe audio, scenes ni storage: no puede crear/reiniciar audio, cambiar de escena ni guardar", () => {
+test("CreditsScene recibe state, storage y scenes para la transición terminal, pero nunca audio", () => {
   const { scene } = createScene();
 
   assert.equal(Object.hasOwn(scene, "audio"), false);
-  assert.equal(Object.hasOwn(scene, "scenes"), false);
-  assert.equal(Object.hasOwn(scene, "storage"), false);
+  assert.equal(Object.hasOwn(scene, "state"), true);
+  assert.equal(Object.hasOwn(scene, "storage"), true);
+  assert.equal(Object.hasOwn(scene, "scenes"), true);
 });
 
 test("confirmar la tarjeta final invoca confirmFinalCard exactamente una vez por pulsación y permanece en la tarjeta", () => {
@@ -296,6 +305,266 @@ test("confirmar la tarjeta final invoca confirmFinalCard exactamente una vez por
   assert.equal(scene.step, CREDITS_STEP.FINAL_CARD);
 });
 
+test("confirmar la tarjeta final con guardado exitoso prepara el estado terminal completo", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+  state.flags.epilogueCompleted = false;
+  state.objectiveId = "epilogue-meet-bride";
+  state.world.currentMapId = "axiom-plaza";
+  state.setPlayerState({ x: 300, y: 250, facing: "up" }, "axiom-plaza");
+
+  const storage = new FakeStorage();
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+
+  press(scene, input);
+
+  assert.equal(state.flags.epilogueCompleted, true);
+  assert.equal(state.flags.giftCodeSolved, true);
+  assert.equal(state.flags.epilogueStarted, true);
+  assert.equal(state.flags.epilogueUnlocked, true);
+  assert.equal(state.flags.investigationComplete, true);
+  assert.equal(state.objectiveId, "epilogue-completed");
+  assert.equal(state.scene, "world");
+  assert.equal(state.world.currentMapId, "axiom-plaza");
+  assert.deepEqual(state.player, state.world.playerByMap["axiom-plaza"]);
+});
+
+test("el guardado exitoso contiene los cuatro campos terminales exactos", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage();
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+
+  assert.ok(storage.savedData);
+  assert.equal(storage.savedData.flags.epilogueCompleted, true);
+  assert.equal(storage.savedData.scene, "world");
+  assert.equal(storage.savedData.world.currentMapId, "axiom-plaza");
+  assert.equal(storage.savedData.objectiveId, "epilogue-completed");
+});
+
+test("confirmar con éxito cambia a title exactamente una vez, después de guardar", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const callOrder = [];
+  const storage = new FakeStorage();
+  const originalSave = storage.save.bind(storage);
+  storage.save = (data) => {
+    callOrder.push("save");
+    originalSave(data);
+  };
+  const scenes = new FakeScenes();
+  const originalChange = scenes.change.bind(scenes);
+  scenes.change = (name, payload) => {
+    callOrder.push("change");
+    originalChange(name, payload);
+  };
+
+  const { scene, input } = createScene({ state, storage, scenes });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+
+  assert.deepEqual(callOrder, ["save", "change"]);
+  assert.deepEqual(scenes.changes, [{ name: "title", payload: undefined }]);
+});
+
+test("un fallo de guardado no propaga, mantiene la escena en FINAL_CARD y no cambia de escena", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage({ saveError: new Error("disco lleno") });
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+
+  assert.doesNotThrow(() => press(scene, input));
+
+  assert.equal(scene.step, CREDITS_STEP.FINAL_CARD);
+  assert.equal(scene.saveFailed, true);
+});
+
+test("tras un fallo, el render muestra el mensaje exacto junto al texto principal de la tarjeta final", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage({ saveError: new Error("fallo") });
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+  const texts = context.texts.map((entry) => entry.text);
+
+  assert.ok(texts.includes(FINAL_CARD_TEXT));
+  assert.ok(texts.includes("No se pudo guardar el final. Vuelve a intentarlo."));
+});
+
+test("el guardado previo permanece intacto tras un intento fallido", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage({ saveError: new Error("fallo") });
+  storage.savedData = { previous: "guardado anterior" };
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+
+  assert.deepEqual(storage.savedData, { previous: "guardado anterior" });
+});
+
+test("dos fallos consecutivos mantienen la escena estable, sin duplicar la preparación en memoria", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage({ saveError: new Error("fallo") });
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+
+  let prepareCalls = 0;
+  const originalPrepare = scene.prepareTerminalState.bind(scene);
+  scene.prepareTerminalState = () => {
+    prepareCalls += 1;
+    originalPrepare();
+  };
+
+  press(scene, input);
+  press(scene, input);
+
+  assert.equal(scene.step, CREDITS_STEP.FINAL_CARD);
+  assert.equal(scene.saveFailed, true);
+  assert.equal(
+    prepareCalls,
+    1,
+    "prepareTerminalState debe ejecutarse en el primer intento fallido (pone epilogueCompleted=true) y no repetirse en el segundo, así que dos intentos fallidos consecutivos producen una sola llamada, no dos",
+  );
+});
+
+test("un reintento exitoso tras un fallo completa la transición", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage({ saveError: new Error("fallo") });
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+  assert.equal(scene.saveFailed, true);
+
+  storage.saveError = null;
+  press(scene, input);
+
+  assert.equal(scene.saveFailed, false);
+  assert.deepEqual(scene.scenes.changes, [{ name: "title", payload: undefined }]);
+  assert.ok(storage.savedData);
+});
+
+test("prepareTerminalState no modifica ninguna otra bandera del epílogo", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const { scene } = createScene({ state });
+  scene.prepareTerminalState();
+
+  assert.equal(state.flags.investigationComplete, true);
+  assert.equal(state.flags.epilogueUnlocked, true);
+  assert.equal(state.flags.epilogueStarted, true);
+  assert.equal(state.flags.giftCodeSolved, true);
+});
+
+test("prepareTerminalState mantiene idénticos state.player y world.playerByMap[axiom-plaza]", () => {
+  const state = new GameState();
+  state.world.currentMapId = "axiom-plaza";
+  state.setPlayerState({ x: 111, y: 222, facing: "left" }, "axiom-plaza");
+
+  const { scene } = createScene({ state });
+  scene.prepareTerminalState();
+
+  assert.deepEqual(state.player, state.world.playerByMap["axiom-plaza"]);
+});
+
+test("el mensaje de error nunca aparece en los pasos 1 a 4", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage({ saveError: new Error("fallo") });
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+  assert.equal(scene.saveFailed, true);
+
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    const context = new FakeCanvasContext();
+    scene.render(context);
+    const texts = context.texts.map((entry) => entry.text);
+    assert.equal(
+      texts.includes("No se pudo guardar el final. Vuelve a intentarlo."),
+      false,
+    );
+    press(scene, input);
+  }
+});
+
 test("ningún texto renderizado contiene {{FINAL_DEDICATION}} ni contenido personalizado", () => {
   const { scene, input } = createScene();
   scene.enter();
@@ -320,15 +589,46 @@ function textIncludesClosingLine(context) {
   return CLOSING_LINE.split(" ").every((word) => joined.includes(word));
 }
 
-function createScene() {
+function createScene({ state, storage, scenes } = {}) {
   const input = new FakeInput();
   const ui = new FakeUi();
 
   return {
     input,
     ui,
-    scene: new CreditsScene({ input, ui }),
+    scene: new CreditsScene({
+      input,
+      ui,
+      state: state ?? new GameState(),
+      storage: storage ?? new FakeStorage(),
+      scenes: scenes ?? new FakeScenes(),
+    }),
   };
+}
+
+class FakeStorage {
+  constructor({ saveError = null } = {}) {
+    this.saveError = saveError;
+    this.savedData = null;
+  }
+
+  save(data) {
+    if (this.saveError) {
+      throw this.saveError;
+    }
+
+    this.savedData = data;
+  }
+}
+
+class FakeScenes {
+  constructor() {
+    this.changes = [];
+  }
+
+  change(name, payload) {
+    this.changes.push({ name, payload });
+  }
 }
 
 function press(scene, input) {
