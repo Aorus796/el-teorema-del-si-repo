@@ -1,6 +1,10 @@
+import { GIFT_CODE_DIGITS } from "../content/epilogueConfig.js";
+
 const DIGIT_COUNT = 4;
 
 const STATUS_MESSAGE = "Ajusta cada cifra y confirma con Enter.";
+const INCORRECT_MESSAGE =
+  "Esta combinación no es la correcta. Repasa el cuaderno.";
 
 export class EpilogueGiftCodeScene {
   constructor({ scenes, input, state, ui }) {
@@ -11,6 +15,7 @@ export class EpilogueGiftCodeScene {
 
     this.focusedDigitIndex = 0;
     this.digits = [0, 0, 0, 0];
+    this.lastAttemptFailed = false;
   }
 
   enter() {
@@ -22,6 +27,7 @@ export class EpilogueGiftCodeScene {
 
     this.focusedDigitIndex = 0;
     this.digits = [0, 0, 0, 0];
+    this.lastAttemptFailed = false;
   }
 
   update() {
@@ -30,24 +36,26 @@ export class EpilogueGiftCodeScene {
       return;
     }
 
-    if (this.input.wasPressed("moveLeft")) {
-      this.moveFocus(-1);
-      return;
-    }
+    if (!this.state.flags.giftCodeSolved) {
+      if (this.input.wasPressed("moveLeft")) {
+        this.moveFocus(-1);
+        return;
+      }
 
-    if (this.input.wasPressed("moveRight")) {
-      this.moveFocus(1);
-      return;
-    }
+      if (this.input.wasPressed("moveRight")) {
+        this.moveFocus(1);
+        return;
+      }
 
-    if (this.input.wasPressed("moveUp")) {
-      this.changeFocusedDigit(1);
-      return;
-    }
+      if (this.input.wasPressed("moveUp")) {
+        this.changeFocusedDigit(1);
+        return;
+      }
 
-    if (this.input.wasPressed("moveDown")) {
-      this.changeFocusedDigit(-1);
-      return;
+      if (this.input.wasPressed("moveDown")) {
+        this.changeFocusedDigit(-1);
+        return;
+      }
     }
 
     if (this.input.wasPressed("startPuzzleAttempt")) {
@@ -66,15 +74,38 @@ export class EpilogueGiftCodeScene {
   }
 
   confirmAttempt() {
-    // Punto de extensión: la comparación contra la combinación real y sus
-    // consecuencias se implementan en una tarea posterior.
+    if (this.state.flags.giftCodeSolved) {
+      this.scenes.change("world");
+      return;
+    }
+
+    const isCorrect = this.digits.every(
+      (digit, index) => digit === GIFT_CODE_DIGITS[index],
+    );
+
+    if (!isCorrect) {
+      this.lastAttemptFailed = true;
+      return;
+    }
+
+    this.lastAttemptFailed = false;
+    this.state.flags.giftCodeSolved = true;
+    this.state.objectiveId = "epilogue-meet-bride";
   }
 
   render(context) {
+    if (this.state.flags.giftCodeSolved) {
+      drawBackground(context);
+      drawHeader(context);
+      drawSuccess(context);
+      drawSuccessFooter(context);
+      return;
+    }
+
     drawBackground(context);
     drawHeader(context);
     drawDigits(context, this);
-    drawMessage(context);
+    drawMessage(context, this);
     drawFooter(context);
   }
 }
@@ -146,11 +177,15 @@ function drawDigits(context, scene) {
   }
 }
 
-function drawMessage(context) {
-  context.fillStyle = "#cbb8d8";
+function drawMessage(context, scene) {
+  context.fillStyle = scene.lastAttemptFailed ? "#e88b8b" : "#cbb8d8";
   context.font = "7px monospace";
   context.textAlign = "center";
-  context.fillText(STATUS_MESSAGE, 240, 213);
+  context.fillText(
+    scene.lastAttemptFailed ? INCORRECT_MESSAGE : STATUS_MESSAGE,
+    240,
+    213,
+  );
 }
 
 function drawFooter(context) {
@@ -165,5 +200,28 @@ function drawFooter(context) {
     240,
     257,
   );
+  context.textAlign = "left";
+}
+
+function drawSuccess(context) {
+  context.fillStyle = "#fff4d2";
+  context.font = "bold 14px monospace";
+  context.textAlign = "center";
+  context.fillText("COMBINACIÓN DEL CANDADO REAL", 240, 110);
+
+  context.fillStyle = "#71d5c6";
+  context.font = "bold 24px monospace";
+  context.fillText(GIFT_CODE_DIGITS.join(" · "), 240, 150);
+  context.textAlign = "left";
+}
+
+function drawSuccessFooter(context) {
+  context.fillStyle = "#30263d";
+  context.fillRect(0, 238, 480, 32);
+
+  context.fillStyle = "#fff4d2";
+  context.font = "7px monospace";
+  context.textAlign = "center";
+  context.fillText("Enter confirmar y volver | Esc salir", 240, 257);
   context.textAlign = "left";
 }

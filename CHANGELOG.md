@@ -152,6 +152,15 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   aún no se ha resuelto (`state.flags.giftCodeSolved` en `false`), en vez
   de mostrar el diálogo neutro anterior; si ya está resuelto, muestra un
   diálogo distinto que no repite el proceso ni revela la combinación.
+- La escena `epilogue-gift-code` ahora compara de verdad la combinación
+  introducida contra `GIFT_CODE_DIGITS` (`EPILOGUE_SPEC.md` §18.6): si no
+  coincide, muestra el mensaje "Esta combinación no es la correcta. Repasa
+  el cuaderno." sin alterar ningún estado y la escena permanece abierta y
+  editable; si coincide, marca `state.flags.giftCodeSolved` en `true`,
+  actualiza el objetivo HUD a `epilogue-meet-bride` ("Acércate a ella en
+  la Plaza.") y muestra una pantalla de éxito con la combinación real
+  (derivada de `GIFT_CODE_DIGITS`), bloqueando la edición de cifras hasta
+  una segunda confirmación explícita con Enter que regresa al mundo.
 
 ### Corregido
 

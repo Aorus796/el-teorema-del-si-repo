@@ -419,6 +419,20 @@ test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {
   );
 });
 
+test("OBJECTIVE_LABELS reconoce epilogue-meet-bride en el HUD renderizado", () => {
+  const setup = createWorldAt("archive");
+  setup.state.objectiveId = "epilogue-meet-bride";
+  const context = new FakeCanvasContext();
+
+  assert.doesNotThrow(() => setup.scene.render(context));
+  assert.equal(
+    context.texts.some((text) =>
+      text.includes("Acércate a ella en la Plaza."),
+    ),
+    true,
+  );
+});
+
 test("volver del catálogo conserva mapa, posición y datos persistentes", () => {
   const input = new FakeInput();
   const scenes = new SceneManager();
