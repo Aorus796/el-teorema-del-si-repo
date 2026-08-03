@@ -368,7 +368,7 @@ implementa y valida de forma independiente con el flujo completo de
   tarea 6).
 - [x] 9. Aparición de la novia en la Plaza (§18.9; depende de las
   tareas 6 y 8).
-- [ ] 10. Interacción con la novia y diálogo final aprobado (§18.10;
+- [x] 10. Interacción con la novia y diálogo final aprobado (§18.10;
   depende de la tarea 9).
 - [ ] 11. Pantalla inequívoca con la combinación del candado real
   (§18.11; depende de la tarea 6; puede fusionarse con ella).

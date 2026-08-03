@@ -182,6 +182,18 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   (`findNearbyObject` y `renderObjects`) reutilizable por cualquier objeto
   futuro del mapa; todavía sin ningún manejador de interacción propio, esa
   lógica queda para la siguiente tarea.
+- Manejador de interacción para `bride-epilogue` en `WorldScene`
+  (`EPILOGUE_SPEC.md` §18.10): reproduce el diálogo final aprobado (§10)
+  alternando "Novia" y "Protagonista" mediante una cadena secuencial de
+  cinco llamadas a `UiController.beginDialogue()`, cada una con el
+  `onComplete` de la anterior abriendo la siguiente. Con
+  `state.flags.epilogueCompleted` en `true` (`EPILOGUE_SPEC.md` §15) la
+  interacción es un no-op defensivo que ni siquiera sincroniza la posición
+  del jugador. Al completar el quinto turno se invoca
+  `completeBrideDialogue()`, un punto de extensión intencionalmente vacío
+  reservado para la música (tarea 12) y los créditos (tarea 13): esta
+  tarea no cambia de escena ni muta ninguna bandera, objetivo, cuaderno o
+  guardado.
 
 ### Corregido
 
