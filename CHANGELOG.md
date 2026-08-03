@@ -57,6 +57,14 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `failureCode` del guardado resultante coinciden con el intento original —
   demostrando que `GameState` restauró de verdad el intento incompleto en
   memoria, no solo que sobrevivió en `localStorage`.
+- Reconsulta en modo de solo lectura del mecanismo del regalo del
+  epílogo: interactuar con `epilogue-gift-mechanism` después de
+  `giftCodeSolved=true` (incluido con `epilogueCompleted=true`) sincroniza
+  al jugador y reabre `EpilogueGiftCodeScene` con un payload
+  `{readOnly:true}` que activa un campo transitorio de instancia
+  `readOnly` — sin selector editable, sin comparación, sin modificar
+  ninguna bandera. El diálogo neutro temporal ("Los anillos ya no giran")
+  queda eliminado.
 - Prueba Playwright que restaura un intento a medias del primer puzle de
   los Siete Puentes (fase `traversing`, recorrido `E-R` con un puente ya
   cruzado) tras un `page.reload()` real: siembra el guardado, entra al

@@ -240,9 +240,11 @@ test("digits, focusedDigitIndex y lastAttemptFailed nunca aparecen en el estado 
   assert.equal(Object.hasOwn(saveData, "digits"), false);
   assert.equal(Object.hasOwn(saveData, "focusedDigitIndex"), false);
   assert.equal(Object.hasOwn(saveData, "lastAttemptFailed"), false);
+  assert.equal(Object.hasOwn(saveData, "readOnly"), false);
   assert.equal(serialized.includes("digits"), false);
   assert.equal(serialized.includes("focusedDigitIndex"), false);
   assert.equal(serialized.includes("lastAttemptFailed"), false);
+  assert.equal(serialized.includes("readOnly"), false);
 });
 
 test("render no lanza excepción", () => {
@@ -520,6 +522,133 @@ test("Escape tras acertar, antes de la segunda confirmación, vuelve a world sin
   assert.deepEqual(stateAfter, stateBefore);
 });
 
+test("enter con readOnly no entra en modo editable: las teclas de movimiento no tienen efecto", () => {
+  const { scene, input, state } = createScene();
+  applyValidGiftCodeSolvedFlags(state);
+  scene.enter({ readOnly: true });
+
+  const digitsBefore = [...scene.digits];
+  const focusedBefore = scene.focusedDigitIndex;
+
+  press(scene, input, "moveLeft");
+  press(scene, input, "moveRight");
+  press(scene, input, "moveUp");
+  press(scene, input, "moveDown");
+
+  assert.deepEqual(scene.digits, digitsBefore);
+  assert.equal(scene.focusedDigitIndex, focusedBefore);
+});
+
+test("enter con readOnly no modifica epilogueStarted ni ningún otro dato persistente", () => {
+  const { scene, state } = createScene();
+  applyValidGiftCodeSolvedFlags(state);
+  const stateBefore = structuredClone(state.toSaveData());
+  delete stateBefore.savedAt;
+
+  scene.enter({ readOnly: true });
+
+  const stateAfter = structuredClone(state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(stateAfter, stateBefore);
+});
+
+test("enter sin payload produce readOnly en false", () => {
+  const { scene } = createScene();
+  scene.enter();
+
+  assert.equal(scene.readOnly, false);
+});
+
+test("render en modo readOnly muestra el título exacto y el código derivado de GIFT_CODE_DIGITS, sin cajas editables ni marco de foco", () => {
+  const { scene, state } = createScene();
+  applyValidGiftCodeSolvedFlags(state);
+  scene.enter({ readOnly: true });
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  assert.ok(
+    context.texts.some((text) =>
+      text.includes("COMBINACIÓN DEL CANDADO REAL"),
+    ),
+  );
+  assert.ok(context.texts.includes(GIFT_CODE_DIGITS.join(" · ")));
+  assert.equal(
+    context.texts.filter((text) => /^\d$/.test(text)).length,
+    0,
+  );
+  assert.equal(context.strokeRects.length, 0);
+});
+
+test("startPuzzleAttempt en modo readOnly vuelve a world sin modificar el estado", () => {
+  const { scene, input, state, scenes } = createScene();
+  applyValidGiftCodeSolvedFlags(state);
+  scene.enter({ readOnly: true });
+  const stateBefore = structuredClone(state.toSaveData());
+  delete stateBefore.savedAt;
+
+  press(scene, input, "startPuzzleAttempt");
+
+  const stateAfter = structuredClone(state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(scenes.changes, [{ name: "world", payload: {} }]);
+  assert.deepEqual(stateAfter, stateBefore);
+});
+
+test("cancel en modo readOnly vuelve a world sin modificar el estado", () => {
+  const { scene, input, state, scenes } = createScene();
+  applyValidGiftCodeSolvedFlags(state);
+  scene.enter({ readOnly: true });
+  const stateBefore = structuredClone(state.toSaveData());
+  delete stateBefore.savedAt;
+
+  press(scene, input, "cancel");
+
+  const stateAfter = structuredClone(state.toSaveData());
+  delete stateAfter.savedAt;
+
+  assert.deepEqual(scenes.changes, [{ name: "world", payload: {} }]);
+  assert.deepEqual(stateAfter, stateBefore);
+});
+
+test("varias reconsultas sucesivas en modo readOnly son idempotentes", () => {
+  const { scene, state } = createScene();
+  applyValidGiftCodeSolvedFlags(state);
+
+  scene.enter({ readOnly: true });
+  const contextFirst = new FakeCanvasContext();
+  scene.render(contextFirst);
+  const stateAfterFirst = structuredClone(state.toSaveData());
+  delete stateAfterFirst.savedAt;
+
+  scene.enter({ readOnly: true });
+  const contextSecond = new FakeCanvasContext();
+  scene.render(contextSecond);
+  const stateAfterSecond = structuredClone(state.toSaveData());
+  delete stateAfterSecond.savedAt;
+
+  assert.deepEqual(contextSecond.texts, contextFirst.texts);
+  assert.deepEqual(stateAfterSecond, stateAfterFirst);
+});
+
+test("el modo readOnly se mantiene igual con epilogueCompleted en true", () => {
+  const { scene, state } = createScene();
+  applyValidGiftCodeSolvedFlags(state, { epilogueCompleted: true });
+  scene.enter({ readOnly: true });
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  assert.ok(
+    context.texts.some((text) =>
+      text.includes("COMBINACIÓN DEL CANDADO REAL"),
+    ),
+  );
+  assert.ok(context.texts.includes(GIFT_CODE_DIGITS.join(" · ")));
+});
+
 function buildWrongCombination(offset = 0) {
   return GIFT_CODE_DIGITS.map((digit, index) =>
     index === offset % GIFT_CODE_DIGITS.length ? (digit + 1) % 10 : digit,
@@ -549,6 +678,18 @@ function assertSurrounds(outer, inner) {
     outer.y + outer.height > inner.y + inner.height,
     "el marco de foco debe terminar después en y",
   );
+}
+
+function applyValidGiftCodeSolvedFlags(state, { epilogueCompleted = false } = {}) {
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+  state.flags.epilogueCompleted = epilogueCompleted;
+
+  if (!epilogueCompleted) {
+    state.objectiveId = "epilogue-meet-bride";
+  }
 }
 
 function createScene() {
