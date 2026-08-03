@@ -366,7 +366,7 @@ implementa y valida de forma independiente con el flujo completo de
   de las tareas 1 y 6).
 - [x] 8. Estado visual de amanecer en la Plaza (§18.8; depende de la
   tarea 6).
-- [ ] 9. Aparición de la novia en la Plaza (§18.9; depende de las
+- [x] 9. Aparición de la novia en la Plaza (§18.9; depende de las
   tareas 6 y 8).
 - [ ] 10. Interacción con la novia y diálogo final aprobado (§18.10;
   depende de la tarea 9).

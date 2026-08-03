@@ -175,6 +175,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   luminosos que la paleta diurna habitual), sin alterar la geometría, los
   objetos ni las decoraciones del mapa; el resto de localizaciones
   conserva siempre su paleta normal.
+- Objeto `bride-epilogue` en la Plaza del Axioma (`EPILOGUE_SPEC.md`
+  §18.9): un nuevo NPC que solo aparece — y solo es alcanzable por
+  proximidad — cuando `state.flags.giftCodeSolved` es `true`, mediante un
+  mecanismo declarativo genérico `requiresFlag` en `WorldScene`
+  (`findNearbyObject` y `renderObjects`) reutilizable por cualquier objeto
+  futuro del mapa; todavía sin ningún manejador de interacción propio, esa
+  lógica queda para la siguiente tarea.
 
 ### Corregido
 

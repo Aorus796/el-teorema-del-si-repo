@@ -144,6 +144,7 @@ export class WorldScene {
     this.nearbyObject = findNearbyObject(
       this.player,
       this.map.objects,
+      this.state,
     );
 
     if (this.nearbyObject) {
@@ -582,11 +583,15 @@ export class WorldScene {
   }
 }
 
-function findNearbyObject(player, objects) {
+function findNearbyObject(player, objects, state) {
   const center = player.getCenter();
 
   return (
     objects.find((object) => {
+      if (object.requiresFlag && !state.flags[object.requiresFlag]) {
+        return false;
+      }
+
       const objectCenterX = object.x + object.width / 2;
       const objectCenterY = object.y + object.height / 2;
 
@@ -793,6 +798,10 @@ function renderForegroundDecorations(context, camera, map) {
 
 function renderObjects(context, camera, objects, state) {
   for (const object of objects) {
+    if (object.requiresFlag && !state.flags[object.requiresFlag]) {
+      continue;
+    }
+
     const x = Math.round(object.x - camera.x);
     const y = Math.round(object.y - camera.y);
 
