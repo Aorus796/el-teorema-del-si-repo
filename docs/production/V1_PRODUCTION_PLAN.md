@@ -372,7 +372,7 @@ implementa y valida de forma independiente con el flujo completo de
   depende de la tarea 9).
 - [x] 11. Pantalla inequívoca con la combinación del candado real
   (§18.11; depende de la tarea 6; puede fusionarse con ella).
-- [ ] 12. Música del epílogo con recurso sustituible (§18.12; depende de
+- [x] 12. Música del epílogo con recurso sustituible (§18.12; depende de
   la tarea 10, o puede adelantarse).
 - [ ] 13. Tarjetas finales y créditos (§18.13; depende de la tarea 10).
 - [ ] 14. Transición atómica de cierre y retorno seguro al menú (§18.14;

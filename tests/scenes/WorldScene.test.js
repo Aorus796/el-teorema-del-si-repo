@@ -90,6 +90,16 @@ class FakeUi {
   hideNotebook() {}
 }
 
+class FakeAudioService {
+  constructor() {
+    this.playEpilogueThemeCalls = 0;
+  }
+
+  playEpilogueTheme() {
+    this.playEpilogueThemeCalls += 1;
+  }
+}
+
 class FakeStorage {
   constructor({ loadResult = null, loadError = null } = {}) {
     this.loadResult = loadResult;
@@ -708,6 +718,30 @@ test("completar el diálogo de bride-epilogue no cambia de escena, objetivo ni b
   assert.equal(setup.state.flags.giftCodeSolved, true);
   assert.equal(setup.state.flags.epilogueCompleted, false);
   assert.equal(setup.ui.dialogue, null);
+  assert.equal(setup.audio.playEpilogueThemeCalls, 1);
+});
+
+test("completar el diálogo de bride-epilogue invoca playEpilogueTheme exactamente una vez, solo tras el quinto turno", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  setup.scene.interact(bride);
+
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal(
+      setup.audio.playEpilogueThemeCalls,
+      0,
+      `no debe iniciar música antes del último turno (paso ${i})`,
+    );
+    setup.ui.dialogue.onComplete();
+  }
+
+  assert.equal(setup.audio.playEpilogueThemeCalls, 1);
 });
 
 test("reinteractuar con bride-epilogue durante el diálogo no duplica completeBrideDialogue", () => {
@@ -754,6 +788,44 @@ test("bride-epilogue con epilogueCompleted no reabre el diálogo ni modifica el 
   assert.deepEqual(setup.scenes.changes, []);
   assert.equal(setup.ui.dialogue, null);
   assert.deepEqual(stateAfter, stateBefore);
+  assert.equal(setup.audio.playEpilogueThemeCalls, 0);
+});
+
+test("interactuar con epilogue-gift-mechanism no inicia la música del epílogo", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const mechanism = findObject("axiom-plaza", "epilogue-gift-mechanism");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  setup.scene.interact(mechanism);
+
+  assert.equal(setup.audio.playEpilogueThemeCalls, 0);
+});
+
+test("completar el diálogo de bride-epilogue no añade campos del servicio de audio a toSaveData()", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  setup.scene.interact(bride);
+
+  for (let i = 0; i < 5; i += 1) {
+    setup.ui.dialogue?.onComplete();
+  }
+
+  const saveData = setup.state.toSaveData();
+  const serialized = JSON.stringify(saveData);
+
+  assert.equal(Object.hasOwn(saveData, "audio"), false);
+  assert.equal(serialized.includes("audio"), false);
+  assert.equal(serialized.includes("playEpilogueTheme"), false);
 });
 
 test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
@@ -1317,15 +1389,17 @@ function createScene(storage) {
   const scenes = new FakeScenes();
   const state = new GameState();
   const ui = new FakeUi();
+  const audio = new FakeAudioService();
   const scene = new WorldScene({
     scenes,
     input,
     storage,
     state,
     ui,
+    audio,
   });
 
-  return { input, scenes, state, ui, scene };
+  return { input, scenes, state, ui, audio, scene };
 }
 
 function withMockedConsoleError(run) {
@@ -1350,6 +1424,7 @@ function createWorldAt(
   const scenes = new FakeScenes();
   const state = new GameState();
   const ui = new FakeUi();
+  const audio = new FakeAudioService();
   state.changeMap(mapId);
   state.puzzles.libraryCatalogue = catalogue;
   const scene = new WorldScene({
@@ -1358,10 +1433,11 @@ function createWorldAt(
     storage: new FakeStorage(),
     state,
     ui,
+    audio,
   });
   scene.enter();
 
-  return { input, scenes, state, ui, scene };
+  return { input, scenes, state, ui, audio, scene };
 }
 
 function findObject(mapId, objectId) {
