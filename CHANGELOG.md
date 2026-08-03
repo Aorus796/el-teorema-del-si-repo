@@ -168,6 +168,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   guardado en esos campos, conservando la posición guardada del jugador
   en `axiom-plaza` si es válida o cayendo en su punto de aparición por
   defecto en caso contrario.
+- Paleta visual de amanecer en la Plaza del Axioma (`EPILOGUE_SPEC.md`
+  §18.8): cuando `state.flags.giftCodeSolved` es `true`, `WorldScene`
+  renderiza `axiom-plaza` con una nueva paleta `dawnPalette` (suelo, muros
+  y agua de la fuente en tonos ámbar/dorado/rosado, más cálidos y
+  luminosos que la paleta diurna habitual), sin alterar la geometría, los
+  objetos ni las decoraciones del mapa; el resto de localizaciones
+  conserva siempre su paleta normal.
 
 ### Corregido
 

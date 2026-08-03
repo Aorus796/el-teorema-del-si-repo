@@ -138,6 +138,32 @@ test("el mecanismo del regalo del epílogo es alcanzable a pie desde el punto de
   assertObjectIsReachable("axiom-plaza", "epilogue-gift-mechanism");
 });
 
+test("axiom-plaza tiene un dawnPalette distinto de su palette normal en las cinco claves", () => {
+  const map = getWorldMap("axiom-plaza");
+
+  assert.ok(map.dawnPalette);
+  assert.deepEqual(
+    Object.keys(map.dawnPalette).sort(),
+    ["groundA", "groundB", "wall", "wallTop", "water"].sort(),
+  );
+
+  for (const key of Object.keys(map.palette)) {
+    assert.notEqual(
+      map.dawnPalette[key],
+      map.palette[key],
+      `dawnPalette.${key} coincide con palette.${key}`,
+    );
+  }
+});
+
+test("library, archive y seven-bridges-walk no tienen dawnPalette", () => {
+  for (const mapId of ["library", "archive", "seven-bridges-walk"]) {
+    const map = getWorldMap(mapId);
+
+    assert.equal(map.dawnPalette, null);
+  }
+});
+
 function assertSpawnIsClear(mapId) {
   const map = getWorldMap(mapId);
   const playerState = new GameState().getPlayerState(mapId);

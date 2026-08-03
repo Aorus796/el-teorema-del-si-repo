@@ -104,9 +104,12 @@ class FakeStorage {
 class FakeCanvasContext {
   constructor() {
     this.texts = [];
+    this.fillRects = [];
   }
 
-  fillRect() {}
+  fillRect(x, y, width, height) {
+    this.fillRects.push({ x, y, width, height, fillStyle: this.fillStyle });
+  }
 
   strokeRect() {}
 
@@ -452,6 +455,171 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved no
     ui.dialogue.lines.some((line) =>
       line.includes("Los anillos ya no giran"),
     ),
+  );
+});
+
+test("render() en axiom-plaza sin giftCodeSolved usa la paleta normal", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const context = new FakeCanvasContext();
+  const palette = getWorldMap("axiom-plaza").palette;
+  const dawnPalette = getWorldMap("axiom-plaza").dawnPalette;
+
+  setup.scene.render(context);
+
+  const styles = context.fillRects.map((rect) => rect.fillStyle);
+
+  assert.ok(styles.includes(palette.groundA));
+  assert.ok(styles.includes(palette.groundB));
+  assert.ok(styles.includes(palette.wall));
+  assert.ok(styles.includes(palette.wallTop));
+  assert.ok(styles.includes(palette.water));
+  assert.equal(styles.includes(dawnPalette.groundA), false);
+  assert.equal(styles.includes(dawnPalette.wall), false);
+  assert.equal(styles.includes(dawnPalette.water), false);
+});
+
+test("render() en axiom-plaza con giftCodeSolved usa la paleta de amanecer", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.giftCodeSolved = true;
+  const context = new FakeCanvasContext();
+  const palette = getWorldMap("axiom-plaza").palette;
+  const dawnPalette = getWorldMap("axiom-plaza").dawnPalette;
+
+  setup.scene.render(context);
+
+  const styles = context.fillRects.map((rect) => rect.fillStyle);
+
+  assert.ok(styles.includes(dawnPalette.groundA));
+  assert.ok(styles.includes(dawnPalette.groundB));
+  assert.ok(styles.includes(dawnPalette.wall));
+  assert.ok(styles.includes(dawnPalette.wallTop));
+  assert.ok(styles.includes(dawnPalette.water));
+  assert.equal(styles.includes(palette.groundA), false);
+  assert.equal(styles.includes(palette.wall), false);
+  assert.equal(styles.includes(palette.water), false);
+});
+
+test("render() con giftCodeSolved en otro mapa activo mantiene su paleta normal", () => {
+  for (const mapId of ["seven-bridges-walk", "library"]) {
+    const setup = createWorldAt(mapId);
+    setup.state.flags.giftCodeSolved = true;
+    const context = new FakeCanvasContext();
+    const palette = getWorldMap(mapId).palette;
+
+    setup.scene.render(context);
+
+    const styles = context.fillRects.map((rect) => rect.fillStyle);
+
+    assert.equal(getWorldMap(mapId).dawnPalette, null);
+    assert.ok(styles.includes(palette.groundA));
+    assert.ok(styles.includes(palette.wall));
+  }
+});
+
+test("render() no modifica el estado guardable, con o sin giftCodeSolved", () => {
+  for (const giftCodeSolved of [false, true]) {
+    const setup = createWorldAt("axiom-plaza");
+    setup.state.flags.giftCodeSolved = giftCodeSolved;
+    const context = new FakeCanvasContext();
+    const stateBefore = structuredClone(setup.state.toSaveData());
+    delete stateBefore.savedAt;
+
+    setup.scene.render(context);
+
+    const stateAfter = structuredClone(setup.state.toSaveData());
+    delete stateAfter.savedAt;
+
+    assert.deepEqual(stateAfter, stateBefore);
+  }
+});
+
+test("render() repetido produce el mismo resultado observable (idempotencia)", () => {
+  for (const giftCodeSolved of [false, true]) {
+    const setup = createWorldAt("axiom-plaza");
+    setup.state.flags.giftCodeSolved = giftCodeSolved;
+    const contextFirst = new FakeCanvasContext();
+    const contextSecond = new FakeCanvasContext();
+
+    setup.scene.render(contextFirst);
+    setup.scene.render(contextSecond);
+
+    assert.deepEqual(contextSecond.fillRects, contextFirst.fillRects);
+  }
+});
+
+test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved renderiza directamente con la paleta de amanecer", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = false;
+  saved.objectiveId = "epilogue-meet-bride";
+  saved.scene = "world";
+  saved.world.currentMapId = "axiom-plaza";
+  saved.world.playerByMap["axiom-plaza"] = {
+    x: 240,
+    y: 192,
+    facing: "up",
+  };
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage(),
+    state,
+    ui,
+  });
+
+  scene.enter();
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  const dawnPalette = getWorldMap("axiom-plaza").dawnPalette;
+  const styles = context.fillRects.map((rect) => rect.fillStyle);
+
+  assert.ok(styles.includes(dawnPalette.groundA));
+  assert.ok(styles.includes(dawnPalette.wall));
+  assert.ok(styles.includes(dawnPalette.water));
+});
+
+test("los objetos y decoraciones de axiom-plaza no cambian con giftCodeSolved", () => {
+  const referenceObject = findObject(
+    "axiom-plaza",
+    "epilogue-gift-mechanism",
+  );
+  const setup = createWorldAt("axiom-plaza");
+  const context = new FakeCanvasContext();
+
+  setup.state.flags.giftCodeSolved = false;
+  setup.scene.render(context);
+
+  assert.deepEqual(
+    findObject("axiom-plaza", "epilogue-gift-mechanism"),
+    referenceObject,
+  );
+
+  setup.state.flags.giftCodeSolved = true;
+  setup.scene.render(context);
+
+  assert.deepEqual(
+    findObject("axiom-plaza", "epilogue-gift-mechanism"),
+    referenceObject,
+  );
+  assert.equal(
+    setup.scene.map.objects,
+    getWorldMap("axiom-plaza").objects,
+  );
+  assert.equal(
+    setup.scene.map.decorations,
+    getWorldMap("axiom-plaza").decorations,
   );
 });
 

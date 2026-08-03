@@ -565,13 +565,20 @@ export class WorldScene {
   }
 
   render(context) {
-    renderGround(context, this.camera, this.map);
-    renderBackgroundDecorations(context, this.camera, this.map);
-    renderSolidTiles(context, this.camera, this.map);
-    renderForegroundDecorations(context, this.camera, this.map);
-    renderObjects(context, this.camera, this.map.objects, this.state);
+    const map =
+      this.map.id === "axiom-plaza" &&
+      this.state.flags.giftCodeSolved &&
+      this.map.dawnPalette
+        ? { ...this.map, palette: this.map.dawnPalette }
+        : this.map;
+
+    renderGround(context, this.camera, map);
+    renderBackgroundDecorations(context, this.camera, map);
+    renderSolidTiles(context, this.camera, map);
+    renderForegroundDecorations(context, this.camera, map);
+    renderObjects(context, this.camera, map.objects, this.state);
     this.player.render(context, this.camera);
-    renderHud(context, this.map, this.state.objectiveId);
+    renderHud(context, map, this.state.objectiveId);
   }
 }
 
