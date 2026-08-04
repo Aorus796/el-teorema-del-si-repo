@@ -164,6 +164,40 @@ export class GameState {
     this.player = this.getPlayerState(mapId);
   }
 
+  /*
+   * Cambia al mapa indicado, dejando siempre una posición segura para
+   * él. Si ya se estaba en ese mapa: normaliza la posición en vivo
+   * (this.player) contra la propia entrada ya guardada de ese mapa —
+   * conserva la posición en vivo si es válida; si no lo es, usa esa
+   * entrada ya guardada; y solo si ninguna de las dos es válida cae al
+   * spawn seguro por defecto. Una entrada ya guardada corrupta nunca
+   * puede pisar una posición en vivo válida, que es la fuente de verdad
+   * mientras se permanece en el mismo mapa. Si se llega desde otro
+   * mapa: la posición en vivo pertenece al mapa que se abandona y se
+   * conserva allí (mismo mecanismo de siempre, sin tocar el mapa de
+   * destino); la posición del mapa de destino se toma de su propia
+   * entrada ya guardada si es válida, o del spawn seguro si no lo es.
+   * Nunca reutiliza la posición de un mapa para otro. A diferencia de
+   * changeMap(), no acepta una posición de entrada explícita: está
+   * pensado para transiciones que deben aterrizar siempre en un lugar
+   * seguro, con independencia del estado previo.
+   */
+  changeToSafeMap(mapId) {
+    this.setPlayerState(this.player, this.world.currentMapId);
+
+    this.world.currentMapId = mapId;
+
+    const fallback =
+      DEFAULT_PLAYER_BY_MAP[mapId] ?? DEFAULT_PLAYER_BY_MAP[DEFAULT_MAP_ID];
+    const normalizedState = normalizePlayerState(
+      this.world.playerByMap[mapId],
+      fallback,
+    );
+
+    this.world.playerByMap[mapId] = normalizedState;
+    this.player = { ...normalizedState };
+  }
+
   addNotebookEntry(entry) {
     if (this.notebook.some((current) => current.id === entry.id)) {
       return false;
@@ -282,8 +316,9 @@ export class GameState {
 
     assertEpilogueFlagInvariants(flags);
 
-    const objectiveId =
-      typeof data.objectiveId === "string"
+    const objectiveId = flags.epilogueCompleted
+      ? "epilogue-completed"
+      : typeof data.objectiveId === "string"
         ? data.objectiveId
         : "review-preparations-board";
 

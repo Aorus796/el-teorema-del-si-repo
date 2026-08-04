@@ -26,6 +26,7 @@ const CREDITS_LINE_2 = "COMO REGALO DE BODA";
 const CREDITS_LINE_3 = "GRACIAS POR JUGAR";
 const FINAL_CARD_TEXT = "Pulsa para guardar y volver al menú";
 const CONTINUE_HINT = "E / Enter: continuar";
+const SAVE_ERROR_MESSAGE = "No se pudo guardar el final. Vuelve a intentarlo.";
 
 export const PROTAGONIST_PALETTE = {
   silhouette: "#1c1829",
@@ -40,15 +41,22 @@ export const BRIDE_PALETTE = {
 };
 
 export class CreditsScene {
-  constructor({ input, ui }) {
+  constructor({ input, ui, state, storage, scenes }) {
     this.input = input;
     this.ui = ui;
+    this.state = state;
+    this.storage = storage;
+    this.scenes = scenes;
     this.step = CREDITS_STEP.CLOSING_SHOT;
+    this.saveFailed = false;
+    this.transitionCompleted = false;
   }
 
   enter() {
     this.ui.closeAll();
     this.step = CREDITS_STEP.CLOSING_SHOT;
+    this.saveFailed = false;
+    this.transitionCompleted = false;
   }
 
   update() {
@@ -70,12 +78,32 @@ export class CreditsScene {
   }
 
   confirmFinalCard() {
-    // Punto de extensión para la tarea 14 (transición terminal y
-    // guardado bloqueante, EPILOGUE_SPEC.md §15). Intencionalmente
-    // vacío en esta tarea: no establece epilogueCompleted, no guarda,
-    // no cambia de escena. Permanece en la tarjeta final para que la
-    // tarea 14 pueda reintentar tras un guardado fallido; no lleva
-    // ningún guardián de "una sola vez" que lo impida.
+    if (this.transitionCompleted) {
+      return;
+    }
+
+    if (!this.state.flags.epilogueCompleted) {
+      this.prepareTerminalState();
+    }
+
+    try {
+      this.storage.save(this.state.toSaveData());
+    } catch (error) {
+      console.error(error);
+      this.saveFailed = true;
+      return;
+    }
+
+    this.saveFailed = false;
+    this.transitionCompleted = true;
+    this.scenes.change("title");
+  }
+
+  prepareTerminalState() {
+    this.state.scene = "world";
+    this.state.changeToSafeMap("axiom-plaza");
+    this.state.objectiveId = "epilogue-completed";
+    this.state.flags.epilogueCompleted = true;
   }
 
   render(context) {
@@ -93,7 +121,7 @@ export class CreditsScene {
         renderCredits(context);
         break;
       case CREDITS_STEP.FINAL_CARD:
-        renderFinalCard(context);
+        renderFinalCard(context, this);
         break;
     }
 
@@ -206,7 +234,7 @@ function renderCredits(context) {
   context.fillText(CONTINUE_HINT, 240, 230);
 }
 
-function renderFinalCard(context) {
+function renderFinalCard(context, scene) {
   context.fillStyle = "#171626";
   context.fillRect(0, 0, 480, 270);
 
@@ -214,4 +242,10 @@ function renderFinalCard(context) {
   context.font = "bold 13px monospace";
   context.textAlign = "center";
   context.fillText(FINAL_CARD_TEXT, 240, 135);
+
+  if (scene.saveFailed) {
+    context.fillStyle = "#e88b8b";
+    context.font = "7px monospace";
+    context.fillText(SAVE_ERROR_MESSAGE, 240, 175);
+  }
 }

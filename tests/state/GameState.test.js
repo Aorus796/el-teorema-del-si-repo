@@ -1453,3 +1453,201 @@ test("GameState.restore() no muta el receptor cuando giftCodeSolved=true coincid
     assert.deepEqual(captureObservableState(state), before);
   }
 });
+
+test("epilogueCompleted=true fuerza objectiveId a epilogue-completed aunque el guardado traiga otro objectiveId", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.flags.epilogueCompleted = true;
+  saved.objectiveId = "review-preparations-board";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.objectiveId, "epilogue-completed");
+});
+
+test("epilogueCompleted=true con objectiveId ya correcto lo conserva", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.flags.epilogueCompleted = true;
+  saved.objectiveId = "epilogue-completed";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.objectiveId, "epilogue-completed");
+});
+
+test("epilogueCompleted=false respeta el objectiveId literal del guardado (el fix no contamina el camino no terminal)", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.flags.epilogueCompleted = false;
+  saved.objectiveId = "epilogue-meet-bride";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.objectiveId, "epilogue-meet-bride");
+});
+
+test("un round-trip toSaveData() -> restore() con epilogueCompleted=true conserva objectiveId=epilogue-completed", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+  state.flags.epilogueCompleted = true;
+  state.objectiveId = "epilogue-completed";
+
+  const saved = state.toSaveData();
+
+  const restoredState = new GameState();
+  restoredState.restore(saved);
+
+  assert.equal(restoredState.objectiveId, "epilogue-completed");
+});
+
+test("epilogueCompleted=true fuerza scene a world y el mapa actual a axiom-plaza aunque el guardado traiga otros valores (tarea 14)", () => {
+  const saved = buildGiftCodeSolvedSaveData();
+  saved.flags.epilogueCompleted = true;
+  saved.scene = "library-catalogue";
+  saved.world.currentMapId = "library";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  assert.equal(state.scene, "world");
+  assert.equal(state.world.currentMapId, "axiom-plaza");
+});
+
+test("changeToSafeMap conserva exactamente una posición válida ya existente del mapa de destino", () => {
+  const state = new GameState();
+  state.setPlayerState({ x: 300, y: 210, facing: "left" }, "axiom-plaza");
+
+  state.changeToSafeMap("axiom-plaza");
+
+  assert.deepEqual(state.player, { x: 300, y: 210, facing: "left" });
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 300,
+    y: 210,
+    facing: "left",
+  });
+});
+
+test("changeToSafeMap desde otro mapa no copia la posición del mapa de origen al de destino", () => {
+  const state = new GameState();
+  state.setPlayerState({ x: 700, y: 460, facing: "up" }, "axiom-plaza");
+  state.changeMap("library");
+  state.setPlayerState({ x: 999, y: 888, facing: "down" }, "library");
+
+  state.changeToSafeMap("axiom-plaza");
+
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 700,
+    y: 460,
+    facing: "up",
+  });
+  assert.deepEqual(state.player, { x: 700, y: 460, facing: "up" });
+});
+
+test("changeToSafeMap guarda correctamente la posición del mapa que se abandona, sin tocar otros mapas", () => {
+  const state = new GameState();
+  state.changeMap("library");
+  state.setPlayerState({ x: 111, y: 222, facing: "right" }, "library");
+  const archiveBefore = { ...state.world.playerByMap.archive };
+  const sevenBridgesBefore = {
+    ...state.world.playerByMap["seven-bridges-walk"],
+  };
+
+  state.changeToSafeMap("axiom-plaza");
+
+  assert.deepEqual(state.world.playerByMap.library, {
+    x: 111,
+    y: 222,
+    facing: "right",
+  });
+  assert.deepEqual(state.world.playerByMap.archive, archiveBefore);
+  assert.deepEqual(
+    state.world.playerByMap["seven-bridges-walk"],
+    sevenBridgesBefore,
+  );
+});
+
+test("changeToSafeMap usa el spawn seguro si la posición en vivo y la ya guardada del mapa de destino están corruptas", () => {
+  const state = new GameState();
+  state.player = {
+    x: Number.NaN,
+    y: Number.NaN,
+    facing: "no-es-una-orientacion",
+  };
+  state.world.playerByMap["axiom-plaza"] = {
+    x: Number.NaN,
+    y: Number.NaN,
+    facing: "no-es-una-orientacion",
+  };
+
+  state.changeToSafeMap("axiom-plaza");
+
+  assert.deepEqual(state.player, { x: 240, y: 192, facing: "up" });
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 240,
+    y: 192,
+    facing: "up",
+  });
+});
+
+test("changeToSafeMap, en el mismo mapa, confía en la posición en vivo aunque la entrada ya guardada esté corrupta", () => {
+  const state = new GameState();
+  state.player = { x: 100, y: 50, facing: "down" };
+  state.world.playerByMap["axiom-plaza"] = {
+    x: Number.NaN,
+    y: Number.NaN,
+    facing: "no-es-una-orientacion",
+  };
+
+  state.changeToSafeMap("axiom-plaza");
+
+  assert.deepEqual(state.player, { x: 100, y: 50, facing: "down" });
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 100,
+    y: 50,
+    facing: "down",
+  });
+});
+
+test("changeToSafeMap desde otro mapa usa el spawn seguro si la posición ya guardada del mapa de destino está corrupta", () => {
+  const state = new GameState();
+  state.changeMap("library");
+  state.setPlayerState({ x: 111, y: 222, facing: "right" }, "library");
+  state.world.playerByMap["axiom-plaza"] = {
+    x: Number.NaN,
+    y: Number.NaN,
+    facing: "no-es-una-orientacion",
+  };
+
+  state.changeToSafeMap("axiom-plaza");
+
+  assert.deepEqual(state.player, { x: 240, y: 192, facing: "up" });
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 240,
+    y: 192,
+    facing: "up",
+  });
+});
+
+test("changeToSafeMap deja idénticos state.player y world.playerByMap del mapa de destino", () => {
+  const state = new GameState();
+
+  state.changeToSafeMap("axiom-plaza");
+
+  assert.deepEqual(state.player, state.world.playerByMap["axiom-plaza"]);
+});
+
+test("changeToSafeMap es idempotente si se llama dos veces seguidas al mismo mapa", () => {
+  const state = new GameState();
+  state.setPlayerState({ x: 500, y: 300, facing: "down" }, "axiom-plaza");
+
+  state.changeToSafeMap("axiom-plaza");
+  const firstResult = { ...state.player };
+
+  state.changeToSafeMap("axiom-plaza");
+
+  assert.deepEqual(state.player, firstResult);
+});

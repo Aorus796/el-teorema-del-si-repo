@@ -59,6 +59,7 @@ const OBJECTIVE_LABELS = {
     "Entra en el Archivo y examina la mesa de criterios.",
   "start-epilogue": "Regresa al lugar donde comenzó la demostración.",
   "epilogue-meet-bride": "Acércate a ella en la Plaza.",
+  "epilogue-completed": "La demostración ha terminado.",
 };
 
 export class WorldScene {
