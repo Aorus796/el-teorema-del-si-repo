@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
+import { GameState } from "../../src/state/GameState.js";
+import { getWorldMap } from "../../src/content/worldMaps.js";
 
 function collectJavaScriptErrors(page) {
   const errors = [];
@@ -2070,16 +2072,11 @@ for (const variant of INVALID_SAVE_VARIANTS) {
   });
 }
 
-test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta volver al título", async ({
-  page,
-}) => {
-  test.setTimeout(60_000);
+function buildEpilogueReadySaveData() {
+  const seedState = new GameState();
 
-  const errors = collectJavaScriptErrors(page);
-
-  const savedGame = {
+  seedState.restore({
     formatVersion: 4,
-    savedAt: new Date(0).toISOString(),
     scene: "world",
     player: { x: 576, y: 325, facing: "up" },
     world: {
@@ -2099,19 +2096,45 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
       p2EvidenceFound: true,
       libraryObjectiveUnlocked: true,
       archiveUnlocked: true,
-      investigationComplete: true,
-      epilogueUnlocked: true,
+      investigationComplete: false,
+      epilogueUnlocked: false,
       epilogueStarted: false,
       giftCodeSolved: false,
       epilogueCompleted: false,
     },
-    objectiveId: "start-epilogue",
-    notebook: [],
+    objectiveId: "inspect-archive-criteria-table",
+    notebook: [
+      {
+        id: "bride-note",
+        title: "Nota encontrada en la habitación",
+        text: "Antes de mañana tengo que comprobar una cosa. Si no he vuelto al anochecer, sigue el camino de los siete puentes. No confíes en el mapa completo: uno de ellos nunca estuvo abierto.",
+      },
+      {
+        id: "library-clue",
+        title: "La marca de la biblioteca",
+        text: "La anotación encontrada junto al embarcadero contiene dos arcos entrelazados y una referencia al archivo de mapas de la Biblioteca del Margen.",
+      },
+      {
+        id: "p2-bridges-solution",
+        title: "El paseo imposible",
+        text: "No era necesario cruzar los siete puentes. Al reconocer cuál estaba cerrado, los seis restantes formaban un recorrido posible desde la entrada hasta el molino.",
+      },
+    ],
     puzzles: {
+      p2: {
+        lifecycle: { status: "solved", attemptCount: 1 },
+        phase: "solved",
+        closedBridgeId: "B1",
+        currentNode: "L",
+        route: ["E", "R", "N", "L", "R", "M", "L"],
+        usedBridgeIds: ["B2", "B3", "B6", "B7", "B4", "B5"],
+        hintsRead: [1],
+        failureCode: null,
+      },
       libraryCatalogue: {
         order: ["A", "D", "R", "C", "M"],
         phase: "solved",
-        hintsRead: [],
+        hintsRead: [1],
         attemptCount: 1,
         failureCode: null,
       },
@@ -2125,12 +2148,69 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
           "universal-future": "undecidable",
         },
         phase: "solved",
-        hintsRead: [],
+        hintsRead: [1],
         attemptCount: 1,
         failureCode: null,
       },
     },
-  };
+  });
+
+  /*
+   * GameState.restore() ya ejecuta applyLibraryCatalogueProgression() y
+   * applyArchiveCriteriaProgression() (src/state/GameState.js), que con
+   * los tres puzles ya "solved" añaden automáticamente
+   * "library-catalogue-solution", "archive-final-evidence" y
+   * "epilogue-combination-clue" al cuaderno, y fijan
+   * investigationComplete/epilogueUnlocked/objectiveId — nada de eso se
+   * duplica a mano aquí, es la misma lógica de producción real que se
+   * ejecutaría al cargar un guardado auténtico en ese punto de la partida.
+   *
+   * Guarda focalizada: si este helper alguna vez dejara de producir el
+   * punto de partida exacto que el recorrido E2E necesita, debe fallar
+   * aquí mismo, con un mensaje claro, no dejar que el test avance con un
+   * fixture incoherente y falle más tarde de forma confusa en mitad del
+   * recorrido.
+   */
+  const expectedNotebookIds = [
+    "bride-note",
+    "library-clue",
+    "p2-bridges-solution",
+    "library-catalogue-solution",
+    "archive-final-evidence",
+    "epilogue-combination-clue",
+  ];
+  const actualNotebookIds = seedState.notebook.map((entry) => entry.id);
+  const isCoherent =
+    seedState.scene === "world" &&
+    seedState.world.currentMapId === "axiom-plaza" &&
+    seedState.objectiveId === "start-epilogue" &&
+    seedState.flags.investigationComplete === true &&
+    seedState.flags.epilogueUnlocked === true &&
+    seedState.flags.epilogueStarted === false &&
+    seedState.flags.giftCodeSolved === false &&
+    seedState.flags.epilogueCompleted === false &&
+    expectedNotebookIds.every((id) => actualNotebookIds.includes(id)) &&
+    seedState.puzzles.p2.phase === "solved" &&
+    seedState.puzzles.libraryCatalogue.phase === "solved" &&
+    seedState.puzzles.archiveCriteria.phase === "solved";
+
+  if (!isCoherent) {
+    throw new Error(
+      "buildEpilogueReadySaveData() produjo un fixture incoherente con el punto de partida esperado del recorrido E2E del epílogo.",
+    );
+  }
+
+  return seedState.toSaveData();
+}
+
+test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta volver al título", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+
+  const errors = collectJavaScriptErrors(page);
+
+  const savedGame = buildEpilogueReadySaveData();
 
   // Captura de texto renderizado directamente en canvas (EpilogueGiftCodeScene
   // y CreditsScene no usan el DOM, así que expect.poll sobre canvas.toDataURL()
@@ -2140,6 +2220,8 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
   // a nivel unitario en tests/scenes/CreditsScene.test.js.
   await page.addInitScript(() => {
     window.__renderedTexts = [];
+    window.__renderedFillStyles = [];
+
     const originalFillText = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function patchedFillText(
       text,
@@ -2149,6 +2231,17 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     ) {
       window.__renderedTexts.push(String(text));
       return originalFillText.call(this, text, x, y, maxWidth);
+    };
+
+    const originalFillRect = CanvasRenderingContext2D.prototype.fillRect;
+    CanvasRenderingContext2D.prototype.fillRect = function patchedFillRect(
+      x,
+      y,
+      width,
+      height,
+    ) {
+      window.__renderedFillStyles.push(String(this.fillStyle));
+      return originalFillRect.call(this, x, y, width, height);
     };
   });
 
@@ -2183,6 +2276,11 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     page.evaluate(() => {
       window.__renderedTexts.length = 0;
     });
+  const dawnPalette = getWorldMap("axiom-plaza").dawnPalette;
+  const clearRenderedFillStyles = () =>
+    page.evaluate(() => {
+      window.__renderedFillStyles.length = 0;
+    });
   const waitForRenderedText = (text) =>
     expect
       .poll(() =>
@@ -2212,6 +2310,25 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     await page.keyboard.press("KeyE");
     await waitForFrameChangeFrom(worldFrame);
     await waitForRenderedText("MECANISMO DEL REGALO");
+
+    const renderedTexts = await page.evaluate(() => window.__renderedTexts);
+    const editableDigits = renderedTexts.filter((text) => /^\d$/.test(text));
+
+    /*
+     * EpilogueGiftCodeScene dibuja cada cifra como un carácter único
+     * ("0"-"9") con fillText — el mismo criterio que ya usa
+     * tests/scenes/EpilogueGiftCodeScene.test.js para distinguir las cuatro
+     * cajas de dígito de cualquier otro texto (el candado resuelto muestra
+     * "7 · 1 · 5 · 2" como una sola cadena con separadores, no como cuatro
+     * fillText de un solo carácter, así que /^\d$/ no puede confundirlos).
+     * Como window.__renderedTexts acumula todas las llamadas desde el
+     * último clearRenderedTexts(), y pueden haber ocurrido varios frames
+     * antes de leerlo, el número total de coincidencias es un múltiplo de
+     * 4, no necesariamente 4 exactos.
+     */
+    expect(editableDigits.length).toBeGreaterThan(0);
+    expect(editableDigits.length % 4).toBe(0);
+    expect(editableDigits.every((digit) => digit === "0")).toBe(true);
   });
 
   await test.step("falla una combinación y comprueba el mensaje exacto", async () => {
@@ -2251,9 +2368,28 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
   });
 
   await test.step("confirma y vuelve a la Plaza en su presentación de amanecer", async () => {
+    await clearRenderedFillStyles();
     const solvedScreenFrame = await currentFrame();
     await page.keyboard.press("Enter");
     await waitForFrameChangeFrom(solvedScreenFrame);
+
+    /*
+     * WorldScene.render() sustituye this.map.palette por
+     * this.map.dawnPalette cuando giftCodeSolved es verdadero en
+     * axiom-plaza (src/scenes/WorldScene.js) — renderGround() pinta el
+     * fondo con dawnPalette.groundA y el patrón de baldosas con
+     * dawnPalette.groundB. Comparar contra la propia paleta importada
+     * evita cualquier color hardcodeado en el test.
+     */
+    const renderedFillStyles = await page.evaluate(
+      () => window.__renderedFillStyles,
+    );
+    const normalizedFillStyles = renderedFillStyles.map((style) =>
+      style.toLowerCase(),
+    );
+
+    expect(normalizedFillStyles).toContain(dawnPalette.groundA.toLowerCase());
+    expect(normalizedFillStyles).toContain(dawnPalette.groundB.toLowerCase());
   });
 
   await test.step("camina hasta la novia e interactúa", async () => {
