@@ -31,6 +31,16 @@ decisión aprueba la herramienta, no su implementación: instalar las
 dependencias correspondientes, construir el shell de Electron y generar el
 ejecutable siguen siendo trabajo pendiente de la Fase 5.
 
+> Nota de avance (tarea de implementación 1 de
+> `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación futuras"):
+> ya existe un shell mínimo de Electron (`electron/main.js`,
+> `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
+> `preload`, sin IPC y sin conexión todavía con `electron-builder`. No hay
+> ejecutable generado, no se ha probado en Windows y ningún criterio de
+> aceptación, checklist ni casilla de este documento se considera cumplido
+> por esto — el resto de la Fase 5 (empaquetado, persistencia, pruebas
+> manuales) sigue pendiente.
+
 ## 2. Estado de partida desde `v0.5.0`
 
 `v0.5.0` es la base de este plan, no una descripción automática de la versión

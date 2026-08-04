@@ -290,6 +290,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `docs/production/V1_PRODUCTION_PLAN.md` §11 sobre la herramienta de
   empaquetado; la implementación, el artefacto Windows, la prueba en
   instalación limpia y la entrega de la Fase 5 siguen pendientes.
+- Shell mínimo de Electron (`electron/main.js`, `electron/shell.js`) con
+  pruebas unitarias en `tests/electron/`, primera tarea de implementación
+  de `docs/production/WINDOWS_PACKAGING_DECISION.md`: opciones seguras de
+  `BrowserWindow` (`nodeIntegration: false`, `contextIsolation: true`,
+  `sandbox: true`, sin `preload`), bloqueo de `window.open`,
+  `will-navigate` y `will-attach-webview`, DevTools solo fuera de
+  `isPackaged`, resolución de `builds/browser/index.html`, instancia
+  única y cierre limpio si falla la carga del build local. No genera
+  ningún ejecutable, no se ha probado en Windows, y no incluye todavía
+  `electron-builder`, IPC ni la política definitiva de persistencia de
+  `userData`.
 
 ### Corregido
 

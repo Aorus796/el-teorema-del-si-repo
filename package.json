@@ -4,6 +4,7 @@
   "private": true,
   "description": "Aventura narrativa de puzles matematicos creada como regalo de boda.",
   "type": "module",
+  "main": "electron/main.js",
   "engines": {
     "node": ">=20"
   },
@@ -14,9 +15,11 @@
     "test": "node --test",
     "check": "npm run test && npm run build",
     "test:e2e": "playwright test",
-    "verify": "npm run check && npm run test:e2e"
+    "verify": "npm run check && npm run test:e2e",
+    "desktop:dev": "npm run build && electron ."
   },
   "devDependencies": {
-    "@playwright/test": "1.62.0"
+    "@playwright/test": "1.62.0",
+    "electron": "43.3.0"
   }
 }

@@ -422,7 +422,16 @@ No forman parte de esta decisión ni de la primera candidata:
 División prevista para `autopilot`, una tarea acotada por ejecución, en
 este orden:
 
-1. Shell Electron mínimo y pruebas del proceso principal.
+1. [x] Shell Electron mínimo y pruebas del proceso principal —
+   implementado en `electron/shell.js` (lógica pura, sin importar
+   `"electron"`) y `electron/main.js` (composición mínima con la API real
+   de Electron), con pruebas en `tests/electron/`. Cubre exclusivamente lo
+   descrito en "Arquitectura prevista": opciones seguras de
+   `BrowserWindow`, DevTools solo fuera de `isPackaged`, resolución de
+   `builds/browser/index.html`, bloqueo de `window.open`, `will-navigate`
+   y `will-attach-webview`, instancia única, y cierre ante fallo de
+   `loadFile`. No incluye integración de persistencia definitiva ni
+   pruebas manuales en Windows — eso corresponde a las tareas 2, 6 y 7.
 2. Integración con `builds/browser` y persistencia del guardado.
 3. Configuración de `electron-builder` y generación portable x64.
 4. GitHub Actions en Windows para generar el artefacto.
