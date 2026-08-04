@@ -49,12 +49,14 @@ export class CreditsScene {
     this.scenes = scenes;
     this.step = CREDITS_STEP.CLOSING_SHOT;
     this.saveFailed = false;
+    this.transitionCompleted = false;
   }
 
   enter() {
     this.ui.closeAll();
     this.step = CREDITS_STEP.CLOSING_SHOT;
     this.saveFailed = false;
+    this.transitionCompleted = false;
   }
 
   update() {
@@ -76,6 +78,10 @@ export class CreditsScene {
   }
 
   confirmFinalCard() {
+    if (this.transitionCompleted) {
+      return;
+    }
+
     if (!this.state.flags.epilogueCompleted) {
       this.prepareTerminalState();
     }
@@ -89,13 +95,13 @@ export class CreditsScene {
     }
 
     this.saveFailed = false;
+    this.transitionCompleted = true;
     this.scenes.change("title");
   }
 
   prepareTerminalState() {
     this.state.scene = "world";
-    this.state.world.currentMapId = "axiom-plaza";
-    this.state.setPlayerState(this.state.player, "axiom-plaza");
+    this.state.changeToSafeMap("axiom-plaza");
     this.state.objectiveId = "epilogue-completed";
     this.state.flags.epilogueCompleted = true;
   }

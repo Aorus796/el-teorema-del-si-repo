@@ -584,6 +584,218 @@ test("ningún texto renderizado contiene {{FINAL_DEDICATION}} ni contenido perso
   assert.equal(joined.includes("{{FINAL_DEDICATION}}"), false);
 });
 
+test("tras un guardado exitoso, confirmaciones adicionales no vuelven a llamar a storage.save()", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage();
+  let saveCalls = 0;
+  const originalSave = storage.save.bind(storage);
+  storage.save = (data) => {
+    saveCalls += 1;
+    originalSave(data);
+  };
+
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+
+  assert.equal(saveCalls, 1);
+
+  scene.confirmFinalCard();
+  scene.confirmFinalCard();
+
+  assert.equal(saveCalls, 1);
+});
+
+test("tras un guardado exitoso, confirmaciones adicionales no añaden más cambios de escena ni modifican el estado", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage();
+  const scenes = new FakeScenes();
+  const { scene, input } = createScene({ state, storage, scenes });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+
+  const stateAfterFirst = structuredClone(state.toSaveData());
+  delete stateAfterFirst.savedAt;
+
+  scene.confirmFinalCard();
+  scene.confirmFinalCard();
+
+  const stateAfterMore = structuredClone(state.toSaveData());
+  delete stateAfterMore.savedAt;
+
+  assert.deepEqual(scenes.changes, [{ name: "title", payload: undefined }]);
+  assert.deepEqual(stateAfterMore, stateAfterFirst);
+});
+
+test("un fallo de guardado mantiene transitionCompleted en false", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage({ saveError: new Error("fallo") });
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+
+  assert.equal(scene.transitionCompleted, false);
+});
+
+test("un fallo seguido de éxito realiza exactamente dos intentos de guardado y un único cambio a title", () => {
+  const state = new GameState();
+  state.flags.investigationComplete = true;
+  state.flags.epilogueUnlocked = true;
+  state.flags.epilogueStarted = true;
+  state.flags.giftCodeSolved = true;
+
+  const storage = new FakeStorage({ saveError: new Error("fallo") });
+  let saveCalls = 0;
+  const originalSave = storage.save.bind(storage);
+  storage.save = (data) => {
+    saveCalls += 1;
+    originalSave(data);
+  };
+
+  const { scene, input } = createScene({ state, storage });
+  scene.enter();
+  for (let i = 0; i < 4; i += 1) {
+    press(scene, input);
+  }
+  press(scene, input);
+  assert.equal(saveCalls, 1);
+  assert.equal(scene.transitionCompleted, false);
+
+  storage.saveError = null;
+  press(scene, input);
+
+  assert.equal(saveCalls, 2);
+  assert.equal(scene.transitionCompleted, true);
+  assert.deepEqual(scene.scenes.changes, [{ name: "title", payload: undefined }]);
+});
+
+test("prepareTerminalState conserva exactamente una posición válida ya existente de axiom-plaza", () => {
+  const state = new GameState();
+  state.setPlayerState({ x: 300, y: 210, facing: "left" }, "axiom-plaza");
+
+  const { scene } = createScene({ state });
+  scene.prepareTerminalState();
+
+  assert.deepEqual(state.player, { x: 300, y: 210, facing: "left" });
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 300,
+    y: 210,
+    facing: "left",
+  });
+});
+
+test("prepareTerminalState no copia a axiom-plaza la posición de otro mapa que estuviera activo", () => {
+  const state = new GameState();
+  state.setPlayerState({ x: 700, y: 460, facing: "up" }, "axiom-plaza");
+  state.changeMap("library");
+  state.setPlayerState({ x: 999, y: 888, facing: "down" }, "library");
+
+  const { scene } = createScene({ state });
+  scene.prepareTerminalState();
+
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 700,
+    y: 460,
+    facing: "up",
+  });
+  assert.deepEqual(state.player, { x: 700, y: 460, facing: "up" });
+  assert.deepEqual(state.world.playerByMap.library, {
+    x: 999,
+    y: 888,
+    facing: "down",
+  });
+});
+
+test("prepareTerminalState usa el spawn seguro si la posición en vivo y la guardada de axiom-plaza están corruptas", () => {
+  const state = new GameState();
+  state.player = {
+    x: Number.NaN,
+    y: Number.NaN,
+    facing: "no-es-una-orientacion",
+  };
+  state.world.playerByMap["axiom-plaza"] = {
+    x: Number.NaN,
+    y: Number.NaN,
+    facing: "no-es-una-orientacion",
+  };
+
+  const { scene } = createScene({ state });
+  scene.prepareTerminalState();
+
+  assert.deepEqual(state.player, { x: 240, y: 192, facing: "up" });
+  assert.deepEqual(state.world.playerByMap["axiom-plaza"], {
+    x: 240,
+    y: 192,
+    facing: "up",
+  });
+});
+
+test("prepareTerminalState no altera las posiciones guardadas de archive ni seven-bridges-walk", () => {
+  const state = new GameState();
+  const archiveBefore = { ...state.world.playerByMap.archive };
+  const sevenBridgesBefore = {
+    ...state.world.playerByMap["seven-bridges-walk"],
+  };
+
+  const { scene } = createScene({ state });
+  scene.prepareTerminalState();
+
+  assert.deepEqual(state.world.playerByMap.archive, archiveBefore);
+  assert.deepEqual(
+    state.world.playerByMap["seven-bridges-walk"],
+    sevenBridgesBefore,
+  );
+});
+
+test("prepareTerminalState deja idénticos state.player y world.playerByMap[axiom-plaza]", () => {
+  const state = new GameState();
+
+  const { scene } = createScene({ state });
+  scene.prepareTerminalState();
+
+  assert.deepEqual(state.player, state.world.playerByMap["axiom-plaza"]);
+});
+
+test("prepareTerminalState sigue siendo idempotente tras el fix de posición", () => {
+  const state = new GameState();
+  state.setPlayerState({ x: 400, y: 260, facing: "down" }, "axiom-plaza");
+
+  const { scene } = createScene({ state });
+  scene.prepareTerminalState();
+  const afterFirst = structuredClone(state.toSaveData());
+  delete afterFirst.savedAt;
+
+  scene.prepareTerminalState();
+  const afterSecond = structuredClone(state.toSaveData());
+  delete afterSecond.savedAt;
+
+  assert.deepEqual(afterSecond, afterFirst);
+});
+
 function textIncludesClosingLine(context) {
   const joined = context.texts.map((entry) => entry.text).join(" ");
   return CLOSING_LINE.split(" ").every((word) => joined.includes(word));

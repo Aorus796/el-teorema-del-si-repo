@@ -237,7 +237,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   Vuelve a intentarlo." y permite reintentar sin repetir la preparación en
   memoria; `GameState.restore()` ahora fuerza
   `objectiveId="epilogue-completed"` cuando `epilogueCompleted=true`, con
-  independencia de lo que contuviera el guardado.
+  independencia de lo que contuviera el guardado. Un campo transitorio
+  `transitionCompleted` en `CreditsScene` convierte confirmaciones
+  adicionales tras un guardado ya exitoso en un no-op absoluto, sin
+  reintentar el guardado ni repetir el cambio de escena. La preparación
+  del mapa/posición terminal usa el nuevo `GameState.changeToSafeMap()`
+  en vez de forzar `world.currentMapId`/`player` a mano, evitando que la
+  posición de otro mapa activo se filtre a `axiom-plaza`.
 
 ### Corregido
 
