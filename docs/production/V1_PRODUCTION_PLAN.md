@@ -24,8 +24,12 @@ y concluir con un epílogo.
 
 La entrega debe conservar una versión web funcional y proporcionar un
 ejecutable para Windows probado en una instalación limpia. La tecnología de
-empaquetado todavía no está decidida: Electron, Tauri o cualquier otra
-herramienta requieren aprobación explícita antes de introducirse.
+empaquetado ya está decidida y aprobada: Electron como runtime de
+escritorio y `electron-builder` como herramienta de empaquetado (ver
+[`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). Esta
+decisión aprueba la herramienta, no su implementación: instalar las
+dependencias correspondientes, construir el shell de Electron y generar el
+ejecutable siguen siendo trabajo pendiente de la Fase 5.
 
 ## 2. Estado de partida desde `v0.5.0`
 
@@ -59,7 +63,11 @@ etiquetas Git al comenzar cada fase.
 - [ ] Sustituir o pulir el arte provisional necesario.
 - [ ] Integrar el audio aprobado sin comprometer la estabilidad.
 - [ ] Aplicar la personalización final.
-- [ ] Elegir y validar el empaquetado para Windows.
+- [ ] Validar el empaquetado para Windows (herramienta ya aprobada:
+  Electron + `electron-builder`, ver
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md);
+  implementación, artefacto y prueba en instalación limpia siguen
+  pendientes).
 - [ ] Ejecutar QA completo sobre web, guardados y ejecutable.
 
 El `README.md` conserva información histórica desactualizada y no debe usarse
@@ -118,7 +126,10 @@ No forman parte de `v1.0.0`:
 - Rehacer la arquitectura.
 - Sistemas generales que no sean necesarios para el recorrido congelado.
 - Contenido secundario que ponga en riesgo la fecha de entrega.
-- Una tecnología concreta de empaquetado hasta que sea aprobada.
+- Instalar o ejecutar una herramienta de empaquetado distinta de la ya
+  aprobada (Electron + `electron-builder`, ver
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)) sin
+  una nueva aprobación explícita.
 
 Las salidas hacia zonas no incluidas pueden permanecer bloqueadas mediante
 una respuesta narrativa breve. No deben convertirse en nuevas áreas
@@ -185,8 +196,9 @@ jugables.
 - [ ] Arquitectura mínima del sistema de pistas y su relación con el
   cuaderno.
 - [ ] Decisión documentada sobre el formato de mapas de Biblioteca y Archivo.
-- [ ] Decisión aprobada sobre la herramienta de empaquetado para Windows, sin
-  instalarla todavía si la aprobación no incluye su incorporación.
+- [x] Decisión aprobada sobre la herramienta de empaquetado para Windows, sin
+  instalarla todavía: Electron + `electron-builder`, ver
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md).
 - [ ] Pipeline mínimo de pruebas de interfaz definido.
 - [ ] Estrategia de arte y audio con inventario, formato, responsables y
   fecha de integración.
@@ -742,9 +754,15 @@ el 2 de agosto:
 - [ ] **Formato de mapas de Biblioteca y Archivo:** continuar con datos
   JavaScript o adoptar un formato aprobado compatible con la arquitectura.
   Tiled no se considera obligatorio por estar mencionado en documentación.
-- [ ] **Herramienta de empaquetado Windows:** elegir y aprobar una opción que
-  mantenga la versión web. Electron, Tauri u otra herramienta no pueden
-  incorporarse antes de esta aprobación.
+- [x] **Herramienta de empaquetado Windows:** Electron como runtime de
+  escritorio y `electron-builder` como herramienta de empaquetado,
+  aprobados el 2026-08-04 por el responsable del producto. Primer
+  artefacto obligatorio: portable Windows x64, sin instalador ni firma
+  digital en la primera candidata privada. Decisión completa, razones y
+  criterios de validación en
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). La
+  incorporación real de las dependencias y la implementación del
+  ejecutable siguen pendientes de las tareas de Fase 5.
 - [ ] **Pipeline mínimo de pruebas de interfaz:** definir qué flujos se
   automatizan y cuáles se registran manualmente sin introducir dependencias
   no aprobadas.

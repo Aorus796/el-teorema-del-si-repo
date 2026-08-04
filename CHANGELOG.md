@@ -279,6 +279,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   posterior del plan de producción y no queda validado ni generado por
   este documento. Con esto, `docs/production/V1_PRODUCTION_PLAN.md` marca
   la tarea 16 como completada.
+- Decisión aprobada de empaquetado Windows para `v1.0.0`
+  (`docs/production/WINDOWS_PACKAGING_DECISION.md`): Electron como runtime
+  de escritorio y `electron-builder` como herramienta de empaquetado,
+  primer artefacto obligatorio portable Windows x64 sin instalador ni
+  firma digital en la primera candidata privada. El documento es
+  exclusivamente una decisión aprobada, no una implementación: no se
+  instala ninguna dependencia de Electron ni se genera ningún ejecutable
+  en este cambio. Cierra la decisión pendiente de
+  `docs/production/V1_PRODUCTION_PLAN.md` §11 sobre la herramienta de
+  empaquetado; la implementación, el artefacto Windows, la prueba en
+  instalación limpia y la entrega de la Fase 5 siguen pendientes.
 
 ### Corregido
 
