@@ -263,6 +263,18 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   que no usan el DOM — mismo patrón conceptual que `FakeCanvasContext` ya
   usa a nivel unitario en `tests/scenes/CreditsScene.test.js`, sin tocar
   ningún archivo de `src/`.
+- Documento de validación manual del epílogo
+  (`docs/production/EPILOGUE_MANUAL_VALIDATION.md`), cerrando la tarea 16
+  (`EPILOGUE_SPEC.md` §18.16) sobre el commit `e51810e`: recorrido
+  funcional, selector inicial, combinación incorrecta/correcta, amanecer,
+  diálogo final, créditos, legibilidad a 480×270, audio real, guardado
+  final, carga de partida completada, consulta de solo lectura, build de
+  producción y funcionamiento sin conexión quedan aprobados; se documenta
+  como excepción explícita que la duración no se verificó a ritmo normal
+  (la sesión de revisión tomó ~30 segundos porque quien la realizó ya
+  conocía la solución), aceptada por el responsable del producto. Con
+  esto, `docs/production/V1_PRODUCTION_PLAN.md` marca la tarea 16 como
+  completada.
 
 ### Corregido
 
