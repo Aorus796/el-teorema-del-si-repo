@@ -244,6 +244,25 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   del mapa/posición terminal usa el nuevo `GameState.changeToSafeMap()`
   en vez de forzar `world.currentMapId`/`player` a mano, evitando que la
   posición de otro mapa activo se filtre a `axiom-plaza`.
+- Prueba Playwright única que recorre el epílogo completo con teclado real,
+  desde un guardado con el Archivo resuelto hasta volver al título tras los
+  créditos: abre el mecanismo del regalo, falla una combinación, introduce
+  la combinación correcta (`GIFT_CODE_DIGITS`) y confirma la pantalla del
+  candado real, camina hasta la novia y recorre sus cinco turnos de
+  diálogo exactos, atraviesa los cinco pasos de `CreditsScene` verificando
+  el texto exacto de cada uno, confirma la tarjeta final y comprueba el
+  guardado terminal real en `localStorage` (banderas del epílogo,
+  `objectiveId="epilogue-completed"`, `player` sincronizado con
+  `world.playerByMap`), y finalmente recarga la partida completada
+  comprobando que no se reproduce nada automáticamente (sin diálogo, sin
+  créditos), que interactuar con la novia ya completada es un no-op, y que
+  el mecanismo del regalo conserva su consulta de solo lectura sin mutar
+  el guardado. Introduce, solo del lado de test, la técnica de interceptar
+  `CanvasRenderingContext2D.prototype.fillText` vía `page.addInitScript()`
+  para verificar texto exacto en `EpilogueGiftCodeScene` y `CreditsScene`,
+  que no usan el DOM — mismo patrón conceptual que `FakeCanvasContext` ya
+  usa a nivel unitario en `tests/scenes/CreditsScene.test.js`, sin tocar
+  ningún archivo de `src/`.
 
 ### Corregido
 

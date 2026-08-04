@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
 
 function collectJavaScriptErrors(page) {
   const errors = [];
@@ -14,6 +15,23 @@ function collectJavaScriptErrors(page) {
   });
 
   return errors;
+}
+
+function buildGiftCodeKeystrokes(digits) {
+  const keys = [];
+
+  digits.forEach((digit, index) => {
+    if (index > 0) {
+      keys.push("ArrowRight");
+    }
+
+    for (let step = 0; step < digit; step += 1) {
+      keys.push("ArrowUp");
+    }
+  });
+
+  keys.push("Enter");
+  return keys;
 }
 
 test("carga la pantalla de título sin errores", async ({ page }) => {
@@ -2051,3 +2069,398 @@ for (const variant of INVALID_SAVE_VARIANTS) {
     expect(uncaughtExceptions).toEqual([]);
   });
 }
+
+test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta volver al título", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+
+  const errors = collectJavaScriptErrors(page);
+
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 576, y: 325, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 576, y: 325, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: true,
+      epilogueUnlocked: true,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "start-epilogue",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["A", "D", "R", "C", "M"],
+        phase: "solved",
+        hintsRead: [],
+        attemptCount: 1,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": "confirmed",
+          "followed-trail": "confirmed",
+          "never-disagreed": "contradicted",
+          "someone-refuses-now": "contradicted",
+          "present-choice": "confirmed",
+          "universal-future": "undecidable",
+        },
+        phase: "solved",
+        hintsRead: [],
+        attemptCount: 1,
+        failureCode: null,
+      },
+    },
+  };
+
+  // Captura de texto renderizado directamente en canvas (EpilogueGiftCodeScene
+  // y CreditsScene no usan el DOM, así que expect.poll sobre canvas.toDataURL()
+  // solo prueba "cambió", no "dice lo aprobado" — este parche de fillText,
+  // inyectado en el navegador real antes de que cargue el juego, sí lo prueba,
+  // sin tocar ningún archivo de src/. Mismo patrón que FakeCanvasContext ya usa
+  // a nivel unitario en tests/scenes/CreditsScene.test.js.
+  await page.addInitScript(() => {
+    window.__renderedTexts = [];
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function patchedFillText(
+      text,
+      x,
+      y,
+      maxWidth,
+    ) {
+      window.__renderedTexts.push(String(text));
+      return originalFillText.call(this, text, x, y, maxWidth);
+    };
+  });
+
+  // Neutraliza la reproducción real de audio de forma determinista: el test
+  // no debe depender de que el entorno CI pueda reproducir sonido, y esto
+  // además ejercita a propósito la ruta de degradación segura de
+  // AudioService.playEpilogueTheme() (ya cubierta a nivel unitario, aquí se
+  // confirma en el navegador real que un fallo de play() no bloquea la
+  // entrada en créditos). No se modifica src/platform/AudioService.js.
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = () =>
+      Promise.reject(new Error("audio deshabilitado en el entorno de test"));
+  });
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const interactionPrompt = page.locator("#interaction-prompt");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueSpeaker = page.locator("#dialogue-speaker");
+  const dialogueText = page.locator("#dialogue-text");
+
+  const currentFrame = () => canvas.evaluate((element) => element.toDataURL());
+  const clearRenderedTexts = () =>
+    page.evaluate(() => {
+      window.__renderedTexts.length = 0;
+    });
+  const waitForRenderedText = (text) =>
+    expect
+      .poll(() =>
+        page.evaluate(
+          (needle) => window.__renderedTexts.includes(needle),
+          text,
+        ),
+      )
+      .toBe(true);
+  const waitForFrameChangeFrom = async (previousFrame) => {
+    await expect.poll(currentFrame).not.toBe(previousFrame);
+    return currentFrame();
+  };
+
+  const titleFrame = await currentFrame();
+
+  await test.step("cargar el guardado y abrir el mecanismo del regalo", async () => {
+    await page.keyboard.press("KeyL");
+    await waitForFrameChangeFrom(titleFrame);
+
+    await expect(interactionPrompt).toHaveText(
+      "[E] Examinar Mecanismo del regalo",
+    );
+
+    await clearRenderedTexts();
+    const worldFrame = await currentFrame();
+    await page.keyboard.press("KeyE");
+    await waitForFrameChangeFrom(worldFrame);
+    await waitForRenderedText("MECANISMO DEL REGALO");
+  });
+
+  await test.step("falla una combinación y comprueba el mensaje exacto", async () => {
+    await clearRenderedTexts();
+    await page.keyboard.press("Enter");
+    await waitForRenderedText(
+      "Esta combinación no es la correcta. Repasa el cuaderno.",
+    );
+  });
+
+  await test.step("introduce la combinación correcta y ve la pantalla del candado", async () => {
+    await clearRenderedTexts();
+    const keys = buildGiftCodeKeystrokes(GIFT_CODE_DIGITS);
+
+    /*
+     * A diferencia del resto de pulsaciones sueltas de este test, aquí se
+     * repite la misma tecla (ArrowUp) muchas veces seguidas sin ninguna
+     * aserción intermedia que ceda tiempo al bucle de render
+     * (requestAnimationFrame). InputManager acumula las teclas pulsadas en
+     * un Set por código (pressedCodes) que se vacía una sola vez por
+     * frame: dos keydown del mismo código dentro del mismo frame colapsan
+     * en una sola pulsación efectiva y se pierde un incremento de cifra
+     * (comprobado empíricamente: sin esta espera, la combinación
+     * introducida llegaba incompleta). Esperar a que el frame cambie tras
+     * cada pulsación -- mismo patrón que pressAndWaitForFrameChange ya usa
+     * en el resto de este archivo -- evita la colisión sin recurrir a
+     * page.waitForTimeout.
+     */
+    for (const key of keys) {
+      const previousFrame = await currentFrame();
+      await page.keyboard.press(key);
+      await waitForFrameChangeFrom(previousFrame);
+    }
+
+    await waitForRenderedText("COMBINACIÓN DEL CANDADO REAL");
+    await waitForRenderedText(GIFT_CODE_DIGITS.join(" · "));
+  });
+
+  await test.step("confirma y vuelve a la Plaza en su presentación de amanecer", async () => {
+    const solvedScreenFrame = await currentFrame();
+    await page.keyboard.press("Enter");
+    await waitForFrameChangeFrom(solvedScreenFrame);
+  });
+
+  await test.step("camina hasta la novia e interactúa", async () => {
+    await page.keyboard.down("KeyD");
+    await page.keyboard.down("KeyW");
+
+    await expect(interactionPrompt).toHaveText(
+      "[E] Hablar con La Investigadora",
+      { timeout: 10_000 },
+    );
+
+    await page.keyboard.up("KeyD");
+    await page.keyboard.up("KeyW");
+
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeVisible();
+  });
+
+  await test.step("recorre los cinco turnos exactos del diálogo final", async () => {
+    await expect(dialogueSpeaker).toHaveText("Novia");
+    await expect(dialogueText).toHaveText(
+      "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueSpeaker).toHaveText("Protagonista");
+    await expect(dialogueText).toHaveText("Y aun así he venido.");
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueSpeaker).toHaveText("Novia");
+    await expect(dialogueText).toHaveText(
+      "Entonces dime qué demuestra el teorema.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueSpeaker).toHaveText("Protagonista");
+    await expect(dialogueText).toHaveText(
+      "Que ningún sí vale para siempre solo porque se pronunció una vez. Vale porque, pudiendo decir que no, hoy volvemos a elegirlo.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueSpeaker).toHaveText("Novia");
+    await expect(dialogueText).toHaveText(
+      "Eso era lo único que necesitaba comprobar antes de mañana.",
+    );
+
+    // Todavía dentro del quinto turno: no debe haberse entrado en credits.
+    await expect(dialoguePanel).toBeVisible();
+    const worldFrameBeforeCredits = await currentFrame();
+
+    // Sexta pulsación: cierra el quinto turno -> completeBrideDialogue().
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeHidden();
+    await waitForFrameChangeFrom(worldFrameBeforeCredits);
+  });
+
+  await test.step("recorre los cinco pasos de CreditsScene con el texto exacto de cada uno", async () => {
+    const closingShotTexts = await page.evaluate(
+      () => window.__renderedTexts,
+    );
+    const closingLine = closingShotTexts
+      .filter((text) => text !== "E / Enter: continuar")
+      .join(" ");
+    expect(closingLine).toContain(
+      "No existe un sí para siempre. Existen dos personas que pueden volver a elegirse cada día.",
+    );
+
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyE");
+    await waitForRenderedText("EL TEOREMA DEL SÍ");
+
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyE");
+    await waitForRenderedText(
+      "Por todos los síes que aún quedan por elegir.",
+    );
+
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyE");
+    await waitForRenderedText("CREADO CON CARIÑO");
+    const creditsTexts = await page.evaluate(() => window.__renderedTexts);
+    expect(creditsTexts).toContain("COMO REGALO DE BODA");
+    expect(creditsTexts).toContain("GRACIAS POR JUGAR");
+
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyE");
+    await waitForRenderedText("Pulsa para guardar y volver al menú");
+  });
+
+  await test.step("confirma la tarjeta final y comprueba el guardado tras volver al título", async () => {
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyE");
+    // "EL TEOREMA DEL SI" (sin tilde) es el texto literal de TitleScene.js,
+    // deliberadamente distinto de "EL TEOREMA DEL SÍ" (con tilde) del paso 2
+    // de créditos -- confirma sin ambigüedad que se llegó al título real,
+    // no a una reaparición del paso de créditos.
+    await waitForRenderedText("EL TEOREMA DEL SI");
+
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+    const savedData = JSON.parse(savedRaw);
+
+    expect(savedData.formatVersion).toBe(4);
+    expect(savedData.flags.investigationComplete).toBe(true);
+    expect(savedData.flags.epilogueUnlocked).toBe(true);
+    expect(savedData.flags.epilogueStarted).toBe(true);
+    expect(savedData.flags.giftCodeSolved).toBe(true);
+    expect(savedData.flags.epilogueCompleted).toBe(true);
+    expect(savedData.scene).toBe("world");
+    expect(savedData.world.currentMapId).toBe("axiom-plaza");
+    expect(savedData.objectiveId).toBe("epilogue-completed");
+    expect(savedData.player).toEqual(
+      savedData.world.playerByMap["axiom-plaza"],
+    );
+    expect(Number.isFinite(savedData.player.x)).toBe(true);
+    expect(Number.isFinite(savedData.player.y)).toBe(true);
+    expect(["up", "down", "left", "right"]).toContain(
+      savedData.player.facing,
+    );
+
+    const serializedSaveData = JSON.stringify(savedData);
+    expect(serializedSaveData).not.toContain("{{FINAL_DEDICATION}}");
+  });
+
+  await test.step("carga la partida completada y confirma que no se reproduce nada automáticamente", async () => {
+    await clearRenderedTexts();
+    const titleAfterCreditsFrame = await currentFrame();
+    await page.keyboard.press("KeyL");
+    await waitForFrameChangeFrom(titleAfterCreditsFrame);
+
+    await waitForRenderedText("Objetivo: La demostración ha terminado.");
+
+    // No debe haber entrado automáticamente en credits ni en
+    // epilogue-gift-code: si lo hubiera hecho, el texto del mundo
+    // ("Objetivo: ...") nunca habría llegado a renderizarse, o el prompt de
+    // interacción de más abajo no existiría (ambas escenas no muestran
+    // #interaction-prompt).
+    await expect(dialoguePanel).toBeHidden();
+
+    await expect(interactionPrompt).toHaveText(
+      "[E] Hablar con La Investigadora",
+    );
+
+    // Interactuar con la novia ya completada la partida es un no-op: no
+    // debe abrirse el panel de diálogo.
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeHidden();
+
+    // El jugador conserva movimiento.
+    const frameBeforeMove = await currentFrame();
+    await page.keyboard.down("KeyS");
+    await expect.poll(currentFrame).not.toBe(frameBeforeMove);
+    await page.keyboard.up("KeyS");
+
+    // El cuaderno puede abrirse y cerrarse con normalidad.
+    const notebook = page.locator("#notebook-panel");
+    await page.keyboard.press("KeyQ");
+    await expect(notebook).toBeVisible();
+    await page.keyboard.press("KeyQ");
+    await expect(notebook).toBeHidden();
+
+    // El guardado normal sigue operativo.
+    const toast = page.locator("#toast");
+    await page.keyboard.press("KeyK");
+    await expect(toast).toHaveText("Partida guardada");
+
+    const savedAfterNormalSaveRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+    const savedAfterNormalSave = JSON.parse(savedAfterNormalSaveRaw);
+    expect(savedAfterNormalSave.flags.epilogueCompleted).toBe(true);
+    expect(savedAfterNormalSave.objectiveId).toBe("epilogue-completed");
+  });
+
+  await test.step("el mecanismo del regalo conserva su consulta de solo lectura", async () => {
+    const worldFrameBeforeMechanism = await currentFrame();
+
+    await page.keyboard.down("KeyA");
+    await page.keyboard.down("KeyS");
+    await expect(interactionPrompt).toHaveText(
+      "[E] Examinar Mecanismo del regalo",
+      { timeout: 10_000 },
+    );
+    await page.keyboard.up("KeyA");
+    await page.keyboard.up("KeyS");
+
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyE");
+    await waitForRenderedText("COMBINACIÓN DEL CANDADO REAL");
+    await waitForRenderedText(GIFT_CODE_DIGITS.join(" · "));
+
+    const stateBeforeCancel = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+
+    const readOnlyFrame = await currentFrame();
+    await page.keyboard.press("Escape");
+    await waitForFrameChangeFrom(readOnlyFrame);
+
+    const stateAfterCancel = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+    expect(stateAfterCancel).toBe(stateBeforeCancel);
+
+    void worldFrameBeforeMechanism;
+  });
+
+  expect(errors).toEqual([]);
+});
