@@ -76,11 +76,19 @@ Requisitos de seguridad y comportamiento de la ventana principal:
 - **`nodeIntegration: false`** en el `BrowserWindow` que renderiza el
   juego. El código de `src/` no debe tener acceso a APIs de Node.
 - **`contextIsolation: true`**, sin excepciones.
-- **`sandbox: true`** cuando sea compatible con las APIs que finalmente
-  necesite el proceso principal (a validar en la tarea de implementación;
-  si alguna API imprescindible resultara incompatible con sandbox, esa
-  incompatibilidad debe documentarse explícitamente en esa tarea, no
-  asumirse aquí).
+- **`sandbox: true`** para el proceso renderer que muestra el juego
+  (`BrowserWindow`), sin excepciones previstas. El sandbox de Electron
+  restringe al proceso **renderer**, no al proceso principal: las APIs
+  Node/Electron que necesite `main.js` (por ejemplo, para abrir la
+  ventana o leer `builds/browser`) se ejecutan en el proceso principal y
+  no requieren ni justifican desactivar el sandbox del renderer. Con la
+  arquitectura descrita aquí — sin `nodeIntegration`, sin `preload` que
+  exponga APIs privilegiadas al juego — no existe ninguna necesidad
+  aprobada de desactivarlo. Solo una incompatibilidad **demostrada** del
+  propio renderer o de un `preload` (no del proceso principal) podría
+  justificar reconsiderarlo, y solo mediante documentación explícita del
+  motivo, un análisis de riesgo y aprobación humana explícita — nunca
+  como ajuste silencioso de la tarea de implementación.
 - **Sin exposición de APIs de Node al juego:** no se define un `preload`
   que exponga funciones al contexto del juego salvo que una tarea futura
   lo justifique explícitamente y lo documente.
@@ -94,13 +102,12 @@ Requisitos de seguridad y comportamiento de la ventana principal:
   automáticamente ni quedan accesibles por atajo de teclado en el build
   empaquetado final. Pueden habilitarse solo en builds de desarrollo local
   del propio Electron, nunca en el artefacto que se prueba y distribuye.
-- **Perfil persistente y estable para `localStorage`:** el proceso debe
-  usar una ruta de datos de usuario estable entre ejecuciones (el
-  comportamiento por defecto de Electron ya asocia el perfil a la
-  identidad de la app, no a la ubicación del ejecutable), de forma que
-  mover el `.exe` portable a otro directorio no pierda el guardado. Esto
-  debe verificarse explícitamente en la tarea de implementación, no
-  darse por supuesto.
+- **Perfil persistente y estable para `localStorage`:** la tarea de
+  implementación debe definir y documentar explícitamente, antes de
+  `app.ready`, la política de `userData`/`sessionData` que usará el
+  proceso (ver "Estrategia de persistencia" para el detalle completo).
+  No debe darse por supuesto que el comportamiento por defecto de
+  Electron ya resuelve esto sin verificación.
 - **Cierre normal de la aplicación en Windows:** cerrar la ventana
   principal termina el proceso de forma limpia, sin dejar procesos
   huérfanos.
@@ -150,19 +157,62 @@ funcional e idéntica en comportamiento a la que se empaqueta.
 ## Estrategia de persistencia
 
 El guardado seguirá usando `localStorage`, sin cambios en `src/` ni en
-`SAVE_FORMAT_VERSION` motivados por Electron. Dentro de un `BrowserWindow`
-de Electron, `localStorage` persiste en el perfil de usuario de la app
-(gestionado por Chromium/Electron, no por el directorio del ejecutable),
-lo que debe cumplir estos casos exigidos por el responsable del producto:
+`SAVE_FORMAT_VERSION` motivados por Electron.
+
+**Cómo funciona realmente la persistencia en Electron** (base técnica que
+la tarea de implementación debe respetar, no una garantía automática):
+
+- Electron almacena `localStorage` dentro de los **datos de sesión de
+  Chromium** (`session`/`partition`) del proceso, no en un archivo
+  independiente gestionado por el juego.
+- Esos datos de sesión (`sessionData`) apuntan, **por defecto**, al
+  directorio `userData` de la aplicación (`app.getPath("userData")`).
+- `userData` depende, **por defecto**, del nombre/identidad con la que
+  Electron registra la aplicación en el sistema (típicamente derivado de
+  `name` en `package.json` o de `app.setName()`), **no** de ningún campo
+  de `electron-builder`.
+- El `appId` de `electron-builder` identifica el paquete ante Windows
+  (instalador, actualizaciones, registro) — **no determina por sí solo**
+  la ruta de `userData`/`sessionData` de Electron. Asumir que fijar solo
+  el `appId` basta para conservar el guardado entre builds sería
+  incorrecto.
+- En consecuencia, `appId`, `name` y `productName` deben permanecer
+  **estables entre builds compatibles** (misma identidad de aplicación),
+  porque un cambio en cualquiera de ellos puede alterar la ruta por
+  defecto de `userData` y, con ella, hacer que una build posterior no
+  encuentre el guardado de una anterior.
+- La tarea de implementación **debe definir y documentar explícitamente**,
+  antes de `app.ready`, la política de `userData`/`sessionData` que usará
+  la aplicación (usar la ruta por defecto de forma consciente, o fijar una
+  ruta explícita) — no dejarlo implícito ni asumirlo por defecto sin
+  probarlo.
+- Puede usarse la ruta por defecto de Electron si esa tarea **demuestra
+  empíricamente** que es estable entre cierres/reaperturas, reinicios de
+  Windows, y entre builds compatibles — pero no debe darse por garantizada
+  sin esa prueba.
+- Si en su lugar se fija una ruta explícita con `app.setPath("userData",
+  ...)`, esa ruta debe estar **bajo el directorio de datos del usuario de
+  Windows** (por ejemplo, dentro de `%APPDATA%` o `%LOCALAPPDATA%`),
+  **nunca junto al ejecutable portable** — una ruta relativa al `.exe`
+  rompería la persistencia al moverlo y podría fallar por permisos según
+  dónde se ejecute. Si esa ruta no existe todavía, la tarea de
+  implementación debe crear el directorio **antes** de llamar a
+  `app.setPath`, ya que Electron no lo crea automáticamente en todos los
+  casos.
+
+**Casos que deben verificarse explícitamente** (exigidos por el
+responsable del producto, ninguno se da por válido sin prueba manual
+registrada en la tarea correspondiente):
 
 - cerrar y volver a abrir el ejecutable conserva el guardado;
 - reiniciar Windows conserva el guardado;
-- sustituir el ejecutable por otra build compatible conserva el guardado,
-  siempre que ambas builds usen el mismo identificador de aplicación
-  (`appId` de `electron-builder`) y no cambien de forma incompatible el
-  formato de guardado;
-- mover el ejecutable portable a otro directorio conserva el guardado,
-  porque el perfil no depende de la ruta del `.exe`.
+- mover el ejecutable portable a otro directorio conserva el guardado;
+- sustituir el ejecutable por **otra build posterior compatible** (misma
+  identidad `appId`/`name`/`productName` y mismo formato de guardado)
+  conserva el guardado creado con la build anterior — debe añadirse una
+  prueba de actualización explícita entre **al menos dos builds
+  distintas** que compartan esa identidad y ese formato, no solo entre
+  ejecuciones repetidas de la misma build.
 
 No se exige migrar automáticamente las partidas ya existentes creadas en
 el navegador al ejecutable: la versión web y el ejecutable pueden tener
@@ -175,10 +225,10 @@ no se considera un defecto.
 
 Resumen operativo de la sección "Arquitectura prevista" para la tarea de
 implementación: `nodeIntegration: false`, `contextIsolation: true`,
-`sandbox: true` cuando sea compatible, sin `preload` que exponga APIs de
-Node salvo justificación explícita, navegación y apertura de ventanas
-bloqueadas fuera del build local, DevTools desactivadas en el artefacto de
-producción.
+`sandbox: true` para el renderer del juego sin excepciones previstas, sin
+`preload` que exponga APIs de Node salvo justificación explícita,
+navegación y apertura de ventanas bloqueadas fuera del build local,
+DevTools desactivadas en el artefacto de producción.
 
 Firma digital: la primera candidata, al ser de distribución **privada**
 (no pública ni masiva), puede distribuirse **sin firma digital**. Esto
@@ -241,6 +291,11 @@ El ejecutable se considera aceptable cuando:
   ejecutable;
 - conserva la partida guardada al mover el ejecutable portable a otro
   directorio;
+- conserva la partida guardada al sustituir el ejecutable por otra build
+  posterior compatible (misma identidad `appId`/`name`/`productName` y
+  mismo formato de guardado) — verificado con una prueba de actualización
+  entre al menos dos builds distintas, no solo entre ejecuciones repetidas
+  de la misma build;
 - permite completar el recorrido del juego de principio a fin;
 - no muestra errores de JavaScript en la consola durante el recorrido;
 - no rompe ni modifica el comportamiento de la versión web servida desde
@@ -270,8 +325,13 @@ instalación de Windows limpia y también sobre la máquina de desarrollo:
 5. Mover el ejecutable a otro directorio y repetir la comprobación de
    persistencia.
 6. Reiniciar Windows y repetir la comprobación de persistencia.
-7. Desconectar la máquina de Internet y repetir el recorrido completo.
-8. Registrar nombre, tamaño y SHA-256 del artefacto probado.
+7. Generar una segunda build compatible (misma identidad
+   `appId`/`name`/`productName` y mismo formato de guardado), sustituir el
+   ejecutable de la primera por el de la segunda sin borrar el perfil de
+   usuario, y confirmar que el guardado creado con la primera build sigue
+   disponible en la segunda.
+8. Desconectar la máquina de Internet y repetir el recorrido completo.
+9. Registrar nombre, tamaño y SHA-256 de cada artefacto probado.
 
 ## Riesgos
 
@@ -284,10 +344,18 @@ instalación de Windows limpia y también sobre la máquina de desarrollo:
   `loadFile` directo; la sección "Arquitectura prevista" ya prevé esta
   alternativa como plan de contingencia, no como sorpresa a resolver
   ad hoc.
-- `sandbox: true` podría ser incompatible con alguna API que la
-  implementación termine necesitando; si ocurre, debe documentarse
-  explícitamente en esa tarea antes de desactivar sandbox, no hacerlo en
-  silencio.
+- `sandbox: true` en el renderer del juego podría resultar incompatible
+  con alguna API que un `preload` futuro termine necesitando (no con
+  nada del proceso principal, que no está sujeto al sandbox del
+  renderer); si ocurre, esa incompatibilidad debe demostrarse y
+  documentarse explícitamente, con análisis de riesgo y aprobación humana
+  explícita, antes de desactivar sandbox — nunca como ajuste silencioso
+  de la tarea de implementación.
+- La política de `userData`/`sessionData` (ver "Estrategia de
+  persistencia") no está probada todavía; si el comportamiento por
+  defecto de Electron resulta inestable entre builds o entre ejecuciones,
+  la tarea de implementación correspondiente debe fijar y documentar una
+  ruta explícita antes de darla por cerrada.
 - La ausencia de firma digital puede hacer que algunos entornos con
   políticas de seguridad estrictas bloqueen la ejecución por completo, no
   solo advertir; si esto ocurre en la instalación limpia de prueba, debe
@@ -300,20 +368,36 @@ instalación de Windows limpia y también sobre la máquina de desarrollo:
 
 ## Rollback
 
+La versión web debe conservarse siempre funcional — eso no cambia con esta
+decisión. Pero el **ejecutable Windows sigue siendo un entregable
+obligatorio de `v1.0.0`** (`V1_PRODUCTION_PLAN.md` §1, §3, §12), no un
+elemento opcional que pueda descartarse si el empaquetado resulta
+complicado.
+
 Si en cualquier tarea de implementación futura se descubre que Electron o
 `electron-builder` no pueden cumplir los criterios de aceptación de esta
 decisión (por ejemplo, el ejecutable no arranca de forma fiable en una
 instalación limpia, o la persistencia del guardado no puede garantizarse
-al mover el `.exe`), esa tarea debe detenerse y pedir intervención humana
-en vez de introducir workarounds no aprobados — según el flujo de
-`CLAUDE.md` ("Casos que requieren aprobación humana"). El rollback más
-simple y siempre disponible es no incorporar Electron en absoluto y
-entregar `v1.0.0` únicamente con la versión web, ya que la versión web es
-un entregable obligatorio independiente del ejecutable y no depende de
-esta decisión. Revertir esta decisión no requiere revertir código, porque
-este cambio no instala ninguna dependencia ni modifica `src/`: basta con
-reabrir la decisión pendiente en `docs/production/V1_PRODUCTION_PLAN.md`
-§11 y documentar la nueva elección.
+de forma reproducible), esa tarea debe **detenerse** y pedir intervención
+humana en vez de introducir workarounds no aprobados — según el flujo de
+`CLAUDE.md` ("Casos que requieren aprobación humana"). El paso correcto en
+ese caso es **reabrir la decisión de herramienta** en
+`docs/production/V1_PRODUCTION_PLAN.md` §11 y evaluar una alternativa
+(por ejemplo, Tauri, u otro enfoque), no abandonar el entregable.
+
+**Publicar `v1.0.0` sin ejecutable Windows requeriría un cambio explícito
+del alcance ya aprobado por el responsable del producto** — es una
+decisión de alcance, no una decisión técnica, y por tanto está fuera de lo
+que cualquier agente automatizado puede resolver por su cuenta. Ningún
+agente (`developer`, `qa`, `reviewer`, ni la orquestación de `autopilot`)
+puede decidir unilateralmente eliminar el entregable Windows como forma de
+"rollback" ante una dificultad de implementación.
+
+Revertir *esta decisión de herramienta* (no el entregable en sí) no
+requiere revertir código, porque este cambio no instala ninguna
+dependencia ni modifica `src/`: basta con reabrir la decisión pendiente en
+`docs/production/V1_PRODUCTION_PLAN.md` §11 y documentar la nueva
+elección de herramienta.
 
 ## Elementos expresamente fuera de alcance
 
