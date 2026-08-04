@@ -377,7 +377,7 @@ implementa y valida de forma independiente con el flujo completo de
 - [x] 13. Tarjetas finales y créditos (§18.13; depende de la tarea 10).
 - [x] 14. Transición atómica de cierre y retorno seguro al menú (§18.14;
   depende de las tareas 1 y 13).
-- [ ] 15. Pruebas unitarias, de contenido y E2E del recorrido completo
+- [x] 15. Pruebas unitarias, de contenido y E2E del recorrido completo
   (§18.15; depende de las tareas 1–14).
 - [ ] 16. Revisión manual de duración, legibilidad, audio y empaquetado
   (§18.16; depende de la tarea 15; no automatizable).
