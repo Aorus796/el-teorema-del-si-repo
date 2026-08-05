@@ -55,6 +55,46 @@ test("buildSecureWindowOptions applies sane defaults when called without argumen
   assert.equal(options.title, undefined);
 });
 
+test("buildSecureWindowOptions enables webPreferences.devTools only when isPackaged is explicitly false", () => {
+  const devOptions = buildSecureWindowOptions({ isPackaged: false });
+
+  assert.equal(devOptions.webPreferences.devTools, true);
+  assert.equal(devOptions.webPreferences.nodeIntegration, false);
+  assert.equal(devOptions.webPreferences.contextIsolation, true);
+  assert.equal(devOptions.webPreferences.sandbox, true);
+  assert.equal(devOptions.webPreferences.webSecurity, undefined);
+  assert.equal(devOptions.webPreferences.preload, undefined);
+});
+
+test("buildSecureWindowOptions disables webPreferences.devTools when isPackaged is true", () => {
+  const packagedOptions = buildSecureWindowOptions({ isPackaged: true });
+
+  assert.equal(packagedOptions.webPreferences.devTools, false);
+  assert.equal(packagedOptions.webPreferences.nodeIntegration, false);
+  assert.equal(packagedOptions.webPreferences.contextIsolation, true);
+  assert.equal(packagedOptions.webPreferences.sandbox, true);
+  assert.equal(packagedOptions.webPreferences.webSecurity, undefined);
+  assert.equal(packagedOptions.webPreferences.preload, undefined);
+});
+
+test("buildSecureWindowOptions disables webPreferences.devTools fail-closed when isPackaged is omitted or not boolean", () => {
+  const omittedOptions = buildSecureWindowOptions();
+  const undefinedOptions = buildSecureWindowOptions({ isPackaged: undefined });
+  const nonBooleanOptions = buildSecureWindowOptions({ isPackaged: "true" });
+
+  assert.equal(omittedOptions.webPreferences.devTools, false);
+  assert.equal(undefinedOptions.webPreferences.devTools, false);
+  assert.equal(nonBooleanOptions.webPreferences.devTools, false);
+
+  for (const options of [omittedOptions, undefinedOptions, nonBooleanOptions]) {
+    assert.equal(options.webPreferences.nodeIntegration, false);
+    assert.equal(options.webPreferences.contextIsolation, true);
+    assert.equal(options.webPreferences.sandbox, true);
+    assert.equal(options.webPreferences.webSecurity, undefined);
+    assert.equal(options.webPreferences.preload, undefined);
+  }
+});
+
 test("shouldOpenDevTools only opens DevTools when isPackaged is explicitly false", () => {
   assert.equal(shouldOpenDevTools(false), true);
   assert.equal(shouldOpenDevTools(true), false);

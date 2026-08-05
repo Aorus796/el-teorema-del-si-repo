@@ -313,6 +313,14 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   el progreso previo intacto; `WorldScene.load()` captura cualquier error
   de `storage.load()` o `state.restore()` y muestra un aviso claro en
   lugar de romper el juego.
+- El shell mínimo de Electron ahora desactiva realmente
+  `webPreferences.devTools` en `buildSecureWindowOptions()` cuando
+  `isPackaged` es `true` (o no se indica), no solo evita abrirlas
+  automáticamente: antes quedaban accesibles por atajo de teclado incluso
+  en una build empaquetada, porque `main.js` no propagaba
+  `app.isPackaged` al construir las opciones de `BrowserWindow`. El
+  toolchain de desarrollo requiere ahora Node `>=22.12.0` (antes `>=20`),
+  coherente con lo que exige instalar `electron@43.3.0`.
 
 ### Pendiente
 

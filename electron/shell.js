@@ -21,34 +21,6 @@ const noopLogger = {
 };
 
 /**
- * Construye las opciones seguras del `BrowserWindow` que renderiza el
- * juego. No acepta overrides de `webPreferences` para evitar que una
- * llamada externa debilite silenciosamente la configuración de seguridad
- * (sin `nodeIntegration`, `contextIsolation` siempre activo, `sandbox`
- * siempre activo, sin `webSecurity: false`, sin `preload`).
- *
- * @param {{ width?: number, height?: number, title?: string }} [options]
- * @returns {object} Opciones listas para pasar a `new BrowserWindow(...)`.
- */
-export function buildSecureWindowOptions({ width = 1280, height = 800, title } = {}) {
-  const options = {
-    width,
-    height,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: true,
-    },
-  };
-
-  if (title !== undefined) {
-    options.title = title;
-  }
-
-  return options;
-}
-
-/**
  * Decide si deben abrirse las DevTools según el estado de empaquetado
  * inyectado. Solo se abren cuando `isPackaged` es explícitamente `false`
  * (build de desarrollo local de Electron); cualquier otro valor (incluido
@@ -59,6 +31,47 @@ export function buildSecureWindowOptions({ width = 1280, height = 800, title } =
  */
 export function shouldOpenDevTools(isPackaged) {
   return isPackaged === false;
+}
+
+/**
+ * Construye las opciones seguras del `BrowserWindow` que renderiza el
+ * juego. No acepta overrides de `webPreferences` para evitar que una
+ * llamada externa debilite silenciosamente la configuración de seguridad
+ * (sin `nodeIntegration`, `contextIsolation` siempre activo, `sandbox`
+ * siempre activo, sin `webSecurity: false`, sin `preload`).
+ *
+ * `webPreferences.devTools` se fija de forma fail-closed reutilizando
+ * `shouldOpenDevTools`: solo queda habilitado (`true`) cuando `isPackaged`
+ * es explícitamente `false`; cualquier otro valor (incluido `true`,
+ * `undefined` o un valor no booleano) lo deja en `false`, para que las
+ * DevTools no queden accesibles (ni por apertura automática ni por atajo
+ * de teclado) en una build empaquetada.
+ *
+ * @param {{ width?: number, height?: number, title?: string, isPackaged?: boolean }} [options]
+ * @returns {object} Opciones listas para pasar a `new BrowserWindow(...)`.
+ */
+export function buildSecureWindowOptions({
+  width = 1280,
+  height = 800,
+  title,
+  isPackaged,
+} = {}) {
+  const options = {
+    width,
+    height,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      devTools: shouldOpenDevTools(isPackaged),
+    },
+  };
+
+  if (title !== undefined) {
+    options.title = title;
+  }
+
+  return options;
 }
 
 /**

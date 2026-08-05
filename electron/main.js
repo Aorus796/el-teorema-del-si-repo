@@ -27,7 +27,7 @@ const indexHtmlUrl = pathToFileURL(indexHtmlPath).href;
 let mainWindow = null;
 
 function createMainWindow() {
-  const win = new BrowserWindow(buildSecureWindowOptions());
+  const win = new BrowserWindow(buildSecureWindowOptions({ isPackaged: app.isPackaged }));
 
   win.webContents.setWindowOpenHandler(createWindowOpenHandler(logger));
   win.webContents.on("will-navigate", createWillNavigateHandler(indexHtmlUrl, logger));
