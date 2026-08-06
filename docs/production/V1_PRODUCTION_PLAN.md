@@ -26,10 +26,21 @@ La entrega debe conservar una versión web funcional y proporcionar un
 ejecutable para Windows probado en una instalación limpia. La tecnología de
 empaquetado ya está decidida y aprobada: Electron como runtime de
 escritorio y `electron-builder` como herramienta de empaquetado (ver
-[`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). Esta
-decisión aprueba la herramienta, no su implementación: instalar las
-dependencias correspondientes, construir el shell de Electron y generar el
-ejecutable siguen siendo trabajo pendiente de la Fase 5.
+[`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). Electron
+ya está instalado y el shell mínimo con sus pruebas ya está implementado
+(ver la nota de avance justo debajo); `electron-builder`, la integración y
+persistencia reales, el empaquetado, el artefacto Windows y las pruebas
+manuales siguen siendo trabajo pendiente de la Fase 5.
+
+> Nota de avance (tarea de implementación 1 de
+> `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
+> ya existe un shell mínimo de Electron (`electron/main.js`,
+> `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
+> `preload`, sin IPC y sin conexión todavía con `electron-builder`. No hay
+> ejecutable generado, no se ha probado en Windows y ningún criterio de
+> aceptación, checklist ni casilla de este documento se considera cumplido
+> por esto — el resto de la Fase 5 (empaquetado, persistencia, pruebas
+> manuales) sigue pendiente.
 
 ## 2. Estado de partida desde `v0.5.0`
 

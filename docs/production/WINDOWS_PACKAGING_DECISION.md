@@ -2,13 +2,21 @@
 
 Este documento aprueba **qué** herramienta se usará para producir el
 ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
-(§1, §3, §11). No implementa el empaquetado. Ninguna dependencia de
-Electron ni de `electron-builder` se instala en este cambio: esta PR es
-exclusivamente documental.
+(§1, §3, §11), y registra el avance real de su implementación.
 
-La implementación se hará en tareas futuras separadas, siguiendo el flujo
-obligatorio de `CLAUDE.md` (planner → developer → qa → quality gate →
-reviewer → commit/PR) una a una, nunca combinadas.
+La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
+instalar ninguna dependencia. Desde entonces, la tarea de implementación 1
+("Shell Electron mínimo y pruebas del proceso principal", ver "Tareas de
+implementación" más abajo) ya introdujo `electron` como
+devDependency exacta y creó `electron/main.js`, `electron/shell.js` y sus
+pruebas unitarias en `tests/electron/`. `electron-builder` todavía **no**
+está instalado. No existe todavía ningún ejecutable ni artefacto portable,
+y no se ha realizado ninguna prueba gráfica real de Electron — nada de eso
+se afirma en este documento. Las tareas 2 a 8 siguen pendientes.
+
+El resto de la implementación se hará en esas tareas futuras separadas,
+siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
+quality gate → reviewer → commit/PR) una a una, nunca combinadas.
 
 ## Objetivo
 
@@ -393,11 +401,29 @@ agente (`developer`, `qa`, `reviewer`, ni la orquestación de `autopilot`)
 puede decidir unilateralmente eliminar el entregable Windows como forma de
 "rollback" ante una dificultad de implementación.
 
-Revertir *esta decisión de herramienta* (no el entregable en sí) no
-requiere revertir código, porque este cambio no instala ninguna
-dependencia ni modifica `src/`: basta con reabrir la decisión pendiente en
-`docs/production/V1_PRODUCTION_PLAN.md` §11 y documentar la nueva
-elección de herramienta.
+**Esto ya no es una decisión sin código asociado.** A diferencia de cuando
+se aprobó por primera vez (PR #34, exclusivamente documental), la tarea 1
+ya instaló `electron@43.3.0` como devDependency y ya creó `electron/main.js`,
+`electron/shell.js` y `tests/electron/`. Detener una tarea de
+implementación *futura* (2 a 8) ante un problema no exige revertir
+automáticamente ese shell ya existente: el primer paso sigue siendo
+detenerse y reabrir formalmente la decisión de herramienta en
+`docs/production/V1_PRODUCTION_PLAN.md` §11, evaluando una alternativa —
+mientras tanto, la versión web debe permanecer intacta y funcional, como
+en cualquier otro momento de esta decisión.
+
+Si, tras reabrir la decisión, se aprueba sustituir Electron por otra
+tecnología, **eliminar o sustituir Electron, el shell y sus pruebas
+requiere su propia PR técnica separada**, revisada por `reviewer` con el
+mismo rigor que su introducción, y con su propio plan de rollback — no
+basta con editar este documento de decisión, porque ahora sí existe código
+y una dependencia real asociados a Electron que ese cambio de documento no
+toca ni revierte por sí solo. Ningún agente (`developer`, `qa`,
+`reviewer`, ni la orquestación de `autopilot`) puede eliminar
+unilateralmente Electron, el shell, ni el entregable Windows como forma de
+"rollback" ante una dificultad de implementación; como ya se indica arriba,
+publicar `v1.0.0` sin ejecutable Windows requeriría igualmente un cambio
+explícito de alcance aprobado por el responsable del producto.
 
 ## Elementos expresamente fuera de alcance
 
@@ -411,18 +437,31 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- La implementación misma: instalar `electron`/`electron-builder` como
-  dependencias, crear `electron/main.js`, configurar `electron-builder`,
-  el workflow de GitHub Actions en Windows, y las pruebas manuales en una
-  instalación limpia. Todo eso corresponde a las tareas de implementación
-  futuras listadas a continuación.
+- El resto de la implementación: instalar `electron-builder`, definir la
+  política definitiva de `userData`/`sessionData` y la persistencia real
+  entre builds, configurar `electron-builder`, el workflow de GitHub
+  Actions en Windows, generar el artefacto portable, y las pruebas
+  manuales en una instalación limpia. Todo eso corresponde a las tareas de
+  implementación futuras 2 a 8 listadas a continuación (instalar
+  `electron` y crear el shell mínimo con sus pruebas ya se completaron en
+  la tarea 1).
 
-## Tareas de implementación futuras
+## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden:
+este orden. La tarea 1 ya está completada; las tareas 2 a 8 siguen
+pendientes:
 
-1. Shell Electron mínimo y pruebas del proceso principal.
+1. [x] Shell Electron mínimo y pruebas del proceso principal —
+   implementado en `electron/shell.js` (lógica pura, sin importar
+   `"electron"`) y `electron/main.js` (composición mínima con la API real
+   de Electron), con pruebas en `tests/electron/`. Cubre exclusivamente lo
+   descrito en "Arquitectura prevista": opciones seguras de
+   `BrowserWindow`, DevTools solo fuera de `isPackaged`, resolución de
+   `builds/browser/index.html`, bloqueo de `window.open`, `will-navigate`
+   y `will-attach-webview`, instancia única, y cierre ante fallo de
+   `loadFile`. No incluye integración de persistencia definitiva ni
+   pruebas manuales en Windows — eso corresponde a las tareas 2, 6 y 7.
 2. Integración con `builds/browser` y persistencia del guardado.
 3. Configuración de `electron-builder` y generación portable x64.
 4. GitHub Actions en Windows para generar el artefacto.

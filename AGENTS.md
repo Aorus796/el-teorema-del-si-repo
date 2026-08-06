@@ -145,10 +145,14 @@ La tecnología de empaquetado del ejecutable para Windows ya está decidida y
 aprobada: Electron como runtime de escritorio y `electron-builder` como
 herramienta de empaquetado (ver
 [`docs/production/WINDOWS_PACKAGING_DECISION.md`](docs/production/WINDOWS_PACKAGING_DECISION.md)).
-Esa decisión aprueba la herramienta, no su implementación: no instales
-Electron, `electron-builder` ni ninguna otra dependencia de empaquetado hasta
-que la tarea de implementación correspondiente lo haga siguiendo ese
-documento. Debe conservarse siempre la versión web funcional.
+Esa decisión aprueba la herramienta, no su implementación completa. Electron
+ya es una dependencia de desarrollo aprobada e introducida (tarea de
+implementación 1: shell mínimo en `electron/main.js` y `electron/shell.js`,
+con pruebas en `tests/electron/`, sin `preload` ni IPC). `electron-builder`
+sigue expresamente prohibido y no debe instalarse hasta que su propia tarea
+de implementación (tarea 3 de "Tareas de implementación" en
+`WINDOWS_PACKAGING_DECISION.md`) lo haga siguiendo ese documento. Debe
+conservarse siempre la versión web funcional.
 
 La estabilidad y la finalización del recorrido principal tienen prioridad
 sobre cualquier mejora opcional. Prioriza completar, probar y pulir este

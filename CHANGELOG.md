@@ -290,6 +290,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `docs/production/V1_PRODUCTION_PLAN.md` §11 sobre la herramienta de
   empaquetado; la implementación, el artefacto Windows, la prueba en
   instalación limpia y la entrega de la Fase 5 siguen pendientes.
+- Shell mínimo de Electron (`electron/main.js`, `electron/shell.js`) con
+  pruebas unitarias en `tests/electron/`, primera tarea de implementación
+  de `docs/production/WINDOWS_PACKAGING_DECISION.md`: opciones seguras de
+  `BrowserWindow` (`nodeIntegration: false`, `contextIsolation: true`,
+  `sandbox: true`, sin `preload`), bloqueo de `window.open`,
+  `will-navigate` y `will-attach-webview`, DevTools solo fuera de
+  `isPackaged`, resolución de `builds/browser/index.html`, instancia
+  única y cierre limpio si falla la carga del build local. No genera
+  ningún ejecutable, no se ha probado en Windows, y no incluye todavía
+  `electron-builder`, IPC ni la política definitiva de persistencia de
+  `userData`.
 
 ### Corregido
 
@@ -302,6 +313,14 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   el progreso previo intacto; `WorldScene.load()` captura cualquier error
   de `storage.load()` o `state.restore()` y muestra un aviso claro en
   lugar de romper el juego.
+- El shell mínimo de Electron ahora desactiva realmente
+  `webPreferences.devTools` en `buildSecureWindowOptions()` cuando
+  `isPackaged` es `true` (o no se indica), no solo evita abrirlas
+  automáticamente: antes quedaban accesibles por atajo de teclado incluso
+  en una build empaquetada, porque `main.js` no propagaba
+  `app.isPackaged` al construir las opciones de `BrowserWindow`. El
+  toolchain de desarrollo requiere ahora Node `>=22.12.0` (antes `>=20`),
+  coherente con lo que exige instalar `electron@43.3.0`.
 
 ### Pendiente
 
