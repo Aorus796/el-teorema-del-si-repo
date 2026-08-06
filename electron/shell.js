@@ -13,12 +13,21 @@
 
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import fs from "node:fs";
 
 const noopLogger = {
   info() {},
   warn() {},
   error() {},
 };
+
+// Nombre tecnico de la carpeta de datos de usuario. Literal hardcodeado a
+// proposito: NUNCA debe derivarse de app.getName(), app.name ni
+// productName, para que la ruta de userData/sessionData permanezca
+// estable entre builds aunque esos metadatos cambien (ver "Estrategia de
+// persistencia" en docs/production/WINDOWS_PACKAGING_DECISION.md).
+const USER_DATA_FOLDER_NAME = "el-teorema-del-si";
+const SESSION_DATA_FOLDER_NAME = "chromium";
 
 /**
  * Decide si deben abrirse las DevTools según el estado de empaquetado
@@ -99,6 +108,84 @@ export function resolveIndexHtmlPath({ moduleUrl, projectRoot } = {}) {
   }
 
   return path.join(root, "builds", "browser", "index.html");
+}
+
+/**
+ * Calcula, de forma pura, las rutas absolutas de `userData` y
+ * `sessionData` a partir de un `appDataPath` inyectado (nunca
+ * `process.cwd()`, siempre `app.getPath("appData")` en el llamador real).
+ * `sessionData` es siempre una subcarpeta de `userData`.
+ *
+ * @param {string} appDataPath
+ * @returns {{ userDataPath: string, sessionDataPath: string }}
+ */
+export function computeUserDataPaths(appDataPath) {
+  const userDataPath = path.join(appDataPath, USER_DATA_FOLDER_NAME);
+  const sessionDataPath = path.join(userDataPath, SESSION_DATA_FOLDER_NAME);
+  return { userDataPath, sessionDataPath };
+}
+
+/**
+ * Aplica la politica de persistencia de `userData`/`sessionData`: crea
+ * ambos directorios de forma recursiva (con la funcion `mkdir` sincrona
+ * inyectada) y luego fija ambas rutas en el `appLike` inyectado
+ * mediante `setPath`, en ese orden exacto (ambos `mkdir` antes que
+ * cualquier `setPath`).
+ *
+ * Fail-closed y no destructiva: si `mkdir` lanza para cualquiera de las
+ * dos rutas, se registra un error con el logger inyectado y la funcion
+ * se detiene sin llamar a `setPath` en absoluto (ni para la ruta que si
+ * se creo). Si `appLike.setPath` lanza para cualquiera de las dos
+ * llamadas, se registra un error y no se continua con la siguiente
+ * llamada a `setPath` pendiente. `mkdir` con `{ recursive: true }` sobre
+ * un directorio ya existente no toca su contenido (comportamiento nativo
+ * de Node), por lo que esta funcion nunca borra ni sobrescribe datos de
+ * una instalacion previa.
+ *
+ * Devuelve `true` si la politica se aplico por completo, `false` si
+ * fallo en cualquier punto, para que el llamador (`electron/main.js`)
+ * pueda cerrar la aplicacion de forma controlada con `app.exit(1)` antes
+ * de `app.requestSingleInstanceLock()`/`app.whenReady()`.
+ *
+ * @param {{
+ *   appDataPath: string,
+ *   mkdir?: (path: string, options: { recursive: boolean }) => unknown,
+ *   appLike: { setPath: (name: string, path: string) => void },
+ *   logger?: { error: Function },
+ * }} options
+ * @returns {boolean}
+ */
+export function applyPersistencePolicy({
+  appDataPath,
+  mkdir = fs.mkdirSync,
+  appLike,
+  logger = noopLogger,
+}) {
+  const { userDataPath, sessionDataPath } = computeUserDataPaths(appDataPath);
+
+  try {
+    mkdir(userDataPath, { recursive: true });
+    mkdir(sessionDataPath, { recursive: true });
+  } catch (error) {
+    logger.error(
+      "No se pudieron crear los directorios de persistencia (userData/sessionData):",
+      error
+    );
+    return false;
+  }
+
+  try {
+    appLike.setPath("userData", userDataPath);
+    appLike.setPath("sessionData", sessionDataPath);
+  } catch (error) {
+    logger.error(
+      "No se pudo fijar la ruta de persistencia (userData/sessionData) en la aplicacion:",
+      error
+    );
+    return false;
+  }
+
+  return true;
 }
 
 /**

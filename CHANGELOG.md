@@ -301,6 +301,34 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   ningún ejecutable, no se ha probado en Windows, y no incluye todavía
   `electron-builder`, IPC ni la política definitiva de persistencia de
   `userData`.
+- Integración real con `builds/browser` y persistencia del guardado
+  (`electron/shell.js`, `electron/main.js`), segunda tarea de
+  implementación de `docs/production/WINDOWS_PACKAGING_DECISION.md`:
+  `userData`/`sessionData` se fijan bajo
+  `<app.getPath("appData")>/el-teorema-del-si` (nombre hardcodeado, no
+  derivado de `appId`/`name`/`productName`) antes de
+  `app.requestSingleInstanceLock()`/`app.whenReady()`, creando ambos
+  directorios de forma recursiva y no destructiva antes de `app.setPath`,
+  con cierre controlado (`app.exit(1)`) si falla cualquier paso.
+  `tools/verifyBuildOutput.mjs` falla el build si detecta referencias
+  HTTP/HTTPS obligatorias, `file://`, rutas absolutas de sistema, recursos
+  inexistentes o fugas fuera de `builds/browser` en atributos/
+  declaraciones reales de carga. A raíz de un aviso real de Electron
+  detectado en la primera prueba manual, se añadió además una
+  Content-Security-Policy estricta en `index.html`
+  (`default-src`/`script-src`/`style-src`/`media-src`/`font-src`
+  limitados a `'self'`, `img-src` a `'self' data:`,
+  `connect-src`/`object-src`/`base-uri`/`form-action`/`frame-src`/`worker-src`/`manifest-src`
+  en `'none'`, sin `unsafe-eval` ni `unsafe-inline`), validada tanto en el
+  HTML fuente como en el build generado (`tools/contentSecurityPolicy.mjs`).
+  Validado con dos pruebas gráficas manuales reales en Windows (Node
+  portable, sin Docker): la ventana abre, el juego carga sin errores, el
+  guardado sobrevive a cerrar/reabrir Electron y a mover el repositorio a
+  otra ruta (confirmado que reside bajo `%APPDATA%\el-teorema-del-si`, no
+  junto al ejecutable), y la advertencia de CSP de Electron desapareció
+  sin bloquear ningún recurso. Sigue sin existir ningún ejecutable
+  empaquetado; `electron-builder`, el artefacto portable y la prueba en
+  una instalación Windows limpia siguen pendientes.
 
 ### Corregido
 

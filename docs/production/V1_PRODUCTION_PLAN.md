@@ -27,20 +27,31 @@ ejecutable para Windows probado en una instalación limpia. La tecnología de
 empaquetado ya está decidida y aprobada: Electron como runtime de
 escritorio y `electron-builder` como herramienta de empaquetado (ver
 [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). Electron
-ya está instalado y el shell mínimo con sus pruebas ya está implementado
-(ver la nota de avance justo debajo); `electron-builder`, la integración y
-persistencia reales, el empaquetado, el artefacto Windows y las pruebas
-manuales siguen siendo trabajo pendiente de la Fase 5.
+ya está instalado, el shell mínimo ya está implementado, y la integración
+real con `builds/browser` y la persistencia del guardado (`userData`/
+`sessionData` bajo el directorio de datos del usuario de Windows) ya están
+implementadas y validadas con pruebas gráficas manuales reales (ver la
+nota de avance justo debajo); `electron-builder`, la generación del
+artefacto portable, el workflow de Windows y la prueba en una instalación
+limpia siguen siendo trabajo pendiente de la Fase 5.
 
-> Nota de avance (tarea de implementación 1 de
+> Nota de avance (tareas de implementación 1 y 2 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
 > ya existe un shell mínimo de Electron (`electron/main.js`,
 > `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
-> `preload`, sin IPC y sin conexión todavía con `electron-builder`. No hay
-> ejecutable generado, no se ha probado en Windows y ningún criterio de
-> aceptación, checklist ni casilla de este documento se considera cumplido
-> por esto — el resto de la Fase 5 (empaquetado, persistencia, pruebas
-> manuales) sigue pendiente.
+> `preload`, sin IPC y sin conexión todavía con `electron-builder`.
+> `userData`/`sessionData` ya se fijan bajo `%APPDATA%\el-teorema-del-si`
+> antes de `app.whenReady()`, de forma fail-closed, y `index.html` ya
+> incluye una Content-Security-Policy estricta. Esto ya se validó con dos
+> pruebas gráficas manuales reales en Windows (Node portable, sin Docker):
+> la ventana abre, el juego carga, guarda y carga correctamente, y el
+> guardado sobrevive a cerrar/reabrir Electron y a mover el repositorio a
+> otra ruta. Sigue sin existir ningún ejecutable empaquetado (`.exe`), no
+> se ha probado en una instalación Windows limpia sin este entorno de
+> desarrollo, y ningún criterio de aceptación, checklist ni casilla de
+> este documento relacionado con el artefacto o el empaquetado se
+> considera cumplido por esto — el resto de la Fase 5 (empaquetado,
+> artefacto, prueba en instalación limpia) sigue pendiente.
 
 ## 2. Estado de partida desde `v0.5.0`
 
