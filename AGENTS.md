@@ -150,7 +150,7 @@ ya es una dependencia de desarrollo aprobada e introducida (tarea de
 implementación 1: shell mínimo en `electron/main.js` y `electron/shell.js`,
 con pruebas en `tests/electron/`, sin `preload` ni IPC). `electron-builder`
 sigue expresamente prohibido y no debe instalarse hasta que su propia tarea
-de implementación (tarea 3 de "Tareas de implementación futuras" en
+de implementación (tarea 3 de "Tareas de implementación" en
 `WINDOWS_PACKAGING_DECISION.md`) lo haga siguiendo ese documento. Debe
 conservarse siempre la versión web funcional.
 

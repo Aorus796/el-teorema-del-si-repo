@@ -33,7 +33,7 @@ persistencia reales, el empaquetado, el artefacto Windows y las pruebas
 manuales siguen siendo trabajo pendiente de la Fase 5.
 
 > Nota de avance (tarea de implementación 1 de
-> `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación futuras"):
+> `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
 > ya existe un shell mínimo de Electron (`electron/main.js`,
 > `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
 > `preload`, sin IPC y sin conexión todavía con `electron-builder`. No hay
