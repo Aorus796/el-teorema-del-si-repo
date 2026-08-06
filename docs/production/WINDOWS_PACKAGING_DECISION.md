@@ -2,13 +2,21 @@
 
 Este documento aprueba **qué** herramienta se usará para producir el
 ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
-(§1, §3, §11). No implementa el empaquetado. Ninguna dependencia de
-Electron ni de `electron-builder` se instala en este cambio: esta PR es
-exclusivamente documental.
+(§1, §3, §11), y registra el avance real de su implementación.
 
-La implementación se hará en tareas futuras separadas, siguiendo el flujo
-obligatorio de `CLAUDE.md` (planner → developer → qa → quality gate →
-reviewer → commit/PR) una a una, nunca combinadas.
+La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
+instalar ninguna dependencia. Desde entonces, la tarea de implementación 1
+("Shell Electron mínimo y pruebas del proceso principal", ver "Tareas de
+implementación futuras" más abajo) ya introdujo `electron` como
+devDependency exacta y creó `electron/main.js`, `electron/shell.js` y sus
+pruebas unitarias en `tests/electron/`. `electron-builder` todavía **no**
+está instalado. No existe todavía ningún ejecutable ni artefacto portable,
+y no se ha realizado ninguna prueba gráfica real de Electron — nada de eso
+se afirma en este documento. Las tareas 2 a 8 siguen pendientes.
+
+El resto de la implementación se hará en esas tareas futuras separadas,
+siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
+quality gate → reviewer → commit/PR) una a una, nunca combinadas.
 
 ## Objetivo
 
@@ -411,11 +419,14 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- La implementación misma: instalar `electron`/`electron-builder` como
-  dependencias, crear `electron/main.js`, configurar `electron-builder`,
-  el workflow de GitHub Actions en Windows, y las pruebas manuales en una
-  instalación limpia. Todo eso corresponde a las tareas de implementación
-  futuras listadas a continuación.
+- El resto de la implementación: instalar `electron-builder`, definir la
+  política definitiva de `userData`/`sessionData` y la persistencia real
+  entre builds, configurar `electron-builder`, el workflow de GitHub
+  Actions en Windows, generar el artefacto portable, y las pruebas
+  manuales en una instalación limpia. Todo eso corresponde a las tareas de
+  implementación futuras 2 a 8 listadas a continuación (instalar
+  `electron` y crear el shell mínimo con sus pruebas ya se completaron en
+  la tarea 1).
 
 ## Tareas de implementación futuras
 

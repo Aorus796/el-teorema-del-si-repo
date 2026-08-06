@@ -26,10 +26,11 @@ La entrega debe conservar una versión web funcional y proporcionar un
 ejecutable para Windows probado en una instalación limpia. La tecnología de
 empaquetado ya está decidida y aprobada: Electron como runtime de
 escritorio y `electron-builder` como herramienta de empaquetado (ver
-[`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). Esta
-decisión aprueba la herramienta, no su implementación: instalar las
-dependencias correspondientes, construir el shell de Electron y generar el
-ejecutable siguen siendo trabajo pendiente de la Fase 5.
+[`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). Electron
+ya está instalado y el shell mínimo con sus pruebas ya está implementado
+(ver la nota de avance justo debajo); `electron-builder`, la integración y
+persistencia reales, el empaquetado, el artefacto Windows y las pruebas
+manuales siguen siendo trabajo pendiente de la Fase 5.
 
 > Nota de avance (tarea de implementación 1 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación futuras"):
