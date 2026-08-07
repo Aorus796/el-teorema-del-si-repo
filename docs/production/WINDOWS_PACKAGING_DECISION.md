@@ -449,7 +449,7 @@ No forman parte de esta decisión ni de la primera candidata:
 ## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden. La tarea 1 ya está completada; las tareas 2 a 8 siguen
+este orden. Las tareas 1 y 2 ya están completadas; las tareas 3 a 8 siguen
 pendientes:
 
 1. [x] Shell Electron mínimo y pruebas del proceso principal —
@@ -462,7 +462,56 @@ pendientes:
    y `will-attach-webview`, instancia única, y cierre ante fallo de
    `loadFile`. No incluye integración de persistencia definitiva ni
    pruebas manuales en Windows — eso corresponde a las tareas 2, 6 y 7.
-2. Integración con `builds/browser` y persistencia del guardado.
+2. [x] Integración con `builds/browser` y persistencia del guardado —
+   `electron/shell.js` añade `computeUserDataPaths`/`applyPersistencePolicy`:
+   fija `userData` en `<app.getPath("appData")>/el-teorema-del-si` y
+   `sessionData` en `<userData>/chromium` (nombre técnico hardcodeado, no
+   derivado de `appId`/`name`/`productName`), creando ambos directorios de
+   forma recursiva antes de `app.setPath`, de forma síncrona y fail-closed
+   (si `mkdir`/`setPath` fallan, `electron/main.js` cierra con
+   `app.exit(1)` antes de `requestSingleInstanceLock`/`whenReady`, sin
+   ruta temporal ni borrado de datos existentes). La ventana sigue usando
+   la sesión persistente por defecto (sin `partition`). `win.loadFile`
+   sigue siendo el único mecanismo de carga de `builds/browser/index.html`
+   (sin protocolo personalizado ni servidor HTTP — la prueba manual
+   confirmó que `loadFile` carga los módulos ES, estilos, imágenes y audio
+   sin problema, así que no fue necesario evaluar una alternativa).
+   Añade además `tools/verifyBuildOutput.mjs` (falla el build si detecta
+   referencias HTTP/HTTPS obligatorias, `file://`, rutas absolutas de
+   sistema, recursos inexistentes o fugas fuera de `builds/browser`, solo
+   sobre atributos/declaraciones reales de carga) y, a raíz de un aviso
+   real de Electron detectado en la primera prueba manual ("Electron
+   Security Warning (Insecure Content-Security-Policy)"), una
+   Content-Security-Policy estricta en `index.html` (`tools/contentSecurityPolicy.mjs`
+   valida su contenido, tanto en el fuente como en el build generado):
+   `default-src`/`script-src`/`style-src`/`media-src`/`font-src` limitados
+   a `'self'`, `img-src` a `'self' data:`, y
+   `connect-src`/`object-src`/`base-uri`/`form-action`/`frame-src`/`worker-src`/`manifest-src`
+   en `'none'` — sin `'unsafe-eval'`, sin `'unsafe-inline'`, sin dominios
+   remotos ni comodines.
+
+   **Validado con dos pruebas gráficas manuales reales en Windows**
+   (Node portable v22.23.2, Electron 43.3.0, sin Docker): ventana abre,
+   título carga, nueva partida funciona, estilos/imágenes/canvas/audio
+   cargan sin errores de JavaScript ni recursos ausentes; guardar (K),
+   cerrar Electron por completo y volver a abrir conserva el guardado al
+   cargar (L); la app funciona igual lanzada desde otro directorio de
+   trabajo y desde una copia del repositorio en otra ruta del disco,
+   confirmando que el guardado depende de `appData` y no de la ubicación
+   del ejecutable/repositorio. Rutas reales confirmadas por el usuario:
+   `%APPDATA%\el-teorema-del-si` y `%APPDATA%\el-teorema-del-si\chromium`,
+   ambas existentes y con datos (Local Storage/leveldb localizado). La
+   segunda prueba, tras añadir la CSP, confirmó además que la advertencia
+   de Electron desapareció y que ningún recurso quedó bloqueado por la
+   nueva política.
+
+   **Sigue pendiente** (tareas 3, 6 y 7): la prueba de persistencia al
+   sustituir el ejecutable por una build posterior distinta que comparta
+   identidad y formato de guardado (solo tiene sentido una vez exista un
+   artefacto empaquetado real vía `electron-builder`); la prueba en una
+   instalación Windows limpia (sin este entorno de desarrollo); y el
+   funcionamiento completo sin conexión a Internet con un artefacto
+   empaquetado.
 3. Configuración de `electron-builder` y generación portable x64.
 4. GitHub Actions en Windows para generar el artefacto.
 5. Documentación e instrucciones de ejecución.

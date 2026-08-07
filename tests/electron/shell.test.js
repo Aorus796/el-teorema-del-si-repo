@@ -101,6 +101,13 @@ test("shouldOpenDevTools only opens DevTools when isPackaged is explicitly false
   assert.equal(shouldOpenDevTools(undefined), false);
 });
 
+test("buildSecureWindowOptions never sets webPreferences.partition, so the renderer uses the default (persistent) session", () => {
+  const options = buildSecureWindowOptions();
+
+  assert.equal(options.webPreferences.partition, undefined);
+  assert.ok(!("partition" in options.webPreferences));
+});
+
 test("resolveIndexHtmlPath resolves from a module URL located under <root>/electron/", () => {
   const fakeProjectRoot = path.resolve(path.sep, "fake-project");
   const fakeModuleUrl = pathToFileURL(
