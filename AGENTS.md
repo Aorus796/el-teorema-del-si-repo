@@ -148,11 +148,18 @@ herramienta de empaquetado (ver
 Esa decisión aprueba la herramienta, no su implementación completa. Electron
 ya es una dependencia de desarrollo aprobada e introducida (tarea de
 implementación 1: shell mínimo en `electron/main.js` y `electron/shell.js`,
-con pruebas en `tests/electron/`, sin `preload` ni IPC). `electron-builder`
-sigue expresamente prohibido y no debe instalarse hasta que su propia tarea
-de implementación (tarea 3 de "Tareas de implementación" en
-`WINDOWS_PACKAGING_DECISION.md`) lo haga siguiendo ese documento. Debe
-conservarse siempre la versión web funcional.
+con pruebas en `tests/electron/`, sin `preload` ni IPC), con persistencia
+real del guardado y una Content-Security-Policy estricta (tarea de
+implementación 2). `electron-builder@26.15.7` (exacta) ya forma parte de
+la arquitectura aprobada e introducida (tarea de implementación 3):
+configurado en `electron-builder.yml` exclusivamente para un target
+Windows **portable x64** (sin instalador NSIS/MSI/AppX, sin
+auto-actualizador, sin firma configurada), único target y arquitectura
+aprobados. Cualquier cambio de herramienta de empaquetado, de target
+(por ejemplo introducir un instalador), de arquitectura (`ia32`/`arm64`),
+o de estrategia de distribución en general, requiere una nueva aprobación
+explícita — no debe asumirse ni introducirse silenciosamente en una tarea
+posterior. Debe conservarse siempre la versión web funcional.
 
 La estabilidad y la finalización del recorrido principal tienen prioridad
 sobre cualquier mejora opcional. Prioriza completar, probar y pulir este
