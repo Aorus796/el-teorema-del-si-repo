@@ -1,0 +1,23 @@
+{
+  "appId": "com.elteoremadelsi.game",
+  "productName": "El Teorema del Si",
+  "asar": true,
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "electron/**",
+    "builds/browser/**",
+    "package.json"
+  ],
+  "win": {
+    "executableName": "ElTeoremaDelSi",
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "artifactName": "El-Teorema-del-Si-${version}-win-x64-portable.exe"
+}

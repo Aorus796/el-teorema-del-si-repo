@@ -449,7 +449,7 @@ No forman parte de esta decisión ni de la primera candidata:
 ## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden. Las tareas 1 y 2 ya están completadas; las tareas 3 a 8 siguen
+este orden. Las tareas 1 a 3 ya están completadas; las tareas 4 a 8 siguen
 pendientes:
 
 1. [x] Shell Electron mínimo y pruebas del proceso principal —
@@ -512,7 +512,82 @@ pendientes:
    instalación Windows limpia (sin este entorno de desarrollo); y el
    funcionamiento completo sin conexión a Internet con un artefacto
    empaquetado.
-3. Configuración de `electron-builder` y generación portable x64.
+3. [x] Configuración de `electron-builder` y generación portable x64 —
+   `electron-builder@26.15.7` (exacta) como devDependency;
+   `electron-builder.yml` (raíz del repo, escrito con sintaxis JSON válida
+   dentro de la extensión `.yml`, para que las pruebas lo lean con
+   `JSON.parse` nativo sin depender de una librería YAML no declarada):
+   `appId: com.elteoremadelsi.game`, `productName: El Teorema del Si`,
+   `win.executableName: ElTeoremaDelSi`, `asar: true` sin `asarUnpack`,
+   `directories.output: release`, target Windows único `portable` con
+   `arch` fijado exclusivamente a `x64` (sin `ia32`, sin `arm64`, sin
+   `nsis`/`msi`/`appx`/`squirrelWindows`), `artifactName:
+   El-Teorema-del-Si-${version}-win-x64-portable.exe`, sin `publish`, sin
+   configuración de actualizador automático, sin ninguna clave de firma de
+   código obligatoria (`forceCodeSigning`, certificados,
+   `signtoolOptions`/`azureSignOptions`) ni certificados configurados, y
+   una lista `files` restrictiva (`electron/**`, `builds/browser/**`,
+   `package.json` — nunca `tests/`, `docs/`, `tools/`, `.git`, `.claude`).
+   Script nuevo `desktop:package:win` (`npm run build && electron-builder
+   --win portable --x64 --publish never`, con target y arquitectura
+   explícitos en el propio comando); `desktop:dev` sin cambios.
+   `package.json` no tiene clave `build` (si la tuviera, `electron-builder.yml`
+   quedaría completamente ignorado en silencio por `electron-builder`).
+   `release/` ya estaba en `.gitignore` desde antes de esta tarea.
+
+   **Distinción importante sobre la arquitectura del artefacto** (verificada
+   por el responsable del producto en la prueba manual, no asumida): el
+   wrapper ejecutable portable exterior (el `.exe` que se distribuye) es un
+   binario PE **x86/IA32** — comportamiento estándar del mecanismo
+   autoextraíble `portable` de `electron-builder`/NSIS, que usa un
+   lanzador de 32 bits por compatibilidad, independientemente de la
+   arquitectura del contenido que empaqueta. La aplicación Electron real
+   (el *payload*, extraído en tiempo de ejecución a
+   `release/win-unpacked/ElTeoremaDelSi.exe` durante el proceso de build, y
+   descomprimido en un directorio temporal al ejecutar el portable) **sí es
+   x64/AMD64**, coherente con `arch: ["x64"]` en la configuración. Ningún
+   documento de este repositorio debe afirmar que el wrapper exterior del
+   `.exe` portable es x64 — solo el payload Electron lo es.
+
+   **Validado con una prueba manual real en Windows** generando y
+   ejecutando el artefacto (no simulada): `npm ci` + `npm run
+   desktop:package:win` con Node portable v22.23.2. Artefacto generado:
+   `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`, 99.600.401 bytes
+   (~94,99 MiB), SHA-256
+   `9AEBB4A0787416C6B41FE203AB42DC231D9D3A3C78ECCAC48A7794332C098463`. Sin
+   firma digital (`NotSigned`, tanto el wrapper como el payload — ningún
+   certificado configurado, comportamiento esperado para esta primera
+   candidata privada según `WINDOWS_PACKAGING_DECISION.md` §"Configuración
+   de seguridad"). Windows SmartScreen no mostró ninguna advertencia en
+   esta ejecución concreta (se registra el comportamiento observado, sin
+   asumir que ocurrirá igual en otra máquina). Sin MSI, sin MSIX, sin
+   AppX/AppXBundle, sin ningún instalador adicional en `release/` —
+   `release/win-unpacked/` es contenido intermedio del propio proceso de
+   empaquetado (staging), no un segundo artefacto de entrega.
+
+   Prueba funcional del portable: arranca por doble clic sin depender de
+   Node ni Docker, sin abrir consola/terminal adicional, solo la ventana
+   del juego; título carga; DevTools bloqueadas (F12 y Ctrl+Shift+I no
+   surten efecto, coherente con `app.isPackaged === true` y el
+   comportamiento fail-closed de la tarea 1); guardar (K), cerrar por
+   completo sin procesos huérfanos, reabrir y cargar (L) funcionan.
+   Copiando **únicamente** el `.exe` (sin ningún otro archivo del
+   repositorio) a una carpeta fuera del repositorio, arranca igual y el
+   mismo guardado sigue disponible, confirmando que la persistencia
+   (tarea 2) reside bajo `%APPDATA%\el-teorema-del-si` y
+   `%APPDATA%\el-teorema-del-si\chromium`, no junto al ejecutable. Probado
+   también desconectado de Internet desde esa copia externa: arranque,
+   título, renderizado, recursos locales y carga con `L` funcionan igual
+   sin conexión.
+
+   **Sigue pendiente** (tareas 4-8): GitHub Actions Windows para generar
+   el artefacto de forma reproducible en CI; documentación e instrucciones
+   de ejecución para terceros; prueba en una instalación Windows limpia
+   (distinta de esta máquina de desarrollo); prueba de actualización entre
+   al menos dos builds portables distintas que compartan identidad y
+   formato de guardado; recorrido completo del juego (no solo arranque/
+   guardado/carga) con el artefacto empaquetado; y el cierre documental de
+   la Fase 5. Este artefacto no se versiona en el repositorio.
 4. GitHub Actions en Windows para generar el artefacto.
 5. Documentación e instrucciones de ejecución.
 6. Prueba manual en una instalación Windows limpia.

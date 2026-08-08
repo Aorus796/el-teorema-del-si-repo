@@ -329,6 +329,33 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   sin bloquear ningún recurso. Sigue sin existir ningún ejecutable
   empaquetado; `electron-builder`, el artefacto portable y la prueba en
   una instalación Windows limpia siguen pendientes.
+- Configuración de `electron-builder@26.15.7` (exacta) y primera
+  candidata portable Windows x64, tercera tarea de implementación de
+  `docs/production/WINDOWS_PACKAGING_DECISION.md`: `electron-builder.yml`
+  fija `appId: com.elteoremadelsi.game`, `productName: El Teorema del Si`,
+  `win.executableName: ElTeoremaDelSi`, `asar: true` sin `asarUnpack`,
+  `directories.output: release`, target Windows único `portable` con
+  arquitectura única `x64` (sin `ia32`/`arm64`, sin `nsis`/`msi`/`appx`),
+  `artifactName: El-Teorema-del-Si-${version}-win-x64-portable.exe`, sin
+  `publish`, sin actualizador automático, sin firma configurada, y una
+  lista `files` restrictiva (`electron/**`, `builds/browser/**`,
+  `package.json`). Script nuevo `desktop:package:win`; `desktop:dev` sin
+  cambios. Validado generando y ejecutando manualmente el artefacto real
+  en Windows: `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`
+  (99.600.401 bytes, ~94,99 MiB, SHA-256
+  `9AEBB4A0787416C6B41FE203AB42DC231D9D3A3C78ECCAC48A7794332C098463`)
+  arranca sin depender de Node/Docker, sin consola adicional, con DevTools
+  bloqueadas, guarda y carga correctamente, sobrevive a cerrar/reabrir y a
+  copiar únicamente el `.exe` a otra ubicación fuera del repositorio
+  (confirmando persistencia bajo `%APPDATA%\el-teorema-del-si`), y
+  funciona sin conexión a Internet. Sin firma digital (`NotSigned`), sin
+  aviso de SmartScreen en esta prueba. El wrapper portable exterior es un
+  binario PE x86/IA32 (comportamiento estándar del mecanismo
+  autoextraíble de `electron-builder`/NSIS); el payload Electron real que
+  contiene es x64/AMD64. El artefacto no se versiona en el repositorio;
+  GitHub Actions Windows, la documentación de entrega, la prueba en una
+  instalación limpia distinta de esta máquina y el QA completo del
+  artefacto siguen pendientes.
 
 ### Corregido
 
