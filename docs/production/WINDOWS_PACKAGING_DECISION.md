@@ -5,14 +5,20 @@ ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
 (§1, §3, §11), y registra el avance real de su implementación.
 
 La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
-instalar ninguna dependencia. Desde entonces, la tarea de implementación 1
-("Shell Electron mínimo y pruebas del proceso principal", ver "Tareas de
-implementación" más abajo) ya introdujo `electron` como
-devDependency exacta y creó `electron/main.js`, `electron/shell.js` y sus
-pruebas unitarias en `tests/electron/`. `electron-builder` todavía **no**
-está instalado. No existe todavía ningún ejecutable ni artefacto portable,
-y no se ha realizado ninguna prueba gráfica real de Electron — nada de eso
-se afirma en este documento. Las tareas 2 a 8 siguen pendientes.
+instalar ninguna dependencia. Desde entonces, las tareas de implementación
+1 a 3 (ver "Tareas de implementación" más abajo) ya se completaron:
+`electron@43.3.0` y `electron-builder@26.15.7` (ambos exactos) están
+instalados; el shell mínimo (`electron/main.js`, `electron/shell.js`, con
+pruebas en `tests/electron/`), la integración real con `builds/browser`,
+la persistencia del guardado bajo `%APPDATA%\el-teorema-del-si` y una
+Content-Security-Policy estricta ya están implementadas; y ya existe una
+primera candidata portable Windows x64 real, generada y validada con una
+prueba gráfica manual real en Windows (no simulada — ver el detalle en la
+tarea 3). Las tareas 4 a 8 siguen pendientes: GitHub Actions Windows,
+documentación de entrega, prueba en una instalación Windows limpia,
+prueba de actualización entre builds compatibles, recorrido completo del
+juego con el artefacto, y el cierre documental de la Fase 5. Este
+documento no declara completada la Fase 5.
 
 El resto de la implementación se hará en esas tareas futuras separadas,
 siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
@@ -257,18 +263,24 @@ distribución — esta decisión no cubre ese escenario.
 
 ## Construcción local en Windows
 
-Prevista (a implementar en tareas futuras), sin necesitar Docker para este
-paso específico ya que `electron-builder` produce artefactos nativos de
-Windows:
+Implementada y ya ejecutada con éxito en la tarea de implementación 3
+(ver más abajo), sin necesitar Docker para este paso específico ya que
+`electron-builder` produce artefactos nativos de Windows:
 
 ```powershell
-npm run build            # genera builds/browser (ya existente hoy)
-npm run package:win      # futuro script: electron-builder --win portable
+npm run build                 # genera builds/browser
+npm run desktop:package:win   # npm run build && electron-builder --win portable --x64 --publish never
 ```
 
-El script `package:win` es un nombre provisional que deberá confirmarse en
-la tarea de configuración de `electron-builder` (tarea de implementación
-3, ver más abajo); no se añade a `package.json` en este cambio documental.
+`npm run desktop:package:win` ejecuta primero `npm run build` y luego
+genera el target `portable` Windows x64 configurado en
+`electron-builder.yml`, con salida en `release/` (no versionado — ver
+`.gitignore`). Ya se ejecutó con éxito en la máquina de desarrollo del
+responsable del producto, generando
+`El-Teorema-del-Si-0.5.0-win-x64-portable.exe` (ver la evidencia completa
+en la tarea 3, más abajo). Queda pendiente reproducir esta misma
+construcción en una instalación Windows limpia (tarea 6) y de forma
+automatizada vía GitHub Actions (tarea 4).
 
 ## Construcción futura mediante GitHub Actions
 
@@ -314,32 +326,72 @@ El ejecutable se considera aceptable cuando:
 - queda registrado el nombre de archivo, el tamaño y el hash SHA-256 del
   artefacto concreto que se probó.
 
-**Ninguno de estos criterios está validado todavía.** Este documento
-aprueba la herramienta y el enfoque, no certifica que el ejecutable ya
-exista, funcione o haya sido probado.
+**Ya verificados con la primera candidata real, en la tarea de
+implementación 3** (ver el detalle completo ahí): se inicia mediante
+doble clic; no necesita Node.js ni Docker instalados; funciona sin
+conexión a Internet (comprobación básica de arranque y carga, no el
+recorrido completo); no abre consola/terminal adicional; guardar y
+cargar funcionan; conserva la partida tras cerrar y volver a abrir el
+ejecutable; conserva la partida al copiar únicamente el `.exe` a otro
+directorio fuera del repositorio; se probó ejecutándolo desde fuera del
+árbol de trabajo de Git; quedó registrado nombre de archivo, tamaño en
+bytes y hash SHA-256 del artefacto probado; las DevTools quedaron
+bloqueadas (coherente con `app.isPackaged === true`).
 
-## Pruebas manuales (previstas, no realizadas en este documento)
+**Siguen pendientes** (tareas 6 y 7): la prueba en una instalación
+Windows limpia, distinta de esta máquina de desarrollo; el reinicio de
+Windows como comprobación de persistencia, si sigue siendo un criterio
+exigido; la sustitución por una segunda build compatible (prueba de
+actualización entre al menos dos builds distintas); el recorrido completo
+del juego de principio a fin con el artefacto empaquetado; y el resto del
+QA completo sobre ese recorrido — audio, ausencia de respuestas 404, y
+ausencia de errores de JavaScript en consola durante el recorrido
+completo, según los criterios definitivos que se apliquen en esas tareas.
+Este documento no certifica que el ejecutable haya superado el conjunto
+completo de criterios de arriba, solo los explícitamente listados como
+verificados.
 
-Previstas para la tarea de implementación 6 y 7 (ver más abajo), sobre una
-instalación de Windows limpia y también sobre la máquina de desarrollo:
+## Pruebas manuales
 
-1. Copiar el artefacto portable a un directorio fuera del repositorio.
+La tarea de implementación 3 ya ejecutó una validación manual real (no
+simulada) de la primera candidata, cubriendo parcialmente esta lista sobre
+la máquina de desarrollo del responsable del producto — no sobre una
+instalación Windows limpia, que sigue siendo responsabilidad de la tarea
+6, ni con el recorrido exhaustivo (audio, ausencia de 404, errores de
+consola durante todo el juego) que exige la tarea 7:
+
+1. Copiar el artefacto portable a un directorio fuera del repositorio. —
+   **Hecho en la tarea 3** (se copió únicamente el `.exe`).
 2. Ejecutarlo con doble clic y confirmar que abre sin consola adicional ni
-   errores.
+   errores. — **Hecho parcialmente en la tarea 3**: doble clic y ausencia
+   de consola adicional confirmados; la comprobación exhaustiva de
+   ausencia de errores durante un recorrido completo queda para la tarea
+   7.
 3. Completar una partida nueva hasta el epílogo, confirmando audio,
-   ausencia de 404 y ausencia de errores de JavaScript.
+   ausencia de 404 y ausencia de errores de JavaScript. — **Pendiente**
+   (tarea 7); la tarea 3 solo confirmó título, guardado y carga, no un
+   recorrido completo.
 4. Guardar, cerrar el ejecutable y volver a abrirlo: confirmar que el
-   guardado persiste.
+   guardado persiste. — **Hecho en la tarea 3.**
 5. Mover el ejecutable a otro directorio y repetir la comprobación de
-   persistencia.
-6. Reiniciar Windows y repetir la comprobación de persistencia.
+   persistencia. — **Hecho en la tarea 3** (copiando únicamente el `.exe`
+   a otra carpeta fuera del repositorio).
+6. Reiniciar Windows y repetir la comprobación de persistencia. —
+   **Pendiente** (no se reinició Windows durante la prueba de la tarea 3,
+   solo se cerró y volvió a abrir el ejecutable).
 7. Generar una segunda build compatible (misma identidad
    `appId`/`name`/`productName` y mismo formato de guardado), sustituir el
    ejecutable de la primera por el de la segunda sin borrar el perfil de
    usuario, y confirmar que el guardado creado con la primera build sigue
-   disponible en la segunda.
-8. Desconectar la máquina de Internet y repetir el recorrido completo.
-9. Registrar nombre, tamaño y SHA-256 de cada artefacto probado.
+   disponible en la segunda. — **Pendiente** (solo existe una build
+   probada hasta ahora).
+8. Desconectar la máquina de Internet y repetir el recorrido completo. —
+   **Hecho parcialmente en la tarea 3**: se probó arranque, título,
+   renderizado y carga de partida sin conexión; el recorrido completo
+   exhaustivo sin conexión queda para la tarea 7.
+9. Registrar nombre, tamaño y SHA-256 de cada artefacto probado. —
+   **Hecho en la tarea 3** para el único artefacto generado hasta ahora
+   (ver la evidencia completa en "Tareas de implementación" → tarea 3).
 
 ## Riesgos
 
@@ -360,10 +412,13 @@ instalación de Windows limpia y también sobre la máquina de desarrollo:
   explícita, antes de desactivar sandbox — nunca como ajuste silencioso
   de la tarea de implementación.
 - La política de `userData`/`sessionData` (ver "Estrategia de
-  persistencia") no está probada todavía; si el comportamiento por
-  defecto de Electron resulta inestable entre builds o entre ejecuciones,
-  la tarea de implementación correspondiente debe fijar y documentar una
-  ruta explícita antes de darla por cerrada.
+  persistencia") ya está implementada con una ruta explícita bajo
+  `%APPDATA%` (no la ruta por defecto de Electron) y ya se demostró
+  estable entre cierres/reaperturas y al mover el ejecutable portable a
+  otra ubicación (tareas 2 y 3). Sigue sin probarse su estabilidad tras
+  reiniciar Windows, y sigue sin probarse entre dos builds portables
+  distintas que compartan identidad (solo existe una build probada hasta
+  ahora) — ambas comprobaciones quedan pendientes de las tareas 6 y 7.
 - La ausencia de firma digital puede hacer que algunos entornos con
   políticas de seguridad estrictas bloqueen la ejecución por completo, no
   solo advertir; si esto ocurre en la instalación limpia de prueba, debe
@@ -437,14 +492,18 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- El resto de la implementación: instalar `electron-builder`, definir la
-  política definitiva de `userData`/`sessionData` y la persistencia real
-  entre builds, configurar `electron-builder`, el workflow de GitHub
-  Actions en Windows, generar el artefacto portable, y las pruebas
-  manuales en una instalación limpia. Todo eso corresponde a las tareas de
-  implementación futuras 2 a 8 listadas a continuación (instalar
-  `electron` y crear el shell mínimo con sus pruebas ya se completaron en
-  la tarea 1).
+- El resto de la implementación: el workflow de GitHub Actions en
+  Windows, la documentación e instrucciones de entrega, la prueba en una
+  instalación Windows limpia (distinta de la máquina de desarrollo), la
+  prueba de actualización entre al menos dos builds portables compatibles,
+  el QA completo del artefacto (recorrido de principio a fin, audio,
+  ausencia de 404, ausencia de errores de consola durante todo el
+  recorrido), y el cierre documental de la Fase 5. Todo eso corresponde a
+  las tareas de implementación futuras 4 a 8 listadas a continuación
+  (instalar `electron`/`electron-builder`, crear el shell mínimo con sus
+  pruebas, implementar la persistencia real y la CSP, y configurar
+  `electron-builder` para generar una primera candidata portable ya se
+  completaron en las tareas 1 a 3).
 
 ## Tareas de implementación
 
