@@ -16,10 +16,12 @@
     "check": "npm run test && npm run build",
     "test:e2e": "playwright test",
     "verify": "npm run check && npm run test:e2e",
-    "desktop:dev": "npm run build && electron ."
+    "desktop:dev": "npm run build && electron .",
+    "desktop:package:win": "npm run build && electron-builder --win portable --x64 --publish never"
   },
   "devDependencies": {
     "@playwright/test": "1.62.0",
-    "electron": "43.3.0"
+    "electron": "43.3.0",
+    "electron-builder": "26.15.7"
   }
 }

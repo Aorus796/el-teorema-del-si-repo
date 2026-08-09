@@ -5,14 +5,20 @@ ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
 (§1, §3, §11), y registra el avance real de su implementación.
 
 La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
-instalar ninguna dependencia. Desde entonces, la tarea de implementación 1
-("Shell Electron mínimo y pruebas del proceso principal", ver "Tareas de
-implementación" más abajo) ya introdujo `electron` como
-devDependency exacta y creó `electron/main.js`, `electron/shell.js` y sus
-pruebas unitarias en `tests/electron/`. `electron-builder` todavía **no**
-está instalado. No existe todavía ningún ejecutable ni artefacto portable,
-y no se ha realizado ninguna prueba gráfica real de Electron — nada de eso
-se afirma en este documento. Las tareas 2 a 8 siguen pendientes.
+instalar ninguna dependencia. Desde entonces, las tareas de implementación
+1 a 3 (ver "Tareas de implementación" más abajo) ya se completaron:
+`electron@43.3.0` y `electron-builder@26.15.7` (ambos exactos) están
+instalados; el shell mínimo (`electron/main.js`, `electron/shell.js`, con
+pruebas en `tests/electron/`), la integración real con `builds/browser`,
+la persistencia del guardado bajo `%APPDATA%\el-teorema-del-si` y una
+Content-Security-Policy estricta ya están implementadas; y ya existe una
+primera candidata portable Windows x64 real, generada y validada con una
+prueba gráfica manual real en Windows (no simulada — ver el detalle en la
+tarea 3). Las tareas 4 a 8 siguen pendientes: GitHub Actions Windows,
+documentación de entrega, prueba en una instalación Windows limpia,
+prueba de actualización entre builds compatibles, recorrido completo del
+juego con el artefacto, y el cierre documental de la Fase 5. Este
+documento no declara completada la Fase 5.
 
 El resto de la implementación se hará en esas tareas futuras separadas,
 siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
@@ -110,28 +116,31 @@ Requisitos de seguridad y comportamiento de la ventana principal:
   automáticamente ni quedan accesibles por atajo de teclado en el build
   empaquetado final. Pueden habilitarse solo en builds de desarrollo local
   del propio Electron, nunca en el artefacto que se prueba y distribuye.
-- **Perfil persistente y estable para `localStorage`:** la tarea de
-  implementación debe definir y documentar explícitamente, antes de
-  `app.ready`, la política de `userData`/`sessionData` que usará el
-  proceso (ver "Estrategia de persistencia" para el detalle completo).
-  No debe darse por supuesto que el comportamiento por defecto de
-  Electron ya resuelve esto sin verificación.
+- **Perfil persistente y estable para `localStorage`:** implementado en
+  la tarea 2 con una ruta explícita de `userData`/`sessionData`, fijada
+  antes de `app.whenReady()` (ver "Estrategia de persistencia" para la
+  decisión completa) — no se usa el comportamiento por defecto de
+  Electron.
 - **Cierre normal de la aplicación en Windows:** cerrar la ventana
   principal termina el proceso de forma limpia, sin dejar procesos
   huérfanos.
 - **Instancia única cuando sea razonable:** usar
   `app.requestSingleInstanceLock()` para evitar que el jugador abra el
   mismo guardado desde dos ventanas a la vez de forma accidental.
-- **Sin servidor HTTP embebido**, mientras `loadFile` sirva correctamente
-  los módulos ES y los recursos estáticos del build (a confirmar
-  empíricamente en la tarea de implementación, dado que la carga de
-  módulos ES vía `file://` tiene restricciones conocidas en Chromium).
-- **Protocolo local seguro únicamente si `loadFile` no resulta viable:**
-  si la tarea de implementación confirma que `loadFile` no puede cargar
-  de forma fiable los módulos ES o persistir correctamente, la alternativa
-  aprobada es registrar un protocolo personalizado (`app.protocol`) que
-  sirva los archivos del build local — nunca levantar un servidor HTTP de
-  propósito general ni cargar contenido remoto como solución alternativa.
+- **Sin servidor HTTP embebido:** `loadFile` ya fue validado empíricamente
+  en la tarea 2 — módulos ES, estilos, imágenes y audio cargaron
+  correctamente vía `file://`, confirmado con una prueba gráfica manual
+  real en Windows, no solo en teoría. No hizo falta ningún servidor HTTP.
+- **Protocolo local seguro: descartado como innecesario, no como trabajo
+  pendiente.** La restricción conocida de Chromium sobre módulos ES vía
+  `file://` no se manifestó en la práctica: `loadFile` bastó por completo,
+  tanto en el shell de desarrollo (tarea 2) como en el artefacto portable
+  empaquetado (tarea 3). El protocolo personalizado (`app.protocol`) queda
+  únicamente como contingencia arquitectónica si una regresión futura
+  **demostrada** hiciera inviable `loadFile` — no como una alternativa
+  todavía por evaluar. Si esa regresión llegara a ocurrir, nunca se
+  levantará un servidor HTTP de propósito general ni se cargará contenido
+  remoto como solución alternativa.
 
 ## Ubicación propuesta del código Electron
 
@@ -153,10 +162,12 @@ funcionando de forma idéntica servido como página web normal.
 `npm run build` (`tools/build.mjs`) sigue siendo la única fuente del
 contenido que se empaqueta. Electron no sustituye, envuelve ni modifica
 ese flujo: el proceso principal de Electron simplemente carga el
-resultado ya generado en `builds/browser`. El empaquetado (una tarea
-futura de `electron-builder`) ejecuta `npm run build` como paso previo y
+resultado ya generado en `builds/browser`. El empaquetado con
+`electron-builder` ya está implementado (tarea 3): el script
+`desktop:package:win` ejecuta `npm run build` como paso previo y
 empaqueta su salida junto con `electron/`, sin generar el contenido del
-juego por ningún otro medio.
+juego por ningún otro medio — confirmado con la generación real del
+artefacto portable (ver "Tareas de implementación" → tarea 3).
 
 Esto garantiza que la versión web servida directamente desde
 `builds/browser` (sin Electron) siga siendo, en todo momento, plenamente
@@ -167,8 +178,30 @@ funcional e idéntica en comportamiento a la que se empaqueta.
 El guardado seguirá usando `localStorage`, sin cambios en `src/` ni en
 `SAVE_FORMAT_VERSION` motivados por Electron.
 
-**Cómo funciona realmente la persistencia en Electron** (base técnica que
-la tarea de implementación debe respetar, no una garantía automática):
+**Decisión implementada** (tarea 2, ya en producción — ver
+`electron/shell.js` → `computeUserDataPaths`/`applyPersistencePolicy`):
+
+- `userData` = `<app.getPath("appData")>/el-teorema-del-si`.
+- `sessionData` = `<userData>/chromium`.
+- Se usa una **ruta explícita**, fijada con `app.setPath(...)` — **no**
+  la ruta por defecto de Electron.
+- Ambos directorios se crean de forma recursiva **antes** de llamar a
+  `app.setPath`.
+- El nombre `el-teorema-del-si` es un literal hardcodeado en el código:
+  la localización del guardado es **independiente** de `appId`, `name` o
+  `productName` — a diferencia del comportamiento por defecto de
+  Electron descrito más abajo, que sí depende de esos campos y que esta
+  aplicación no usa.
+
+Ya validado con pruebas gráficas manuales reales en Windows (tareas 2 y
+3): el guardado sobrevive a cerrar y volver a abrir el ejecutable, y a
+copiar únicamente el `.exe` portable a otra ubicación fuera del
+repositorio.
+
+**Cómo funciona el comportamiento por defecto de Electron** (contexto
+técnico que motivó la decisión de arriba — no describe el comportamiento
+actual de esta aplicación, que usa una ruta explícita en vez de la ruta
+por defecto):
 
 - Electron almacena `localStorage` dentro de los **datos de sesión de
   Chromium** (`session`/`partition`) del proceso, no en un archivo
@@ -181,32 +214,24 @@ la tarea de implementación debe respetar, no una garantía automática):
   de `electron-builder`.
 - El `appId` de `electron-builder` identifica el paquete ante Windows
   (instalador, actualizaciones, registro) — **no determina por sí solo**
-  la ruta de `userData`/`sessionData` de Electron. Asumir que fijar solo
-  el `appId` basta para conservar el guardado entre builds sería
-  incorrecto.
-- En consecuencia, `appId`, `name` y `productName` deben permanecer
-  **estables entre builds compatibles** (misma identidad de aplicación),
-  porque un cambio en cualquiera de ellos puede alterar la ruta por
-  defecto de `userData` y, con ella, hacer que una build posterior no
-  encuentre el guardado de una anterior.
-- La tarea de implementación **debe definir y documentar explícitamente**,
-  antes de `app.ready`, la política de `userData`/`sessionData` que usará
-  la aplicación (usar la ruta por defecto de forma consciente, o fijar una
-  ruta explícita) — no dejarlo implícito ni asumirlo por defecto sin
-  probarlo.
-- Puede usarse la ruta por defecto de Electron si esa tarea **demuestra
-  empíricamente** que es estable entre cierres/reaperturas, reinicios de
-  Windows, y entre builds compatibles — pero no debe darse por garantizada
-  sin esa prueba.
-- Si en su lugar se fija una ruta explícita con `app.setPath("userData",
-  ...)`, esa ruta debe estar **bajo el directorio de datos del usuario de
-  Windows** (por ejemplo, dentro de `%APPDATA%` o `%LOCALAPPDATA%`),
-  **nunca junto al ejecutable portable** — una ruta relativa al `.exe`
-  rompería la persistencia al moverlo y podría fallar por permisos según
-  dónde se ejecute. Si esa ruta no existe todavía, la tarea de
-  implementación debe crear el directorio **antes** de llamar a
-  `app.setPath`, ya que Electron no lo crea automáticamente en todos los
-  casos.
+  la ruta de `userData`/`sessionData` por defecto. Esta aplicación no
+  depende de ese comportamiento por defecto en absoluto, precisamente
+  porque fija la ruta explícita descrita arriba.
+
+`appId`, `name` y `productName` (`com.elteoremadelsi.game`, `El Teorema
+del Si` — ver tarea 3) deben permanecer **estables entre builds
+compatibles** por motivos de identidad de la aplicación empaquetada
+(instalador futuro, actualizaciones, registro ante Windows) — **no**
+porque la persistencia actual del guardado dependa de ellos: la ruta
+explícita de `userData`/`sessionData` es independiente de esos campos,
+como se explica arriba.
+
+Si en algún momento se decidiera dejar de fijar una ruta explícita y
+depender de la ruta por defecto de Electron, esa ruta debería estar
+**bajo el directorio de datos del usuario de Windows** (por ejemplo,
+dentro de `%APPDATA%` o `%LOCALAPPDATA%`), **nunca junto al ejecutable
+portable** — pero esto es contexto sobre la alternativa que se descartó
+al implementar la tarea 2, no una decisión todavía abierta.
 
 **Casos que deben verificarse explícitamente** (exigidos por el
 responsable del producto, ninguno se da por válido sin prueba manual
@@ -257,18 +282,24 @@ distribución — esta decisión no cubre ese escenario.
 
 ## Construcción local en Windows
 
-Prevista (a implementar en tareas futuras), sin necesitar Docker para este
-paso específico ya que `electron-builder` produce artefactos nativos de
-Windows:
+Implementada y ya ejecutada con éxito en la tarea de implementación 3
+(ver más abajo), sin necesitar Docker para este paso específico ya que
+`electron-builder` produce artefactos nativos de Windows:
 
 ```powershell
-npm run build            # genera builds/browser (ya existente hoy)
-npm run package:win      # futuro script: electron-builder --win portable
+npm run build                 # genera builds/browser
+npm run desktop:package:win   # npm run build && electron-builder --win portable --x64 --publish never
 ```
 
-El script `package:win` es un nombre provisional que deberá confirmarse en
-la tarea de configuración de `electron-builder` (tarea de implementación
-3, ver más abajo); no se añade a `package.json` en este cambio documental.
+`npm run desktop:package:win` ejecuta primero `npm run build` y luego
+genera el target `portable` Windows x64 configurado en
+`electron-builder.yml`, con salida en `release/` (no versionado — ver
+`.gitignore`). Ya se ejecutó con éxito en la máquina de desarrollo del
+responsable del producto, generando
+`El-Teorema-del-Si-0.5.0-win-x64-portable.exe` (ver la evidencia completa
+en la tarea 3, más abajo). Queda pendiente reproducir esta misma
+construcción en una instalación Windows limpia (tarea 6) y de forma
+automatizada vía GitHub Actions (tarea 4).
 
 ## Construcción futura mediante GitHub Actions
 
@@ -284,7 +315,7 @@ workflow en este cambio documental. El job previsto:
 - publica el `.exe` portable como artefacto de la ejecución (por ejemplo
   con `actions/upload-artifact`), no como una release pública automática.
 
-## Criterios de aceptación (para las tareas de implementación futuras)
+## Criterios de aceptación
 
 El ejecutable se considera aceptable cuando:
 
@@ -314,32 +345,72 @@ El ejecutable se considera aceptable cuando:
 - queda registrado el nombre de archivo, el tamaño y el hash SHA-256 del
   artefacto concreto que se probó.
 
-**Ninguno de estos criterios está validado todavía.** Este documento
-aprueba la herramienta y el enfoque, no certifica que el ejecutable ya
-exista, funcione o haya sido probado.
+**Ya verificados con la primera candidata real, en la tarea de
+implementación 3** (ver el detalle completo ahí): se inicia mediante
+doble clic; no necesita Node.js ni Docker instalados; funciona sin
+conexión a Internet (comprobación básica de arranque y carga, no el
+recorrido completo); no abre consola/terminal adicional; guardar y
+cargar funcionan; conserva la partida tras cerrar y volver a abrir el
+ejecutable; conserva la partida al copiar únicamente el `.exe` a otro
+directorio fuera del repositorio; se probó ejecutándolo desde fuera del
+árbol de trabajo de Git; quedó registrado nombre de archivo, tamaño en
+bytes y hash SHA-256 del artefacto probado; las DevTools quedaron
+bloqueadas (coherente con `app.isPackaged === true`).
 
-## Pruebas manuales (previstas, no realizadas en este documento)
+**Siguen pendientes** (tareas 6 y 7): la prueba en una instalación
+Windows limpia, distinta de esta máquina de desarrollo; el reinicio de
+Windows como comprobación de persistencia, si sigue siendo un criterio
+exigido; la sustitución por una segunda build compatible (prueba de
+actualización entre al menos dos builds distintas); el recorrido completo
+del juego de principio a fin con el artefacto empaquetado; y el resto del
+QA completo sobre ese recorrido — audio, ausencia de respuestas 404, y
+ausencia de errores de JavaScript en consola durante el recorrido
+completo, según los criterios definitivos que se apliquen en esas tareas.
+Este documento no certifica que el ejecutable haya superado el conjunto
+completo de criterios de arriba, solo los explícitamente listados como
+verificados.
 
-Previstas para la tarea de implementación 6 y 7 (ver más abajo), sobre una
-instalación de Windows limpia y también sobre la máquina de desarrollo:
+## Pruebas manuales
 
-1. Copiar el artefacto portable a un directorio fuera del repositorio.
+La tarea de implementación 3 ya ejecutó una validación manual real (no
+simulada) de la primera candidata, cubriendo parcialmente esta lista sobre
+la máquina de desarrollo del responsable del producto — no sobre una
+instalación Windows limpia, que sigue siendo responsabilidad de la tarea
+6, ni con el recorrido exhaustivo (audio, ausencia de 404, errores de
+consola durante todo el juego) que exige la tarea 7:
+
+1. Copiar el artefacto portable a un directorio fuera del repositorio. —
+   **Hecho en la tarea 3** (se copió únicamente el `.exe`).
 2. Ejecutarlo con doble clic y confirmar que abre sin consola adicional ni
-   errores.
+   errores. — **Hecho parcialmente en la tarea 3**: doble clic y ausencia
+   de consola adicional confirmados; la comprobación exhaustiva de
+   ausencia de errores durante un recorrido completo queda para la tarea
+   7.
 3. Completar una partida nueva hasta el epílogo, confirmando audio,
-   ausencia de 404 y ausencia de errores de JavaScript.
+   ausencia de 404 y ausencia de errores de JavaScript. — **Pendiente**
+   (tarea 7); la tarea 3 solo confirmó título, guardado y carga, no un
+   recorrido completo.
 4. Guardar, cerrar el ejecutable y volver a abrirlo: confirmar que el
-   guardado persiste.
+   guardado persiste. — **Hecho en la tarea 3.**
 5. Mover el ejecutable a otro directorio y repetir la comprobación de
-   persistencia.
-6. Reiniciar Windows y repetir la comprobación de persistencia.
+   persistencia. — **Hecho en la tarea 3** (copiando únicamente el `.exe`
+   a otra carpeta fuera del repositorio).
+6. Reiniciar Windows y repetir la comprobación de persistencia. —
+   **Pendiente** (no se reinició Windows durante la prueba de la tarea 3,
+   solo se cerró y volvió a abrir el ejecutable).
 7. Generar una segunda build compatible (misma identidad
    `appId`/`name`/`productName` y mismo formato de guardado), sustituir el
    ejecutable de la primera por el de la segunda sin borrar el perfil de
    usuario, y confirmar que el guardado creado con la primera build sigue
-   disponible en la segunda.
-8. Desconectar la máquina de Internet y repetir el recorrido completo.
-9. Registrar nombre, tamaño y SHA-256 de cada artefacto probado.
+   disponible en la segunda. — **Pendiente** (solo existe una build
+   probada hasta ahora).
+8. Desconectar la máquina de Internet y repetir el recorrido completo. —
+   **Hecho parcialmente en la tarea 3**: se probó arranque, título,
+   renderizado y carga de partida sin conexión; el recorrido completo
+   exhaustivo sin conexión queda para la tarea 7.
+9. Registrar nombre, tamaño y SHA-256 de cada artefacto probado. —
+   **Hecho en la tarea 3** para el único artefacto generado hasta ahora
+   (ver la evidencia completa en "Tareas de implementación" → tarea 3).
 
 ## Riesgos
 
@@ -347,11 +418,15 @@ instalación de Windows limpia y también sobre la máquina de desarrollo:
   tamaño del artefacto frente a una alternativa como Tauri; se acepta como
   compensación por menor riesgo de build (ver "Razones para elegir
   Electron frente a Tauri").
-- La carga de módulos ES mediante `file://` puede tener restricciones en
-  Chromium que obliguen a usar un protocolo personalizado en lugar de
-  `loadFile` directo; la sección "Arquitectura prevista" ya prevé esta
-  alternativa como plan de contingencia, no como sorpresa a resolver
-  ad hoc.
+- La carga de módulos ES mediante `file://` podía tener restricciones en
+  Chromium que obligaran a usar un protocolo personalizado en lugar de
+  `loadFile` directo — este fue un riesgo identificado al aprobar la
+  decisión. La tarea 2 lo cerró para la implementación actual: `loadFile`
+  se validó empíricamente y funcionó sin problema, tanto en desarrollo
+  como en el artefacto empaquetado (tarea 3). Este riesgo solo se
+  reabriría ante una regresión futura **demostrada**, según el plan de
+  contingencia ya descrito en "Arquitectura prevista" — no es una
+  incertidumbre abierta hoy.
 - `sandbox: true` en el renderer del juego podría resultar incompatible
   con alguna API que un `preload` futuro termine necesitando (no con
   nada del proceso principal, que no está sujeto al sandbox del
@@ -360,10 +435,13 @@ instalación de Windows limpia y también sobre la máquina de desarrollo:
   explícita, antes de desactivar sandbox — nunca como ajuste silencioso
   de la tarea de implementación.
 - La política de `userData`/`sessionData` (ver "Estrategia de
-  persistencia") no está probada todavía; si el comportamiento por
-  defecto de Electron resulta inestable entre builds o entre ejecuciones,
-  la tarea de implementación correspondiente debe fijar y documentar una
-  ruta explícita antes de darla por cerrada.
+  persistencia") ya está implementada con una ruta explícita bajo
+  `%APPDATA%` (no la ruta por defecto de Electron) y ya se demostró
+  estable entre cierres/reaperturas y al mover el ejecutable portable a
+  otra ubicación (tareas 2 y 3). Sigue sin probarse su estabilidad tras
+  reiniciar Windows, y sigue sin probarse entre dos builds portables
+  distintas que compartan identidad (solo existe una build probada hasta
+  ahora) — ambas comprobaciones quedan pendientes de las tareas 6 y 7.
 - La ausencia de firma digital puede hacer que algunos entornos con
   políticas de seguridad estrictas bloqueen la ejecución por completo, no
   solo advertir; si esto ocurre en la instalación limpia de prueba, debe
@@ -405,7 +483,7 @@ puede decidir unilateralmente eliminar el entregable Windows como forma de
 se aprobó por primera vez (PR #34, exclusivamente documental), la tarea 1
 ya instaló `electron@43.3.0` como devDependency y ya creó `electron/main.js`,
 `electron/shell.js` y `tests/electron/`. Detener una tarea de
-implementación *futura* (2 a 8) ante un problema no exige revertir
+implementación *futura* (4 a 8) ante un problema no exige revertir
 automáticamente ese shell ya existente: el primer paso sigue siendo
 detenerse y reabrir formalmente la decisión de herramienta en
 `docs/production/V1_PRODUCTION_PLAN.md` §11, evaluando una alternativa —
@@ -437,19 +515,23 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- El resto de la implementación: instalar `electron-builder`, definir la
-  política definitiva de `userData`/`sessionData` y la persistencia real
-  entre builds, configurar `electron-builder`, el workflow de GitHub
-  Actions en Windows, generar el artefacto portable, y las pruebas
-  manuales en una instalación limpia. Todo eso corresponde a las tareas de
-  implementación futuras 2 a 8 listadas a continuación (instalar
-  `electron` y crear el shell mínimo con sus pruebas ya se completaron en
-  la tarea 1).
+- El resto de la implementación: el workflow de GitHub Actions en
+  Windows, la documentación e instrucciones de entrega, la prueba en una
+  instalación Windows limpia (distinta de la máquina de desarrollo), la
+  prueba de actualización entre al menos dos builds portables compatibles,
+  el QA completo del artefacto (recorrido de principio a fin, audio,
+  ausencia de 404, ausencia de errores de consola durante todo el
+  recorrido), y el cierre documental de la Fase 5. Todo eso corresponde a
+  las tareas de implementación futuras 4 a 8 listadas a continuación
+  (instalar `electron`/`electron-builder`, crear el shell mínimo con sus
+  pruebas, implementar la persistencia real y la CSP, y configurar
+  `electron-builder` para generar una primera candidata portable ya se
+  completaron en las tareas 1 a 3).
 
 ## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden. Las tareas 1 y 2 ya están completadas; las tareas 3 a 8 siguen
+este orden. Las tareas 1 a 3 ya están completadas; las tareas 4 a 8 siguen
 pendientes:
 
 1. [x] Shell Electron mínimo y pruebas del proceso principal —
@@ -505,14 +587,94 @@ pendientes:
    de Electron desapareció y que ningún recurso quedó bloqueado por la
    nueva política.
 
-   **Sigue pendiente** (tareas 3, 6 y 7): la prueba de persistencia al
-   sustituir el ejecutable por una build posterior distinta que comparta
-   identidad y formato de guardado (solo tiene sentido una vez exista un
-   artefacto empaquetado real vía `electron-builder`); la prueba en una
-   instalación Windows limpia (sin este entorno de desarrollo); y el
-   funcionamiento completo sin conexión a Internet con un artefacto
-   empaquetado.
-3. Configuración de `electron-builder` y generación portable x64.
+   La existencia de un primer artefacto empaquetado real ya está
+   demostrada, y su funcionamiento offline **básico** (arranque, título,
+   carga de partida) también — ambos confirmados en la tarea 3. **Sigue
+   pendiente ahora**: la persistencia del guardado al sustituir el
+   ejecutable por una **segunda** build portable distinta que comparta
+   identidad y formato de guardado (solo existe una build probada hasta
+   ahora); el reinicio de Windows como comprobación de persistencia, si
+   sigue siendo un criterio exigido; la prueba en una instalación Windows
+   limpia (distinta de esta máquina de desarrollo); y el recorrido/QA
+   completo correspondiente a las tareas 6 y 7 — este documento no declara
+   probado el recorrido offline completo del juego, solo el arranque y la
+   carga básica sin conexión.
+3. [x] Configuración de `electron-builder` y generación portable x64 —
+   `electron-builder@26.15.7` (exacta) como devDependency;
+   `electron-builder.yml` (raíz del repo, escrito con sintaxis JSON válida
+   dentro de la extensión `.yml`, para que las pruebas lo lean con
+   `JSON.parse` nativo sin depender de una librería YAML no declarada):
+   `appId: com.elteoremadelsi.game`, `productName: El Teorema del Si`,
+   `win.executableName: ElTeoremaDelSi`, `asar: true` sin `asarUnpack`,
+   `directories.output: release`, target Windows único `portable` con
+   `arch` fijado exclusivamente a `x64` (sin `ia32`, sin `arm64`, sin
+   `nsis`/`msi`/`appx`/`squirrelWindows`), `artifactName:
+   El-Teorema-del-Si-${version}-win-x64-portable.exe`, sin `publish`, sin
+   configuración de actualizador automático, sin ninguna clave de firma de
+   código obligatoria (`forceCodeSigning`, certificados,
+   `signtoolOptions`/`azureSignOptions`) ni certificados configurados, y
+   una lista `files` restrictiva (`electron/**`, `builds/browser/**`,
+   `package.json` — nunca `tests/`, `docs/`, `tools/`, `.git`, `.claude`).
+   Script nuevo `desktop:package:win` (`npm run build && electron-builder
+   --win portable --x64 --publish never`, con target y arquitectura
+   explícitos en el propio comando); `desktop:dev` sin cambios.
+   `package.json` no tiene clave `build` (si la tuviera, `electron-builder.yml`
+   quedaría completamente ignorado en silencio por `electron-builder`).
+   `release/` ya estaba en `.gitignore` desde antes de esta tarea.
+
+   **Distinción importante sobre la arquitectura del artefacto** (verificada
+   por el responsable del producto en la prueba manual, no asumida): el
+   wrapper ejecutable portable exterior (el `.exe` que se distribuye) es un
+   binario PE **x86/IA32** — comportamiento estándar del mecanismo
+   autoextraíble `portable` de `electron-builder`/NSIS, que usa un
+   lanzador de 32 bits por compatibilidad, independientemente de la
+   arquitectura del contenido que empaqueta. La aplicación Electron real
+   (el *payload*, extraído en tiempo de ejecución a
+   `release/win-unpacked/ElTeoremaDelSi.exe` durante el proceso de build, y
+   descomprimido en un directorio temporal al ejecutar el portable) **sí es
+   x64/AMD64**, coherente con `arch: ["x64"]` en la configuración. Ningún
+   documento de este repositorio debe afirmar que el wrapper exterior del
+   `.exe` portable es x64 — solo el payload Electron lo es.
+
+   **Validado con una prueba manual real en Windows** generando y
+   ejecutando el artefacto (no simulada): `npm ci` + `npm run
+   desktop:package:win` con Node portable v22.23.2. Artefacto generado:
+   `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`, 99.600.401 bytes
+   (~94,99 MiB), SHA-256
+   `9AEBB4A0787416C6B41FE203AB42DC231D9D3A3C78ECCAC48A7794332C098463`. Sin
+   firma digital (`NotSigned`, tanto el wrapper como el payload — ningún
+   certificado configurado, comportamiento esperado para esta primera
+   candidata privada según `WINDOWS_PACKAGING_DECISION.md` §"Configuración
+   de seguridad"). Windows SmartScreen no mostró ninguna advertencia en
+   esta ejecución concreta (se registra el comportamiento observado, sin
+   asumir que ocurrirá igual en otra máquina). Sin MSI, sin MSIX, sin
+   AppX/AppXBundle, sin ningún instalador adicional en `release/` —
+   `release/win-unpacked/` es contenido intermedio del propio proceso de
+   empaquetado (staging), no un segundo artefacto de entrega.
+
+   Prueba funcional del portable: arranca por doble clic sin depender de
+   Node ni Docker, sin abrir consola/terminal adicional, solo la ventana
+   del juego; título carga; DevTools bloqueadas (F12 y Ctrl+Shift+I no
+   surten efecto, coherente con `app.isPackaged === true` y el
+   comportamiento fail-closed de la tarea 1); guardar (K), cerrar por
+   completo sin procesos huérfanos, reabrir y cargar (L) funcionan.
+   Copiando **únicamente** el `.exe` (sin ningún otro archivo del
+   repositorio) a una carpeta fuera del repositorio, arranca igual y el
+   mismo guardado sigue disponible, confirmando que la persistencia
+   (tarea 2) reside bajo `%APPDATA%\el-teorema-del-si` y
+   `%APPDATA%\el-teorema-del-si\chromium`, no junto al ejecutable. Probado
+   también desconectado de Internet desde esa copia externa: arranque,
+   título, renderizado, recursos locales y carga con `L` funcionan igual
+   sin conexión.
+
+   **Sigue pendiente** (tareas 4-8): GitHub Actions Windows para generar
+   el artefacto de forma reproducible en CI; documentación e instrucciones
+   de ejecución para terceros; prueba en una instalación Windows limpia
+   (distinta de esta máquina de desarrollo); prueba de actualización entre
+   al menos dos builds portables distintas que compartan identidad y
+   formato de guardado; recorrido completo del juego (no solo arranque/
+   guardado/carga) con el artefacto empaquetado; y el cierre documental de
+   la Fase 5. Este artefacto no se versiona en el repositorio.
 4. GitHub Actions en Windows para generar el artefacto.
 5. Documentación e instrucciones de ejecución.
 6. Prueba manual en una instalación Windows limpia.

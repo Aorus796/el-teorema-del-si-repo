@@ -27,31 +27,46 @@ ejecutable para Windows probado en una instalación limpia. La tecnología de
 empaquetado ya está decidida y aprobada: Electron como runtime de
 escritorio y `electron-builder` como herramienta de empaquetado (ver
 [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). Electron
-ya está instalado, el shell mínimo ya está implementado, y la integración
-real con `builds/browser` y la persistencia del guardado (`userData`/
-`sessionData` bajo el directorio de datos del usuario de Windows) ya están
-implementadas y validadas con pruebas gráficas manuales reales (ver la
-nota de avance justo debajo); `electron-builder`, la generación del
-artefacto portable, el workflow de Windows y la prueba en una instalación
-limpia siguen siendo trabajo pendiente de la Fase 5.
+ya está instalado, el shell mínimo ya está implementado, la integración
+real con `builds/browser` y la persistencia del guardado ya están
+implementadas y validadas, y `electron-builder` ya está configurado y
+produjo una primera candidata portable Windows x64, ejecutada y validada
+manualmente (ver la nota de avance justo debajo); el workflow de GitHub
+Actions en Windows, la documentación de entrega, la prueba en una
+instalación limpia distinta de esta máquina de desarrollo y el QA completo
+del artefacto siguen siendo trabajo pendiente de la Fase 5.
 
-> Nota de avance (tareas de implementación 1 y 2 de
+> Nota de avance (tareas de implementación 1 a 3 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
 > ya existe un shell mínimo de Electron (`electron/main.js`,
 > `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
-> `preload`, sin IPC y sin conexión todavía con `electron-builder`.
-> `userData`/`sessionData` ya se fijan bajo `%APPDATA%\el-teorema-del-si`
-> antes de `app.whenReady()`, de forma fail-closed, y `index.html` ya
-> incluye una Content-Security-Policy estricta. Esto ya se validó con dos
-> pruebas gráficas manuales reales en Windows (Node portable, sin Docker):
-> la ventana abre, el juego carga, guarda y carga correctamente, y el
-> guardado sobrevive a cerrar/reabrir Electron y a mover el repositorio a
-> otra ruta. Sigue sin existir ningún ejecutable empaquetado (`.exe`), no
-> se ha probado en una instalación Windows limpia sin este entorno de
-> desarrollo, y ningún criterio de aceptación, checklist ni casilla de
-> este documento relacionado con el artefacto o el empaquetado se
-> considera cumplido por esto — el resto de la Fase 5 (empaquetado,
-> artefacto, prueba en instalación limpia) sigue pendiente.
+> `preload`, sin IPC. `userData`/`sessionData` ya se fijan bajo
+> `%APPDATA%\el-teorema-del-si` antes de `app.whenReady()`, de forma
+> fail-closed, y `index.html` ya incluye una Content-Security-Policy
+> estricta. `electron-builder@26.15.7` ya está configurado
+> (`electron-builder.yml`: target único `portable`, arquitectura única
+> `x64`, ASAR activado sin `asarUnpack`, sin instalador, sin
+> actualizador, sin firma configurada) y ya generó una primera candidata
+> real: `El-Teorema-del-Si-0.5.0-win-x64-portable.exe` (~94,99 MiB,
+> SHA-256 `9AEBB4A0787416C6B41FE203AB42DC231D9D3A3C78ECCAC48A7794332C098463`).
+> Validado con pruebas gráficas manuales reales en Windows (Node
+> portable, sin Docker): la ventana abre sin depender de Node/Docker,
+> DevTools bloqueadas, guarda y carga correctamente, el guardado
+> sobrevive a cerrar/reabrir y a copiar únicamente el `.exe` (sin el
+> repositorio) a otra ubicación, y la aplicación funciona sin conexión a
+> Internet. El wrapper portable exterior es un binario PE x86/IA32
+> (comportamiento estándar del mecanismo autoextraíble de
+> `electron-builder`/NSIS); el payload Electron real que contiene sí es
+> x64/AMD64, coherente con la configuración. Sin firma digital
+> (`NotSigned`), sin aviso de SmartScreen observado en esta prueba
+> concreta. No se ha probado en una instalación Windows limpia distinta
+> de esta máquina de desarrollo, no existe todavía generación
+> reproducible vía GitHub Actions, y ningún criterio de aceptación,
+> checklist ni casilla de este documento relacionado con la entrega final
+> se considera cumplido por esto — el resto de la Fase 5 (CI de Windows,
+> documentación de entrega, instalación limpia, QA completo del
+> artefacto) sigue pendiente. El artefacto no se versiona en el
+> repositorio (`release/` está en `.gitignore`).
 
 ## 2. Estado de partida desde `v0.5.0`
 
