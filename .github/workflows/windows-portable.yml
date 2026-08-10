@@ -1,0 +1,124 @@
+name: Windows portable
+
+# Este workflow es independiente de ci.yml (que corre en ubuntu-latest y
+# cubre test/build/e2e web). Aqui solo se genera y valida el artefacto
+# portable Windows x64 descrito en docs/production/WINDOWS_PACKAGING_DECISION.md
+# (tarea 4). No publica ninguna release: solo sube el .exe como artefacto de
+# la propia ejecucion.
+on:
+  pull_request:
+    # Filtrado por paths para no gastar runners Windows (mas lentos y caros
+    # que los Linux de ci.yml) en PRs que no tocan nada relevante para el
+    # empaquetado ni para el juego que se empaqueta.
+    paths:
+      - "electron/**"
+      - "electron-builder.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "src/**"
+      - "index.html"
+      - "tools/build.mjs"
+      - ".github/workflows/windows-portable.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-portable-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    # windows-latest se actualiza automaticamente por GitHub con parches del
+    # sistema y de las herramientas preinstaladas, lo cual es comodo pero
+    # sacrifica reproducibilidad estricta frente a fijar una version concreta
+    # (por ejemplo windows-2022). Se elige windows-latest de forma consciente
+    # porque este workflow no depende de ninguna herramienta preinstalada
+    # sensible a version (solo Node, instalado explicitamente abajo) y
+    # electron-builder --win portable no requiere una toolchain nativa de
+    # compilacion; si en el futuro apareciera esa dependencia, debera
+    # reconsiderarse fijar una version exacta del runner.
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # Mismo criterio que ci.yml: satisface engines.node: ">=22.12.0".
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        # Solo pruebas unitarias, sin Playwright: npm run build (invocado
+        # dentro de desktop:package:win mas abajo) ya ejecuta
+        # assertContentSecurityPolicyShipped y verifyBuildOutput
+        # internamente via tools/build.mjs, asi que no se duplica el build
+        # aqui. npm run verify/test:e2e completos ya se cubren en ci.yml
+        # sobre Linux; repetirlos en Windows seria redundante.
+        run: npm run test
+
+      - name: Package Windows portable
+        run: npm run desktop:package:win
+
+      - name: Validate packaged artifact
+        id: validate
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $version = $pkg.version
+          $expectedName = "El-Teorema-del-Si-$version-win-x64-portable.exe"
+
+          # Get-ChildItem SIN -Recurse: con -Recurse tambien encontraria
+          # release/win-unpacked/ElTeoremaDelSi.exe (el payload intermedio de
+          # staging del propio empaquetado, documentado como esperado en
+          # WINDOWS_PACKAGING_DECISION.md), lo que haria fallar esta
+          # validacion de forma incorrecta creyendo que hay dos portables.
+          $portables = Get-ChildItem -Path release -Filter "*.exe" -File
+
+          if ($portables.Count -ne 1) {
+            Write-Error "Expected exactly 1 top-level .exe in release/, found $($portables.Count)"
+            exit 1
+          }
+
+          $portable = $portables[0]
+
+          if ($portable.Name -ne $expectedName) {
+            Write-Error "Expected artifact named '$expectedName', found '$($portable.Name)'"
+            exit 1
+          }
+
+          if ($portable.Length -eq 0) {
+            Write-Error "Artifact '$($portable.Name)' is empty (0 bytes)"
+            exit 1
+          }
+
+          # -Include solo filtra de forma fiable cuando -Path termina en un
+          # comodin (o con -Recurse); "release\*" mantiene el alcance de
+          # nivel superior sin recursion, igual que el listado de arriba.
+          $forbiddenInstallers = Get-ChildItem -Path "release\*" -Include "*.msi", "*.msix", "*.appx", "*.appxbundle" -File
+          if ($forbiddenInstallers.Count -gt 0) {
+            Write-Error "Found forbidden installer artifact(s) in release/: $($forbiddenInstallers.Name -join ', ')"
+            exit 1
+          }
+
+          $hash = Get-FileHash -Path $portable.FullName -Algorithm SHA256
+          $sizeInMiB = [math]::Round($portable.Length / 1MB, 2)
+
+          Write-Output "Artifact name: $($portable.Name)"
+          Write-Output "Artifact size: $($portable.Length) bytes ($sizeInMiB MiB)"
+          Write-Output "Artifact SHA-256: $($hash.Hash)"
+
+          echo "exe_path=$($portable.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Upload portable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: el-teorema-del-si-windows-x64-portable
+          path: ${{ steps.validate.outputs.exe_path }}
+          if-no-files-found: error
