@@ -32,13 +32,16 @@ real con `builds/browser` y la persistencia del guardado ya están
 implementadas y validadas, `electron-builder` ya está configurado con una
 primera candidata portable Windows x64, ya existe generación reproducible
 de ese portable mediante GitHub Actions en Windows (validada con dos
-ejecuciones reales y un artifact de CI descargado y ejecutado), y ya
-existe una guía operativa completa para obtenerlo, verificarlo, ejecutarlo
-y construirlo localmente (ver la nota de avance justo debajo); la prueba
-en una instalación limpia distinta de esta máquina de desarrollo y el QA
-completo del artefacto siguen siendo trabajo pendiente de la Fase 5.
+ejecuciones reales y un artifact de CI descargado y ejecutado), ya existe
+una guía operativa completa para obtenerlo, verificarlo, ejecutarlo y
+construirlo localmente, y ya se validó manualmente ese mismo artifact en
+una instalación Windows limpia concreta, distinta de las máquinas de
+desarrollo, incluida la persistencia tras un reinicio real de Windows (ver
+la nota de avance justo debajo); la prueba de compatibilidad entre al
+menos dos builds portables distintas y el QA completo del artefacto siguen
+siendo trabajo pendiente de la Fase 5.
 
-> Nota de avance (tareas de implementación 1 a 5 de
+> Nota de avance (tareas de implementación 1 a 6 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
 > ya existe un shell mínimo de Electron (`electron/main.js`,
 > `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
@@ -62,7 +65,16 @@ completo del artefacto siguen siendo trabajo pendiente de la Fase 5.
 > x64/AMD64, coherente con la configuración. Sin firma digital
 > (`NotSigned`), sin aviso de SmartScreen observado en esta prueba
 > concreta. La prueba en una instalación Windows limpia distinta de esta
-> máquina de desarrollo sigue pendiente. La generación reproducible del
+> máquina de desarrollo ya se completó (tarea 6): en una segunda máquina
+> física, con el mismo artifact validado por CI, incluyendo persistencia
+> del perfil (`userData`/`sessionData`) y del guardado tras un reinicio
+> real de Windows (ver el detalle completo en
+> [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
+> Esa validación cubre una única instalación concreta, no todas las
+> versiones y ediciones posibles de Windows, y no sustituye el QA
+> completo del artefacto ni la prueba de compatibilidad entre dos builds
+> distintas, que siguen correspondiendo a la tarea 7. La generación
+> reproducible del
 > portable vía GitHub Actions ya existe: un workflow Windows separado
 > (`.github/workflows/windows-portable.yml`) genera el mismo portable de
 > forma automatizada en cada ejecución. Validado con dos ejecuciones
@@ -85,8 +97,8 @@ completo del artefacto siguen siendo trabajo pendiente de la Fase 5.
 > Internet, que **no** sustituye el recorrido offline completo ni el QA
 > exhaustivo de la tarea 7. Ningún criterio de aceptación, checklist ni
 > casilla de este documento relacionado con la entrega final se considera
-> cumplido por esto — el resto de la Fase 5 (instalación limpia, QA
-> completo del artefacto) sigue pendiente, y esta nota **no** declara
+> cumplido por esto — el resto de la Fase 5 (compatibilidad entre builds,
+> QA completo del artefacto) sigue pendiente, y esta nota **no** declara
 > completada la Fase 5. El artefacto no se versiona en el repositorio
 > (`release/` está en `.gitignore`). También ya existe
 > [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md), la guía
@@ -130,13 +142,17 @@ etiquetas Git al comenzar cada fase.
   [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). La
   implementación del shell, la persistencia, la CSP, la configuración de
   `electron-builder`, la primera candidata portable real, su generación
-  reproducible vía GitHub Actions, y la guía operativa de uso/entrega
-  (`WINDOWS_PORTABLE_GUIDE.md`) ya están completas y validadas. Sigue
-  pendiente, como mínimo: la prueba en una instalación Windows limpia
-  distinta de la máquina de desarrollo; la persistencia/compatibilidad
-  entre dos builds portables compatibles distintas; el QA completo del
-  artefacto según las tareas 6 y 7 de `WINDOWS_PACKAGING_DECISION.md`; y
-  el cierre final correspondiente).
+  reproducible vía GitHub Actions, la guía operativa de uso/entrega
+  (`WINDOWS_PORTABLE_GUIDE.md`), y la prueba manual en una instalación
+  Windows limpia concreta —distinta de la máquina de desarrollo, con
+  persistencia del perfil y del guardado demostrada tras un reinicio real
+  de Windows— ya están completas y validadas (ver
+  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
+  Esta casilla no se marca como cumplida todavía: sigue pendiente, como
+  mínimo, la persistencia/compatibilidad entre dos builds portables
+  compatibles distintas y el QA completo del artefacto según la tarea 7
+  de `WINDOWS_PACKAGING_DECISION.md`, y el cierre final correspondiente
+  (tarea 8).
 - [ ] Ejecutar QA completo sobre web, guardados y ejecutable.
 
 El `README.md` conserva información histórica desactualizada y no debe usarse
@@ -833,9 +849,13 @@ el 2 de agosto:
   dependencias ya están incorporadas y el shell, la persistencia, la CSP,
   la configuración de `electron-builder` y una primera candidata portable
   real ya están implementados y validados, incluida su generación
-  reproducible vía GitHub Actions — la prueba en una instalación Windows
-  limpia, la persistencia entre dos builds compatibles y el QA completo
-  del artefacto siguen pendientes de las tareas de Fase 5.
+  reproducible vía GitHub Actions y la prueba manual en una instalación
+  Windows limpia concreta, con persistencia demostrada tras un reinicio
+  real (tarea 6) — la persistencia entre dos builds compatibles y el QA
+  completo del artefacto siguen pendientes de las tareas de Fase 5 (tarea
+  7), y el cierre documental de la Fase 5 sigue pendiente (tarea 8). Esta
+  casilla marca la decisión de herramienta como cerrada, no el conjunto
+  completo de la implementación de Fase 5.
 - [ ] **Pipeline mínimo de pruebas de interfaz:** definir qué flujos se
   automatizan y cuáles se registran manualmente sin introducir dependencias
   no aprobadas.

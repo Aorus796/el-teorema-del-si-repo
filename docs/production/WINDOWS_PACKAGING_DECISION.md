@@ -6,7 +6,7 @@ ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
 
 La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
 instalar ninguna dependencia. Desde entonces, las tareas de implementación
-1 a 5 (ver "Tareas de implementación" más abajo) ya se completaron:
+1 a 6 (ver "Tareas de implementación" más abajo) ya se completaron:
 `electron@43.3.0` y `electron-builder@26.15.7` (ambos exactos) están
 instalados; el shell mínimo (`electron/main.js`, `electron/shell.js`, con
 pruebas en `tests/electron/`), la integración real con `builds/browser`,
@@ -20,10 +20,15 @@ dos ejecuciones reales cuyo artifact fue descargado y ejecutado con éxito
 (ver el detalle completo en la tarea 4); y ya existe una guía operativa
 completa, [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md), para
 obtener, verificar y ejecutar el portable, y para construirlo localmente
-(tarea 5). Las tareas 6 a 8 siguen pendientes: prueba en una instalación
-Windows limpia, prueba de actualización entre builds compatibles,
-recorrido completo del juego con el artefacto, y el cierre documental de
-la Fase 5. Este documento no declara completada la Fase 5.
+(tarea 5); y ya se validó manualmente el portable en una instalación
+Windows limpia, distinta del entorno de desarrollo, incluida la
+persistencia tras un reinicio real de Windows (tarea 6, ver el detalle
+completo en
+[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
+Las tareas 7 y 8 siguen pendientes: prueba de actualización entre builds
+compatibles, recorrido completo del juego con el artefacto, QA exhaustivo
+de guardado/audio/offline, y el cierre documental de la Fase 5. Este
+documento no declara completada la Fase 5.
 
 El resto de la implementación se hará en esas tareas futuras separadas,
 siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
@@ -303,8 +308,9 @@ genera el target `portable` Windows x64 configurado en
 responsable del producto, generando
 `El-Teorema-del-Si-0.5.0-win-x64-portable.exe` (ver la evidencia completa
 en la tarea 3, más abajo). Esta misma construcción ya se automatizó vía
-GitHub Actions (tarea 4, ver más abajo). Queda pendiente reproducirla en
-una instalación Windows limpia (tarea 6).
+GitHub Actions (tarea 4, ver más abajo), y el artifact resultante ya se
+validó manualmente en una instalación Windows limpia distinta del entorno
+de desarrollo (tarea 6, ver más abajo).
 
 ## Construcción mediante GitHub Actions
 
@@ -364,27 +370,33 @@ directorio fuera del repositorio; se probó ejecutándolo desde fuera del
 bytes y hash SHA-256 del artefacto probado; las DevTools quedaron
 bloqueadas (coherente con `app.isPackaged === true`).
 
-**Siguen pendientes** (tareas 6 y 7): la prueba en una instalación
-Windows limpia, distinta de esta máquina de desarrollo; el reinicio de
-Windows como comprobación de persistencia, si sigue siendo un criterio
-exigido; la sustitución por una segunda build compatible (prueba de
-actualización entre al menos dos builds distintas); el recorrido completo
-del juego de principio a fin con el artefacto empaquetado; y el resto del
-QA completo sobre ese recorrido — audio, ausencia de respuestas 404, y
-ausencia de errores de JavaScript en consola durante el recorrido
-completo, según los criterios definitivos que se apliquen en esas tareas.
-Este documento no certifica que el ejecutable haya superado el conjunto
-completo de criterios de arriba, solo los explícitamente listados como
-verificados.
+**Ya validado además en la tarea 6**, en una segunda máquina física
+distinta de esta máquina de desarrollo: la instalación en un Windows
+limpio y el reinicio real de Windows como comprobación de persistencia
+(ver el detalle completo en la tarea 6, más abajo, y en
+[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
+
+**Sigue pendiente** (tarea 7): la sustitución por una segunda build
+compatible (prueba de actualización entre al menos dos builds distintas);
+el recorrido completo del juego de principio a fin con el artefacto
+empaquetado; y el resto del QA completo sobre ese recorrido — audio,
+ausencia de respuestas 404, y ausencia de errores de JavaScript en consola
+durante el recorrido completo, según los criterios definitivos que se
+apliquen en esa tarea. Este documento no certifica que el ejecutable haya
+superado el conjunto completo de criterios de arriba, solo los
+explícitamente listados como verificados.
 
 ## Pruebas manuales
 
 La tarea de implementación 3 ya ejecutó una validación manual real (no
 simulada) de la primera candidata, cubriendo parcialmente esta lista sobre
 la máquina de desarrollo del responsable del producto — no sobre una
-instalación Windows limpia, que sigue siendo responsabilidad de la tarea
-6, ni con el recorrido exhaustivo (audio, ausencia de 404, errores de
-consola durante todo el juego) que exige la tarea 7:
+instalación Windows limpia; esa comprobación se completó posteriormente en
+la tarea 6, sobre una segunda máquina física distinta de la de desarrollo
+(ver el punto 6 más abajo y
+[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
+El recorrido exhaustivo (audio, ausencia de 404, errores de consola
+durante todo el juego) sigue pendiente de la tarea 7:
 
 1. Copiar el artefacto portable a un directorio fuera del repositorio. —
    **Hecho en la tarea 3** (se copió únicamente el `.exe`).
@@ -402,22 +414,38 @@ consola durante todo el juego) que exige la tarea 7:
 5. Mover el ejecutable a otro directorio y repetir la comprobación de
    persistencia. — **Hecho en la tarea 3** (copiando únicamente el `.exe`
    a otra carpeta fuera del repositorio).
-6. Reiniciar Windows y repetir la comprobación de persistencia. —
-   **Pendiente** (no se reinició Windows durante la prueba de la tarea 3,
-   solo se cerró y volvió a abrir el ejecutable).
+6. Reiniciar Windows y repetir la comprobación de persistencia. — **No se
+   hizo en la tarea 3** (solo se cerró y volvió a abrir el ejecutable, sin
+   reiniciar Windows). **Completado en la tarea 6**: reinicio real del
+   sistema operativo en una segunda máquina física, con el perfil
+   persistente (`userData`/`sessionData`) y el guardado disponibles tras
+   el reinicio, y carga (`L`) correcta de la partida guardada antes del
+   reinicio — PASS. Ver el detalle completo en
+   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 7. Generar una segunda build compatible (misma identidad
    `appId`/`name`/`productName` y mismo formato de guardado), sustituir el
    ejecutable de la primera por el de la segunda sin borrar el perfil de
    usuario, y confirmar que el guardado creado con la primera build sigue
-   disponible en la segunda. — **Pendiente** (solo existe una build
-   probada hasta ahora).
+   disponible en la segunda. — **Pendiente**. Existen dos outputs
+   distintos ya generados y probados individualmente (la candidata manual
+   de la tarea 3 y el artifact de CI de la tarea 4), pero eso no equivale
+   a esta prueba: la secuencia controlada de sustituir un ejecutable por
+   otro conservando el mismo perfil de usuario y confirmando que el
+   guardado de uno lo carga el otro todavía no se ha realizado.
 8. Desconectar la máquina de Internet y repetir el recorrido completo. —
    **Hecho parcialmente en la tarea 3**: se probó arranque, título,
    renderizado y carga de partida sin conexión; el recorrido completo
    exhaustivo sin conexión queda para la tarea 7.
 9. Registrar nombre, tamaño y SHA-256 de cada artefacto probado. —
-   **Hecho en la tarea 3** para el único artefacto generado hasta ahora
-   (ver la evidencia completa en "Tareas de implementación" → tarea 3).
+   **Hecho en la tarea 3** para la candidata generada manualmente (ver la
+   evidencia completa en "Tareas de implementación" → tarea 3); **hecho de
+   nuevo en la tarea 4** para el artifact generado por CI (run
+   `31369511579`); y **reutilizado sin cambios en la tarea 6**, que
+   registró y verificó exactamente ese mismo nombre, tamaño y SHA-256 del
+   artifact de CI en la segunda máquina física, sin generar ningún
+   artefacto nuevo. No se han alterado los hashes, tamaños ni identificadores
+   de ejecución (`run` de GitHub Actions) ya registrados en las tareas 3 y
+   4.
 
 ## Riesgos
 
@@ -445,15 +473,22 @@ consola durante todo el juego) que exige la tarea 7:
   persistencia") ya está implementada con una ruta explícita bajo
   `%APPDATA%` (no la ruta por defecto de Electron) y ya se demostró
   estable entre cierres/reaperturas y al mover el ejecutable portable a
-  otra ubicación (tareas 2 y 3). Sigue sin probarse su estabilidad tras
-  reiniciar Windows, y sigue sin probarse entre dos builds portables
-  distintas que compartan identidad (solo existe una build probada hasta
-  ahora) — ambas comprobaciones quedan pendientes de las tareas 6 y 7.
+  otra ubicación (tareas 2 y 3), y ya se demostró estable tras un
+  reinicio real de Windows en una segunda máquina física distinta de la
+  de desarrollo (tarea 6). Sigue sin probarse la sustitución explícita
+  entre dos builds portables distintas que compartan identidad,
+  conservando el mismo perfil de usuario (existen dos outputs ya
+  generados y probados por separado en las tareas 3 y 4, pero ninguno de
+  esos dos ciclos ejecutó esa secuencia de sustitución controlada) — esa
+  comprobación queda pendiente de la tarea 7.
 - La ausencia de firma digital puede hacer que algunos entornos con
   políticas de seguridad estrictas bloqueen la ejecución por completo, no
-  solo advertir; si esto ocurre en la instalación limpia de prueba, debe
-  registrarse como hallazgo de esa tarea, pudiendo requerir reconsiderar
-  la firma antes de lo previsto.
+  solo advertir. En la instalación limpia probada en la tarea 6,
+  SmartScreen no bloqueó ni advirtió — pero esa observación es válida
+  solo para esa máquina concreta, no para todas las políticas de
+  seguridad posibles; si un bloqueo así ocurre en una instalación futura,
+  debe registrarse como hallazgo, pudiendo requerir reconsiderar la firma
+  antes de lo previsto.
 - Introducir Electron añade una dependencia de desarrollo nueva y no
   trivial (tamaño de instalación, tiempo de `npm ci`); se acepta porque el
   alcance congelado de `v1.0.0` exige un ejecutable Windows y esta es la
@@ -490,7 +525,7 @@ puede decidir unilateralmente eliminar el entregable Windows como forma de
 se aprobó por primera vez (PR #34, exclusivamente documental), la tarea 1
 ya instaló `electron@43.3.0` como devDependency y ya creó `electron/main.js`,
 `electron/shell.js` y `tests/electron/`. Detener una tarea de
-implementación *futura* (6 a 8) ante un problema no exige revertir
+implementación *futura* (7 a 8) ante un problema no exige revertir
 automáticamente ese shell ya existente: el primer paso sigue siendo
 detenerse y reabrir formalmente la decisión de herramienta en
 `docs/production/V1_PRODUCTION_PLAN.md` §11, evaluando una alternativa —
@@ -522,23 +557,24 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- El resto de la implementación: la prueba en una instalación Windows
-  limpia (distinta de la máquina de desarrollo), la prueba de
-  actualización entre al menos dos builds portables compatibles, el QA
-  completo del artefacto (recorrido de principio a fin, audio, ausencia
-  de 404, ausencia de errores de consola durante todo el recorrido), y el
-  cierre documental de la Fase 5. Todo ese trabajo pendiente corresponde
-  a las tareas de implementación futuras 6 a 8 listadas a continuación.
-  En cambio, instalar `electron`/`electron-builder`, crear el shell
-  mínimo con sus pruebas, implementar la persistencia real y la CSP,
-  configurar `electron-builder` para generar una primera candidata
-  portable, automatizar esa generación vía GitHub Actions, y documentar
-  su uso operativo ya se completaron en las tareas 1 a 5.
+- El resto de la implementación: la prueba de actualización entre al
+  menos dos builds portables compatibles, y el QA completo del artefacto
+  (recorrido de principio a fin, audio, ausencia de 404, ausencia de
+  errores de consola durante todo el recorrido), y el cierre documental
+  de la Fase 5. Todo ese trabajo pendiente corresponde a las tareas de
+  implementación futuras 7 y 8 listadas a continuación. En cambio,
+  instalar `electron`/`electron-builder`, crear el shell mínimo con sus
+  pruebas, implementar la persistencia real y la CSP, configurar
+  `electron-builder` para generar una primera candidata portable,
+  automatizar esa generación vía GitHub Actions, documentar su uso
+  operativo, y validar esa candidata en una instalación Windows limpia
+  (distinta de la máquina de desarrollo), incluida la persistencia tras
+  un reinicio real, ya se completaron en las tareas 1 a 6.
 
 ## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden. Las tareas 1 a 5 ya están completadas; las tareas 6 a 8 siguen
+este orden. Las tareas 1 a 6 ya están completadas; las tareas 7 y 8 siguen
 pendientes:
 
 1. [x] Shell Electron mínimo y pruebas del proceso principal —
@@ -596,16 +632,18 @@ pendientes:
 
    La existencia de un primer artefacto empaquetado real ya está
    demostrada, y su funcionamiento offline **básico** (arranque, título,
-   carga de partida) también — ambos confirmados en la tarea 3. **Sigue
-   pendiente ahora**: la persistencia del guardado al sustituir el
-   ejecutable por una **segunda** build portable distinta que comparta
-   identidad y formato de guardado (solo existe una build probada hasta
-   ahora); el reinicio de Windows como comprobación de persistencia, si
-   sigue siendo un criterio exigido; la prueba en una instalación Windows
-   limpia (distinta de esta máquina de desarrollo); y el recorrido/QA
-   completo correspondiente a las tareas 6 y 7 — este documento no declara
-   probado el recorrido offline completo del juego, solo el arranque y la
-   carga básica sin conexión.
+   carga de partida) también — ambos confirmados en la tarea 3. La
+   persistencia del guardado en una instalación Windows limpia (distinta
+   de esta máquina de desarrollo), incluido el reinicio real de Windows,
+   ya se validó en la tarea 6. **Sigue pendiente ahora**: la persistencia
+   del guardado al sustituir el ejecutable por una **segunda** build
+   portable distinta que comparta identidad y formato de guardado (existen
+   dos outputs ya generados y probados por separado, en las tareas 3 y 4,
+   pero ninguno de esos ciclos ejecutó la secuencia de sustitución
+   controlada que exige esta comprobación); y el recorrido/QA completo
+   correspondiente a la tarea 7 — este documento no declara probado el
+   recorrido offline completo del juego, solo el arranque y la carga
+   básica sin conexión.
 3. [x] Configuración de `electron-builder` y generación portable x64 —
    `electron-builder@26.15.7` (exacta) como devDependency;
    `electron-builder.yml` (raíz del repo, escrito con sintaxis JSON válida
@@ -675,14 +713,15 @@ pendientes:
    sin conexión.
 
    La generación reproducible de este artefacto vía GitHub Actions ya se
-   completó en la tarea 4, y la documentación operativa para obtenerlo,
+   completó en la tarea 4, la documentación operativa para obtenerlo,
    verificarlo, ejecutarlo y construirlo ya se completó en la tarea 5
-   (ver ambas más abajo). **Sigue pendiente** (tareas 6-8): prueba en una
-   instalación Windows limpia (distinta de esta máquina de desarrollo);
-   prueba de actualización entre al menos dos builds portables distintas
-   que compartan identidad y formato de guardado; recorrido completo del
-   juego (no solo arranque/guardado/carga) con el artefacto empaquetado;
-   y el cierre documental de la Fase 5. Este
+   (ver ambas más abajo), y la prueba manual en una instalación Windows
+   limpia (distinta de esta máquina de desarrollo), incluida la
+   persistencia tras un reinicio real, ya se completó en la tarea 6. **Sigue
+   pendiente** (tareas 7-8): prueba de actualización entre al menos dos
+   builds portables distintas que compartan identidad y formato de
+   guardado; recorrido completo del juego (no solo arranque/guardado/carga)
+   con el artefacto empaquetado; y el cierre documental de la Fase 5. Este
    artefacto no se versiona en el repositorio.
 4. [x] GitHub Actions en Windows para generar el artefacto —
    `.github/workflows/windows-portable.yml` (nuevo, separado de `ci.yml`,
@@ -760,14 +799,16 @@ pendientes:
    ni el QA exhaustivo que exige la tarea 7.
 
    La documentación e instrucciones de entrega ya se completaron en la
-   tarea 5 (ver más abajo). **Sigue pendiente** (tareas 6-8): prueba en
-   una instalación Windows limpia (distinta de esta máquina de
-   desarrollo); prueba de persistencia entre al menos dos builds
-   portables distintas que compartan identidad y formato de guardado;
-   recorrido completo del juego con el artefacto empaquetado y el resto
-   del QA completo (audio, ausencia de 404, ausencia de errores de
-   consola durante todo el recorrido); y el cierre documental de la
-   Fase 5. Este documento no declara completada la Fase 5.
+   tarea 5, y la prueba manual en una instalación Windows limpia
+   (distinta de esta máquina de desarrollo), incluida la persistencia
+   tras un reinicio real, ya se completó en la tarea 6 (ver ambas más
+   abajo). **Sigue pendiente** (tareas 7-8): prueba de persistencia entre
+   al menos dos builds portables distintas que compartan identidad y
+   formato de guardado; recorrido completo del juego con el artefacto
+   empaquetado y el resto del QA completo (audio, ausencia de 404,
+   ausencia de errores de consola durante todo el recorrido); y el cierre
+   documental de la Fase 5. Este documento no declara completada la
+   Fase 5.
 5. [x] Documentación e instrucciones de ejecución —
    [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md) (nuevo): guía
    operativa en español, distinta de este documento de decisión, dirigida
@@ -794,7 +835,7 @@ pendientes:
    `release/` y qué no debe distribuirse nunca (`win-unpacked/`,
    `builder-effective-config.yaml`, código fuente, etc.); un
    procedimiento operativo de entrega de una candidata privada; un smoke
-   test mínimo explícitamente no equivalente al QA de las tareas 6-7; y
+   test mínimo explícitamente no equivalente al QA completo de la tarea 7; y
    un apartado de solución de problemas acotado a casos ya observados o
    directamente deducibles. `tests/docs/windows-portable-guide-policy.test.js`
    (nuevo, 8 pruebas) protege las invariantes mecánicas del documento:
@@ -802,15 +843,58 @@ pendientes:
    `npm run desktop:package:win`, se referencia el nombre lógico correcto
    del artifact y las rutas reales de persistencia, no se documenta
    ninguna publicación de GitHub Release, la candidata se documenta
-   siempre como no firmada, y las tareas 6-8 siguen listadas como
+   siempre como no firmada, y (tras la actualización de esta prueba en la
+   tarea 6, ver más abajo) las tareas 7-8 siguen listadas como
    pendientes.
 
    No se modificó ningún código, configuración de `electron-builder`, ni
    el workflow de GitHub Actions en esta tarea — es exclusivamente
-   documental. No se afirma en ningún punto que el portable ya se probó
-   en una instalación Windows limpia ni que superó el QA completo del
-   artefacto — ambas cosas siguen correspondiendo a las tareas 6 y 7.
-6. Prueba manual en una instalación Windows limpia.
+   documental. La prueba en una instalación Windows limpia ya se
+   completó en la tarea 6 (ver más abajo); el QA completo del artefacto
+   sigue correspondiendo a la tarea 7.
+6. [x] Prueba manual en una instalación Windows limpia —
+   ejecutada en una **segunda máquina física**, distinta del ordenador de
+   desarrollo (Windows 11 Pro 25H2, build 26200.8875, x64 — confirmado
+   con `Win32_OperatingSystem` y `winver`; el `ProductName` heredado del
+   registro mostraba "Windows 10 Pro" en esa máquina, un valor conocido
+   por no ser fiable en Windows 11 y que no se usa como fuente de
+   identificación). Se usó el mismo artifact ya validado en la tarea 4
+   (run de GitHub Actions `31369511579`), sin generar ningún ejecutable
+   nuevo: `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`, `99600399`
+   bytes, SHA-256
+   `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577` —
+   ambos coincidieron exactamente con lo registrado en la tarea 4.
+   Authenticode `NotSigned`. SmartScreen no apareció en esta ejecución
+   concreta (misma salvedad que en tareas anteriores: válido solo para
+   esta máquina, no una garantía general).
+
+   Validado: arranque sin Node.js ni npm instalados en la máquina, y con
+   Docker Desktop **instalado pero deliberadamente detenido** durante la
+   prueba (confirmado sin procesos de Docker en ejecución) — sin ninguna
+   dependencia en tiempo de ejecución hacia él; sin consola adicional;
+   DevTools bloqueadas (`F12`, `Ctrl+Shift+I`); nueva partida y creación
+   del perfil persistente bajo `%APPDATA%\el-teorema-del-si` y
+   `%APPDATA%\el-teorema-del-si\chromium`; guardar, cerrar sin procesos
+   huérfanos, y cargar tras reabrir; y un **reinicio real** del sistema
+   operativo de esa máquina, tras el cual el perfil persistente y el
+   guardado siguieron disponibles y la partida cargó correctamente. El
+   detalle completo, incluidos dos matices que deben leerse junto con
+   esta evidencia, está en
+   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md):
+   (1) no se registró `Test-Path` de `userData`/`sessionData` antes del
+   primer arranque — la ausencia previa del juego en esa máquina está
+   confirmada por el operador, no por una comprobación técnica previa
+   registrada; (2) Docker estaba instalado en la máquina, no ausente —
+   se detuvo deliberadamente antes de la prueba, lo que demuestra
+   ausencia de dependencia en tiempo de ejecución, no ausencia de
+   instalación.
+
+   **Sigue pendiente** (tareas 7-8): el recorrido completo del juego, el
+   QA exhaustivo de audio y funcionamiento offline, la prueba de
+   compatibilidad entre dos builds portables distintas, y el cierre
+   documental de la Fase 5. Esta tarea no valida todas las versiones y
+   ediciones posibles de Windows — solo la instalación concreta descrita
+   arriba.
 7. Prueba completa de guardado, carga, audio y funcionamiento offline.
 8. Cierre documental de la Fase 5.
 
