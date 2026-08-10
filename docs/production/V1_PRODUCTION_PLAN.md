@@ -60,12 +60,12 @@ completo del artefacto siguen siendo trabajo pendiente de la Fase 5.
 > `electron-builder`/NSIS); el payload Electron real que contiene sí es
 > x64/AMD64, coherente con la configuración. Sin firma digital
 > (`NotSigned`), sin aviso de SmartScreen observado en esta prueba
-> concreta. No se ha probado en una instalación Windows limpia distinta
-> de esta máquina de desarrollo, no existe todavía generación
-> reproducible vía GitHub Actions — desde ahora sí existe: un workflow
-> Windows separado (`.github/workflows/windows-portable.yml`) genera el
-> mismo portable de forma automatizada en cada ejecución. Validado con
-> dos ejecuciones reales en GitHub Actions Windows (no simuladas): la
+> concreta. La prueba en una instalación Windows limpia distinta de esta
+> máquina de desarrollo sigue pendiente. La generación reproducible del
+> portable vía GitHub Actions ya existe: un workflow Windows separado
+> (`.github/workflows/windows-portable.yml`) genera el mismo portable de
+> forma automatizada en cada ejecución. Validado con dos ejecuciones
+> reales en GitHub Actions Windows (no simuladas): la
 > primera detectó, por revisión humana de sus logs, un filtro de rutas
 > incompleto y el uso de `actions@v4` (runtime Node 20 deprecado por
 > GitHub); ambos se corrigieron y la segunda ejecución (job `package`:
@@ -123,9 +123,15 @@ etiquetas Git al comenzar cada fase.
 - [ ] Aplicar la personalización final.
 - [ ] Validar el empaquetado para Windows (herramienta ya aprobada:
   Electron + `electron-builder`, ver
-  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md);
-  implementación, artefacto y prueba en instalación limpia siguen
-  pendientes).
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). La
+  implementación del shell, la persistencia, la CSP, la configuración de
+  `electron-builder`, la primera candidata portable real y su generación
+  reproducible vía GitHub Actions ya están completas y validadas. Sigue
+  pendiente, como mínimo: la prueba en una instalación Windows limpia
+  distinta de la máquina de desarrollo; la persistencia/compatibilidad
+  entre dos builds portables compatibles distintas; el QA completo del
+  artefacto según las tareas 6 y 7 de `WINDOWS_PACKAGING_DECISION.md`; y
+  el cierre final correspondiente).
 - [ ] Ejecutar QA completo sobre web, guardados y ejecutable.
 
 El `README.md` conserva información histórica desactualizada y no debe usarse
@@ -818,9 +824,13 @@ el 2 de agosto:
   artefacto obligatorio: portable Windows x64, sin instalador ni firma
   digital en la primera candidata privada. Decisión completa, razones y
   criterios de validación en
-  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). La
-  incorporación real de las dependencias y la implementación del
-  ejecutable siguen pendientes de las tareas de Fase 5.
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). Las
+  dependencias ya están incorporadas y el shell, la persistencia, la CSP,
+  la configuración de `electron-builder` y una primera candidata portable
+  real ya están implementados y validados, incluida su generación
+  reproducible vía GitHub Actions — la prueba en una instalación Windows
+  limpia, la persistencia entre dos builds compatibles y el QA completo
+  del artefacto siguen pendientes de las tareas de Fase 5.
 - [ ] **Pipeline mínimo de pruebas de interfaz:** definir qué flujos se
   automatizan y cuáles se registran manualmente sin introducir dependencias
   no aprobadas.

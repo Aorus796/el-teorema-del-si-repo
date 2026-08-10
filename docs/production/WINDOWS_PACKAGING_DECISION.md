@@ -710,13 +710,14 @@ pendientes:
    exclusivamente al `.exe` resuelto, nunca `release/` completo).
    `tests/workflows/windows-portable-workflow-policy.test.js` (nuevo, 19
    pruebas) protege cada invariante leyendo el workflow como texto plano,
-   sin depender de ninguna librería YAML nueva. Las tres actions se
-   fijaron a `@v7` (no `@v4`) desde el primer commit de la tarea, tras
-   comprobar contra la API real de GitHub que `v7` es el major vigente de
+   sin depender de ninguna librería YAML nueva. El primer commit de la
+   tarea fijó las tres actions a `@v4`; tras la primera ejecución real
+   (ver más abajo), se actualizaron a `@v7` — comprobando esta vez contra
+   la API real de GitHub que `v7` es el major vigente de
    `actions/checkout`, `actions/setup-node` y `actions/upload-artifact`, y
-   que su `action.yml` en ese tag declara el runtime `node24` — evitando
-   que el workflow naciera dependiendo del mecanismo de compatibilidad
-   forzada de Node 20 que GitHub Actions ya deprecó.
+   que su `action.yml` en ese tag declara el runtime `node24` — para dejar
+   de depender del mecanismo de compatibilidad forzada de Node 20 que
+   GitHub Actions ya deprecó.
 
    **Validado con dos ejecuciones REALES en GitHub Actions Windows** (no
    simuladas): la primera (run `31365955708`, job `package`: `SUCCESS`)
