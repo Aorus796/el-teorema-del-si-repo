@@ -88,15 +88,19 @@ artifact — compara el hash que obtienes localmente con el que aparece en
 los logs de la ejecución concreta que descargaste, no con ningún valor
 fijo.
 
-**Importante**: builds distintas producen hashes SHA-256 distintos, aunque
-el código fuente empaquetado sea idéntico (metadatos de compilación,
-timestamps, etc. varían entre ejecuciones). No existe un "hash esperado"
-universal para una versión dada — el hash correcto es siempre el que el
-runner registró para *esa* ejecución concreta, nunca el de una ejecución
-anterior. Tampoco confundas este SHA-256 del `.exe` con ningún identificador
-o digest interno que la propia interfaz de GitHub pueda mostrar para el
-artifact comprimido — son cosas distintas; el que importa para la
-integridad del juego es el SHA-256 calculado sobre el `.exe` en sí.
+**Importante**: builds distintas **pueden** producir hashes SHA-256
+distintos aunque el código fuente empaquetado sea idéntico (metadatos de
+compilación, timestamps, etc. pueden variar entre ejecuciones) — dos
+builds byte a byte idénticas tendrían, naturalmente, el mismo hash. No
+asumas que una versión tiene un SHA-256 universal en ningún sentido: el
+hash correcto que hay que verificar es siempre el que el runner registró
+para *esa* ejecución concreta de GitHub Actions, comparado contra el
+`.exe` que descargaste de *ese mismo* run — nunca contra el de una
+ejecución anterior ni contra ningún valor asumido de antemano. Tampoco
+confundas este SHA-256 del `.exe` con ningún identificador o digest
+interno que la propia interfaz de GitHub pueda mostrar para el artifact
+comprimido — son cosas distintas; el que importa para la integridad del
+juego es el SHA-256 calculado sobre el `.exe` en sí.
 
 **Ejemplo histórico** (no es un hash esperado universal, es evidencia ya
 registrada de la validación de la tarea 4 de
@@ -233,10 +237,14 @@ El script `desktop:package:win` hace, en este orden:
    únicamente, sin `--publish`) para generar el `.exe` a partir de
    `builds/browser` y `electron/`.
 
-Docker **no** es un requisito para generar el portable — `electron-builder`
-necesita ejecutarse nativamente en Windows para producir un artefacto
-Windows. Docker solo se usa en este proyecto para los quality gates de
-desarrollo ya existentes (`docker compose run --rm game npm run check`,
+Docker **no** es un requisito para generar el portable. En este proyecto,
+el procedimiento aprobado y soportado para generar el portable Windows se
+ejecuta nativamente en Windows (igual que el workflow de GitHub Actions,
+que usa `runs-on: windows-latest`) — no se ha aprobado ni validado ningún
+cross-build desde Linux/Docker para este flujo, aunque `electron-builder`
+en general soporte otros escenarios de compilación cruzada. Docker solo
+se usa en este proyecto para los quality gates de desarrollo ya
+existentes (`docker compose run --rm game npm run check`,
 `docker compose run --rm playwright`), que son un paso distinto y no
 sustituyen esta construcción.
 

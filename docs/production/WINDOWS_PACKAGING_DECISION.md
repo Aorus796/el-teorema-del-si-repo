@@ -675,13 +675,14 @@ pendientes:
    sin conexión.
 
    La generación reproducible de este artefacto vía GitHub Actions ya se
-   completó en la tarea 4 (ver más abajo). **Sigue pendiente** (tareas
-   5-8): documentación e instrucciones de ejecución para terceros; prueba
-   en una instalación Windows limpia (distinta de esta máquina de
-   desarrollo); prueba de actualización entre al menos dos builds
-   portables distintas que compartan identidad y formato de guardado;
-   recorrido completo del juego (no solo arranque/guardado/carga) con el
-   artefacto empaquetado; y el cierre documental de la Fase 5. Este
+   completó en la tarea 4, y la documentación operativa para obtenerlo,
+   verificarlo, ejecutarlo y construirlo ya se completó en la tarea 5
+   (ver ambas más abajo). **Sigue pendiente** (tareas 6-8): prueba en una
+   instalación Windows limpia (distinta de esta máquina de desarrollo);
+   prueba de actualización entre al menos dos builds portables distintas
+   que compartan identidad y formato de guardado; recorrido completo del
+   juego (no solo arranque/guardado/carga) con el artefacto empaquetado;
+   y el cierre documental de la Fase 5. Este
    artefacto no se versiona en el repositorio.
 4. [x] GitHub Actions en Windows para generar el artefacto —
    `.github/workflows/windows-portable.yml` (nuevo, separado de `ci.yml`,
@@ -776,9 +777,11 @@ pendientes:
    Actions (localizando el artifact lógico
    `el-teorema-del-si-windows-x64-portable` y distinguiéndolo del `.exe`
    que contiene); verificar nombre, tamaño y SHA-256 con `Get-FileHash`
-   (documentando que cada build produce un hash distinto, sin fijar
-   ningún hash como "esperado" universal — el ejemplo histórico de la
-   tarea 4 queda marcado explícitamente como tal); ejecución del portable
+   (documentando que builds distintas pueden producir hashes distintos —
+   sin asumir un hash universal por versión, y comparando siempre contra
+   lo registrado por el mismo run de GitHub Actions; el ejemplo histórico
+   de la tarea 4 queda marcado explícitamente como tal); ejecución del
+   portable
    sin requerir Node/Docker/el repositorio; las rutas reales de guardado
    (`%APPDATA%\el-teorema-del-si`, `%APPDATA%\el-teorema-del-si\chromium`)
    y que mover/borrar el `.exe` no afecta al guardado; el estado
