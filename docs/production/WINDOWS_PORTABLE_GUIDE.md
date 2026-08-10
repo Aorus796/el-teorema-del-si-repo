@@ -165,11 +165,14 @@ Ten en cuenta:
 - Windows SmartScreen **puede** mostrar una advertencia ("Windows
   protegió su PC" / editor no reconocido) al ejecutar por primera vez un
   archivo sin firma ni reputación acumulada.
-- En las pruebas realizadas hasta ahora (tarea 3 y tarea 4 de
-  `WINDOWS_PACKAGING_DECISION.md`) SmartScreen **no apareció**. Esa
+- En las pruebas realizadas hasta ahora (tareas 3, 4 y 6 de
+  `WINDOWS_PACKAGING_DECISION.md`, esta última en una segunda máquina
+  física distinta de las de desarrollo) SmartScreen **no apareció**. Esa
   observación es válida únicamente para las máquinas donde se probó — no
   garantiza que no aparezca en otra máquina, con otra configuración de
-  SmartScreen, o en el futuro.
+  SmartScreen, o en el futuro. La candidata sigue `NotSigned`; esta
+  observación no es una garantía de que SmartScreen nunca vaya a
+  aparecer.
 - El `.exe` sin firma **no es, por eso, inseguro** — la ausencia de firma
   es una decisión ya documentada para esta primera candidata privada
   (ver `WINDOWS_PACKAGING_DECISION.md` → "Configuración de seguridad").

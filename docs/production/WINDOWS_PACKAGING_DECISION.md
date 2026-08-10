@@ -426,8 +426,12 @@ durante todo el juego) sigue pendiente de la tarea 7:
    `appId`/`name`/`productName` y mismo formato de guardado), sustituir el
    ejecutable de la primera por el de la segunda sin borrar el perfil de
    usuario, y confirmar que el guardado creado con la primera build sigue
-   disponible en la segunda. — **Pendiente** (solo existe una build
-   probada hasta ahora).
+   disponible en la segunda. — **Pendiente**. Existen dos outputs
+   distintos ya generados y probados individualmente (la candidata manual
+   de la tarea 3 y el artifact de CI de la tarea 4), pero eso no equivale
+   a esta prueba: la secuencia controlada de sustituir un ejecutable por
+   otro conservando el mismo perfil de usuario y confirmando que el
+   guardado de uno lo carga el otro todavía no se ha realizado.
 8. Desconectar la máquina de Internet y repetir el recorrido completo. —
    **Hecho parcialmente en la tarea 3**: se probó arranque, título,
    renderizado y carga de partida sin conexión; el recorrido completo
@@ -471,9 +475,12 @@ durante todo el juego) sigue pendiente de la tarea 7:
   estable entre cierres/reaperturas y al mover el ejecutable portable a
   otra ubicación (tareas 2 y 3), y ya se demostró estable tras un
   reinicio real de Windows en una segunda máquina física distinta de la
-  de desarrollo (tarea 6). Sigue sin probarse entre dos builds portables
-  distintas que compartan identidad (solo existe una build probada hasta
-  ahora) — esa comprobación queda pendiente de la tarea 7.
+  de desarrollo (tarea 6). Sigue sin probarse la sustitución explícita
+  entre dos builds portables distintas que compartan identidad,
+  conservando el mismo perfil de usuario (existen dos outputs ya
+  generados y probados por separado en las tareas 3 y 4, pero ninguno de
+  esos dos ciclos ejecutó esa secuencia de sustitución controlada) — esa
+  comprobación queda pendiente de la tarea 7.
 - La ausencia de firma digital puede hacer que algunos entornos con
   políticas de seguridad estrictas bloqueen la ejecución por completo, no
   solo advertir. En la instalación limpia probada en la tarea 6,
@@ -630,8 +637,10 @@ pendientes:
    de esta máquina de desarrollo), incluido el reinicio real de Windows,
    ya se validó en la tarea 6. **Sigue pendiente ahora**: la persistencia
    del guardado al sustituir el ejecutable por una **segunda** build
-   portable distinta que comparta identidad y formato de guardado (solo
-   existe una build probada hasta ahora); y el recorrido/QA completo
+   portable distinta que comparta identidad y formato de guardado (existen
+   dos outputs ya generados y probados por separado, en las tareas 3 y 4,
+   pero ninguno de esos ciclos ejecutó la secuencia de sustitución
+   controlada que exige esta comprobación); y el recorrido/QA completo
    correspondiente a la tarea 7 — este documento no declara probado el
    recorrido offline completo del juego, solo el arranque y la carga
    básica sin conexión.
