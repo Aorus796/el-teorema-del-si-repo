@@ -6,19 +6,22 @@ ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
 
 La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
 instalar ninguna dependencia. Desde entonces, las tareas de implementación
-1 a 3 (ver "Tareas de implementación" más abajo) ya se completaron:
+1 a 4 (ver "Tareas de implementación" más abajo) ya se completaron:
 `electron@43.3.0` y `electron-builder@26.15.7` (ambos exactos) están
 instalados; el shell mínimo (`electron/main.js`, `electron/shell.js`, con
 pruebas en `tests/electron/`), la integración real con `builds/browser`,
 la persistencia del guardado bajo `%APPDATA%\el-teorema-del-si` y una
-Content-Security-Policy estricta ya están implementadas; y ya existe una
+Content-Security-Policy estricta ya están implementadas; ya existe una
 primera candidata portable Windows x64 real, generada y validada con una
-prueba gráfica manual real en Windows (no simulada — ver el detalle en la
-tarea 3). Las tareas 4 a 8 siguen pendientes: GitHub Actions Windows,
-documentación de entrega, prueba en una instalación Windows limpia,
-prueba de actualización entre builds compatibles, recorrido completo del
-juego con el artefacto, y el cierre documental de la Fase 5. Este
-documento no declara completada la Fase 5.
+prueba gráfica manual real en Windows (no simulada); y un workflow de
+GitHub Actions (`.github/workflows/windows-portable.yml`) ya genera ese
+mismo portable de forma reproducible en un runner Windows, validado con
+dos ejecuciones reales cuyo artifact fue descargado y ejecutado con éxito
+(ver el detalle completo en la tarea 4). Las tareas 5 a 8 siguen
+pendientes: documentación de entrega, prueba en una instalación Windows
+limpia, prueba de actualización entre builds compatibles, recorrido
+completo del juego con el artefacto, y el cierre documental de la Fase 5.
+Este documento no declara completada la Fase 5.
 
 El resto de la implementación se hará en esas tareas futuras separadas,
 siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
@@ -297,23 +300,25 @@ genera el target `portable` Windows x64 configurado en
 `.gitignore`). Ya se ejecutó con éxito en la máquina de desarrollo del
 responsable del producto, generando
 `El-Teorema-del-Si-0.5.0-win-x64-portable.exe` (ver la evidencia completa
-en la tarea 3, más abajo). Queda pendiente reproducir esta misma
-construcción en una instalación Windows limpia (tarea 6) y de forma
-automatizada vía GitHub Actions (tarea 4).
+en la tarea 3, más abajo). Esta misma construcción ya se automatizó vía
+GitHub Actions (tarea 4, ver más abajo). Queda pendiente reproducirla en
+una instalación Windows limpia (tarea 6).
 
-## Construcción futura mediante GitHub Actions
+## Construcción mediante GitHub Actions
 
-Prevista como tarea de implementación separada (tarea 4 más abajo), como
-un job adicional en `.github/workflows/` — no se crea ni modifica ningún
-workflow en este cambio documental. El job previsto:
+Implementada en la tarea de implementación 4 (ver más abajo el detalle
+completo, incluida la evidencia de dos ejecuciones reales): un workflow
+separado, `.github/workflows/windows-portable.yml`, junto al `ci.yml`
+existente (que sigue corriendo en `ubuntu-latest` para test/build/e2e web,
+sin cambios). El job real:
 
-- se ejecuta en `runs-on: windows-latest` (el `ci.yml` existente corre en
-  `ubuntu-latest` y seguirá haciéndolo para test/build/e2e web, sin
-  cambios);
-- ejecuta `npm ci`, `npm run build` y el empaquetado con
-  `electron-builder`;
-- publica el `.exe` portable como artefacto de la ejecución (por ejemplo
-  con `actions/upload-artifact`), no como una release pública automática.
+- se ejecuta en `runs-on: windows-latest`;
+- ejecuta `npm ci`, pruebas unitarias, y el empaquetado con
+  `npm run desktop:package:win` (que a su vez ejecuta `npm run build` y
+  `electron-builder`);
+- valida de forma fail-closed el `.exe` generado antes de subirlo;
+- publica únicamente ese `.exe` como artefacto de la ejecución (vía
+  `actions/upload-artifact@v7`), no como una release pública automática.
 
 ## Criterios de aceptación
 
@@ -483,7 +488,7 @@ puede decidir unilateralmente eliminar el entregable Windows como forma de
 se aprobó por primera vez (PR #34, exclusivamente documental), la tarea 1
 ya instaló `electron@43.3.0` como devDependency y ya creó `electron/main.js`,
 `electron/shell.js` y `tests/electron/`. Detener una tarea de
-implementación *futura* (4 a 8) ante un problema no exige revertir
+implementación *futura* (5 a 8) ante un problema no exige revertir
 automáticamente ese shell ya existente: el primer paso sigue siendo
 detenerse y reabrir formalmente la decisión de herramienta en
 `docs/production/V1_PRODUCTION_PLAN.md` §11, evaluando una alternativa —
@@ -515,23 +520,23 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- El resto de la implementación: el workflow de GitHub Actions en
-  Windows, la documentación e instrucciones de entrega, la prueba en una
-  instalación Windows limpia (distinta de la máquina de desarrollo), la
-  prueba de actualización entre al menos dos builds portables compatibles,
-  el QA completo del artefacto (recorrido de principio a fin, audio,
-  ausencia de 404, ausencia de errores de consola durante todo el
-  recorrido), y el cierre documental de la Fase 5. Todo eso corresponde a
-  las tareas de implementación futuras 4 a 8 listadas a continuación
-  (instalar `electron`/`electron-builder`, crear el shell mínimo con sus
-  pruebas, implementar la persistencia real y la CSP, y configurar
-  `electron-builder` para generar una primera candidata portable ya se
-  completaron en las tareas 1 a 3).
+- El resto de la implementación: la documentación e instrucciones de
+  entrega, la prueba en una instalación Windows limpia (distinta de la
+  máquina de desarrollo), la prueba de actualización entre al menos dos
+  builds portables compatibles, el QA completo del artefacto (recorrido
+  de principio a fin, audio, ausencia de 404, ausencia de errores de
+  consola durante todo el recorrido), y el cierre documental de la Fase 5.
+  Todo eso corresponde a las tareas de implementación futuras 5 a 8
+  listadas a continuación (instalar `electron`/`electron-builder`, crear
+  el shell mínimo con sus pruebas, implementar la persistencia real y la
+  CSP, configurar `electron-builder` para generar una primera candidata
+  portable, y automatizar esa generación vía GitHub Actions ya se
+  completaron en las tareas 1 a 4).
 
 ## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden. Las tareas 1 a 3 ya están completadas; las tareas 4 a 8 siguen
+este orden. Las tareas 1 a 4 ya están completadas; las tareas 5 a 8 siguen
 pendientes:
 
 1. [x] Shell Electron mínimo y pruebas del proceso principal —
@@ -667,15 +672,99 @@ pendientes:
    título, renderizado, recursos locales y carga con `L` funcionan igual
    sin conexión.
 
-   **Sigue pendiente** (tareas 4-8): GitHub Actions Windows para generar
-   el artefacto de forma reproducible en CI; documentación e instrucciones
-   de ejecución para terceros; prueba en una instalación Windows limpia
-   (distinta de esta máquina de desarrollo); prueba de actualización entre
+   La generación reproducible de este artefacto vía GitHub Actions ya se
+   completó en la tarea 4 (ver más abajo). **Sigue pendiente** (tareas
+   5-8): documentación e instrucciones de ejecución para terceros; prueba
+   en una instalación Windows limpia (distinta de esta máquina de
+   desarrollo); prueba de actualización entre al menos dos builds
+   portables distintas que compartan identidad y formato de guardado;
+   recorrido completo del juego (no solo arranque/guardado/carga) con el
+   artefacto empaquetado; y el cierre documental de la Fase 5. Este
+   artefacto no se versiona en el repositorio.
+4. [x] GitHub Actions en Windows para generar el artefacto —
+   `.github/workflows/windows-portable.yml` (nuevo, separado de `ci.yml`,
+   que no se toca): job en `runs-on: windows-latest`, triggers
+   `pull_request` (con `paths:` cubriendo `electron/**`,
+   `electron-builder.yml`, `package.json`, `package-lock.json`, `src/**`,
+   `index.html`, `tools/**` — todo el directorio, no solo `build.mjs`,
+   para no perder el disparo ante cambios en sus módulos importados
+   `verifyBuildOutput.mjs`/`contentSecurityPolicy.mjs` — y el propio
+   workflow) más `workflow_dispatch`. `permissions: contents: read`
+   únicamente; `concurrency` con `cancel-in-progress: true`. Pasos:
+   `Checkout` (`actions/checkout@v7`) → `Set up Node` (Node de aplicación
+   `"22"`, vía `actions/setup-node@v7`) → `Install dependencies` (`npm
+   ci`) → `Run unit tests` (`npm run test`, solo unitarias — `npm run
+   build`, invocado dentro de `desktop:package:win`, ya ejecuta
+   `assertContentSecurityPolicyShipped`/`verifyBuildOutput`, y `ci.yml`
+   ya cubre el quality gate completo en Linux) → `Package Windows
+   portable` (`npm run desktop:package:win`, único comando de
+   empaquetado) → `Validate packaged artifact` (script PowerShell
+   fail-closed: exactamente un `.exe` en `release/` con el nombre exacto
+   leído de `package.json`, tamaño > 0, ausencia de
+   `.msi`/`.msix`/`.appx`/`.appxbundle`, enumerando `release/` con
+   `Get-ChildItem` **sin** `-Recurse` para no confundir el payload
+   intermedio `release/win-unpacked/ElTeoremaDelSi.exe` con un segundo
+   portable) → `Upload portable artifact`
+   (`actions/upload-artifact@v7`, artifact lógico
+   `el-teorema-del-si-windows-x64-portable`, `path` limitado
+   exclusivamente al `.exe` resuelto, nunca `release/` completo).
+   `tests/workflows/windows-portable-workflow-policy.test.js` (nuevo, 19
+   pruebas) protege cada invariante leyendo el workflow como texto plano,
+   sin depender de ninguna librería YAML nueva. El primer commit de la
+   tarea fijó las tres actions a `@v4`; tras la primera ejecución real
+   (ver más abajo), se actualizaron a `@v7` — comprobando esta vez contra
+   la API real de GitHub que `v7` es el major vigente de
+   `actions/checkout`, `actions/setup-node` y `actions/upload-artifact`, y
+   que su `action.yml` en ese tag declara el runtime `node24` — para dejar
+   de depender del mecanismo de compatibilidad forzada de Node 20 que
+   GitHub Actions ya deprecó.
+
+   **Validado con dos ejecuciones REALES en GitHub Actions Windows** (no
+   simuladas): la primera (run `31365955708`, job `package`: `SUCCESS`)
+   detectó, mediante revisión humana de sus logs reales, dos problemas —
+   el filtro de `paths` incompleto y las tres `actions` en `@v4` con el
+   aviso real "Node.js 20 is deprecated" — corregidos antes de la
+   validación final. La segunda ejecución, ya con ambas correcciones (run
+   `31369511579`, job `package`: `SUCCESS`), confirmó explícitamente que
+   la advertencia de Node.js 20 **ya no aparece** en los logs del
+   workflow Windows (búsqueda literal sin coincidencias). El workflow de
+   CI Linux existente (`ci.yml`, run `31369511603`, job `verify`:
+   `SUCCESS`) siguió en verde, confirmando que introducir el workflow
+   Windows no lo rompió.
+
+   Del artifact `el-teorema-del-si-windows-x64-portable` de esa segunda
+   ejecución (`31369511579`) se registró, mostrado por el propio paso
+   `Validate packaged artifact`: `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`,
+   99.600.399 bytes (~94,99 MiB), SHA-256
+   `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`
+   — un valor distinto al de la candidata generada manualmente en la
+   tarea 3, como se esperaba (cada build produce un hash propio). El
+   responsable del producto descargó ese artifact concreto (no el de la
+   ejecución anterior) y confirmó: contiene **un único archivo**, sin
+   `win-unpacked/`, `builder-effective-config.yaml`, ni ningún
+   `.msi`/`.msix`/`.appx`/`.appxbundle`/instalador adicional; el SHA-256
+   calculado localmente sobre el `.exe` descargado coincide exactamente
+   con el registrado por el runner antes de subirlo
+   (`HashMatches: True`), confirmando integridad byte a byte entre lo
+   validado en CI y lo descargado. Ejecutando específicamente ese `.exe`
+   descargado del artifact de CI (no el de la tarea 3): arranca, título y
+   renderizado correctos, sin consola adicional, DevTools bloqueadas (F12
+   y Ctrl+Shift+I sin efecto), carga con `L` el guardado persistente ya
+   existente e interactúa correctamente después de cargar. Adicionalmente
+   se comprobó, de forma acotada, que ese mismo `.exe` funciona sin
+   conexión a Internet y puede cargar la partida en ese estado — esta es
+   una validación acotada adicional, **no** el recorrido offline completo
+   ni el QA exhaustivo que exige la tarea 7.
+
+   **Sigue pendiente** (tareas 5-8): documentación e instrucciones
+   definitivas de entrega; prueba en una instalación Windows limpia
+   (distinta de esta máquina de desarrollo); prueba de persistencia entre
    al menos dos builds portables distintas que compartan identidad y
-   formato de guardado; recorrido completo del juego (no solo arranque/
-   guardado/carga) con el artefacto empaquetado; y el cierre documental de
-   la Fase 5. Este artefacto no se versiona en el repositorio.
-4. GitHub Actions en Windows para generar el artefacto.
+   formato de guardado; recorrido completo del juego con el artefacto
+   empaquetado y el resto del QA completo (audio, ausencia de 404,
+   ausencia de errores de consola durante todo el recorrido); y el cierre
+   documental de la Fase 5. Este documento no declara completada la
+   Fase 5.
 5. Documentación e instrucciones de ejecución.
 6. Prueba manual en una instalación Windows limpia.
 7. Prueba completa de guardado, carga, audio y funcionamiento offline.

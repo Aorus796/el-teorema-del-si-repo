@@ -356,6 +356,44 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   GitHub Actions Windows, la documentación de entrega, la prueba en una
   instalación limpia distinta de esta máquina y el QA completo del
   artefacto siguen pendientes.
+- Workflow de GitHub Actions Windows para el portable
+  (`.github/workflows/windows-portable.yml`), cuarta tarea de
+  implementación de `docs/production/WINDOWS_PACKAGING_DECISION.md`:
+  separado de `ci.yml` (sin tocarlo); `runs-on: windows-latest`;
+  triggers `pull_request` (con `paths:` cubriendo `tools/**` completo,
+  no solo `build.mjs`, para no perder el disparo ante cambios en sus
+  módulos importados) y `workflow_dispatch`; `permissions: contents:
+  read` únicamente; `actions/checkout@v7`, `actions/setup-node@v7` y
+  `actions/upload-artifact@v7` (no `@v4`, verificado contra la API real
+  de GitHub antes de fijarlas, para no depender del runtime Node 20 ya
+  deprecado); `npm ci` → `npm run test` → `npm run desktop:package:win`
+  → validación fail-closed en PowerShell del `.exe` real generado
+  (nombre, tamaño, ausencia de instaladores adicionales, `Get-ChildItem`
+  deliberadamente sin `-Recurse` para no confundir el payload intermedio
+  `release/win-unpacked/` con un segundo portable) → subida del `.exe`
+  resuelto, únicamente él, como artifact `el-teorema-del-si-windows-x64-portable`.
+  `tests/workflows/windows-portable-workflow-policy.test.js` (19
+  pruebas) protege cada invariante leyendo el workflow como texto plano,
+  sin depender de ninguna librería YAML nueva. Validado con dos
+  ejecuciones reales en GitHub Actions Windows: la primera (job
+  `package`: `SUCCESS`) reveló, por revisión humana de sus logs, el
+  filtro de `paths` incompleto y las `actions@v4` con el aviso real de
+  Node.js 20 deprecado; corregidos ambos, la segunda ejecución confirmó
+  que esa advertencia ya no aparece, y que `ci.yml` siguió en verde. El
+  artifact de esa segunda ejecución
+  (`El-Teorema-del-Si-0.5.0-win-x64-portable.exe`, 99.600.399 bytes,
+  ~94,99 MiB, SHA-256
+  `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`) fue
+  descargado y su SHA-256 local coincidió exactamente con el registrado
+  por el runner, confirmando integridad byte a byte; contenía un único
+  archivo. Ejecutando ese `.exe` descargado (no el de la tarea 3):
+  arranca, DevTools bloqueadas, y carga correctamente el guardado
+  persistente existente, más una comprobación acotada adicional sin
+  conexión a Internet — no sustituye el recorrido offline completo ni el
+  QA exhaustivo de la tarea 7. La documentación de entrega, la prueba en
+  una instalación limpia distinta de esta máquina, la prueba entre dos
+  builds compatibles, el QA completo del artefacto y el cierre
+  documental de la Fase 5 siguen pendientes.
 
 ### Corregido
 

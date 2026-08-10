@@ -29,14 +29,15 @@ escritorio y `electron-builder` como herramienta de empaquetado (ver
 [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). Electron
 ya está instalado, el shell mínimo ya está implementado, la integración
 real con `builds/browser` y la persistencia del guardado ya están
-implementadas y validadas, y `electron-builder` ya está configurado y
-produjo una primera candidata portable Windows x64, ejecutada y validada
-manualmente (ver la nota de avance justo debajo); el workflow de GitHub
-Actions en Windows, la documentación de entrega, la prueba en una
-instalación limpia distinta de esta máquina de desarrollo y el QA completo
-del artefacto siguen siendo trabajo pendiente de la Fase 5.
+implementadas y validadas, `electron-builder` ya está configurado con una
+primera candidata portable Windows x64, y ya existe generación
+reproducible de ese portable mediante GitHub Actions en Windows, validada
+con dos ejecuciones reales y un artifact de CI descargado y ejecutado (ver
+la nota de avance justo debajo); la documentación de entrega, la prueba en
+una instalación limpia distinta de esta máquina de desarrollo y el QA
+completo del artefacto siguen siendo trabajo pendiente de la Fase 5.
 
-> Nota de avance (tareas de implementación 1 a 3 de
+> Nota de avance (tareas de implementación 1 a 4 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
 > ya existe un shell mínimo de Electron (`electron/main.js`,
 > `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
@@ -59,14 +60,34 @@ del artefacto siguen siendo trabajo pendiente de la Fase 5.
 > `electron-builder`/NSIS); el payload Electron real que contiene sí es
 > x64/AMD64, coherente con la configuración. Sin firma digital
 > (`NotSigned`), sin aviso de SmartScreen observado en esta prueba
-> concreta. No se ha probado en una instalación Windows limpia distinta
-> de esta máquina de desarrollo, no existe todavía generación
-> reproducible vía GitHub Actions, y ningún criterio de aceptación,
-> checklist ni casilla de este documento relacionado con la entrega final
-> se considera cumplido por esto — el resto de la Fase 5 (CI de Windows,
-> documentación de entrega, instalación limpia, QA completo del
-> artefacto) sigue pendiente. El artefacto no se versiona en el
-> repositorio (`release/` está en `.gitignore`).
+> concreta. La prueba en una instalación Windows limpia distinta de esta
+> máquina de desarrollo sigue pendiente. La generación reproducible del
+> portable vía GitHub Actions ya existe: un workflow Windows separado
+> (`.github/workflows/windows-portable.yml`) genera el mismo portable de
+> forma automatizada en cada ejecución. Validado con dos ejecuciones
+> reales en GitHub Actions Windows (no simuladas): la
+> primera detectó, por revisión humana de sus logs, un filtro de rutas
+> incompleto y el uso de `actions@v4` (runtime Node 20 deprecado por
+> GitHub); ambos se corrigieron y la segunda ejecución (job `package`:
+> `SUCCESS`) confirmó que la advertencia de Node.js 20 ya no aparece. El
+> CI Linux existente (`ci.yml`) siguió en verde. El artifact de esa
+> segunda ejecución (`El-Teorema-del-Si-0.5.0-win-x64-portable.exe`,
+> ~94,99 MiB, SHA-256
+> `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`) fue
+> descargado por el responsable del producto; su SHA-256 calculado
+> localmente coincidió exactamente con el registrado por el runner antes
+> de subirlo, confirmando integridad byte a byte; contenía un único
+> archivo, sin instaladores adicionales. Ejecutando ese `.exe` descargado
+> (no el generado manualmente en la tarea 3): arranca, DevTools
+> bloqueadas, y carga correctamente el guardado persistente ya existente
+> — más una comprobación acotada adicional de que funciona sin conexión a
+> Internet, que **no** sustituye el recorrido offline completo ni el QA
+> exhaustivo de la tarea 7. Ningún criterio de aceptación, checklist ni
+> casilla de este documento relacionado con la entrega final se considera
+> cumplido por esto — el resto de la Fase 5 (documentación de entrega,
+> instalación limpia, QA completo del artefacto) sigue pendiente, y esta
+> nota **no** declara completada la Fase 5. El artefacto no se versiona en
+> el repositorio (`release/` está en `.gitignore`).
 
 ## 2. Estado de partida desde `v0.5.0`
 
@@ -102,9 +123,15 @@ etiquetas Git al comenzar cada fase.
 - [ ] Aplicar la personalización final.
 - [ ] Validar el empaquetado para Windows (herramienta ya aprobada:
   Electron + `electron-builder`, ver
-  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md);
-  implementación, artefacto y prueba en instalación limpia siguen
-  pendientes).
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). La
+  implementación del shell, la persistencia, la CSP, la configuración de
+  `electron-builder`, la primera candidata portable real y su generación
+  reproducible vía GitHub Actions ya están completas y validadas. Sigue
+  pendiente, como mínimo: la prueba en una instalación Windows limpia
+  distinta de la máquina de desarrollo; la persistencia/compatibilidad
+  entre dos builds portables compatibles distintas; el QA completo del
+  artefacto según las tareas 6 y 7 de `WINDOWS_PACKAGING_DECISION.md`; y
+  el cierre final correspondiente).
 - [ ] Ejecutar QA completo sobre web, guardados y ejecutable.
 
 El `README.md` conserva información histórica desactualizada y no debe usarse
@@ -797,9 +824,13 @@ el 2 de agosto:
   artefacto obligatorio: portable Windows x64, sin instalador ni firma
   digital en la primera candidata privada. Decisión completa, razones y
   criterios de validación en
-  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). La
-  incorporación real de las dependencias y la implementación del
-  ejecutable siguen pendientes de las tareas de Fase 5.
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). Las
+  dependencias ya están incorporadas y el shell, la persistencia, la CSP,
+  la configuración de `electron-builder` y una primera candidata portable
+  real ya están implementados y validados, incluida su generación
+  reproducible vía GitHub Actions — la prueba en una instalación Windows
+  limpia, la persistencia entre dos builds compatibles y el QA completo
+  del artefacto siguen pendientes de las tareas de Fase 5.
 - [ ] **Pipeline mínimo de pruebas de interfaz:** definir qué flujos se
   automatizan y cuáles se registran manualmente sin introducir dependencias
   no aprobadas.
