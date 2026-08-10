@@ -6,6 +6,8 @@ entorno de desarrollo. Este documento registra esa prueba real: qué se
 probó, en qué máquina, con qué artifact exacto, y con qué resultado —
 distinguiendo con precisión lo que quedó validado de lo que no.
 
+**Fecha de validación**: 2026-08-10.
+
 ## Entorno probado
 
 - **Tipo de entorno**: segunda máquina física, distinta del ordenador de

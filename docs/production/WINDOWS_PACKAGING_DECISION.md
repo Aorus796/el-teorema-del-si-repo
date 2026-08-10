@@ -391,9 +391,12 @@ explícitamente listados como verificados.
 La tarea de implementación 3 ya ejecutó una validación manual real (no
 simulada) de la primera candidata, cubriendo parcialmente esta lista sobre
 la máquina de desarrollo del responsable del producto — no sobre una
-instalación Windows limpia, que sigue siendo responsabilidad de la tarea
-6, ni con el recorrido exhaustivo (audio, ausencia de 404, errores de
-consola durante todo el juego) que exige la tarea 7:
+instalación Windows limpia; esa comprobación se completó posteriormente en
+la tarea 6, sobre una segunda máquina física distinta de la de desarrollo
+(ver el punto 6 más abajo y
+[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
+El recorrido exhaustivo (audio, ausencia de 404, errores de consola
+durante todo el juego) sigue pendiente de la tarea 7:
 
 1. Copiar el artefacto portable a un directorio fuera del repositorio. —
    **Hecho en la tarea 3** (se copió únicamente el `.exe`).
@@ -411,9 +414,14 @@ consola durante todo el juego) que exige la tarea 7:
 5. Mover el ejecutable a otro directorio y repetir la comprobación de
    persistencia. — **Hecho en la tarea 3** (copiando únicamente el `.exe`
    a otra carpeta fuera del repositorio).
-6. Reiniciar Windows y repetir la comprobación de persistencia. —
-   **Pendiente** (no se reinició Windows durante la prueba de la tarea 3,
-   solo se cerró y volvió a abrir el ejecutable).
+6. Reiniciar Windows y repetir la comprobación de persistencia. — **No se
+   hizo en la tarea 3** (solo se cerró y volvió a abrir el ejecutable, sin
+   reiniciar Windows). **Completado en la tarea 6**: reinicio real del
+   sistema operativo en una segunda máquina física, con el perfil
+   persistente (`userData`/`sessionData`) y el guardado disponibles tras
+   el reinicio, y carga (`L`) correcta de la partida guardada antes del
+   reinicio — PASS. Ver el detalle completo en
+   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 7. Generar una segunda build compatible (misma identidad
    `appId`/`name`/`productName` y mismo formato de guardado), sustituir el
    ejecutable de la primera por el de la segunda sin borrar el perfil de
@@ -425,8 +433,15 @@ consola durante todo el juego) que exige la tarea 7:
    renderizado y carga de partida sin conexión; el recorrido completo
    exhaustivo sin conexión queda para la tarea 7.
 9. Registrar nombre, tamaño y SHA-256 de cada artefacto probado. —
-   **Hecho en la tarea 3** para el único artefacto generado hasta ahora
-   (ver la evidencia completa en "Tareas de implementación" → tarea 3).
+   **Hecho en la tarea 3** para la candidata generada manualmente (ver la
+   evidencia completa en "Tareas de implementación" → tarea 3); **hecho de
+   nuevo en la tarea 4** para el artifact generado por CI (run
+   `31369511579`); y **reutilizado sin cambios en la tarea 6**, que
+   registró y verificó exactamente ese mismo nombre, tamaño y SHA-256 del
+   artifact de CI en la segunda máquina física, sin generar ningún
+   artefacto nuevo. No se han alterado los hashes, tamaños ni identificadores
+   de ejecución (`run` de GitHub Actions) ya registrados en las tareas 3 y
+   4.
 
 ## Riesgos
 

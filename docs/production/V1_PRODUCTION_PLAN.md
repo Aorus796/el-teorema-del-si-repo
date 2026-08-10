@@ -32,11 +32,14 @@ real con `builds/browser` y la persistencia del guardado ya están
 implementadas y validadas, `electron-builder` ya está configurado con una
 primera candidata portable Windows x64, ya existe generación reproducible
 de ese portable mediante GitHub Actions en Windows (validada con dos
-ejecuciones reales y un artifact de CI descargado y ejecutado), y ya
-existe una guía operativa completa para obtenerlo, verificarlo, ejecutarlo
-y construirlo localmente (ver la nota de avance justo debajo); la prueba
-en una instalación limpia distinta de esta máquina de desarrollo y el QA
-completo del artefacto siguen siendo trabajo pendiente de la Fase 5.
+ejecuciones reales y un artifact de CI descargado y ejecutado), ya existe
+una guía operativa completa para obtenerlo, verificarlo, ejecutarlo y
+construirlo localmente, y ya se validó manualmente ese mismo artifact en
+una instalación Windows limpia concreta, distinta de las máquinas de
+desarrollo, incluida la persistencia tras un reinicio real de Windows (ver
+la nota de avance justo debajo); la prueba de compatibilidad entre al
+menos dos builds portables distintas y el QA completo del artefacto siguen
+siendo trabajo pendiente de la Fase 5.
 
 > Nota de avance (tareas de implementación 1 a 6 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
@@ -846,9 +849,13 @@ el 2 de agosto:
   dependencias ya están incorporadas y el shell, la persistencia, la CSP,
   la configuración de `electron-builder` y una primera candidata portable
   real ya están implementados y validados, incluida su generación
-  reproducible vía GitHub Actions — la prueba en una instalación Windows
-  limpia, la persistencia entre dos builds compatibles y el QA completo
-  del artefacto siguen pendientes de las tareas de Fase 5.
+  reproducible vía GitHub Actions y la prueba manual en una instalación
+  Windows limpia concreta, con persistencia demostrada tras un reinicio
+  real (tarea 6) — la persistencia entre dos builds compatibles y el QA
+  completo del artefacto siguen pendientes de las tareas de Fase 5 (tarea
+  7), y el cierre documental de la Fase 5 sigue pendiente (tarea 8). Esta
+  casilla marca la decisión de herramienta como cerrada, no el conjunto
+  completo de la implementación de Fase 5.
 - [ ] **Pipeline mínimo de pruebas de interfaz:** definir qué flujos se
   automatizan y cuáles se registran manualmente sin introducir dependencias
   no aprobadas.
