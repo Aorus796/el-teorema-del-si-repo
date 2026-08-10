@@ -151,15 +151,53 @@ etiquetas Git al comenzar cada fase.
 
 ### Trabajo pendiente para `v1.0.0`
 
-- [ ] Abrir y completar la Biblioteca del Margen.
+- [x] Abrir y completar la Biblioteca del Margen — mapa `library` completo
+  en `src/content/worldMaps.js` (NPC, salidas hacia el Paseo y el
+  Archivo), segundo puzle "El catálogo perfecto" resuelto de principio a
+  fin en `tests/e2e/game.spec.js`, y recorrido real por la Biblioteca ya
+  ejecutado sobre el ejecutable Windows empaquetado (tarea 7, ver
+  `WINDOWS_PORTABLE_FULL_QA.md`). No se ha detectado ninguna
+  funcionalidad de la Biblioteca pendiente en código, tests o
+  documentación.
 - [x] Diseñar e integrar el segundo puzle.
 - [x] Crear el Archivo compacto.
 - [x] Diseñar e integrar el tercer puzle.
-- [ ] Conectar las pistas y el cuaderno a lo largo del recorrido completo.
-- [ ] Escribir e integrar el epílogo.
+- [x] Conectar las pistas y el cuaderno a lo largo del recorrido completo
+  — las cuatro entradas de cuaderno del recorrido obligatorio
+  (`p2-bridges-solution`, `library-catalogue-solution`,
+  `archive-final-evidence`, `epilogue-combination-clue`) existen en el
+  código real (`src/state/GameState.js`,
+  `src/progression/LibraryCatalogueProgression.js`,
+  `src/progression/ArchiveCriteriaProgression.js`) y se disparan al
+  resolver cada puzle/el epílogo; `GameState.addNotebookEntry()` deduplica
+  por `id`, verificado en múltiples pruebas de `tests/state/GameState.test.js`.
+  No se ha encontrado ninguna pista o conexión narrativa pendiente
+  documentada.
+- [x] Escribir e integrar el epílogo — las 16 tareas de
+  [`EPILOGUE_SPEC.md`](EPILOGUE_SPEC.md) §18 están completadas (ver la
+  lista en Fase 3 más abajo), con implementación real
+  (`EpilogueGiftCodeScene.js`, `CreditsScene.js`, banderas e invariantes
+  en `GameState.js`), un test E2E que recorre el epílogo completo
+  (`tests/e2e/game.spec.js`), un documento de validación manual dedicado
+  (`EPILOGUE_MANUAL_VALIDATION.md`), y un recorrido real adicional sobre
+  el ejecutable Windows (tarea 7). La dedicatoria/textos siguen siendo
+  genéricos, sin nombres ni fechas reales — eso se rastrea por separado
+  en "Aplicar la personalización final", más abajo, todavía pendiente.
 - [ ] Sustituir o pulir el arte provisional necesario.
-- [ ] Integrar el audio aprobado sin comprometer la estabilidad.
-- [ ] Aplicar la personalización final.
+- [x] Integrar el audio aprobado sin comprometer la estabilidad — la
+  pista del epílogo (`epilogue-theme-provisional.wav`) está integrada,
+  se reproduce en el momento esperado, y su funcionamiento (incluido
+  offline) ya se validó en la tarea 7. El nombre y el README del propio
+  asset la describen como "provisional y sustituible", pero no existe
+  ninguna decisión documentada que exija reemplazarla antes de `v1.0.0`
+  — si en el futuro se aprueba un recurso definitivo, esta casilla podría
+  reabrirse explícitamente.
+- [ ] Aplicar la personalización final — sigue pendiente de forma
+  genuina: `CODEX_HANDOFF.md` → "Personalización futura" ya documenta los
+  datos aprobados (nombres, fecha, mascota) y los marcadores previstos,
+  pero la implementación en sí (Fase 4 de este plan) todavía no se ha
+  ejecutado. No es una casilla obsoleta — no existe ninguna decisión de
+  excluir la personalización del alcance de `v1.0.0`.
 - [x] Validar el empaquetado para Windows (herramienta ya aprobada:
   Electron + `electron-builder`, ver
   [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). La
@@ -197,18 +235,30 @@ contrastar código, pruebas, `package.json`, etiquetas Git y este documento.
 
 `v1.0.0` debe incluir exactamente:
 
-- [ ] Plaza del Axioma.
-- [ ] Paseo de los Siete Puentes.
-- [ ] Biblioteca del Margen.
-- [ ] Archivo compacto.
-- [ ] Tres puzles principales en total.
-- [ ] Cuaderno y sistema de pistas suficiente para resolver el recorrido.
-- [ ] Guardado y carga de todo el progreso obligatorio.
-- [ ] Epílogo.
-- [ ] Personalización final aprobada.
-- [ ] Ejecutable para Windows.
-- [ ] Versión web funcional.
-- [ ] Duración objetivo de 45 a 90 minutos en una partida normal.
+- [x] Plaza del Axioma — base funcional ya implementada (§2 "Base
+  funcional disponible").
+- [x] Paseo de los Siete Puentes — base funcional ya implementada, con P2
+  integrado.
+- [x] Biblioteca del Margen — ver evidencia en §2 más arriba.
+- [x] Archivo compacto — tercer puzle implementado e integrado.
+- [x] Tres puzles principales en total — P2, "El catálogo perfecto" y "La
+  pregunta correcta", los tres implementados, probados y recorridos
+  realmente (incluido en el ejecutable Windows, tarea 7).
+- [x] Cuaderno y sistema de pistas suficiente para resolver el recorrido
+  — ver evidencia en §2 más arriba.
+- [x] Guardado y carga de todo el progreso obligatorio — ver §5 "Estado y
+  guardado" más abajo, ya `[x]` en su totalidad.
+- [x] Epílogo — ver evidencia en §2 más arriba.
+- [ ] Personalización final aprobada — pendiente genuino, ver §2.
+- [x] Ejecutable para Windows — tareas 1-8 de
+  `WINDOWS_PACKAGING_DECISION.md` completadas, Fase 5 de empaquetado
+  Windows cerrada, recorrido completo del contenido actual (incluida la
+  Biblioteca y el epílogo) validado sobre el propio ejecutable (tarea 7).
+- [x] Versión web funcional — validada de forma continua por
+  `docker compose run --rm game npm run check` (build + suite completa).
+- [ ] Duración objetivo de 45 a 90 minutos en una partida normal —
+  todavía sin medir; la tarea 7 registró explícitamente que la duración
+  del recorrido en el ejecutable Windows no se cronometró.
 
 Los tres puzles son:
 
@@ -226,10 +276,13 @@ documentadas.
 El epílogo (narrativa, combinación del candado real, estado persistente y
 descomposición en tareas pequeñas para `autopilot`) tiene su propia
 especificación aprobada y cerrada en
-[`EPILOGUE_SPEC.md`](EPILOGUE_SPEC.md). Ninguna de sus 16 tareas está
-implementada todavía; la selección de la siguiente tarea de epílogo debe
-hacerse desde `EPILOGUE_SPEC.md` §18, no solo desde las casillas de este
-documento.
+[`EPILOGUE_SPEC.md`](EPILOGUE_SPEC.md). **Sus 16 tareas ya están
+implementadas** (ver la lista completa en §6, Fase 3, "Epílogo — tareas
+desglosadas para `autopilot`", todas `[x]`); `EPILOGUE_SPEC.md` remite
+explícitamente a este documento como fuente de verdad sobre qué tarea
+está implementada en cada momento. La dedicatoria y los textos del cierre
+siguen siendo genéricos, sin nombres ni fechas reales — eso corresponde a
+"Aplicar la personalización final" (§2), no a estas 16 tareas.
 
 ## 4. Elementos expresamente fuera de alcance
 
@@ -258,19 +311,26 @@ jugables.
 
 ### Recorrido y contenido
 
-- [ ] Una partida nueva permite llegar desde la Plaza hasta el epílogo sin
-  comandos de desarrollo ni accesos directos.
-- [ ] Plaza, Paseo, Biblioteca y Archivo compacto son navegables y no
-  contienen bloqueos involuntarios.
-- [ ] Los tres puzles se abren desde el mundo, se pueden resolver y producen
-  el avance narrativo previsto.
+- [x] Una partida nueva permite llegar desde la Plaza hasta el epílogo sin
+  comandos de desarrollo ni accesos directos — recorrido real ejecutado
+  sobre el ejecutable Windows sin saltar estado por consola/`localStorage`
+  (tarea 7, ver `WINDOWS_PORTABLE_FULL_QA.md`).
+- [x] Plaza, Paseo, Biblioteca y Archivo compacto son navegables y no
+  contienen bloqueos involuntarios — confirmado en el mismo recorrido.
+- [x] Los tres puzles se abren desde el mundo, se pueden resolver y producen
+  el avance narrativo previsto — confirmado en el mismo recorrido y en
+  `tests/e2e/game.spec.js`.
 - [ ] Cada puzle obligatorio es deducible con información disponible dentro
   del juego.
-- [ ] El cuaderno registra sin duplicados las pistas y conclusiones
-  obligatorias.
+- [x] El cuaderno registra sin duplicados las pistas y conclusiones
+  obligatorias — `GameState.addNotebookEntry()` deduplica por `id`,
+  verificado en `tests/state/GameState.test.js`.
 - [ ] Los objetivos indican el siguiente paso sin revelar directamente las
   soluciones.
-- [ ] El epílogo se activa una sola vez tras completar el tercer puzle.
+- [x] El epílogo se activa una sola vez tras completar el tercer puzle —
+  invariantes de banderas (`epilogueUnlocked ⟹ investigationComplete`,
+  etc.) validadas atómicamente en `GameState.restore()`, y flujo idempotente
+  confirmado en el test E2E del epílogo completo.
 - [ ] La personalización aprobada está aplicada y revisada.
 - [ ] Una prueba cronometrada completa dura entre 45 y 90 minutos.
 

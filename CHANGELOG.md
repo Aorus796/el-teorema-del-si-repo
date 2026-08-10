@@ -507,7 +507,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   Fase 5 de `docs/production/V1_PRODUCTION_PLAN.md` §6 — no cierra esa
   Fase 5 completa (que incluye QA general y accesibilidad, todavía
   pendientes), ni publica `v1.0.0`, ni fusiona `feat/v1-production-scope`
-  en `main`.
+  en `main`. Una segunda auditoría, cruzando código, tests y
+  documentación reales (no solo las casillas del plan), encontró que
+  `V1_PRODUCTION_PLAN.md` §2, §3 y §5 seguían marcando como pendientes
+  la Biblioteca del Margen, el epílogo (pese a que sus 16 tareas de
+  `EPILOGUE_SPEC.md` §18 ya estaban completas), la conexión de
+  pistas/cuaderno y la integración de audio — todo ya implementado y
+  probado, incluido un recorrido real sobre el propio ejecutable Windows
+  (tarea 7). Se corrigieron esas casillas con su evidencia
+  correspondiente, sin marcar como completos la personalización final ni
+  el arte (pendientes genuinos, sin decisión de exclusión documentada) ni
+  la duración medida (explícitamente no cronometrada).
 
 ### Corregido
 
