@@ -390,10 +390,34 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   arranca, DevTools bloqueadas, y carga correctamente el guardado
   persistente existente, más una comprobación acotada adicional sin
   conexión a Internet — no sustituye el recorrido offline completo ni el
-  QA exhaustivo de la tarea 7. La documentación de entrega, la prueba en
-  una instalación limpia distinta de esta máquina, la prueba entre dos
-  builds compatibles, el QA completo del artefacto y el cierre
-  documental de la Fase 5 siguen pendientes.
+  QA exhaustivo de la tarea 7. La prueba en una instalación limpia
+  distinta de esta máquina, la prueba entre dos builds compatibles, el
+  QA completo del artefacto y el cierre documental de la Fase 5 siguen
+  pendientes.
+- Guía operativa del portable Windows
+  (`docs/production/WINDOWS_PORTABLE_GUIDE.md`), quinta tarea de
+  implementación de `docs/production/WINDOWS_PACKAGING_DECISION.md`:
+  documento distinto de la decisión de arquitectura, dirigido a dos
+  audiencias (usuario final que solo ejecuta el `.exe`, y mantenedor que
+  puede necesitar construirlo). Cubre obtener el portable desde la
+  ejecución del workflow `Windows portable` en GitHub Actions
+  (distinguiendo el artifact `el-teorema-del-si-windows-x64-portable` del
+  `.exe` que contiene), verificar nombre/tamaño/SHA-256 con
+  `Get-FileHash` sin fijar ningún hash como "esperado" universal, la
+  ejecución del portable sin requerir Node/Docker/el repositorio, las
+  rutas reales de guardado (`%APPDATA%\el-teorema-del-si`,
+  `%APPDATA%\el-teorema-del-si\chromium`), el estado `NotSigned` y el
+  comportamiento de SmartScreen descritos con precisión, DevTools/
+  seguridad esperadas, construcción local para mantenedores (`npm ci` +
+  `npm run desktop:package:win`, nunca `npm install`), qué contenido de
+  `release/` nunca debe distribuirse, un procedimiento de entrega de una
+  candidata privada, un smoke test mínimo, y troubleshooting acotado.
+  `tests/docs/windows-portable-guide-policy.test.js` (8 pruebas) protege
+  las invariantes mecánicas del documento. Exclusivamente documental: no
+  se tocó ningún código, configuración de `electron-builder` ni el
+  workflow de GitHub Actions. No afirma que el portable ya se probó en
+  una instalación Windows limpia ni que superó el QA completo del
+  artefacto — ambas cosas siguen pendientes de las tareas 6 y 7.
 
 ### Corregido
 

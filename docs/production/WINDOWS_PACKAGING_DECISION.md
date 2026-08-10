@@ -17,11 +17,13 @@ prueba gráfica manual real en Windows (no simulada); y un workflow de
 GitHub Actions (`.github/workflows/windows-portable.yml`) ya genera ese
 mismo portable de forma reproducible en un runner Windows, validado con
 dos ejecuciones reales cuyo artifact fue descargado y ejecutado con éxito
-(ver el detalle completo en la tarea 4). Las tareas 5 a 8 siguen
-pendientes: documentación de entrega, prueba en una instalación Windows
-limpia, prueba de actualización entre builds compatibles, recorrido
-completo del juego con el artefacto, y el cierre documental de la Fase 5.
-Este documento no declara completada la Fase 5.
+(ver el detalle completo en la tarea 4); y ya existe una guía operativa
+completa, [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md), para
+obtener, verificar y ejecutar el portable, y para construirlo localmente
+(tarea 5). Las tareas 6 a 8 siguen pendientes: prueba en una instalación
+Windows limpia, prueba de actualización entre builds compatibles,
+recorrido completo del juego con el artefacto, y el cierre documental de
+la Fase 5. Este documento no declara completada la Fase 5.
 
 El resto de la implementación se hará en esas tareas futuras separadas,
 siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
@@ -488,7 +490,7 @@ puede decidir unilateralmente eliminar el entregable Windows como forma de
 se aprobó por primera vez (PR #34, exclusivamente documental), la tarea 1
 ya instaló `electron@43.3.0` como devDependency y ya creó `electron/main.js`,
 `electron/shell.js` y `tests/electron/`. Detener una tarea de
-implementación *futura* (5 a 8) ante un problema no exige revertir
+implementación *futura* (6 a 8) ante un problema no exige revertir
 automáticamente ese shell ya existente: el primer paso sigue siendo
 detenerse y reabrir formalmente la decisión de herramienta en
 `docs/production/V1_PRODUCTION_PLAN.md` §11, evaluando una alternativa —
@@ -520,23 +522,23 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- El resto de la implementación: la documentación e instrucciones de
-  entrega, la prueba en una instalación Windows limpia (distinta de la
-  máquina de desarrollo), la prueba de actualización entre al menos dos
-  builds portables compatibles, el QA completo del artefacto (recorrido
-  de principio a fin, audio, ausencia de 404, ausencia de errores de
-  consola durante todo el recorrido), y el cierre documental de la Fase 5.
-  Todo eso corresponde a las tareas de implementación futuras 5 a 8
-  listadas a continuación (instalar `electron`/`electron-builder`, crear
-  el shell mínimo con sus pruebas, implementar la persistencia real y la
-  CSP, configurar `electron-builder` para generar una primera candidata
-  portable, y automatizar esa generación vía GitHub Actions ya se
-  completaron en las tareas 1 a 4).
+- El resto de la implementación: la prueba en una instalación Windows
+  limpia (distinta de la máquina de desarrollo), la prueba de
+  actualización entre al menos dos builds portables compatibles, el QA
+  completo del artefacto (recorrido de principio a fin, audio, ausencia
+  de 404, ausencia de errores de consola durante todo el recorrido), y el
+  cierre documental de la Fase 5. Todo eso corresponde a las tareas de
+  implementación futuras 6 a 8 listadas a continuación (instalar
+  `electron`/`electron-builder`, crear el shell mínimo con sus pruebas,
+  implementar la persistencia real y la CSP, configurar `electron-builder`
+  para generar una primera candidata portable, automatizar esa generación
+  vía GitHub Actions, y documentar su uso operativo ya se completaron en
+  las tareas 1 a 5).
 
 ## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden. Las tareas 1 a 4 ya están completadas; las tareas 5 a 8 siguen
+este orden. Las tareas 1 a 5 ya están completadas; las tareas 6 a 8 siguen
 pendientes:
 
 1. [x] Shell Electron mínimo y pruebas del proceso principal —
@@ -756,16 +758,55 @@ pendientes:
    una validación acotada adicional, **no** el recorrido offline completo
    ni el QA exhaustivo que exige la tarea 7.
 
-   **Sigue pendiente** (tareas 5-8): documentación e instrucciones
-   definitivas de entrega; prueba en una instalación Windows limpia
-   (distinta de esta máquina de desarrollo); prueba de persistencia entre
-   al menos dos builds portables distintas que compartan identidad y
-   formato de guardado; recorrido completo del juego con el artefacto
-   empaquetado y el resto del QA completo (audio, ausencia de 404,
-   ausencia de errores de consola durante todo el recorrido); y el cierre
-   documental de la Fase 5. Este documento no declara completada la
-   Fase 5.
-5. Documentación e instrucciones de ejecución.
+   La documentación e instrucciones de entrega ya se completaron en la
+   tarea 5 (ver más abajo). **Sigue pendiente** (tareas 6-8): prueba en
+   una instalación Windows limpia (distinta de esta máquina de
+   desarrollo); prueba de persistencia entre al menos dos builds
+   portables distintas que compartan identidad y formato de guardado;
+   recorrido completo del juego con el artefacto empaquetado y el resto
+   del QA completo (audio, ausencia de 404, ausencia de errores de
+   consola durante todo el recorrido); y el cierre documental de la
+   Fase 5. Este documento no declara completada la Fase 5.
+5. [x] Documentación e instrucciones de ejecución —
+   [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md) (nuevo): guía
+   operativa en español, distinta de este documento de decisión, dirigida
+   a dos audiencias (usuario final que solo ejecuta el `.exe`, y
+   mantenedor que puede necesitar construirlo). Cubre: obtener el
+   portable desde la ejecución del workflow `Windows portable` en GitHub
+   Actions (localizando el artifact lógico
+   `el-teorema-del-si-windows-x64-portable` y distinguiéndolo del `.exe`
+   que contiene); verificar nombre, tamaño y SHA-256 con `Get-FileHash`
+   (documentando que cada build produce un hash distinto, sin fijar
+   ningún hash como "esperado" universal — el ejemplo histórico de la
+   tarea 4 queda marcado explícitamente como tal); ejecución del portable
+   sin requerir Node/Docker/el repositorio; las rutas reales de guardado
+   (`%APPDATA%\el-teorema-del-si`, `%APPDATA%\el-teorema-del-si\chromium`)
+   y que mover/borrar el `.exe` no afecta al guardado; el estado
+   `NotSigned` y el comportamiento de SmartScreen descritos con precisión
+   (sin presentarlo como inseguro ni como firmado, sin garantizar que
+   SmartScreen no aparecerá en otra máquina); DevTools/seguridad como
+   comportamiento esperado del artefacto; construcción local para
+   mantenedores (`npm ci` + `npm run desktop:package:win`, nunca `npm
+   install`, sin requerir Docker para ese paso); contenido real de
+   `release/` y qué no debe distribuirse nunca (`win-unpacked/`,
+   `builder-effective-config.yaml`, código fuente, etc.); un
+   procedimiento operativo de entrega de una candidata privada; un smoke
+   test mínimo explícitamente no equivalente al QA de las tareas 6-7; y
+   un apartado de solución de problemas acotado a casos ya observados o
+   directamente deducibles. `tests/docs/windows-portable-guide-policy.test.js`
+   (nuevo, 8 pruebas) protege las invariantes mecánicas del documento:
+   ningún bloque de comandos recomienda `npm install`, se usa `npm ci` y
+   `npm run desktop:package:win`, se referencia el nombre lógico correcto
+   del artifact y las rutas reales de persistencia, no se documenta
+   ninguna publicación de GitHub Release, la candidata se documenta
+   siempre como no firmada, y las tareas 6-8 siguen listadas como
+   pendientes.
+
+   No se modificó ningún código, configuración de `electron-builder`, ni
+   el workflow de GitHub Actions en esta tarea — es exclusivamente
+   documental. No se afirma en ningún punto que el portable ya se probó
+   en una instalación Windows limpia ni que superó el QA completo del
+   artefacto — ambas cosas siguen correspondiendo a las tareas 6 y 7.
 6. Prueba manual en una instalación Windows limpia.
 7. Prueba completa de guardado, carga, audio y funcionamiento offline.
 8. Cierre documental de la Fase 5.
