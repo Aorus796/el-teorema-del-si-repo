@@ -17,7 +17,15 @@ on:
       - "package-lock.json"
       - "src/**"
       - "index.html"
-      - "tools/build.mjs"
+      # tools/build.mjs importa tools/verifyBuildOutput.mjs y
+      # tools/contentSecurityPolicy.mjs, ambos usados por npm run build
+      # (y por tanto por npm run desktop:package:win). Enumerar solo
+      # tools/build.mjs dejaria sin disparar el workflow a una PR que
+      # cambiase unicamente uno de esos dos modulos importados. En vez
+      # de mantener una lista manual de las dependencias transitivas del
+      # build (que se desincronizaria con el tiempo), se cubre todo el
+      # directorio.
+      - "tools/**"
       - ".github/workflows/windows-portable.yml"
   workflow_dispatch:
 
@@ -42,10 +50,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           # Mismo criterio que ci.yml: satisface engines.node: ">=22.12.0".
           node-version: "22"
@@ -117,7 +125,7 @@ jobs:
           echo "exe_path=$($portable.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Upload portable artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: el-teorema-del-si-windows-x64-portable
           path: ${{ steps.validate.outputs.exe_path }}

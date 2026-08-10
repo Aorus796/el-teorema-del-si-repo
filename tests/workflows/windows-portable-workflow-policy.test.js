@@ -141,6 +141,23 @@ test("pull_request is present among the triggers", async () => {
   assert.match(triggersBlock, /^\s*pull_request:/m);
 });
 
+test("pull_request path filter covers the whole tools/ directory, not a single file", async () => {
+  const workflow = await readWorkflow();
+  const triggersBlock = extractTopLevelBlock(workflow, "on");
+
+  // tools/build.mjs imports tools/verifyBuildOutput.mjs and
+  // tools/contentSecurityPolicy.mjs, both used by npm run build (and so
+  // by npm run desktop:package:win). Listing only tools/build.mjs would
+  // leave a PR that changes just one of those imported modules without
+  // triggering this workflow, even though it changes packaging logic.
+  assert.match(triggersBlock, /^\s*-\s*"tools\/\*\*"\s*$/m);
+  assert.doesNotMatch(
+    triggersBlock,
+    /^\s*-\s*"tools\/build\.mjs"\s*$/m,
+    "expected the manual single-file entry for tools/build.mjs to be replaced by tools/**"
+  );
+});
+
 test("no release trigger, no push with tags, no schedule trigger anywhere in the file", async () => {
   const workflow = await readWorkflow();
 
@@ -300,4 +317,23 @@ test("Invoke-Expression never appears anywhere in the file", async () => {
   const workflow = await readWorkflow();
 
   assert.ok(!workflow.includes("Invoke-Expression"));
+});
+
+test("checkout, setup-node, and upload-artifact are pinned to modern majors, never @v4", async () => {
+  const workflow = await readWorkflow();
+
+  // actions/*@v4 target the Node 20 runtime, which GitHub Actions has
+  // deprecated (runs get silently forced onto Node 24 with a warning).
+  // This workflow is brand new, so it must not launch already relying on
+  // that forced-compatibility shim.
+  for (const action of ["actions/checkout", "actions/setup-node", "actions/upload-artifact"]) {
+    const usesMatch = workflow.match(new RegExp(`uses:\\s*${action.replace("/", "\\/")}@(\\S+)`));
+    assert.notEqual(usesMatch, null, `expected to find a "uses: ${action}@..." line`);
+    assert.doesNotMatch(
+      usesMatch[1],
+      /^v4(\.|$)/,
+      `expected ${action} to not be pinned to @v4 (Node 20 runtime, deprecated), found "${usesMatch[1]}"`
+    );
+    assert.equal(usesMatch[1], "v7", `expected ${action} to be pinned to @v7, found "${usesMatch[1]}"`);
+  }
 });
