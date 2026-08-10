@@ -418,6 +418,37 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   workflow de GitHub Actions. No afirma que el portable ya se probó en
   una instalación Windows limpia ni que superó el QA completo del
   artefacto — ambas cosas siguen pendientes de las tareas 6 y 7.
+- Validación manual del portable en una instalación Windows limpia
+  (`docs/production/WINDOWS_CLEAN_INSTALL_VALIDATION.md`), sexta tarea de
+  implementación de `docs/production/WINDOWS_PACKAGING_DECISION.md`:
+  prueba real en una **segunda máquina física**, distinta del entorno de
+  desarrollo (Windows 11 Pro 25H2, build 26200.8875, x64 — confirmado con
+  `Win32_OperatingSystem`/`winver`, no con el `ProductName` heredado del
+  registro, obsoleto en Windows 11). Reutilizó, sin generar ningún
+  ejecutable nuevo, el artifact ya validado en la tarea 4 (GitHub Actions
+  run `31369511579`): `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`,
+  99.600.399 bytes, SHA-256
+  `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`,
+  Authenticode `NotSigned` — ambos coincidieron exactamente con lo
+  registrado en la tarea 4. Validado: arranque sin Node.js ni npm
+  instalados en la máquina, con Docker Desktop instalado pero
+  deliberadamente detenido durante la prueba (sin procesos en ejecución,
+  sin dependencia en tiempo de ejecución hacia él); SmartScreen no
+  apareció en esta ejecución concreta; sin consola adicional; DevTools
+  bloqueadas (`F12`, `Ctrl+Shift+I`); creación del perfil persistente bajo
+  `%APPDATA%\el-teorema-del-si` y `%APPDATA%\el-teorema-del-si\chromium`;
+  nueva partida, guardado, cierre sin procesos huérfanos, y carga tras
+  reabrir; y un **reinicio real** del sistema operativo, tras el cual el
+  perfil persistente y el guardado siguieron disponibles y la partida
+  cargó correctamente. Dos matices quedan documentados explícitamente en
+  el propio documento de evidencia: no se registró `Test-Path` de
+  `userData`/`sessionData` antes del primer arranque (la ausencia previa
+  del juego en esa máquina está confirmada por el operador, no por una
+  comprobación técnica registrada); y Docker estaba instalado en la
+  máquina, no ausente. La prueba de compatibilidad entre dos builds
+  portables distintas, el recorrido completo del juego, el QA exhaustivo
+  de audio/offline y el cierre documental de la Fase 5 siguen pendientes
+  de las tareas 7 y 8.
 
 ### Corregido
 
