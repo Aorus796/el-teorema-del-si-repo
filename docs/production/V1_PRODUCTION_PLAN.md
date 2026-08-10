@@ -39,13 +39,19 @@ una instalación Windows limpia concreta, distinta de las máquinas de
 desarrollo, incluida la persistencia tras un reinicio real de Windows, y
 ya se completó el QA funcional completo del artefacto — recorrido de
 principio a fin, todos los puzles, el epílogo, audio y funcionamiento
-offline (ver la nota de avance justo debajo). La prueba de compatibilidad
-entre al menos dos builds portables distintas no se ejecutó — riesgo
-residual aceptado explícitamente por el responsable del producto para
-`v1.0.0`; el cierre documental de la Fase 5 sigue siendo trabajo
-pendiente.
+offline —, y ya se cerró documentalmente la Fase 5 de empaquetado Windows
+(ver la nota de avance justo debajo y
+[`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md)).
+La prueba de compatibilidad entre al menos dos builds portables distintas
+no se ejecutó — riesgo residual aceptado explícitamente por el
+responsable del producto para `v1.0.0`. **Que el empaquetado Windows esté
+cerrado no cierra la Fase 5 completa de este plan** (§6 más abajo incluye
+también QA general del recorrido, accesibilidad básica y corrección de
+defectos, todavía pendientes) **ni significa que `v1.0.0` esté lista o
+publicada** — eso depende del resto del contenido y del QA general
+descritos en este documento.
 
-> Nota de avance (tareas de implementación 1 a 7 de
+> Nota de avance (tareas de implementación 1 a 8 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
 > ya existe un shell mínimo de Electron (`electron/main.js`,
 > `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
@@ -110,13 +116,17 @@ pendiente.
 > aceptación, checklist ni casilla de este documento relacionado con la
 > entrega final se considera cumplido únicamente por esta comprobación
 > acotada de la tarea 4 — el QA completo real se registra en la tarea 7
-> (ver más arriba); el cierre documental de la Fase 5 (tarea 8) sigue
-> pendiente, y esta nota **no** declara completada la Fase 5. El
-> artefacto no se versiona en el repositorio
+> (ver más arriba). El artefacto no se versiona en el repositorio
 > (`release/` está en `.gitignore`). También ya existe
 > [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md), la guía
 > operativa para obtener, verificar, ejecutar y construir el portable
-> (tarea 5).
+> (tarea 5), y el cierre documental y auditoría final de la Fase 5 de
+> empaquetado Windows (tarea 8) ya se completó — ver
+> [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md).
+> **Esta nota cierra únicamente el subconjunto de empaquetado Windows —
+> no declara completada la Fase 5 en su conjunto** (§6 más abajo incluye
+> QA general y accesibilidad, todavía pendientes), **ni que `v1.0.0` esté
+> publicada**.
 
 ## 2. Estado de partida desde `v0.5.0`
 
@@ -164,15 +174,19 @@ etiquetas Git al comenzar cada fase.
   y el QA funcional completo del artefacto empaquetado —recorrido de
   principio a fin, todos los puzles, el epílogo, audio y funcionamiento
   offline— (ver
-  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)) ya están
-  completos y validados, correspondiendo íntegramente a las tareas 1-7 de
-  `WINDOWS_PACKAGING_DECISION.md`. La prueba controlada de
+  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)), y el
+  cierre documental/auditoría final (ver
+  [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md))
+  ya están completos y validados, correspondiendo íntegramente a las
+  tareas 1-8 de `WINDOWS_PACKAGING_DECISION.md`. La prueba controlada de
   compatibilidad/sustitución entre dos builds portables distintas **no se
   ejecutó**: es un riesgo residual que el responsable del producto acepta
   explícitamente para `v1.0.0`, no un bloqueo de esta casilla. Esta
-  casilla marca satisfecha la validación funcional del empaquetado
-  Windows (tareas 1-7); no marca cerrada la Fase 5 en su conjunto — el
-  cierre documental (tarea 8) sigue pendiente.
+  casilla marca satisfecha la validación funcional completa del
+  empaquetado Windows (tareas 1-8, Fase 5 de empaquetado Windows
+  cerrada); no marca cerrada la Fase 5 completa de este plan (§6 más
+  abajo), que incluye QA general y accesibilidad todavía pendientes, ni
+  que `v1.0.0` esté publicada.
 - [ ] Ejecutar QA completo sobre web, guardados y ejecutable.
 
 El `README.md` conserva información histórica desactualizada y no debe usarse
@@ -563,9 +577,12 @@ estable. No se recortan pistas necesarias ni legibilidad.
 - [ ] Revisión de accesibilidad básica y navegación por teclado.
 - [ ] Migraciones y fixtures definitivos de guardado.
 - [ ] Build web candidato.
-- [ ] Empaquetado candidato para Windows con la herramienta aprobada.
+- [x] Empaquetado candidato para Windows con la herramienta aprobada —
+  ver [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)
+  (tareas 1-8, Fase 5 de empaquetado Windows cerrada).
 - [ ] Instrucciones mínimas de ejecución y controles.
-- [ ] Informe de prueba en instalación limpia.
+- [x] Informe de prueba en instalación limpia — ver
+  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [ ] Versión candidata estable disponible al cerrar el 3 de septiembre.
 
 #### Criterios de aceptación
@@ -576,8 +593,12 @@ estable. No se recortan pistas necesarias ni legibilidad.
 - [ ] Los guardados de referencia se restauran correctamente.
 - [ ] Guardar y cargar funciona en las cuatro localizaciones y tres puzles.
 - [ ] El build web y el ejecutable recorren el juego completo.
-- [ ] El ejecutable inicia en una instalación limpia de Windows.
-- [ ] El empaquetado no rompe ni sustituye la versión web.
+- [x] El ejecutable inicia en una instalación limpia de Windows — ver
+  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
+- [x] El empaquetado no rompe ni sustituye la versión web — `builds/browser`
+  servido sin Electron sigue siendo idéntico y funcional (ver
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md) →
+  "Relación entre `npm run build` y el empaquetado").
 - [ ] La consola no muestra errores durante la prueba completa.
 - [ ] `npm run check` pasa mediante Docker.
 
@@ -590,9 +611,15 @@ estable. No se recortan pistas necesarias ni legibilidad.
 - [ ] Prueba de interrupción y reanudación en cada puzle.
 - [ ] Prueba de rutas de error y reinicio.
 - [ ] Prueba web desde `builds/browser`.
-- [ ] Prueba del ejecutable en Windows.
-- [ ] Prueba desde una instalación limpia sin herramientas de desarrollo.
-- [ ] Medición final de duración.
+- [x] Prueba del ejecutable en Windows — ver
+  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md) (recorrido
+  completo, offline, audio, assets) y
+  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
+- [x] Prueba desde una instalación limpia sin herramientas de desarrollo —
+  ver [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
+- [ ] Medición final de duración (la duración del recorrido en el
+  ejecutable Windows quedó explícitamente sin cronometrar — ver
+  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)).
 
 #### Riesgos
 
@@ -876,10 +903,14 @@ el 2 de agosto:
   offline— (tarea 7). La persistencia/compatibilidad entre dos builds
   distintas **no se ejecutó** dentro de esa tarea — riesgo residual
   aceptado explícitamente por el responsable del producto para
-  `v1.0.0`, no un bloqueo pendiente. El cierre documental de la Fase 5
-  sigue pendiente (tarea 8). Esta casilla marca la decisión de
-  herramienta como cerrada, no el conjunto completo de la implementación
-  de Fase 5.
+  `v1.0.0`, no un bloqueo pendiente. El cierre documental y auditoría
+  final de la Fase 5 de empaquetado Windows (tarea 8) también se
+  completó — ver
+  [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md).
+  Esta casilla marca la decisión de herramienta y su implementación
+  completa de empaquetado Windows como cerradas — no marca cerrada la
+  Fase 5 completa de este plan (§6, que incluye QA general y
+  accesibilidad todavía pendientes), ni que `v1.0.0` esté publicada.
 - [ ] **Pipeline mínimo de pruebas de interfaz:** definir qué flujos se
   automatizan y cuáles se registran manualmente sin introducir dependencias
   no aprobadas.

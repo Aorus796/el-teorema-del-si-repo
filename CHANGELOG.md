@@ -488,6 +488,26 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   haber probado la secuencia de sustitución conservando el mismo perfil
   de usuario; este documento no lo presenta como tal. El cierre
   documental de la Fase 5 sigue pendiente de la tarea 8.
+- Cierre documental y auditoría final de la Fase 5 de empaquetado Windows
+  (`docs/production/WINDOWS_PACKAGING_PHASE5_CLOSURE.md`, nuevo), octava
+  y última tarea de implementación de
+  `docs/production/WINDOWS_PACKAGING_DECISION.md`: tarea exclusivamente
+  documental, sin pruebas nuevas ni cambios de código. Audita la
+  evidencia ya registrada en las tareas 1-7 y marca las tareas 1-8 como
+  completadas. El artifact portable Windows (run de GitHub Actions
+  `31369511579`, SHA-256
+  `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`)
+  queda funcionalmente validado en una segunda máquina física, con QA
+  end-to-end offline (recorrido completo, los tres puzles, epílogo,
+  audio, autosave terminal, reapertura y estado read-only). La prueba
+  controlada de compatibilidad/sustitución entre dos builds distintas
+  (A→B→A) sigue registrada como no ejecutada, con el riesgo residual
+  aceptado explícitamente por el responsable del producto para `v1.0.0`.
+  Este cierre cubre exclusivamente el empaquetado Windows dentro de la
+  Fase 5 de `docs/production/V1_PRODUCTION_PLAN.md` §6 — no cierra esa
+  Fase 5 completa (que incluye QA general y accesibilidad, todavía
+  pendientes), ni publica `v1.0.0`, ni fusiona `feat/v1-production-scope`
+  en `main`.
 
 ### Corregido
 

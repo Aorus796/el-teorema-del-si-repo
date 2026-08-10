@@ -197,6 +197,14 @@ del guardado sobrevivió a un reinicio real del sistema operativo.
 - Prueba de actualización o compatibilidad entre dos builds portables
   distintas.
 
-Todo lo anterior corresponde a la tarea 7 de
-`WINDOWS_PACKAGING_DECISION.md`, que sigue pendiente. Este documento no
-declara completada la Fase 5.
+El recorrido completo, el QA de audio y el QA de funcionamiento offline
+correspondían a la tarea 7 de `WINDOWS_PACKAGING_DECISION.md`, que ya se
+completó (ver
+[`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). La
+compatibilidad entre dos builds portables distintas sigue sin ejecutarse
+— riesgo residual aceptado explícitamente por el responsable del
+producto para `v1.0.0` (ver el mismo documento). El cierre documental de
+la Fase 5 de empaquetado Windows (tarea 8) también se completó — ver
+[`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md).
+Este documento sigue sin certificar todas las versiones y ediciones
+posibles de Windows, ni la publicación de `v1.0.0`.

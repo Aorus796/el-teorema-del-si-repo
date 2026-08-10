@@ -6,7 +6,7 @@ ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
 
 La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
 instalar ninguna dependencia. Desde entonces, las tareas de implementación
-1 a 7 (ver "Tareas de implementación" más abajo) ya se completaron:
+1 a 8 (ver "Tareas de implementación" más abajo) ya se completaron:
 `electron@43.3.0` y `electron-builder@26.15.7` (ambos exactos) están
 instalados; el shell mínimo (`electron/main.js`, `electron/shell.js`, con
 pruebas en `tests/electron/`), la integración real con `builds/browser`,
@@ -33,12 +33,28 @@ read-only (tarea 7, ver el detalle completo en
 comprobación de esa tarea que no se ejecutó es la prueba controlada de
 compatibilidad/sustitución entre dos builds distintas — riesgo residual
 aceptado explícitamente por el responsable del producto para `v1.0.0`, no
-un bloqueo pendiente. La tarea 8 sigue pendiente: el cierre documental de
-la Fase 5. Este documento no declara completada la Fase 5.
+un bloqueo pendiente. La tarea 8, cierre documental y auditoría final de
+la Fase 5 de empaquetado Windows, también se completó (ver el detalle en
+"Tareas de implementación" más abajo y en
+[`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md)).
 
-El resto de la implementación se hará en esas tareas futuras separadas,
-siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
-quality gate → reviewer → commit/PR) una a una, nunca combinadas.
+**Precisión importante sobre el alcance de este cierre**: "Fase 5" en
+`docs/production/V1_PRODUCTION_PLAN.md` §6 ("Fase 5 — QA, accesibilidad
+básica, guardados y empaquetado") es una fase más amplia que el
+empaquetado Windows — incluye también la matriz de pruebas del recorrido
+completo, la corrección de defectos, y la revisión de accesibilidad
+básica, ninguna de las cuales es objeto de este documento ni de sus
+tareas 1-8. **Lo que queda cerrado aquí es exclusivamente el subconjunto
+de empaquetado Windows dentro de esa Fase 5** — no la Fase 5 completa del
+plan de producción, que sigue abierta hasta que se complete el resto de
+su alcance. `v1.0.0` **no está publicada** por este cierre: sigue
+dependiendo del resto del contenido y del QA general del juego, según
+`V1_PRODUCTION_PLAN.md`.
+
+El resto de la implementación de `v1.0.0` se hará en tareas futuras
+separadas, siguiendo el flujo obligatorio de `CLAUDE.md` (planner →
+developer → qa → quality gate → reviewer → commit/PR) una a una, nunca
+combinadas.
 
 ## Objetivo
 
@@ -590,28 +606,30 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- El cierre documental de la Fase 5. Ese trabajo pendiente corresponde a
-  la tarea de implementación futura 8 listada a continuación. En cambio,
-  instalar `electron`/`electron-builder`, crear el shell mínimo con sus
-  pruebas, implementar la persistencia real y la CSP, configurar
-  `electron-builder` para generar una primera candidata portable,
-  automatizar esa generación vía GitHub Actions, documentar su uso
-  operativo, validar esa candidata en una instalación Windows limpia
-  (distinta de la máquina de desarrollo, incluida la persistencia tras un
-  reinicio real), y ejecutar el QA funcional completo del artefacto
-  (recorrido de principio a fin, todos los puzles, el epílogo, audio,
-  offline y assets/renderizado) ya se completaron en las tareas 1 a 7. La
-  prueba de compatibilidad/sustitución entre al menos dos builds
-  portables distintas no se ejecutó dentro de ese QA — es un riesgo
-  residual aceptado explícitamente por el responsable del producto para
-  `v1.0.0`, no un elemento fuera de alcance ni un trabajo pendiente de
-  otra tarea.
+Instalar `electron`/`electron-builder`, crear el shell mínimo con sus
+pruebas, implementar la persistencia real y la CSP, configurar
+`electron-builder` para generar una primera candidata portable,
+automatizar esa generación vía GitHub Actions, documentar su uso
+operativo, validar esa candidata en una instalación Windows limpia
+(distinta de la máquina de desarrollo, incluida la persistencia tras un
+reinicio real), ejecutar el QA funcional completo del artefacto
+(recorrido de principio a fin, todos los puzles, el epílogo, audio,
+offline y assets/renderizado), y cerrar documentalmente esta decisión
+(auditoría final, ver
+[`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md))
+ya se completaron en las tareas 1 a 8. La prueba de
+compatibilidad/sustitución entre al menos dos builds portables distintas
+no se ejecutó dentro de ese QA — es un riesgo residual aceptado
+explícitamente por el responsable del producto para `v1.0.0`, no un
+elemento fuera de alcance ni un trabajo pendiente de otra tarea. Este
+cierre cubre exclusivamente el empaquetado Windows: el resto del alcance
+de la Fase 5 de `V1_PRODUCTION_PLAN.md` §6 (QA general del recorrido,
+accesibilidad básica) no es objeto de esta decisión.
 
 ## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden. Las tareas 1 a 7 ya están completadas; la tarea 8 sigue
-pendiente:
+este orden. Las tareas 1 a 8 ya están completadas.
 
 1. [x] Shell Electron mínimo y pruebas del proceso principal —
    implementado en `electron/shell.js` (lógica pura, sin importar
@@ -760,9 +778,9 @@ pendiente:
    completó en la tarea 7. La prueba de actualización entre al menos dos
    builds portables distintas que compartan identidad y formato de
    guardado no se ejecutó — riesgo residual aceptado explícitamente por
-   el responsable del producto para `v1.0.0`. **Sigue pendiente** (tarea
-   8): el cierre documental de la Fase 5. Este artefacto no se versiona
-   en el repositorio.
+   el responsable del producto para `v1.0.0`. El cierre documental de la
+   Fase 5 de empaquetado Windows (tarea 8) también se completó — ver más
+   abajo. Este artefacto no se versiona en el repositorio.
 4. [x] GitHub Actions en Windows para generar el artefacto —
    `.github/workflows/windows-portable.yml` (nuevo, separado de `ci.yml`,
    que no se toca): job en `runs-on: windows-latest`, triggers
@@ -847,9 +865,10 @@ pendiente:
    (ver las tres más abajo). La prueba de persistencia entre al menos dos
    builds portables distintas que compartan identidad y formato de
    guardado no se ejecutó dentro de esa tarea — riesgo residual aceptado
-   explícitamente por el responsable del producto para `v1.0.0`. **Sigue
-   pendiente** (tarea 8): el cierre documental de la Fase 5. Este
-   documento no declara completada la Fase 5.
+   explícitamente por el responsable del producto para `v1.0.0`. El
+   cierre documental de esta decisión (tarea 8) también se completó — ver
+   más abajo. Este documento cierra el empaquetado Windows, no la Fase 5
+   completa de `V1_PRODUCTION_PLAN.md` §6.
 5. [x] Documentación e instrucciones de ejecución —
    [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md) (nuevo): guía
    operativa en español, distinta de este documento de decisión, dirigida
@@ -879,14 +898,13 @@ pendiente:
    test mínimo explícitamente no equivalente al QA completo de la tarea 7; y
    un apartado de solución de problemas acotado a casos ya observados o
    directamente deducibles. `tests/docs/windows-portable-guide-policy.test.js`
-   (nuevo, 8 pruebas) protege las invariantes mecánicas del documento:
-   ningún bloque de comandos recomienda `npm install`, se usa `npm ci` y
-   `npm run desktop:package:win`, se referencia el nombre lógico correcto
-   del artifact y las rutas reales de persistencia, no se documenta
-   ninguna publicación de GitHub Release, la candidata se documenta
-   siempre como no firmada, y (tras las actualizaciones de esta prueba en
-   las tareas 6 y 7, ver más abajo) solo la tarea 8 sigue listada como
-   pendiente.
+   (nuevo, 8 pruebas; ampliado a 10 en la tarea 8, ver más abajo) protege
+   las invariantes mecánicas del documento: ningún bloque de comandos
+   recomienda `npm install`, se usa `npm ci` y `npm run
+   desktop:package:win`, se referencia el nombre lógico correcto del
+   artifact y las rutas reales de persistencia, no se documenta ninguna
+   publicación de GitHub Release, y la candidata se documenta siempre
+   como no firmada.
 
    No se modificó ningún código, configuración de `electron-builder`, ni
    el workflow de GitHub Actions en esta tarea — es exclusivamente
@@ -930,9 +948,8 @@ pendiente:
    ausencia de dependencia en tiempo de ejecución, no ausencia de
    instalación.
 
-   **Sigue pendiente** (tarea 8): el cierre documental de la Fase 5. Esta
-   tarea no valida todas las versiones y ediciones posibles de Windows —
-   solo la instalación concreta descrita arriba.
+   Esta tarea no valida todas las versiones y ediciones posibles de
+   Windows — solo la instalación concreta descrita arriba.
 7. [x] QA completo del artefacto Windows: recorrido, audio y offline
    ejecutados con resultado PASS; tratamiento de la compatibilidad entre
    builds resuelto como riesgo residual aceptado, no como prueba
@@ -987,10 +1004,42 @@ pendiente:
    validada.
 
    No se cronometró la duración exacta del recorrido completo.
+8. [x] Cierre documental y auditoría final de la Fase 5 de empaquetado
+   Windows — tarea exclusivamente documental: no se ejecutó ninguna
+   prueba nueva, no se generó ningún ejecutable, no se modificó código,
+   `electron-builder.yml`, workflows, `package.json`, `package-lock.json`
+   ni `SAVE_FORMAT_VERSION`. Auditó la evidencia ya registrada en las
+   tareas 1-7, reconcilió los estados y checklists de este documento,
+   `WINDOWS_PORTABLE_GUIDE.md` y `V1_PRODUCTION_PLAN.md`, actualizó
+   `tests/docs/windows-portable-guide-policy.test.js` (de 8 a 10 pruebas)
+   para proteger el nuevo estado sin relajar ninguna invariante existente,
+   y registró la auditoría completa en
+   [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md)
+   (fecha de cierre: 2026-08-11).
 
-   **Sigue pendiente** (tarea 8): el cierre documental de la Fase 5, que
-   no se declara completada por este documento.
-8. Cierre documental de la Fase 5.
+   **FASE 5 DE EMPAQUETADO WINDOWS: COMPLETADA.** Las tareas 1-8 de este
+   documento quedan cerradas. El artifact de referencia sigue siendo el
+   validado en la tarea 4 y reutilizado en las tareas 6 y 7 (run de
+   GitHub Actions `31369511579`,
+   `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`, `99600399` bytes,
+   SHA-256
+   `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`,
+   `NotSigned`). La prueba controlada de compatibilidad/sustitución entre
+   dos builds distintas (A→B→A) sigue registrada como **no ejecutada**,
+   con el riesgo residual **aceptado explícitamente** por el responsable
+   del producto para `v1.0.0` — este cierre no la convierte en validada
+   ni en PASS.
+
+   **Esto NO significa** que `v1.0.0` esté publicada, ni que se haya
+   fusionado `feat/v1-production-scope` en `main`, ni que se haya creado
+   ningún tag o GitHub Release, ni que la Fase 5 completa de
+   `V1_PRODUCTION_PLAN.md` §6 (QA general del recorrido, accesibilidad
+   básica, corrección de defectos) esté cerrada — ese alcance más amplio
+   no es objeto de este documento ni de sus tareas 1-8, y sigue abierto
+   en `V1_PRODUCTION_PLAN.md`. Ver
+   [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md)
+   para la lista factual de lo que realmente sigue pendiente para
+   `v1.0.0`.
 
 Cada una debe seguir el flujo completo de `CLAUDE.md` (planner → developer
 → qa → quality gate → reviewer → commit/PR), sin combinarse con otra.

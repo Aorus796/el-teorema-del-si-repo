@@ -96,9 +96,28 @@ test("documents the candidate as unsigned, never as code-signed", async () => {
   }
 });
 
-test("lists task 8 as still pending", async () => {
+test("documents tasks 1-8 of WINDOWS_PACKAGING_DECISION.md as completed", async () => {
   const guide = await readGuide();
-  const pendingSection = guide.slice(guide.indexOf("## 9. Qué falta todavía"));
+  const closingSection = guide.slice(guide.indexOf("## 9. Qué falta todavía"));
 
-  assert.match(pendingSection, /Tarea 8/);
+  assert.match(closingSection, /tareas 1-8/);
+  assert.match(closingSection, /Fase 5 de empaquetado Windows está cerrada/);
+});
+
+test("never claims v1.0.0 is published or ready just because Windows packaging closed", async () => {
+  const guide = await readGuide();
+  const closingSection = guide.slice(guide.indexOf("## 9. Qué falta todavía"));
+
+  assert.match(
+    closingSection,
+    /no significa que `v1\.0\.0` esté\s+lista ni publicada/
+  );
+});
+
+test("still documents the build-to-build compatibility test as not executed", async () => {
+  const guide = await readGuide();
+  const closingSection = guide.slice(guide.indexOf("## 9. Qué falta todavía"));
+
+  assert.match(closingSection, /sigue sin ejecutarse/);
+  assert.match(closingSection, /riesgo residual/);
 });
