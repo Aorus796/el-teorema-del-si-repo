@@ -6,7 +6,7 @@ ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
 
 La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
 instalar ninguna dependencia. Desde entonces, las tareas de implementación
-1 a 4 (ver "Tareas de implementación" más abajo) ya se completaron:
+1 a 5 (ver "Tareas de implementación" más abajo) ya se completaron:
 `electron@43.3.0` y `electron-builder@26.15.7` (ambos exactos) están
 instalados; el shell mínimo (`electron/main.js`, `electron/shell.js`, con
 pruebas en `tests/electron/`), la integración real con `builds/browser`,
@@ -527,13 +527,13 @@ No forman parte de esta decisión ni de la primera candidata:
   actualización entre al menos dos builds portables compatibles, el QA
   completo del artefacto (recorrido de principio a fin, audio, ausencia
   de 404, ausencia de errores de consola durante todo el recorrido), y el
-  cierre documental de la Fase 5. Todo eso corresponde a las tareas de
-  implementación futuras 6 a 8 listadas a continuación (instalar
-  `electron`/`electron-builder`, crear el shell mínimo con sus pruebas,
-  implementar la persistencia real y la CSP, configurar `electron-builder`
-  para generar una primera candidata portable, automatizar esa generación
-  vía GitHub Actions, y documentar su uso operativo ya se completaron en
-  las tareas 1 a 5).
+  cierre documental de la Fase 5. Todo ese trabajo pendiente corresponde
+  a las tareas de implementación futuras 6 a 8 listadas a continuación.
+  En cambio, instalar `electron`/`electron-builder`, crear el shell
+  mínimo con sus pruebas, implementar la persistencia real y la CSP,
+  configurar `electron-builder` para generar una primera candidata
+  portable, automatizar esa generación vía GitHub Actions, y documentar
+  su uso operativo ya se completaron en las tareas 1 a 5.
 
 ## Tareas de implementación
 
@@ -741,7 +741,7 @@ pendientes:
    99.600.399 bytes (~94,99 MiB), SHA-256
    `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`
    — un valor distinto al de la candidata generada manualmente en la
-   tarea 3, como se esperaba (cada build produce un hash propio). El
+   tarea 3; builds distintas pueden producir hashes distintos. El
    responsable del producto descargó ese artifact concreto (no el de la
    ejecución anterior) y confirmó: contiene **un único archivo**, sin
    `win-unpacked/`, `builder-effective-config.yaml`, ni ningún

@@ -7,7 +7,8 @@ arquitectura ni de seguridad ya cerradas — para eso está
 [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md), que
 sigue siendo la fuente de verdad sobre *por qué* se decidió cada cosa. Este
 documento explica *cómo hacerlo*, hoy, con el estado real del proyecto
-(tareas 1-4 de `WINDOWS_PACKAGING_DECISION.md` ya completadas).
+(tareas 1-5 de `WINDOWS_PACKAGING_DECISION.md` ya completadas; tareas 6-8
+pendientes — ver la sección 9).
 
 Esta guía cubre dos perfiles distintos:
 
