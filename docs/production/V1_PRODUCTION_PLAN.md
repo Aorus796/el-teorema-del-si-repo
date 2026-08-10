@@ -30,14 +30,15 @@ escritorio y `electron-builder` como herramienta de empaquetado (ver
 ya está instalado, el shell mínimo ya está implementado, la integración
 real con `builds/browser` y la persistencia del guardado ya están
 implementadas y validadas, `electron-builder` ya está configurado con una
-primera candidata portable Windows x64, y ya existe generación
-reproducible de ese portable mediante GitHub Actions en Windows, validada
-con dos ejecuciones reales y un artifact de CI descargado y ejecutado (ver
-la nota de avance justo debajo); la documentación de entrega, la prueba en
-una instalación limpia distinta de esta máquina de desarrollo y el QA
+primera candidata portable Windows x64, ya existe generación reproducible
+de ese portable mediante GitHub Actions en Windows (validada con dos
+ejecuciones reales y un artifact de CI descargado y ejecutado), y ya
+existe una guía operativa completa para obtenerlo, verificarlo, ejecutarlo
+y construirlo localmente (ver la nota de avance justo debajo); la prueba
+en una instalación limpia distinta de esta máquina de desarrollo y el QA
 completo del artefacto siguen siendo trabajo pendiente de la Fase 5.
 
-> Nota de avance (tareas de implementación 1 a 4 de
+> Nota de avance (tareas de implementación 1 a 5 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
 > ya existe un shell mínimo de Electron (`electron/main.js`,
 > `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
@@ -84,10 +85,13 @@ completo del artefacto siguen siendo trabajo pendiente de la Fase 5.
 > Internet, que **no** sustituye el recorrido offline completo ni el QA
 > exhaustivo de la tarea 7. Ningún criterio de aceptación, checklist ni
 > casilla de este documento relacionado con la entrega final se considera
-> cumplido por esto — el resto de la Fase 5 (documentación de entrega,
-> instalación limpia, QA completo del artefacto) sigue pendiente, y esta
-> nota **no** declara completada la Fase 5. El artefacto no se versiona en
-> el repositorio (`release/` está en `.gitignore`).
+> cumplido por esto — el resto de la Fase 5 (instalación limpia, QA
+> completo del artefacto) sigue pendiente, y esta nota **no** declara
+> completada la Fase 5. El artefacto no se versiona en el repositorio
+> (`release/` está en `.gitignore`). También ya existe
+> [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md), la guía
+> operativa para obtener, verificar, ejecutar y construir el portable
+> (tarea 5).
 
 ## 2. Estado de partida desde `v0.5.0`
 
@@ -125,8 +129,9 @@ etiquetas Git al comenzar cada fase.
   Electron + `electron-builder`, ver
   [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). La
   implementación del shell, la persistencia, la CSP, la configuración de
-  `electron-builder`, la primera candidata portable real y su generación
-  reproducible vía GitHub Actions ya están completas y validadas. Sigue
+  `electron-builder`, la primera candidata portable real, su generación
+  reproducible vía GitHub Actions, y la guía operativa de uso/entrega
+  (`WINDOWS_PORTABLE_GUIDE.md`) ya están completas y validadas. Sigue
   pendiente, como mínimo: la prueba en una instalación Windows limpia
   distinta de la máquina de desarrollo; la persistencia/compatibilidad
   entre dos builds portables compatibles distintas; el QA completo del
