@@ -7,8 +7,8 @@ arquitectura ni de seguridad ya cerradas — para eso está
 [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md), que
 sigue siendo la fuente de verdad sobre *por qué* se decidió cada cosa. Este
 documento explica *cómo hacerlo*, hoy, con el estado real del proyecto
-(tareas 1-6 de `WINDOWS_PACKAGING_DECISION.md` ya completadas; tareas 7-8
-pendientes — ver la sección 9).
+(tareas 1-7 de `WINDOWS_PACKAGING_DECISION.md` ya completadas; tarea 8
+pendiente — ver la sección 9).
 
 Esta guía cubre dos perfiles distintos:
 
@@ -24,9 +24,13 @@ Esta guía cubre dos perfiles distintos:
 juego. El portable ya se probó manualmente en una instalación Windows
 limpia concreta, distinta del entorno de desarrollo (tarea 6 — ver
 [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)),
-pero esta guía no certifica que funcione en todas las versiones y
-ediciones posibles de Windows, ni que haya pasado el QA completo del
-artefacto (tarea 7) — ver la sección 9 ("Qué falta todavía").
+y ya pasó el QA funcional completo del artefacto — recorrido de
+principio a fin, audio, offline y assets (tarea 7 — ver
+[`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). Esta guía
+no certifica que funcione en todas las versiones y ediciones posibles de
+Windows, y la prueba controlada de compatibilidad entre dos builds
+distintas no se ejecutó (riesgo residual aceptado explícitamente por el
+responsable del producto) — ver la sección 9 ("Qué falta todavía").
 
 ## Índice
 
@@ -290,27 +294,29 @@ en `release/` o en el repositorio:
 
 ## 9. Qué falta todavía antes de `v1.0.0`
 
-Esta guía documenta el estado de las tareas 1-6 de
+Esta guía documenta el estado de las tareas 1-7 de
 `WINDOWS_PACKAGING_DECISION.md` (shell Electron, persistencia y CSP,
 configuración de `electron-builder` y primera candidata portable,
 generación reproducible vía GitHub Actions, esta documentación operativa,
-y la prueba manual en una instalación Windows limpia concreta con
-persistencia tras un reinicio real) — todas completadas. **Siguen
-pendientes**:
+la prueba manual en una instalación Windows limpia concreta con
+persistencia tras un reinicio real, y el QA funcional completo del
+artefacto) — todas completadas. **Sigue pendiente**:
 
-- **Tarea 7**: QA completo del artefacto — recorrido de principio a fin,
-  audio, ausencia de errores de consola durante todo el recorrido, y una
-  prueba de persistencia entre al menos dos builds portables distintas
-  que compartan identidad.
 - **Tarea 8**: cierre documental de la Fase 5.
 
 El portable ya se probó manualmente en una instalación Windows limpia
 concreta, distinta de las máquinas de desarrollo, incluida la persistencia
 tras un reinicio real del sistema operativo (ver
-[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
-Eso no equivale a validar todas las versiones y ediciones posibles de
-Windows, ni al QA completo del artefacto — ambas cosas siguen
-correspondiendo a la tarea 7.
+[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)),
+y ya pasó el QA funcional completo: recorrido de principio a fin, todos
+los puzles, el epílogo, audio, funcionamiento offline y
+assets/renderizado, sobre el mismo artifact (ver
+[`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). Eso no
+equivale a validar todas las versiones y ediciones posibles de Windows.
+La prueba controlada de compatibilidad/sustitución entre dos builds
+distintas **no se ejecutó**: es un riesgo residual aceptado
+explícitamente por el responsable del producto para `v1.0.0`, documentado
+en detalle en `WINDOWS_PORTABLE_FULL_QA.md`.
 
 ## 10. Procedimiento de entrega de una candidata privada
 
@@ -352,13 +358,17 @@ Antes de entregar o dar por buena una candidata, verifica al menos esto:
 - Interacción básica funciona (moverse, interactuar con algo).
 - La aplicación cierra limpiamente.
 
-**Esto NO sustituye**: el QA completo del artefacto (tarea 7), el
-recorrido completo del juego, la validación completa de audio y
-funcionamiento offline, ni la prueba de persistencia entre dos builds
-distintas — todo eso sigue perteneciendo a la tarea 7, no a este smoke
-test. (La prueba en una instalación Windows limpia concreta, tarea 6, ya
-se completó por separado — ver
-[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).)
+**Esto NO sustituye** el QA funcional completo del artefacto — ese smoke
+test mínimo es deliberadamente más ligero. El QA completo (recorrido de
+principio a fin, audio y funcionamiento offline) ya se realizó por
+separado en la tarea 7 — ver
+[`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md) — y la
+prueba en una instalación Windows limpia concreta ya se completó en la
+tarea 6 — ver
+[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
+La prueba de compatibilidad/sustitución entre dos builds distintas no se
+ejecutó dentro de la tarea 7 (riesgo residual aceptado explícitamente
+para `v1.0.0`, ver el detalle en `WINDOWS_PORTABLE_FULL_QA.md`).
 
 ## 12. Solución de problemas
 

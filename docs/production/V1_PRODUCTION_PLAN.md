@@ -34,14 +34,18 @@ primera candidata portable Windows x64, ya existe generación reproducible
 de ese portable mediante GitHub Actions en Windows (validada con dos
 ejecuciones reales y un artifact de CI descargado y ejecutado), ya existe
 una guía operativa completa para obtenerlo, verificarlo, ejecutarlo y
-construirlo localmente, y ya se validó manualmente ese mismo artifact en
+construirlo localmente, ya se validó manualmente ese mismo artifact en
 una instalación Windows limpia concreta, distinta de las máquinas de
-desarrollo, incluida la persistencia tras un reinicio real de Windows (ver
-la nota de avance justo debajo); la prueba de compatibilidad entre al
-menos dos builds portables distintas y el QA completo del artefacto siguen
-siendo trabajo pendiente de la Fase 5.
+desarrollo, incluida la persistencia tras un reinicio real de Windows, y
+ya se completó el QA funcional completo del artefacto — recorrido de
+principio a fin, todos los puzles, el epílogo, audio y funcionamiento
+offline (ver la nota de avance justo debajo). La prueba de compatibilidad
+entre al menos dos builds portables distintas no se ejecutó — riesgo
+residual aceptado explícitamente por el responsable del producto para
+`v1.0.0`; el cierre documental de la Fase 5 sigue siendo trabajo
+pendiente.
 
-> Nota de avance (tareas de implementación 1 a 6 de
+> Nota de avance (tareas de implementación 1 a 7 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
 > ya existe un shell mínimo de Electron (`electron/main.js`,
 > `electron/shell.js`) con pruebas unitarias en `tests/electron/`, sin
@@ -71,10 +75,17 @@ siendo trabajo pendiente de la Fase 5.
 > real de Windows (ver el detalle completo en
 > [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
 > Esa validación cubre una única instalación concreta, no todas las
-> versiones y ediciones posibles de Windows, y no sustituye el QA
-> completo del artefacto ni la prueba de compatibilidad entre dos builds
-> distintas, que siguen correspondiendo a la tarea 7. La generación
-> reproducible del
+> versiones y ediciones posibles de Windows. El QA funcional completo del
+> artefacto ya se completó (tarea 7): recorrido real de principio a fin,
+> íntegramente offline, con los tres puzles, el mecanismo del regalo
+> (código incorrecto y código correcto `7152`), el diálogo final, los
+> créditos, el audio del epílogo, y el estado terminal/read-only tras
+> completar el juego (ver el detalle completo en
+> [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). La
+> prueba controlada de compatibilidad/sustitución entre dos builds
+> distintas **no se ejecutó** dentro de esa tarea — el responsable del
+> producto acepta explícitamente ese riesgo residual para `v1.0.0`. La
+> generación reproducible del
 > portable vía GitHub Actions ya existe: un workflow Windows separado
 > (`.github/workflows/windows-portable.yml`) genera el mismo portable de
 > forma automatizada en cada ejecución. Validado con dos ejecuciones
@@ -95,11 +106,13 @@ siendo trabajo pendiente de la Fase 5.
 > bloqueadas, y carga correctamente el guardado persistente ya existente
 > — más una comprobación acotada adicional de que funciona sin conexión a
 > Internet, que **no** sustituye el recorrido offline completo ni el QA
-> exhaustivo de la tarea 7. Ningún criterio de aceptación, checklist ni
-> casilla de este documento relacionado con la entrega final se considera
-> cumplido por esto — el resto de la Fase 5 (compatibilidad entre builds,
-> QA completo del artefacto) sigue pendiente, y esta nota **no** declara
-> completada la Fase 5. El artefacto no se versiona en el repositorio
+> exhaustivo que se completó después en la tarea 7. Ningún criterio de
+> aceptación, checklist ni casilla de este documento relacionado con la
+> entrega final se considera cumplido únicamente por esta comprobación
+> acotada de la tarea 4 — el QA completo real se registra en la tarea 7
+> (ver más arriba); el cierre documental de la Fase 5 (tarea 8) sigue
+> pendiente, y esta nota **no** declara completada la Fase 5. El
+> artefacto no se versiona en el repositorio
 > (`release/` está en `.gitignore`). También ya existe
 > [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md), la guía
 > operativa para obtener, verificar, ejecutar y construir el portable
@@ -137,22 +150,29 @@ etiquetas Git al comenzar cada fase.
 - [ ] Sustituir o pulir el arte provisional necesario.
 - [ ] Integrar el audio aprobado sin comprometer la estabilidad.
 - [ ] Aplicar la personalización final.
-- [ ] Validar el empaquetado para Windows (herramienta ya aprobada:
+- [x] Validar el empaquetado para Windows (herramienta ya aprobada:
   Electron + `electron-builder`, ver
-  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md). La
+  [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). La
   implementación del shell, la persistencia, la CSP, la configuración de
   `electron-builder`, la primera candidata portable real, su generación
   reproducible vía GitHub Actions, la guía operativa de uso/entrega
-  (`WINDOWS_PORTABLE_GUIDE.md`), y la prueba manual en una instalación
+  (`WINDOWS_PORTABLE_GUIDE.md`), la prueba manual en una instalación
   Windows limpia concreta —distinta de la máquina de desarrollo, con
   persistencia del perfil y del guardado demostrada tras un reinicio real
-  de Windows— ya están completas y validadas (ver
-  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
-  Esta casilla no se marca como cumplida todavía: sigue pendiente, como
-  mínimo, la persistencia/compatibilidad entre dos builds portables
-  compatibles distintas y el QA completo del artefacto según la tarea 7
-  de `WINDOWS_PACKAGING_DECISION.md`, y el cierre final correspondiente
-  (tarea 8).
+  de Windows— (ver
+  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)),
+  y el QA funcional completo del artefacto empaquetado —recorrido de
+  principio a fin, todos los puzles, el epílogo, audio y funcionamiento
+  offline— (ver
+  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)) ya están
+  completos y validados, correspondiendo íntegramente a las tareas 1-7 de
+  `WINDOWS_PACKAGING_DECISION.md`. La prueba controlada de
+  compatibilidad/sustitución entre dos builds portables distintas **no se
+  ejecutó**: es un riesgo residual que el responsable del producto acepta
+  explícitamente para `v1.0.0`, no un bloqueo de esta casilla. Esta
+  casilla marca satisfecha la validación funcional del empaquetado
+  Windows (tareas 1-7); no marca cerrada la Fase 5 en su conjunto — el
+  cierre documental (tarea 8) sigue pendiente.
 - [ ] Ejecutar QA completo sobre web, guardados y ejecutable.
 
 El `README.md` conserva información histórica desactualizada y no debe usarse
@@ -849,13 +869,17 @@ el 2 de agosto:
   dependencias ya están incorporadas y el shell, la persistencia, la CSP,
   la configuración de `electron-builder` y una primera candidata portable
   real ya están implementados y validados, incluida su generación
-  reproducible vía GitHub Actions y la prueba manual en una instalación
-  Windows limpia concreta, con persistencia demostrada tras un reinicio
-  real (tarea 6) — la persistencia entre dos builds compatibles y el QA
-  completo del artefacto siguen pendientes de las tareas de Fase 5 (tarea
-  7), y el cierre documental de la Fase 5 sigue pendiente (tarea 8). Esta
-  casilla marca la decisión de herramienta como cerrada, no el conjunto
-  completo de la implementación de Fase 5.
+  reproducible vía GitHub Actions, la prueba manual en una instalación
+  Windows limpia concreta con persistencia demostrada tras un reinicio
+  real (tarea 6), y el QA funcional completo del artefacto —recorrido de
+  principio a fin, todos los puzles, el epílogo, audio y funcionamiento
+  offline— (tarea 7). La persistencia/compatibilidad entre dos builds
+  distintas **no se ejecutó** dentro de esa tarea — riesgo residual
+  aceptado explícitamente por el responsable del producto para
+  `v1.0.0`, no un bloqueo pendiente. El cierre documental de la Fase 5
+  sigue pendiente (tarea 8). Esta casilla marca la decisión de
+  herramienta como cerrada, no el conjunto completo de la implementación
+  de Fase 5.
 - [ ] **Pipeline mínimo de pruebas de interfaz:** definir qué flujos se
   automatizan y cuáles se registran manualmente sin introducir dependencias
   no aprobadas.
