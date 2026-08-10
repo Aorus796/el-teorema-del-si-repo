@@ -463,18 +463,20 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   incorrecto y con el código correcto `7152`; el diálogo final, los
   créditos y las tarjetas; el audio del epílogo (única pista existente en
   el proyecto), incluido su funcionamiento offline; ausencia de fallos
-  visibles de assets/renderizado; guardado/carga representativo en varios
-  puntos del recorrido; el autosave terminal, el cierre, la reapertura y
-  la carga del estado completado; y el comportamiento read-only del
-  estado terminal (el mecanismo del regalo y el diálogo final ya
-  resueltos no vuelven a dispararse ni a mutar el guardado, sin impedir
-  seguir jugando/guardando con normalidad), según
+  visibles de assets/renderizado; el autosave terminal, el cierre, la
+  reapertura y la carga del estado completado; y el comportamiento
+  read-only del estado terminal (el mecanismo del regalo y el diálogo
+  final ya resueltos no vuelven a dispararse ni a mutar el guardado, sin
+  impedir seguir jugando/guardando con normalidad), según
   `docs/production/EPILOGUE_SPEC.md`. `SAVE_FORMAT_VERSION` se verificó
-  en `4` (`src/state/GameState.js:15`) y no se modificó. Esta tarea
-  reutiliza sin repetir la evidencia ya registrada en la tarea 6
-  (independencia de Node.js/npm/Docker en ejecución, DevTools bloqueadas,
-  reinicio real de Windows y persistencia tras ese reinicio). No se
-  cronometró la duración exacta del recorrido.
+  en `4` (`src/state/GameState.js:15`) y no se modificó. Los checkpoints
+  representativos de guardado/carga (`K`/`L`) en fase inicial, progreso
+  intermedio y pre-epílogo no se repitieron en esta tarea: esa
+  persistencia básica, junto con el cierre/reapertura, la independencia
+  de Node.js/npm/Docker en ejecución, DevTools bloqueadas, y el reinicio
+  real de Windows y su persistencia, ya se registraron en la tarea 6 y
+  esta tarea se apoya en esa evidencia sin repetirla. No se cronometró la
+  duración exacta del recorrido.
 
   **Riesgo residual aceptado explícitamente por el responsable del
   producto para `v1.0.0`**: la prueba controlada de

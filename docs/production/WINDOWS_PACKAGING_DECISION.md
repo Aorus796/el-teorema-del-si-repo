@@ -27,8 +27,8 @@ completo en
 [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)),
 y ya se completó el QA funcional completo sobre ese mismo artifact:
 recorrido de principio a fin, todos los puzles, el epílogo, audio,
-funcionamiento offline y guardado/carga representativo (tarea 7, ver el
-detalle completo en
+funcionamiento offline, y el autosave terminal/reapertura/estado
+read-only (tarea 7, ver el detalle completo en
 [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). La única
 comprobación de esa tarea que no se ejecutó es la prueba controlada de
 compatibilidad/sustitución entre dos builds distintas — riesgo residual
@@ -353,7 +353,11 @@ El ejecutable se considera aceptable cuando:
   posterior compatible (misma identidad `appId`/`name`/`productName` y
   mismo formato de guardado) — verificado con una prueba de actualización
   entre al menos dos builds distintas, no solo entre ejecuciones repetidas
-  de la misma build;
+  de la misma build. **Excepción aprobada para `v1.0.0`** (tarea 7, ver
+  más abajo): esta prueba controlada no se ejecutó; el responsable del
+  producto acepta explícitamente ese riesgo residual y este criterio deja
+  de ser bloqueante para el cierre de `v1.0.0`, sin que eso signifique que
+  quedó validado ni en PASS;
 - permite completar el recorrido del juego de principio a fin;
 - no muestra errores de JavaScript en la consola durante el recorrido;
 - no rompe ni modifica el comportamiento de la versión web servida desde
@@ -390,9 +394,17 @@ abajo, y el detalle completo en
 [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). **No
 ejecutado, riesgo residual aceptado** (ver el punto 7 más abajo): la
 sustitución por una segunda build compatible (prueba de compatibilidad
-entre al menos dos builds distintas). Este documento no certifica que el
-ejecutable haya superado el conjunto completo de criterios de arriba,
-solo los explícitamente listados como verificados.
+entre al menos dos builds distintas).
+
+Todos los criterios funcionales de esta lista que corresponden a esta
+candidata ya se validaron, **con la única excepción** de la prueba
+controlada de compatibilidad/sustitución entre dos builds distintas, que
+no se ejecutó y que el responsable del producto acepta explícitamente
+como riesgo residual para `v1.0.0` (ver la excepción anotada en el
+criterio correspondiente, más arriba, y el detalle completo en la tarea
+7). Este documento **no certifica compatibilidad A→B→A** — esa
+comprobación concreta queda registrada como no ejecutada, nunca como
+superada.
 
 ## Pruebas manuales
 
@@ -921,10 +933,11 @@ pendiente:
    **Sigue pendiente** (tarea 8): el cierre documental de la Fase 5. Esta
    tarea no valida todas las versiones y ediciones posibles de Windows —
    solo la instalación concreta descrita arriba.
-7. [x] QA completo del artefacto Windows: recorrido de principio a fin,
-   audio, funcionamiento offline y compatibilidad entre builds —
-   ejecutado sobre el mismo artifact ya validado en las tareas 4 y 6 (run
-   de GitHub Actions `31369511579`,
+7. [x] QA completo del artefacto Windows: recorrido, audio y offline
+   ejecutados con resultado PASS; tratamiento de la compatibilidad entre
+   builds resuelto como riesgo residual aceptado, no como prueba
+   ejecutada — sobre el mismo artifact ya validado en las tareas 4 y 6
+   (run de GitHub Actions `31369511579`,
    `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`, SHA-256
    `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`),
    en la misma segunda máquina física de la tarea 6. Sin generar ningún
@@ -938,17 +951,20 @@ pendiente:
    incorrecto y con el código correcto `7152`; el diálogo final, los
    créditos y las tarjetas; el audio del epílogo (única pista existente
    en el proyecto), incluido su funcionamiento offline; ausencia de
-   fallos visibles de assets/renderizado; guardado/carga representativo
-   en varios puntos del recorrido; el autosave terminal, el cierre, la
-   reapertura y la carga del estado completado; y el comportamiento
-   read-only del estado terminal según `EPILOGUE_SPEC.md` (el mecanismo
-   del regalo y el diálogo final ya resueltos no vuelven a dispararse ni
-   a mutar el guardado, sin que eso impida seguir jugando/guardando con
-   normalidad). Esta tarea reutiliza sin repetir la evidencia ya
-   registrada en la tarea 6 (independencia de Node.js/npm/Docker en
-   ejecución, DevTools bloqueadas, reinicio real de Windows y
-   persistencia tras ese reinicio) — no se repitió ese protocolo en esta
-   tarea. `SAVE_FORMAT_VERSION` se verificó en `4`
+   fallos visibles de assets/renderizado; el autosave terminal, el
+   cierre, la reapertura y la carga del estado completado; y el
+   comportamiento read-only del estado terminal según `EPILOGUE_SPEC.md`
+   (el mecanismo del regalo y el diálogo final ya resueltos no vuelven a
+   dispararse ni a mutar el guardado, sin que eso impida seguir
+   jugando/guardando con normalidad). Los checkpoints representativos de
+   guardado/carga (`K`/`L`) en fase inicial, progreso intermedio y
+   pre-epílogo **no se repitieron** en esta tarea: esa persistencia
+   básica, junto con el cierre/reapertura, el reinicio real de Windows y
+   la ausencia de procesos huérfanos, ya quedó demostrada en la tarea 6
+   sobre este mismo artifact, y esta tarea se apoya en esa evidencia sin
+   volver a ejecutarla — igual que la independencia de Node.js/npm/Docker
+   en ejecución y el bloqueo de DevTools, tampoco repetidos aquí.
+   `SAVE_FORMAT_VERSION` se verificó en `4`
    (`src/state/GameState.js:15`) y no se modificó.
 
    **No ejecutado — riesgo residual aceptado**: la prueba controlada de

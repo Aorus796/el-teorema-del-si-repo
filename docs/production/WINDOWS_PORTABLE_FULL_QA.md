@@ -96,16 +96,27 @@ existentes (`tools/verifyBuildOutput.mjs`).
 
 Resultado: **PASS**. Sin errores visibles registrados.
 
-## Guardado y carga durante el recorrido
+## Guardado y carga
 
-Se realizaron comprobaciones de persistencia representativas siguiendo el
-ciclo `K → cerrar → comprobar ausencia de procesos → abrir → L →
-continuar`, cubriendo al menos: una fase inicial, progreso intermedio con
-puzles ya resueltos, y el punto previo a la aproximación al epílogo. El
-autosave/estado terminal al completar el juego se comprobó por separado
-(ver "Recorrido completo" arriba).
+Los checkpoints representativos de `K → cerrar → comprobar ausencia de
+procesos → abrir → L → continuar` en fase inicial, con progreso
+intermedio, y antes de la aproximación al epílogo **no se repitieron** en
+esta tarea. Ese ciclo básico de guardado/carga, junto con el cierre y la
+reapertura, la persistencia del perfil, y la ausencia de procesos
+huérfanos, ya se demostró en la tarea 6 sobre este mismo artifact (ver
+"Qué reutiliza de la tarea 6" más arriba y
+[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md));
+esta tarea se apoya en esa evidencia sin volver a ejecutarla.
 
-Resultado: **PASS** en todos los puntos comprobados.
+Lo que sí es evidencia nueva de esta tarea: el autosave terminal al
+completar el juego, el cierre de la aplicación tras completar el
+recorrido, la reapertura, y la carga del estado completado — ver
+"Recorrido completo" más arriba.
+
+Resultado: **PASS** en el autosave terminal, cierre, reapertura y carga
+del estado completado. La persistencia básica de guardado/carga en fases
+intermedias no se comprobó de nuevo en esta tarea; se apoya en la
+evidencia ya registrada en la tarea 6.
 
 ## SAVE_FORMAT_VERSION
 
@@ -158,8 +169,10 @@ responsable del producto para `v1.0.0`.**
 ## Resultado final
 
 **PASS** en el QA funcional completo del artefacto empaquetado (recorrido
-end-to-end, offline, audio, assets, guardado/carga representativo, estado
-terminal/read-only).
+end-to-end, offline, audio, assets, autosave terminal/reapertura/estado
+read-only). La persistencia básica de guardado/carga en fases intermedias
+no se repitió en esta tarea — se apoya en la evidencia ya registrada en
+la tarea 6.
 
 **NO EJECUTADO** — riesgo residual aceptado: la prueba controlada de
 compatibilidad/sustitución entre dos builds distintas (A→B→A).
@@ -173,7 +186,6 @@ compatibilidad/sustitución entre dos builds distintas (A→B→A).
 - Diálogo final, créditos y tarjetas.
 - Audio del epílogo, incluido su funcionamiento offline.
 - Assets y renderizado sin fallos visibles.
-- Guardado/carga representativo en varios puntos del recorrido.
 - Autosave terminal, cierre, reapertura y carga del estado completado.
 - Estado terminal/read-only según el diseño de `EPILOGUE_SPEC.md`.
 
@@ -185,9 +197,10 @@ compatibilidad/sustitución entre dos builds distintas (A→B→A).
 ### Limitaciones de esta validación
 
 - No sustituye ni repite las comprobaciones ya hechas en la tarea 6
-  (independencia de Node/npm/Docker, reinicio real de Windows,
-  persistencia tras reboot, DevTools bloqueadas) — se apoya en esa
-  evidencia previa.
+  (independencia de Node/npm/Docker, checkpoints básicos `K`/`L`, cierre y
+  reapertura, reinicio real de Windows, persistencia tras reboot, DevTools
+  bloqueadas) — se apoya en esa evidencia previa, sin volver a ejecutar
+  esos checkpoints.
 - No se cronometró la duración exacta del recorrido.
 - No se ejecutó la prueba de compatibilidad entre builds — ver la sección
   anterior.
