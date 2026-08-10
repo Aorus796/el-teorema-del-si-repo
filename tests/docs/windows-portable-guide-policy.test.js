@@ -96,10 +96,9 @@ test("documents the candidate as unsigned, never as code-signed", async () => {
   }
 });
 
-test("lists tasks 7 and 8 as still pending", async () => {
+test("lists task 8 as still pending", async () => {
   const guide = await readGuide();
   const pendingSection = guide.slice(guide.indexOf("## 9. Qué falta todavía"));
 
-  assert.match(pendingSection, /Tarea 7/);
   assert.match(pendingSection, /Tarea 8/);
 });

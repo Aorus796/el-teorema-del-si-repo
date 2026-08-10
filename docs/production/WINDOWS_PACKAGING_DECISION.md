@@ -6,7 +6,7 @@ ejecutable Windows exigido por `docs/production/V1_PRODUCTION_PLAN.md`
 
 La PR #34 aprobó esta decisión de forma exclusivamente documental, sin
 instalar ninguna dependencia. Desde entonces, las tareas de implementación
-1 a 6 (ver "Tareas de implementación" más abajo) ya se completaron:
+1 a 7 (ver "Tareas de implementación" más abajo) ya se completaron:
 `electron@43.3.0` y `electron-builder@26.15.7` (ambos exactos) están
 instalados; el shell mínimo (`electron/main.js`, `electron/shell.js`, con
 pruebas en `tests/electron/`), la integración real con `builds/browser`,
@@ -24,11 +24,17 @@ obtener, verificar y ejecutar el portable, y para construirlo localmente
 Windows limpia, distinta del entorno de desarrollo, incluida la
 persistencia tras un reinicio real de Windows (tarea 6, ver el detalle
 completo en
-[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
-Las tareas 7 y 8 siguen pendientes: prueba de actualización entre builds
-compatibles, recorrido completo del juego con el artefacto, QA exhaustivo
-de guardado/audio/offline, y el cierre documental de la Fase 5. Este
-documento no declara completada la Fase 5.
+[`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)),
+y ya se completó el QA funcional completo sobre ese mismo artifact:
+recorrido de principio a fin, todos los puzles, el epílogo, audio,
+funcionamiento offline, y el autosave terminal/reapertura/estado
+read-only (tarea 7, ver el detalle completo en
+[`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). La única
+comprobación de esa tarea que no se ejecutó es la prueba controlada de
+compatibilidad/sustitución entre dos builds distintas — riesgo residual
+aceptado explícitamente por el responsable del producto para `v1.0.0`, no
+un bloqueo pendiente. La tarea 8 sigue pendiente: el cierre documental de
+la Fase 5. Este documento no declara completada la Fase 5.
 
 El resto de la implementación se hará en esas tareas futuras separadas,
 siguiendo el flujo obligatorio de `CLAUDE.md` (planner → developer → qa →
@@ -347,7 +353,11 @@ El ejecutable se considera aceptable cuando:
   posterior compatible (misma identidad `appId`/`name`/`productName` y
   mismo formato de guardado) — verificado con una prueba de actualización
   entre al menos dos builds distintas, no solo entre ejecuciones repetidas
-  de la misma build;
+  de la misma build. **Excepción aprobada para `v1.0.0`** (tarea 7, ver
+  más abajo): esta prueba controlada no se ejecutó; el responsable del
+  producto acepta explícitamente ese riesgo residual y este criterio deja
+  de ser bloqueante para el cierre de `v1.0.0`, sin que eso signifique que
+  quedó validado ni en PASS;
 - permite completar el recorrido del juego de principio a fin;
 - no muestra errores de JavaScript en la consola durante el recorrido;
 - no rompe ni modifica el comportamiento de la versión web servida desde
@@ -376,15 +386,25 @@ limpio y el reinicio real de Windows como comprobación de persistencia
 (ver el detalle completo en la tarea 6, más abajo, y en
 [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
 
-**Sigue pendiente** (tarea 7): la sustitución por una segunda build
-compatible (prueba de actualización entre al menos dos builds distintas);
-el recorrido completo del juego de principio a fin con el artefacto
-empaquetado; y el resto del QA completo sobre ese recorrido — audio,
-ausencia de respuestas 404, y ausencia de errores de JavaScript en consola
-durante el recorrido completo, según los criterios definitivos que se
-apliquen en esa tarea. Este documento no certifica que el ejecutable haya
-superado el conjunto completo de criterios de arriba, solo los
-explícitamente listados como verificados.
+**Ya validado además en la tarea 7**: el recorrido completo del juego de
+principio a fin con este artefacto empaquetado, y el resto del QA
+completo sobre ese recorrido — audio, assets/renderizado y funcionamiento
+offline extendido a todo el recorrido (ver el punto 3 y el punto 8 más
+abajo, y el detalle completo en
+[`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). **No
+ejecutado, riesgo residual aceptado** (ver el punto 7 más abajo): la
+sustitución por una segunda build compatible (prueba de compatibilidad
+entre al menos dos builds distintas).
+
+Todos los criterios funcionales de esta lista que corresponden a esta
+candidata ya se validaron, **con la única excepción** de la prueba
+controlada de compatibilidad/sustitución entre dos builds distintas, que
+no se ejecutó y que el responsable del producto acepta explícitamente
+como riesgo residual para `v1.0.0` (ver la excepción anotada en el
+criterio correspondiente, más arriba, y el detalle completo en la tarea
+7). Este documento **no certifica compatibilidad A→B→A** — esa
+comprobación concreta queda registrada como no ejecutada, nunca como
+superada.
 
 ## Pruebas manuales
 
@@ -395,20 +415,26 @@ instalación Windows limpia; esa comprobación se completó posteriormente en
 la tarea 6, sobre una segunda máquina física distinta de la de desarrollo
 (ver el punto 6 más abajo y
 [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)).
-El recorrido exhaustivo (audio, ausencia de 404, errores de consola
-durante todo el juego) sigue pendiente de la tarea 7:
+El recorrido exhaustivo (audio, assets, funcionamiento offline durante
+todo el juego) se completó posteriormente en la tarea 7 (ver el detalle
+completo en
+[`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)):
 
 1. Copiar el artefacto portable a un directorio fuera del repositorio. —
    **Hecho en la tarea 3** (se copió únicamente el `.exe`).
 2. Ejecutarlo con doble clic y confirmar que abre sin consola adicional ni
    errores. — **Hecho parcialmente en la tarea 3**: doble clic y ausencia
-   de consola adicional confirmados; la comprobación exhaustiva de
-   ausencia de errores durante un recorrido completo queda para la tarea
-   7.
-3. Completar una partida nueva hasta el epílogo, confirmando audio,
-   ausencia de 404 y ausencia de errores de JavaScript. — **Pendiente**
-   (tarea 7); la tarea 3 solo confirmó título, guardado y carga, no un
-   recorrido completo.
+   de consola adicional confirmados. La comprobación exhaustiva de
+   ausencia de fallos visibles durante un recorrido completo se completó
+   en la tarea 7.
+3. Completar una partida nueva hasta el epílogo, confirmando audio y
+   ausencia de fallos visibles de assets/renderizado. — **Completado en
+   la tarea 7**: recorrido real completo, sin saltar estado por consola
+   ni `localStorage`, con los tres puzles, el mecanismo del regalo
+   (código incorrecto y código correcto `7152`), el diálogo final, los
+   créditos, el audio del epílogo, y sin fallos visibles de
+   assets/renderizado — PASS. La tarea 3 solo había confirmado título,
+   guardado y carga, no un recorrido completo.
 4. Guardar, cerrar el ejecutable y volver a abrirlo: confirmar que el
    guardado persiste. — **Hecho en la tarea 3.**
 5. Mover el ejecutable a otro directorio y repetir la comprobación de
@@ -426,16 +452,22 @@ durante todo el juego) sigue pendiente de la tarea 7:
    `appId`/`name`/`productName` y mismo formato de guardado), sustituir el
    ejecutable de la primera por el de la segunda sin borrar el perfil de
    usuario, y confirmar que el guardado creado con la primera build sigue
-   disponible en la segunda. — **Pendiente**. Existen dos outputs
-   distintos ya generados y probados individualmente (la candidata manual
-   de la tarea 3 y el artifact de CI de la tarea 4), pero eso no equivale
-   a esta prueba: la secuencia controlada de sustituir un ejecutable por
-   otro conservando el mismo perfil de usuario y confirmando que el
-   guardado de uno lo carga el otro todavía no se ha realizado.
+   disponible en la segunda. — **No ejecutado en la tarea 7; riesgo
+   residual aceptado explícitamente por el responsable del producto para
+   `v1.0.0`**. Existen dos outputs distintos ya generados y probados
+   individualmente (la candidata manual de la tarea 3 y el artifact de CI
+   de la tarea 4), pero eso no equivale a esta prueba: la secuencia
+   controlada de sustituir un ejecutable por otro conservando el mismo
+   perfil de usuario y confirmando que el guardado de uno lo carga el
+   otro no se ejecutó. Deja de ser un requisito bloqueante para el cierre
+   de `v1.0.0` — ver el detalle completo en
+   [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md).
 8. Desconectar la máquina de Internet y repetir el recorrido completo. —
    **Hecho parcialmente en la tarea 3**: se probó arranque, título,
-   renderizado y carga de partida sin conexión; el recorrido completo
-   exhaustivo sin conexión queda para la tarea 7.
+   renderizado y carga de partida sin conexión. **Completado en la tarea
+   7**: el recorrido completo exhaustivo (todos los puzles, el mecanismo
+   del regalo, el epílogo, los créditos, y el audio) se ejecutó
+   íntegramente sin conexión a Internet — PASS.
 9. Registrar nombre, tamaño y SHA-256 de cada artefacto probado. —
    **Hecho en la tarea 3** para la candidata generada manualmente (ver la
    evidencia completa en "Tareas de implementación" → tarea 3); **hecho de
@@ -475,12 +507,13 @@ durante todo el juego) sigue pendiente de la tarea 7:
   estable entre cierres/reaperturas y al mover el ejecutable portable a
   otra ubicación (tareas 2 y 3), y ya se demostró estable tras un
   reinicio real de Windows en una segunda máquina física distinta de la
-  de desarrollo (tarea 6). Sigue sin probarse la sustitución explícita
-  entre dos builds portables distintas que compartan identidad,
-  conservando el mismo perfil de usuario (existen dos outputs ya
-  generados y probados por separado en las tareas 3 y 4, pero ninguno de
-  esos dos ciclos ejecutó esa secuencia de sustitución controlada) — esa
-  comprobación queda pendiente de la tarea 7.
+  de desarrollo (tarea 6). La sustitución explícita entre dos builds
+  portables distintas que compartan identidad, conservando el mismo
+  perfil de usuario, **no se ejecutó** en la tarea 7 (existen dos outputs
+  ya generados y probados por separado en las tareas 3 y 4, pero ninguno
+  de esos dos ciclos ejecutó esa secuencia de sustitución controlada) —
+  riesgo residual aceptado explícitamente por el responsable del
+  producto para `v1.0.0`, ya no un requisito bloqueante.
 - La ausencia de firma digital puede hacer que algunos entornos con
   políticas de seguridad estrictas bloqueen la ejecución por completo, no
   solo advertir. En la instalación limpia probada en la tarea 6,
@@ -524,8 +557,8 @@ puede decidir unilateralmente eliminar el entregable Windows como forma de
 **Esto ya no es una decisión sin código asociado.** A diferencia de cuando
 se aprobó por primera vez (PR #34, exclusivamente documental), la tarea 1
 ya instaló `electron@43.3.0` como devDependency y ya creó `electron/main.js`,
-`electron/shell.js` y `tests/electron/`. Detener una tarea de
-implementación *futura* (7 a 8) ante un problema no exige revertir
+`electron/shell.js` y `tests/electron/`. Detener la tarea de
+implementación *futura* (8) ante un problema no exige revertir
 automáticamente ese shell ya existente: el primer paso sigue siendo
 detenerse y reabrir formalmente la decisión de herramienta en
 `docs/production/V1_PRODUCTION_PLAN.md` §11, evaluando una alternativa —
@@ -557,25 +590,28 @@ No forman parte de esta decisión ni de la primera candidata:
 - Migración automática de partidas entre navegador y ejecutable.
 - Cualquier cambio a `SAVE_FORMAT_VERSION` motivado únicamente por
   introducir Electron.
-- El resto de la implementación: la prueba de actualización entre al
-  menos dos builds portables compatibles, y el QA completo del artefacto
-  (recorrido de principio a fin, audio, ausencia de 404, ausencia de
-  errores de consola durante todo el recorrido), y el cierre documental
-  de la Fase 5. Todo ese trabajo pendiente corresponde a las tareas de
-  implementación futuras 7 y 8 listadas a continuación. En cambio,
+- El cierre documental de la Fase 5. Ese trabajo pendiente corresponde a
+  la tarea de implementación futura 8 listada a continuación. En cambio,
   instalar `electron`/`electron-builder`, crear el shell mínimo con sus
   pruebas, implementar la persistencia real y la CSP, configurar
   `electron-builder` para generar una primera candidata portable,
   automatizar esa generación vía GitHub Actions, documentar su uso
-  operativo, y validar esa candidata en una instalación Windows limpia
-  (distinta de la máquina de desarrollo), incluida la persistencia tras
-  un reinicio real, ya se completaron en las tareas 1 a 6.
+  operativo, validar esa candidata en una instalación Windows limpia
+  (distinta de la máquina de desarrollo, incluida la persistencia tras un
+  reinicio real), y ejecutar el QA funcional completo del artefacto
+  (recorrido de principio a fin, todos los puzles, el epílogo, audio,
+  offline y assets/renderizado) ya se completaron en las tareas 1 a 7. La
+  prueba de compatibilidad/sustitución entre al menos dos builds
+  portables distintas no se ejecutó dentro de ese QA — es un riesgo
+  residual aceptado explícitamente por el responsable del producto para
+  `v1.0.0`, no un elemento fuera de alcance ni un trabajo pendiente de
+  otra tarea.
 
 ## Tareas de implementación
 
 División prevista para `autopilot`, una tarea acotada por ejecución, en
-este orden. Las tareas 1 a 6 ya están completadas; las tareas 7 y 8 siguen
-pendientes:
+este orden. Las tareas 1 a 7 ya están completadas; la tarea 8 sigue
+pendiente:
 
 1. [x] Shell Electron mínimo y pruebas del proceso principal —
    implementado en `electron/shell.js` (lógica pura, sin importar
@@ -635,15 +671,16 @@ pendientes:
    carga de partida) también — ambos confirmados en la tarea 3. La
    persistencia del guardado en una instalación Windows limpia (distinta
    de esta máquina de desarrollo), incluido el reinicio real de Windows,
-   ya se validó en la tarea 6. **Sigue pendiente ahora**: la persistencia
-   del guardado al sustituir el ejecutable por una **segunda** build
-   portable distinta que comparta identidad y formato de guardado (existen
-   dos outputs ya generados y probados por separado, en las tareas 3 y 4,
-   pero ninguno de esos ciclos ejecutó la secuencia de sustitución
-   controlada que exige esta comprobación); y el recorrido/QA completo
-   correspondiente a la tarea 7 — este documento no declara probado el
-   recorrido offline completo del juego, solo el arranque y la carga
-   básica sin conexión.
+   ya se validó en la tarea 6, y el recorrido/QA completo offline (todos
+   los puzles, el epílogo, audio y assets) ya se completó en la tarea 7
+   (ver [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). La
+   persistencia del guardado al sustituir el ejecutable por una
+   **segunda** build portable distinta que comparta identidad y formato
+   de guardado **no se ejecutó** dentro de esa tarea (existen dos outputs
+   ya generados y probados por separado, en las tareas 3 y 4, pero
+   ninguno de esos ciclos ejecutó la secuencia de sustitución controlada
+   que exige esta comprobación) — riesgo residual aceptado explícitamente
+   por el responsable del producto para `v1.0.0`.
 3. [x] Configuración de `electron-builder` y generación portable x64 —
    `electron-builder@26.15.7` (exacta) como devDependency;
    `electron-builder.yml` (raíz del repo, escrito con sintaxis JSON válida
@@ -715,14 +752,17 @@ pendientes:
    La generación reproducible de este artefacto vía GitHub Actions ya se
    completó en la tarea 4, la documentación operativa para obtenerlo,
    verificarlo, ejecutarlo y construirlo ya se completó en la tarea 5
-   (ver ambas más abajo), y la prueba manual en una instalación Windows
+   (ver ambas más abajo), la prueba manual en una instalación Windows
    limpia (distinta de esta máquina de desarrollo), incluida la
-   persistencia tras un reinicio real, ya se completó en la tarea 6. **Sigue
-   pendiente** (tareas 7-8): prueba de actualización entre al menos dos
+   persistencia tras un reinicio real, ya se completó en la tarea 6, y el
+   recorrido completo del juego (no solo arranque/guardado/carga) con el
+   artefacto empaquetado, incluido el QA de audio/offline/assets, ya se
+   completó en la tarea 7. La prueba de actualización entre al menos dos
    builds portables distintas que compartan identidad y formato de
-   guardado; recorrido completo del juego (no solo arranque/guardado/carga)
-   con el artefacto empaquetado; y el cierre documental de la Fase 5. Este
-   artefacto no se versiona en el repositorio.
+   guardado no se ejecutó — riesgo residual aceptado explícitamente por
+   el responsable del producto para `v1.0.0`. **Sigue pendiente** (tarea
+   8): el cierre documental de la Fase 5. Este artefacto no se versiona
+   en el repositorio.
 4. [x] GitHub Actions en Windows para generar el artefacto —
    `.github/workflows/windows-portable.yml` (nuevo, separado de `ci.yml`,
    que no se toca): job en `runs-on: windows-latest`, triggers
@@ -799,16 +839,17 @@ pendientes:
    ni el QA exhaustivo que exige la tarea 7.
 
    La documentación e instrucciones de entrega ya se completaron en la
-   tarea 5, y la prueba manual en una instalación Windows limpia
-   (distinta de esta máquina de desarrollo), incluida la persistencia
-   tras un reinicio real, ya se completó en la tarea 6 (ver ambas más
-   abajo). **Sigue pendiente** (tareas 7-8): prueba de persistencia entre
-   al menos dos builds portables distintas que compartan identidad y
-   formato de guardado; recorrido completo del juego con el artefacto
-   empaquetado y el resto del QA completo (audio, ausencia de 404,
-   ausencia de errores de consola durante todo el recorrido); y el cierre
-   documental de la Fase 5. Este documento no declara completada la
-   Fase 5.
+   tarea 5, la prueba manual en una instalación Windows limpia (distinta
+   de esta máquina de desarrollo), incluida la persistencia tras un
+   reinicio real, ya se completó en la tarea 6, y el recorrido completo
+   del juego con el artefacto empaquetado y el resto del QA completo
+   (audio, offline, assets/renderizado) ya se completaron en la tarea 7
+   (ver las tres más abajo). La prueba de persistencia entre al menos dos
+   builds portables distintas que compartan identidad y formato de
+   guardado no se ejecutó dentro de esa tarea — riesgo residual aceptado
+   explícitamente por el responsable del producto para `v1.0.0`. **Sigue
+   pendiente** (tarea 8): el cierre documental de la Fase 5. Este
+   documento no declara completada la Fase 5.
 5. [x] Documentación e instrucciones de ejecución —
    [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md) (nuevo): guía
    operativa en español, distinta de este documento de decisión, dirigida
@@ -843,15 +884,15 @@ pendientes:
    `npm run desktop:package:win`, se referencia el nombre lógico correcto
    del artifact y las rutas reales de persistencia, no se documenta
    ninguna publicación de GitHub Release, la candidata se documenta
-   siempre como no firmada, y (tras la actualización de esta prueba en la
-   tarea 6, ver más abajo) las tareas 7-8 siguen listadas como
-   pendientes.
+   siempre como no firmada, y (tras las actualizaciones de esta prueba en
+   las tareas 6 y 7, ver más abajo) solo la tarea 8 sigue listada como
+   pendiente.
 
    No se modificó ningún código, configuración de `electron-builder`, ni
    el workflow de GitHub Actions en esta tarea — es exclusivamente
    documental. La prueba en una instalación Windows limpia ya se
-   completó en la tarea 6 (ver más abajo); el QA completo del artefacto
-   sigue correspondiendo a la tarea 7.
+   completó en la tarea 6, y el QA completo del artefacto ya se completó
+   en la tarea 7 (ver ambas más abajo).
 6. [x] Prueba manual en una instalación Windows limpia —
    ejecutada en una **segunda máquina física**, distinta del ordenador de
    desarrollo (Windows 11 Pro 25H2, build 26200.8875, x64 — confirmado
@@ -889,13 +930,66 @@ pendientes:
    ausencia de dependencia en tiempo de ejecución, no ausencia de
    instalación.
 
-   **Sigue pendiente** (tareas 7-8): el recorrido completo del juego, el
-   QA exhaustivo de audio y funcionamiento offline, la prueba de
-   compatibilidad entre dos builds portables distintas, y el cierre
-   documental de la Fase 5. Esta tarea no valida todas las versiones y
-   ediciones posibles de Windows — solo la instalación concreta descrita
-   arriba.
-7. Prueba completa de guardado, carga, audio y funcionamiento offline.
+   **Sigue pendiente** (tarea 8): el cierre documental de la Fase 5. Esta
+   tarea no valida todas las versiones y ediciones posibles de Windows —
+   solo la instalación concreta descrita arriba.
+7. [x] QA completo del artefacto Windows: recorrido, audio y offline
+   ejecutados con resultado PASS; tratamiento de la compatibilidad entre
+   builds resuelto como riesgo residual aceptado, no como prueba
+   ejecutada — sobre el mismo artifact ya validado en las tareas 4 y 6
+   (run de GitHub Actions `31369511579`,
+   `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`, SHA-256
+   `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`),
+   en la misma segunda máquina física de la tarea 6. Sin generar ningún
+   ejecutable nuevo. El detalle completo está en
+   [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md).
+
+   **Validado**: recorrido real completo, jugado de principio a fin sin
+   saltar estado por consola/`localStorage`, íntegramente offline; los
+   tres puzles principales (Paseo de los Siete Puentes, Biblioteca del
+   Margen, Archivo compacto); el mecanismo del regalo con un código
+   incorrecto y con el código correcto `7152`; el diálogo final, los
+   créditos y las tarjetas; el audio del epílogo (única pista existente
+   en el proyecto), incluido su funcionamiento offline; ausencia de
+   fallos visibles de assets/renderizado; el autosave terminal, el
+   cierre, la reapertura y la carga del estado completado; y el
+   comportamiento read-only del estado terminal según `EPILOGUE_SPEC.md`
+   (el mecanismo del regalo y el diálogo final ya resueltos no vuelven a
+   dispararse ni a mutar el guardado, sin que eso impida seguir
+   jugando/guardando con normalidad). Los checkpoints representativos de
+   guardado/carga (`K`/`L`) en fase inicial, progreso intermedio y
+   pre-epílogo **no se repitieron** en esta tarea: esa persistencia
+   básica, junto con el cierre/reapertura, el reinicio real de Windows y
+   la ausencia de procesos huérfanos, ya quedó demostrada en la tarea 6
+   sobre este mismo artifact, y esta tarea se apoya en esa evidencia sin
+   volver a ejecutarla — igual que la independencia de Node.js/npm/Docker
+   en ejecución y el bloqueo de DevTools, tampoco repetidos aquí.
+   `SAVE_FORMAT_VERSION` se verificó en `4`
+   (`src/state/GameState.js:15`) y no se modificó.
+
+   **No ejecutado — riesgo residual aceptado**: la prueba controlada de
+   compatibilidad/sustitución entre dos builds portables distintas
+   (guardar con la candidata manual de la tarea 3 — SHA-256
+   `9AEBB4A0787416C6B41FE203AB42DC231D9D3A3C78ECCAC48A7794332C098463` —,
+   sustituirla conservando el mismo `%APPDATA%\el-teorema-del-si` por el
+   artifact de CI de la tarea 4, cargar, y volver a la primera) **no se
+   realizó**. Que ambas candidatas hayan sido probadas individualmente en
+   sus propias tareas no equivale a haber probado esa secuencia de
+   sustitución, y este documento no lo presenta como tal. El responsable
+   del producto **acepta explícitamente este riesgo residual para
+   `v1.0.0`**: la persistencia normal del perfil y del guardado ya se
+   validó mediante cierre/reapertura y un reinicio real de Windows en la
+   tarea 6 sobre un único ejecutable, y ambas candidatas comparten el
+   mismo `SAVE_FORMAT_VERSION` (4) por código — pero esa coincidencia de
+   versión no equivale a una prueba funcional real de sustitución entre
+   builds. Esta comprobación deja de ser un requisito bloqueante para el
+   cierre de `v1.0.0`; queda registrada como riesgo aceptado, no como
+   validada.
+
+   No se cronometró la duración exacta del recorrido completo.
+
+   **Sigue pendiente** (tarea 8): el cierre documental de la Fase 5, que
+   no se declara completada por este documento.
 8. Cierre documental de la Fase 5.
 
 Cada una debe seguir el flujo completo de `CLAUDE.md` (planner → developer

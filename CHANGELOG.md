@@ -449,6 +449,45 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   portables distintas, el recorrido completo del juego, el QA exhaustivo
   de audio/offline y el cierre documental de la Fase 5 siguen pendientes
   de las tareas 7 y 8.
+- QA funcional completo del artefacto Windows
+  (`docs/production/WINDOWS_PORTABLE_FULL_QA.md`), séptima tarea de
+  implementación de `docs/production/WINDOWS_PACKAGING_DECISION.md`:
+  recorrido real del juego jugado de principio a fin sobre el mismo
+  artifact ya validado en las tareas 4 y 6 (run de GitHub Actions
+  `31369511579`, `El-Teorema-del-Si-0.5.0-win-x64-portable.exe`, SHA-256
+  `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`),
+  en la misma segunda máquina física de la tarea 6, íntegramente offline
+  (Wi-Fi/Ethernet desconectados durante todo el recorrido). Validado:
+  los tres puzles principales (Paseo de los Siete Puentes, Biblioteca del
+  Margen, Archivo compacto); el mecanismo del regalo con un código
+  incorrecto y con el código correcto `7152`; el diálogo final, los
+  créditos y las tarjetas; el audio del epílogo (única pista existente en
+  el proyecto), incluido su funcionamiento offline; ausencia de fallos
+  visibles de assets/renderizado; el autosave terminal, el cierre, la
+  reapertura y la carga del estado completado; y el comportamiento
+  read-only del estado terminal (el mecanismo del regalo y el diálogo
+  final ya resueltos no vuelven a dispararse ni a mutar el guardado, sin
+  impedir seguir jugando/guardando con normalidad), según
+  `docs/production/EPILOGUE_SPEC.md`. `SAVE_FORMAT_VERSION` se verificó
+  en `4` (`src/state/GameState.js:15`) y no se modificó. Los checkpoints
+  representativos de guardado/carga (`K`/`L`) en fase inicial, progreso
+  intermedio y pre-epílogo no se repitieron en esta tarea: esa
+  persistencia básica, junto con el cierre/reapertura, la independencia
+  de Node.js/npm/Docker en ejecución, DevTools bloqueadas, y el reinicio
+  real de Windows y su persistencia, ya se registraron en la tarea 6 y
+  esta tarea se apoya en esa evidencia sin repetirla. No se cronometró la
+  duración exacta del recorrido.
+
+  **Riesgo residual aceptado explícitamente por el responsable del
+  producto para `v1.0.0`**: la prueba controlada de
+  compatibilidad/sustitución entre dos builds portables distintas
+  (candidata manual de la tarea 3 — SHA-256
+  `9AEBB4A0787416C6B41FE203AB42DC231D9D3A3C78ECCAC48A7794332C098463` — y
+  artifact de CI de la tarea 4) **no se ejecutó**. Que ambas candidatas
+  se hayan probado individualmente en sus propias tareas no equivale a
+  haber probado la secuencia de sustitución conservando el mismo perfil
+  de usuario; este documento no lo presenta como tal. El cierre
+  documental de la Fase 5 sigue pendiente de la tarea 8.
 
 ### Corregido
 
