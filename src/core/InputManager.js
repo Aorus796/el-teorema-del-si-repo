@@ -5,6 +5,7 @@ const DEFAULT_BINDINGS = {
   moveRight: ["KeyD", "ArrowRight"],
   interact: ["KeyE", "Enter"],
   notebook: ["KeyQ", "Tab"],
+  nextPuzzleHint: ["KeyQ"],
   save: ["KeyK"],
   load: ["KeyL"],
   openPuzzlePrototype: ["KeyP"],

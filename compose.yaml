@@ -10,3 +10,16 @@ services:
     volumes:
       - .:/workspace
     command: npm run dev
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.62.0-noble
+    working_dir: /workspace
+    init: true
+    ipc: host
+    volumes:
+      - .:/workspace
+      - playwright_node_modules:/workspace/node_modules
+    command: sh -lc "npm ci && npm run test:e2e"
+
+volumes:
+  playwright_node_modules:

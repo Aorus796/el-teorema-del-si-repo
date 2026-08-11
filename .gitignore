@@ -27,6 +27,10 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Pruebas de interfaz
+playwright-report/
+test-results/
+
 # Arte exportado temporal
 assets/exported/*
 !assets/exported/.gitkeep

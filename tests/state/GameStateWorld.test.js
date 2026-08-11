@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { GameState } from "../../src/state/GameState.js";
+import {
+  GameState,
+  SAVE_FORMAT_VERSION,
+} from "../../src/state/GameState.js";
 
 test("GameState inicia el prólogo en la Plaza del Axioma", () => {
   const state = new GameState();
@@ -47,6 +50,78 @@ test("GameState mantiene una posición independiente para cada mapa", () => {
     x: 96,
     y: 176,
     facing: "up",
+  });
+
+  assert.deepEqual(state.getPlayerState("library"), {
+    x: 240,
+    y: 256,
+    facing: "up",
+  });
+  assert.deepEqual(state.getPlayerState("archive"), {
+    x: 192,
+    y: 192,
+    facing: "up",
+  });
+});
+
+test("GameState guarda y restaura posiciones independientes de los cuatro mapas", () => {
+  const state = new GameState();
+  state.setPlayerState({
+    x: 304,
+    y: 208,
+    facing: "right",
+  });
+  state.changeMap("seven-bridges-walk", {
+    x: 112,
+    y: 160,
+    facing: "up",
+  });
+  state.changeMap("library", {
+    x: 224,
+    y: 240,
+    facing: "left",
+  });
+  state.player = {
+    x: 232,
+    y: 248,
+    facing: "down",
+  };
+  state.changeMap("archive", {
+    x: 192,
+    y: 176,
+    facing: "down",
+  });
+
+  const worldBefore = structuredClone(state.world);
+  const saved = state.toSaveData();
+  const restored = new GameState();
+  restored.restore(saved);
+
+  assert.equal(saved.formatVersion, SAVE_FORMAT_VERSION);
+  assert.deepEqual(state.world, worldBefore);
+  assert.equal(restored.world.currentMapId, "archive");
+  assert.deepEqual(restored.getPlayerState("axiom-plaza"), {
+    x: 304,
+    y: 208,
+    facing: "right",
+  });
+  assert.deepEqual(
+    restored.getPlayerState("seven-bridges-walk"),
+    {
+      x: 112,
+      y: 160,
+      facing: "up",
+    },
+  );
+  assert.deepEqual(restored.getPlayerState("library"), {
+    x: 232,
+    y: 248,
+    facing: "down",
+  });
+  assert.deepEqual(restored.getPlayerState("archive"), {
+    x: 192,
+    y: 176,
+    facing: "down",
   });
 });
 

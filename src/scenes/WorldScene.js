@@ -21,6 +21,33 @@ const LIBRARY_CLUE_ENTRY = {
     "La anotación encontrada junto al embarcadero contiene dos arcos entrelazados y una referencia al archivo de mapas de la Biblioteca del Margen.",
 };
 
+const BRIDE_EPILOGUE_DIALOGUE_TURNS = [
+  {
+    speaker: "Novia",
+    lines: [
+      "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
+    ],
+  },
+  {
+    speaker: "Protagonista",
+    lines: ["Y aun así he venido."],
+  },
+  {
+    speaker: "Novia",
+    lines: ["Entonces dime qué demuestra el teorema."],
+  },
+  {
+    speaker: "Protagonista",
+    lines: [
+      "Que ningún sí vale para siempre solo porque se pronunció una vez. Vale porque, pudiendo decir que no, hoy volvemos a elegirlo.",
+    ],
+  },
+  {
+    speaker: "Novia",
+    lines: ["Eso era lo único que necesitaba comprobar antes de mañana."],
+  },
+];
+
 const OBJECTIVE_LABELS = {
   "review-preparations-board": "Revisa el tablón de preparativos",
   "speak-to-corolaria": "Habla con la alcaldesa Corolaria",
@@ -28,15 +55,21 @@ const OBJECTIVE_LABELS = {
   "investigate-seven-bridges": "Investiga el Paseo de los Siete Puentes",
   "inspect-p2-evidence": "Busca la pista junto al embarcadero",
   "go-to-library": "Dirígete a la Biblioteca del Margen",
+  "inspect-archive-criteria-table":
+    "Entra en el Archivo y examina la mesa de criterios.",
+  "start-epilogue": "Regresa al lugar donde comenzó la demostración.",
+  "epilogue-meet-bride": "Acércate a ella en la Plaza.",
+  "epilogue-completed": "La demostración ha terminado.",
 };
 
 export class WorldScene {
-  constructor({ scenes, input, storage, state, ui }) {
+  constructor({ scenes, input, storage, state, ui, audio }) {
     this.scenes = scenes;
     this.input = input;
     this.storage = storage;
     this.state = state;
     this.ui = ui;
+    this.audio = audio;
     this.map = null;
     this.player = null;
     this.camera = null;
@@ -126,9 +159,10 @@ export class WorldScene {
     }
 
     if (this.input.wasPressed("load")) {
-      this.load();
-      this.setupCurrentMap();
-      this.ui.showToast("Partida cargada");
+      if (this.load()) {
+        this.setupCurrentMap();
+        this.ui.showToast("Partida cargada");
+      }
       return;
     }
 
@@ -139,6 +173,7 @@ export class WorldScene {
     this.nearbyObject = findNearbyObject(
       this.player,
       this.map.objects,
+      this.state,
     );
 
     if (this.nearbyObject) {
@@ -179,6 +214,26 @@ export class WorldScene {
           "La alcaldesa dice que eso no es un problema matemático sino logístico.",
         ],
       });
+      return;
+    }
+
+    if (object.id === "library-silogio") {
+      this.interactWithSilogio();
+      return;
+    }
+
+    if (object.id === "archive-criteria-table") {
+      this.interactWithArchiveCriteriaTable();
+      return;
+    }
+
+    if (object.id === "epilogue-gift-mechanism") {
+      this.interactWithEpilogueGiftMechanism();
+      return;
+    }
+
+    if (object.id === "bride-epilogue") {
+      this.interactWithBrideEpilogue();
       return;
     }
 
@@ -327,6 +382,30 @@ export class WorldScene {
       return;
     }
 
+    if (
+      object.id === "seven-bridges-to-library" &&
+      !this.state.flags.libraryObjectiveUnlocked
+    ) {
+      this.ui.beginDialogue({
+        speaker: "Camino de la biblioteca",
+        lines: [
+          "Todavía no tengo ningún motivo para ir a la Biblioteca.",
+        ],
+      });
+      return;
+    }
+
+    if (
+      object.id === "library-to-archive" &&
+      !this.state.flags.archiveUnlocked
+    ) {
+      this.ui.beginDialogue({
+        speaker: "Acceso al Archivo",
+        lines: ["El acceso al Archivo sigue cerrado."],
+      });
+      return;
+    }
+
     this.syncPlayerState();
     this.state.changeMap(
       object.targetMapId,
@@ -334,6 +413,75 @@ export class WorldScene {
     );
     this.setupCurrentMap();
     this.ui.showToast(this.map.name);
+  }
+
+  interactWithSilogio() {
+    this.syncPlayerState();
+    this.scenes.change("library-catalogue");
+  }
+
+  interactWithArchiveCriteriaTable() {
+    this.syncPlayerState();
+    this.scenes.change("archive-criteria");
+  }
+
+  interactWithEpilogueGiftMechanism() {
+    if (!this.state.flags.epilogueUnlocked) {
+      this.ui.beginDialogue({
+        speaker: "Mecanismo del regalo",
+        lines: [
+          "Una pieza metálica descansa sobre un soporte de piedra, cerrada con un mecanismo de anillos.",
+          "No hay nada que examinar todavía.",
+        ],
+      });
+      return;
+    }
+
+    this.syncPlayerState();
+
+    if (this.state.flags.giftCodeSolved) {
+      this.scenes.change("epilogue-gift-code", { readOnly: true });
+      return;
+    }
+
+    this.scenes.change("epilogue-gift-code");
+  }
+
+  interactWithBrideEpilogue() {
+    if (!this.state.flags.giftCodeSolved) {
+      return;
+    }
+
+    if (this.state.flags.epilogueCompleted) {
+      return;
+    }
+
+    this.syncPlayerState();
+    this.playBrideDialogueTurn(0);
+  }
+
+  playBrideDialogueTurn(turnIndex) {
+    const turn = BRIDE_EPILOGUE_DIALOGUE_TURNS[turnIndex];
+    const isLastTurn = turnIndex === BRIDE_EPILOGUE_DIALOGUE_TURNS.length - 1;
+
+    this.ui.beginDialogue({
+      speaker: turn.speaker,
+      lines: turn.lines,
+      onComplete: () => {
+        if (isLastTurn) {
+          this.completeBrideDialogue();
+          return;
+        }
+
+        this.playBrideDialogueTurn(turnIndex + 1);
+      },
+    });
+  }
+
+  completeBrideDialogue() {
+    this.audio.playEpilogueTheme();
+    this.syncPlayerState();
+    this.scenes.change("credits");
   }
 
   interactWithBlockedExit(object) {
@@ -453,15 +601,21 @@ export class WorldScene {
   }
 
   load() {
-    const saveData = this.storage.load();
+    try {
+      const saveData = this.storage.load();
 
-    if (saveData === null) {
-      this.ui.showToast("No existe una partida guardada");
+      if (saveData === null) {
+        this.ui.showToast("No existe una partida guardada");
+        return false;
+      }
+
+      this.state.restore(saveData);
+      return true;
+    } catch (error) {
+      console.error(error);
+      this.ui.showToast("No se pudo cargar la partida", 3000);
       return false;
     }
-
-    this.state.restore(saveData);
-    return true;
   }
 
   syncPlayerState() {
@@ -478,21 +632,32 @@ export class WorldScene {
   }
 
   render(context) {
-    renderGround(context, this.camera, this.map);
-    renderBackgroundDecorations(context, this.camera, this.map);
-    renderSolidTiles(context, this.camera, this.map);
-    renderForegroundDecorations(context, this.camera, this.map);
-    renderObjects(context, this.camera, this.map.objects, this.state);
+    const map =
+      this.map.id === "axiom-plaza" &&
+      this.state.flags.giftCodeSolved &&
+      this.map.dawnPalette
+        ? { ...this.map, palette: this.map.dawnPalette }
+        : this.map;
+
+    renderGround(context, this.camera, map);
+    renderBackgroundDecorations(context, this.camera, map);
+    renderSolidTiles(context, this.camera, map);
+    renderForegroundDecorations(context, this.camera, map);
+    renderObjects(context, this.camera, map.objects, this.state);
     this.player.render(context, this.camera);
-    renderHud(context, this.map, this.state.objectiveId);
+    renderHud(context, map, this.state.objectiveId);
   }
 }
 
-function findNearbyObject(player, objects) {
+function findNearbyObject(player, objects, state) {
   const center = player.getCenter();
 
   return (
     objects.find((object) => {
+      if (object.requiresFlag && !state.flags[object.requiresFlag]) {
+        return false;
+      }
+
       const objectCenterX = object.x + object.width / 2;
       const objectCenterY = object.y + object.height / 2;
 
@@ -699,6 +864,10 @@ function renderForegroundDecorations(context, camera, map) {
 
 function renderObjects(context, camera, objects, state) {
   for (const object of objects) {
+    if (object.requiresFlag && !state.flags[object.requiresFlag]) {
+      continue;
+    }
+
     const x = Math.round(object.x - camera.x);
     const y = Math.round(object.y - camera.y);
 
@@ -727,6 +896,14 @@ function renderObjects(context, camera, objects, state) {
       context.fillStyle = "#332c36";
       context.fillRect(x + 3, y + 3, object.width - 6, 2);
       context.fillRect(x + 3, y + 7, object.width - 9, 2);
+      continue;
+    }
+
+    if (object.type === "table") {
+      context.fillStyle = "#553b2d";
+      context.fillRect(x, y + 4, object.width, object.height - 4);
+      context.fillStyle = "#d6b65f";
+      context.fillRect(x + 3, y, object.width - 6, 6);
       continue;
     }
 

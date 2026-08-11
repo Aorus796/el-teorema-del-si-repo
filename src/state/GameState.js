@@ -1,8 +1,43 @@
 import { P2State } from "../puzzles/p2-bridges/P2State.js";
+import {
+  LibraryCatalogueState,
+} from "../puzzles/library-catalogue/LibraryCatalogueState.js";
+import {
+  applyLibraryCatalogueProgression,
+} from "../progression/LibraryCatalogueProgression.js";
+import {
+  ArchiveCriteriaState,
+} from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
+import {
+  applyArchiveCriteriaProgression,
+} from "../progression/ArchiveCriteriaProgression.js";
 
-export const SAVE_FORMAT_VERSION = 2;
+export const SAVE_FORMAT_VERSION = 4;
 
-const LEGACY_SAVE_FORMAT_VERSION = 1;
+/*
+ * Tres conceptos distintos, con listas separadas a propósito: reutilizar
+ * una sola lista de "formatos legacy" para libraryCatalogue y para
+ * archiveCriteria reiniciaría por error el catálogo real de una partida
+ * de formato 3 (que ya contiene datos reales del catálogo, solo carece de
+ * archiveCriteria).
+ */
+const SUPPORTED_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2, 3]);
+const LIBRARY_CATALOGUE_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2]);
+const ARCHIVE_CRITERIA_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2, 3]);
+const LIBRARY_CATALOGUE_SAVE_FIELDS = Object.freeze([
+  "order",
+  "phase",
+  "hintsRead",
+  "attemptCount",
+  "failureCode",
+]);
+const ARCHIVE_CRITERIA_SAVE_FIELDS = Object.freeze([
+  "verdicts",
+  "phase",
+  "hintsRead",
+  "attemptCount",
+  "failureCode",
+]);
 const DEFAULT_MAP_ID = "axiom-plaza";
 
 const DEFAULT_PLAYER_BY_MAP = {
@@ -15,6 +50,16 @@ const DEFAULT_PLAYER_BY_MAP = {
     x: 48,
     y: 192,
     facing: "right",
+  },
+  library: {
+    x: 240,
+    y: 256,
+    facing: "up",
+  },
+  archive: {
+    x: 192,
+    y: 192,
+    facing: "up",
   },
 };
 
@@ -58,6 +103,12 @@ export class GameState {
       sevenBridgesUnlocked: false,
       p2EvidenceFound: false,
       libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
     };
 
     this.objectiveId = "review-preparations-board";
@@ -65,16 +116,13 @@ export class GameState {
 
     this.puzzles = {
       p2: new P2State(),
+      libraryCatalogue: new LibraryCatalogueState(),
+      archiveCriteria: new ArchiveCriteriaState(),
     };
   }
 
   getPlayerState(mapId = this.world.currentMapId) {
-    const storedState =
-      this.world.playerByMap[mapId] ??
-      DEFAULT_PLAYER_BY_MAP[mapId] ??
-      DEFAULT_PLAYER_BY_MAP[DEFAULT_MAP_ID];
-
-    return { ...storedState };
+    return readPlayerStateFromWorld(this.world, mapId);
   }
 
   setPlayerState(playerState, mapId = this.world.currentMapId) {
@@ -116,6 +164,40 @@ export class GameState {
     this.player = this.getPlayerState(mapId);
   }
 
+  /*
+   * Cambia al mapa indicado, dejando siempre una posición segura para
+   * él. Si ya se estaba en ese mapa: normaliza la posición en vivo
+   * (this.player) contra la propia entrada ya guardada de ese mapa —
+   * conserva la posición en vivo si es válida; si no lo es, usa esa
+   * entrada ya guardada; y solo si ninguna de las dos es válida cae al
+   * spawn seguro por defecto. Una entrada ya guardada corrupta nunca
+   * puede pisar una posición en vivo válida, que es la fuente de verdad
+   * mientras se permanece en el mismo mapa. Si se llega desde otro
+   * mapa: la posición en vivo pertenece al mapa que se abandona y se
+   * conserva allí (mismo mecanismo de siempre, sin tocar el mapa de
+   * destino); la posición del mapa de destino se toma de su propia
+   * entrada ya guardada si es válida, o del spawn seguro si no lo es.
+   * Nunca reutiliza la posición de un mapa para otro. A diferencia de
+   * changeMap(), no acepta una posición de entrada explícita: está
+   * pensado para transiciones que deben aterrizar siempre en un lugar
+   * seguro, con independencia del estado previo.
+   */
+  changeToSafeMap(mapId) {
+    this.setPlayerState(this.player, this.world.currentMapId);
+
+    this.world.currentMapId = mapId;
+
+    const fallback =
+      DEFAULT_PLAYER_BY_MAP[mapId] ?? DEFAULT_PLAYER_BY_MAP[DEFAULT_MAP_ID];
+    const normalizedState = normalizePlayerState(
+      this.world.playerByMap[mapId],
+      fallback,
+    );
+
+    this.world.playerByMap[mapId] = normalizedState;
+    this.player = { ...normalizedState };
+  }
+
   addNotebookEntry(entry) {
     if (this.notebook.some((current) => current.id === entry.id)) {
       return false;
@@ -140,22 +222,35 @@ export class GameState {
   }
 
   toSaveData() {
-    this.setPlayerState(this.player);
+    const savedPlayer = normalizePlayerState(
+      this.player,
+      this.getPlayerState(),
+    );
+    const savedPlayerByMap = clonePlayerByMap(
+      this.world.playerByMap,
+    );
+    savedPlayerByMap[this.world.currentMapId] = {
+      ...savedPlayer,
+    };
 
     return {
       formatVersion: SAVE_FORMAT_VERSION,
       savedAt: new Date().toISOString(),
       scene: this.scene,
-      player: { ...this.player },
+      player: { ...savedPlayer },
       world: {
         currentMapId: this.world.currentMapId,
-        playerByMap: clonePlayerByMap(this.world.playerByMap),
+        playerByMap: savedPlayerByMap,
       },
       flags: { ...this.flags },
       objectiveId: this.objectiveId,
       notebook: this.notebook.map((entry) => ({ ...entry })),
       puzzles: {
         p2: this.puzzles.p2.toSaveData(),
+        libraryCatalogue:
+          this.puzzles.libraryCatalogue.toSaveData(),
+        archiveCriteria:
+          this.puzzles.archiveCriteria.toSaveData(),
       },
     };
   }
@@ -164,24 +259,33 @@ export class GameState {
     if (
       !data ||
       ![
-        LEGACY_SAVE_FORMAT_VERSION,
+        ...SUPPORTED_LEGACY_FORMAT_VERSIONS,
         SAVE_FORMAT_VERSION,
       ].includes(data.formatVersion)
     ) {
       throw new Error("La version de la partida guardada no es compatible.");
     }
 
-    this.scene =
-      data.scene === "dev-world"
+    /*
+     * Construye todos los campos derivados en variables locales antes de
+     * mutar `this`. Cualquiera de estas llamadas puede lanzar (formato de
+     * catálogo/Archivo corrupto, por ejemplo); si eso ocurre, `this` no
+     * debe haberse tocado todavía, para que restore() sea atómico.
+     */
+    const giftCodeSolved = Boolean(data.flags?.giftCodeSolved);
+
+    const scene = giftCodeSolved
+      ? "world"
+      : data.scene === "dev-world"
         ? "world"
         : typeof data.scene === "string"
           ? data.scene
           : "world";
 
-    this.world = restoreWorldState(data);
-    this.player = this.getPlayerState();
+    const world = restoreWorldState(data, giftCodeSolved);
+    const player = readPlayerStateFromWorld(world);
 
-    this.flags = {
+    const flags = {
       examinedPrototypeSign: Boolean(
         data.flags?.examinedPrototypeSign,
       ),
@@ -200,30 +304,82 @@ export class GameState {
       libraryObjectiveUnlocked: Boolean(
         data.flags?.libraryObjectiveUnlocked,
       ),
+      archiveUnlocked: Boolean(data.flags?.archiveUnlocked),
+      investigationComplete: Boolean(
+        data.flags?.investigationComplete,
+      ),
+      epilogueUnlocked: Boolean(data.flags?.epilogueUnlocked),
+      epilogueStarted: Boolean(data.flags?.epilogueStarted),
+      giftCodeSolved,
+      epilogueCompleted: Boolean(data.flags?.epilogueCompleted),
     };
 
-    this.objectiveId =
-      typeof data.objectiveId === "string"
+    assertEpilogueFlagInvariants(flags);
+
+    const objectiveId = flags.epilogueCompleted
+      ? "epilogue-completed"
+      : typeof data.objectiveId === "string"
         ? data.objectiveId
         : "review-preparations-board";
 
-    this.notebook = Array.isArray(data.notebook)
+    const notebook = Array.isArray(data.notebook)
       ? data.notebook
           .filter(isNotebookEntry)
           .map((entry) => ({ ...entry }))
       : [];
 
-    this.puzzles = {
+    const puzzles = {
       p2: new P2State(data.puzzles?.p2 ?? {}),
+      libraryCatalogue: restoreLibraryCatalogue(data),
+      archiveCriteria: restoreArchiveCriteria(data),
     };
+
+    this.scene = scene;
+    this.world = world;
+    this.player = player;
+    this.flags = flags;
+    this.objectiveId = objectiveId;
+    this.notebook = notebook;
+    this.puzzles = puzzles;
+
+    applyLibraryCatalogueProgression(this);
+    applyArchiveCriteriaProgression(this);
   }
 }
 
-function restoreWorldState(data) {
-  const currentMapId =
+function assertEpilogueFlagInvariants(flags) {
+  if (flags.epilogueUnlocked && !flags.investigationComplete) {
+    throw new Error(
+      "La partida guardada tiene el epílogo desbloqueado sin haber completado la investigación.",
+    );
+  }
+
+  if (flags.epilogueStarted && !flags.epilogueUnlocked) {
+    throw new Error(
+      "La partida guardada tiene el epílogo iniciado sin estar desbloqueado.",
+    );
+  }
+
+  if (flags.giftCodeSolved && !flags.epilogueStarted) {
+    throw new Error(
+      "La partida guardada tiene el código de regalo del epílogo resuelto sin haber iniciado el epílogo.",
+    );
+  }
+
+  if (flags.epilogueCompleted && !flags.giftCodeSolved) {
+    throw new Error(
+      "La partida guardada tiene el epílogo completado sin haber resuelto el código de regalo.",
+    );
+  }
+}
+
+function restoreWorldState(data, giftCodeSolved) {
+  const originalMapId =
     typeof data.world?.currentMapId === "string"
       ? data.world.currentMapId
       : DEFAULT_MAP_ID;
+
+  const currentMapId = giftCodeSolved ? DEFAULT_MAP_ID : originalMapId;
 
   const playerByMap = cloneDefaultPlayerByMap();
   const savedPlayerByMap = data.world?.playerByMap;
@@ -249,12 +405,25 @@ function restoreWorldState(data) {
   }
 
   /*
-   * Las partidas de formato 1 solo tenían una posición global. También
-   * sirve como fallback para fixtures o guardados incompletos de formato 2.
+   * `data.player` (el alias legacy de nivel superior) solo representa la
+   * posición del mapa que de verdad estaba activo en el guardado
+   * (originalMapId) — nunca la de `currentMapId` cuando éste se forzó a
+   * un mapa distinto (por ejemplo, axiom-plaza al restaurar
+   * giftCodeSolved=true desde un guardado hecho en otro mapa). Usarlo
+   * fuera de `originalMapId` mezclaría las coordenadas de un mapa con la
+   * geometría de otro. Las partidas de formato 1 solo tenían esta
+   * posición global y ningún `world.currentMapId` propio, así que
+   * `originalMapId` y `currentMapId` siempre coinciden por definición
+   * (ambos caen en `DEFAULT_MAP_ID`) y conservan su comportamiento exacto
+   * de siempre; también sirve como fallback para fixtures o guardados
+   * incompletos de formato 2.
    */
+  const legacyPlayerMatchesCurrentMap =
+    data.formatVersion === 1 || originalMapId === currentMapId;
+
   if (
-    data.formatVersion === LEGACY_SAVE_FORMAT_VERSION ||
-    !savedPlayerByMap?.[currentMapId]
+    legacyPlayerMatchesCurrentMap &&
+    (data.formatVersion === 1 || !savedPlayerByMap?.[currentMapId])
   ) {
     playerByMap[currentMapId] = normalizePlayerState(
       data.player,
@@ -267,6 +436,107 @@ function restoreWorldState(data) {
     currentMapId,
     playerByMap,
   };
+}
+
+function restoreLibraryCatalogue(data) {
+  if (
+    LIBRARY_CATALOGUE_LEGACY_FORMAT_VERSIONS.includes(data.formatVersion)
+  ) {
+    return new LibraryCatalogueState();
+  }
+
+  const hasCatalogue =
+    data.puzzles &&
+    typeof data.puzzles === "object" &&
+    !Array.isArray(data.puzzles) &&
+    Object.hasOwn(data.puzzles, "libraryCatalogue");
+  const catalogueData = data.puzzles?.libraryCatalogue;
+
+  if (
+    !hasCatalogue ||
+    !catalogueData ||
+    typeof catalogueData !== "object" ||
+    Array.isArray(catalogueData) ||
+    !hasExactCatalogueFields(catalogueData)
+  ) {
+    throw new Error(
+      "La partida guardada no contiene un catálogo válido.",
+    );
+  }
+
+  try {
+    return new LibraryCatalogueState(
+      catalogueData,
+    );
+  } catch (error) {
+    throw new Error(
+      `El catálogo de la partida guardada no es válido: ${error.message}`,
+    );
+  }
+}
+
+function hasExactCatalogueFields(catalogueData) {
+  const fields = Object.keys(catalogueData);
+
+  return (
+    fields.length === LIBRARY_CATALOGUE_SAVE_FIELDS.length &&
+    LIBRARY_CATALOGUE_SAVE_FIELDS.every((field) =>
+      Object.hasOwn(catalogueData, field),
+    )
+  );
+}
+
+function restoreArchiveCriteria(data) {
+  if (ARCHIVE_CRITERIA_LEGACY_FORMAT_VERSIONS.includes(data.formatVersion)) {
+    return new ArchiveCriteriaState();
+  }
+
+  const hasArchiveCriteria =
+    data.puzzles &&
+    typeof data.puzzles === "object" &&
+    !Array.isArray(data.puzzles) &&
+    Object.hasOwn(data.puzzles, "archiveCriteria");
+  const archiveCriteriaData = data.puzzles?.archiveCriteria;
+
+  if (
+    !hasArchiveCriteria ||
+    !archiveCriteriaData ||
+    typeof archiveCriteriaData !== "object" ||
+    Array.isArray(archiveCriteriaData) ||
+    !hasExactArchiveCriteriaFields(archiveCriteriaData)
+  ) {
+    throw new Error(
+      "La partida guardada no contiene un criterio del Archivo válido.",
+    );
+  }
+
+  try {
+    return new ArchiveCriteriaState(archiveCriteriaData);
+  } catch (error) {
+    throw new Error(
+      `El criterio del Archivo de la partida guardada no es válido: ${error.message}`,
+    );
+  }
+}
+
+function hasExactArchiveCriteriaFields(archiveCriteriaData) {
+  const fields = Object.keys(archiveCriteriaData);
+
+  return (
+    fields.length === ARCHIVE_CRITERIA_SAVE_FIELDS.length &&
+    ARCHIVE_CRITERIA_SAVE_FIELDS.every((field) =>
+      Object.hasOwn(archiveCriteriaData, field),
+    )
+  );
+}
+
+function readPlayerStateFromWorld(world, mapId = world.currentMapId) {
+  const storedState =
+    world.playerByMap[mapId] ??
+    DEFAULT_PLAYER_BY_MAP[mapId] ??
+    DEFAULT_PLAYER_BY_MAP[DEFAULT_MAP_ID];
+
+  return { ...storedState };
 }
 
 function cloneDefaultPlayerByMap() {

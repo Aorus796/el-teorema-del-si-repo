@@ -1,10 +1,13 @@
 import { P2_GRAPH } from "../puzzles/p2-bridges/P2Graph.js";
 import { P2_NODE_LAYOUT } from "../puzzles/p2-bridges/P2Layout.js";
 import {
+  P2_HINT_CODE,
   P2_MOVE_CODE,
   P2Puzzle,
 } from "../puzzles/p2-bridges/P2Puzzle.js";
+import { getP2Hint } from "../puzzles/p2-bridges/P2Hints.js";
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
+import { HINT_PROGRESS_CODE } from "../puzzles/core/HintProgress.js";
 
 export class P2BridgesScene {
   constructor({ scenes, input, state, ui }) {
@@ -15,6 +18,7 @@ export class P2BridgesScene {
     this.puzzle = null;
     this.selectedBridgeIndex = 0;
     this.selectedMoveIndex = 0;
+    this.visibleHintLevel = null;
     this.statusMessage = "";
     this.returnScene = "title";
   }
@@ -30,6 +34,7 @@ export class P2BridgesScene {
 
   syncViewFromState() {
     const state = this.puzzle.state;
+    this.visibleHintLevel = state.hintsRead.at(-1) ?? null;
 
     if (state.closedBridgeId !== null) {
       const bridgeIndex = P2_GRAPH.bridges.findIndex(
@@ -69,6 +74,11 @@ export class P2BridgesScene {
   update() {
     if (this.input.wasPressed("cancel")) {
       this.scenes.change(this.returnScene);
+      return;
+    }
+
+    if (this.input.wasPressed("nextPuzzleHint")) {
+      this.revealNextHint();
       return;
     }
 
@@ -136,6 +146,28 @@ export class P2BridgesScene {
 
     if (this.input.wasPressed("selectPuzzleOption")) {
       this.crossSelectedBridge();
+    }
+  }
+
+  revealNextHint() {
+    const result = this.puzzle.revealNextHint();
+
+    if (result.code === HINT_PROGRESS_CODE.HINT_REVEALED) {
+      this.visibleHintLevel = result.level;
+      this.statusMessage = result.hint.text;
+      this.ui.showToast(`Reflexión ${result.level}/3`);
+      return;
+    }
+
+    if (result.code === HINT_PROGRESS_CODE.ALL_HINTS_READ) {
+      this.visibleHintLevel = 3;
+      this.statusMessage = result.hint.text;
+      this.ui.showToast("No quedan más reflexiones");
+      return;
+    }
+
+    if (result.code === P2_HINT_CODE.PUZZLE_SOLVED) {
+      this.statusMessage = "El Paseo ya está resuelto.";
     }
   }
 
@@ -465,6 +497,7 @@ function drawStatus(context, scene) {
   context.textAlign = "center";
 
   const state = scene.puzzle.state;
+  const visibleHint = getP2Hint(scene.visibleHintLevel);
   const closedBridgeId = state.closedBridgeId ?? "ninguno";
   const usedBridgeCount = state.usedBridgeIds.length;
   const usableBridgeCount =
@@ -489,7 +522,13 @@ function drawStatus(context, scene) {
   context.fillText(summaryText, 240, 220);
 
   context.fillStyle = "#b9d8d2";
-  context.fillText(scene.statusMessage, 240, 234);
+  context.fillText(
+    visibleHint
+      ? `R${visibleHint.level}/3: ${visibleHint.text}`
+      : scene.statusMessage,
+    240,
+    234,
+  );
 
   context.textAlign = "left";
 }
@@ -506,13 +545,13 @@ function drawFooter(context, phase) {
 
   if (phase === P2_PHASE.PLANNING) {
     helpText =
-      "A/D o flechas: elegir | E: cerrar | Enter: comenzar | Esc: salir";
+      "A/D: elegir | E: cerrar | Enter: comenzar | Q: reflexión | Esc: salir";
   } else if (phase === P2_PHASE.TRAVERSING) {
     helpText =
-      "A/D o flechas: salida | E: cruzar | R: reiniciar | Esc: salir";
+      "A/D: salida | E: cruzar | Q: reflexión | R: reiniciar | Esc: salir";
   } else if (phase === P2_PHASE.FAILED) {
     helpText =
-      "R: volver a planificar | Esc: volver al titulo";
+      "R: planificar | Q: reflexión | Esc: volver al titulo";
   } else {
     helpText =
       "Puzle resuelto | Esc: volver al titulo";

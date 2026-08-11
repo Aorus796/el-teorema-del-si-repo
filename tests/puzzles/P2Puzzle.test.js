@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  P2_HINT_CODE,
   P2_MOVE_CODE,
   P2Puzzle,
 } from "../../src/puzzles/p2-bridges/P2Puzzle.js";
+import { P2_HINTS } from "../../src/puzzles/p2-bridges/P2Hints.js";
+import { HINT_PROGRESS_CODE } from "../../src/puzzles/core/HintProgress.js";
 import {
   P2_PHASE,
   P2State,
@@ -141,7 +144,7 @@ test("detecta un callejon sin salida con un puente incorrecto", () => {
 test("reiniciar un fallo conserva el puente y las reflexiones", () => {
   const puzzle = createStartedPuzzle("B2");
 
-  puzzle.addHint(1);
+  puzzle.revealNextHint();
   puzzle.moveTo("N");
   puzzle.moveTo("R");
   puzzle.moveTo("M");
@@ -157,9 +160,54 @@ test("reiniciar un fallo conserva el puente y las reflexiones", () => {
   assert.deepEqual(puzzle.state.usedBridgeIds, []);
 });
 
+test("P2 define exactamente tres reflexiones inmutables", () => {
+  assert.equal(P2_HINTS.length, 3);
+  assert.equal(Object.isFrozen(P2_HINTS), true);
+  assert.deepEqual(
+    P2_HINTS.map((hint) => hint.level),
+    [1, 2, 3],
+  );
+  assert.equal(P2_HINTS.every((hint) => Object.isFrozen(hint)), true);
+});
+
+test("revela las tres reflexiones en orden sin duplicarlas", () => {
+  const puzzle = new P2Puzzle();
+
+  for (const expectedLevel of [1, 2, 3]) {
+    const result = puzzle.revealNextHint();
+    assert.equal(result.code, HINT_PROGRESS_CODE.HINT_REVEALED);
+    assert.equal(result.level, expectedLevel);
+    assert.equal(result.hint, P2_HINTS[expectedLevel - 1]);
+  }
+
+  const fourthResult = puzzle.revealNextHint();
+  assert.equal(
+    fourthResult.code,
+    HINT_PROGRESS_CODE.ALL_HINTS_READ,
+  );
+  assert.equal(fourthResult.hint, P2_HINTS[2]);
+  assert.deepEqual(puzzle.state.hintsRead, [1, 2, 3]);
+});
+
+test("no revela reflexiones nuevas después de resolver P2", () => {
+  const puzzle = createStartedPuzzle("B1");
+
+  puzzle.revealNextHint();
+  puzzle.state.markSolved();
+
+  const result = puzzle.revealNextHint();
+
+  assert.equal(result.code, P2_HINT_CODE.PUZZLE_SOLVED);
+  assert.equal(result.level, 1);
+  assert.equal(result.hint, P2_HINTS[0]);
+  assert.deepEqual(puzzle.state.hintsRead, [1]);
+});
+
 test("puede restaurarse un intento guardado y continuar", () => {
   const original = createStartedPuzzle("B1");
 
+  original.revealNextHint();
+  original.revealNextHint();
   original.moveTo("R");
   original.moveTo("N");
 
@@ -168,6 +216,7 @@ test("puede restaurarse un intento guardado y continuar", () => {
   });
 
   assert.equal(restored.state.currentNode, "N");
+  assert.deepEqual(restored.state.hintsRead, [1, 2]);
   assert.deepEqual(restored.state.route, ["E", "R", "N"]);
   assert.deepEqual(restored.getAvailableMoves(), [
     {
