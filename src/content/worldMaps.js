@@ -54,7 +54,7 @@ const AXIOM_PLAZA = createMap({
       width: 14,
       height: 18,
       interactionRadius: 28,
-      label: "Padre de la Investigadora",
+      label: "Padre de la novia",
     },
     {
       id: "plaza-worker",
@@ -140,7 +140,7 @@ const AXIOM_PLAZA = createMap({
       width: 14,
       height: 18,
       interactionRadius: 28,
-      label: "La Investigadora",
+      label: "la novia",
       requiresFlag: "giftCodeSolved",
     },
   ],

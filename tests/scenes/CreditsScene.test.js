@@ -10,9 +10,9 @@ import {
 import { SceneManager } from "../../src/core/SceneManager.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
 import { GameState } from "../../src/state/GameState.js";
+import { COUPLE_DEDICATION } from "../../src/content/personalizationConfig.js";
 
 const TITLE_TEXT = "EL TEOREMA DEL SÍ";
-const DEDICATION_TEXT = "Por todos los síes que aún quedan por elegir.";
 const CREDITS_LINE_1 = "CREADO CON CARIÑO";
 const CREDITS_LINE_2 = "COMO REGALO DE BODA";
 const CREDITS_LINE_3 = "GRACIAS POR JUGAR";
@@ -145,7 +145,7 @@ test("los cinco pasos renderizan, en orden, los textos exactos de la sección 12
   press(scene, input);
   const step3 = new FakeCanvasContext();
   scene.render(step3);
-  assert.ok(step3.texts.some((entry) => entry.text === DEDICATION_TEXT));
+  assert.ok(textIncludesDedication(step3));
 
   press(scene, input);
   const step4 = new FakeCanvasContext();
@@ -187,6 +187,16 @@ test("wrapTextToLines envuelve la frase de cierre en líneas dentro del límite 
     assert.ok(line.length <= 48, `línea demasiado larga: "${line}"`);
   }
   assert.equal(lines.join(" "), CLOSING_LINE);
+});
+
+test("wrapTextToLines envuelve la dedicatoria aprobada en líneas dentro del límite indicado", () => {
+  const lines = wrapTextToLines(COUPLE_DEDICATION, 44);
+
+  assert.ok(lines.length > 1, "la dedicatoria real es más larga que una sola línea");
+  for (const line of lines) {
+    assert.ok(line.length <= 44, `línea demasiado larga: "${line}"`);
+  }
+  assert.equal(lines.join(" "), COUPLE_DEDICATION);
 });
 
 test("el paso 1 dibuja dos personajes con las paletas reutilizadas del jugador y la novia, sobre el amanecer de axiom-plaza", () => {
@@ -565,7 +575,7 @@ test("el mensaje de error nunca aparece en los pasos 1 a 4", () => {
   }
 });
 
-test("ningún texto renderizado contiene {{FINAL_DEDICATION}} ni contenido personalizado", () => {
+test("ningún texto renderizado contiene la sintaxis literal de un marcador sin resolver", () => {
   const { scene, input } = createScene();
   scene.enter();
 
@@ -582,6 +592,31 @@ test("ningún texto renderizado contiene {{FINAL_DEDICATION}} ni contenido perso
 
   const joined = allTexts.join(" ");
   assert.equal(joined.includes("{{FINAL_DEDICATION}}"), false);
+  assert.equal(/\{\{[A-Z_]+\}\}/.test(joined), false);
+});
+
+test("los nombres de la pareja solo aparecen en el paso de dedicatoria, no en los otros cuatro pasos", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  const stepTexts = [];
+  for (let i = 0; i < 5; i += 1) {
+    const context = new FakeCanvasContext();
+    scene.render(context);
+    stepTexts.push(context.texts.map((entry) => entry.text).join(" "));
+
+    if (i < 4) {
+      press(scene, input);
+    }
+  }
+
+  const [closingShot, title, dedication, credits, finalCard] = stepTexts;
+
+  assert.ok(dedication.includes("Gonzalo") && dedication.includes("Elena"));
+  for (const step of [closingShot, title, credits, finalCard]) {
+    assert.equal(step.includes("Gonzalo"), false);
+    assert.equal(step.includes("Elena"), false);
+  }
 });
 
 test("tras un guardado exitoso, confirmaciones adicionales no vuelven a llamar a storage.save()", () => {
@@ -799,6 +834,11 @@ test("prepareTerminalState sigue siendo idempotente tras el fix de posición", (
 function textIncludesClosingLine(context) {
   const joined = context.texts.map((entry) => entry.text).join(" ");
   return CLOSING_LINE.split(" ").every((word) => joined.includes(word));
+}
+
+function textIncludesDedication(context) {
+  const joined = context.texts.map((entry) => entry.text).join(" ");
+  return COUPLE_DEDICATION.split(" ").every((word) => joined.includes(word));
 }
 
 function createScene({ state, storage, scenes } = {}) {

@@ -2397,7 +2397,7 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     await page.keyboard.down("KeyW");
 
     await expect(interactionPrompt).toHaveText(
-      "[E] Hablar con La Investigadora",
+      "[E] Hablar con la novia",
       { timeout: 10_000 },
     );
 
@@ -2463,8 +2463,10 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
 
     await clearRenderedTexts();
     await page.keyboard.press("KeyE");
-    await waitForRenderedText(
-      "Por todos los síes que aún quedan por elegir.",
+    await waitForRenderedText("Gonzalo y Elena: que nunca os falten caminos");
+    const dedicationTexts = await page.evaluate(() => window.__renderedTexts);
+    expect(dedicationTexts).toContain(
+      "demuestra cada día: elegiros una y otra vez.",
     );
 
     await clearRenderedTexts();
@@ -2531,7 +2533,7 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     await expect(dialoguePanel).toBeHidden();
 
     await expect(interactionPrompt).toHaveText(
-      "[E] Hablar con La Investigadora",
+      "[E] Hablar con la novia",
     );
 
     // Interactuar con la novia ya completada la partida es un no-op: no
