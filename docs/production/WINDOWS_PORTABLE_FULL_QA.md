@@ -204,5 +204,9 @@ compatibilidad/sustitución entre dos builds distintas (A→B→A).
 - No se cronometró la duración exacta del recorrido.
 - No se ejecutó la prueba de compatibilidad entre builds — ver la sección
   anterior.
-- El cierre documental de la Fase 5 corresponde a la tarea 8, que sigue
-  pendiente. Este documento no declara completada la Fase 5.
+- El cierre documental de la Fase 5 de empaquetado Windows correspondía a
+  la tarea 8, que ya se completó (ver
+  [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md)).
+  Ese cierre cubre exclusivamente el empaquetado Windows, no la Fase 5
+  completa de `V1_PRODUCTION_PLAN.md` §6 (QA general, accesibilidad), que
+  sigue abierta, ni la publicación de `v1.0.0`.

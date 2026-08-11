@@ -488,6 +488,45 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   haber probado la secuencia de sustitución conservando el mismo perfil
   de usuario; este documento no lo presenta como tal. El cierre
   documental de la Fase 5 sigue pendiente de la tarea 8.
+- Cierre documental y auditoría final de la Fase 5 de empaquetado Windows
+  (`docs/production/WINDOWS_PACKAGING_PHASE5_CLOSURE.md`, nuevo), octava
+  y última tarea de implementación de
+  `docs/production/WINDOWS_PACKAGING_DECISION.md`: tarea exclusivamente
+  documental, sin pruebas nuevas ni cambios de código. Audita la
+  evidencia ya registrada en las tareas 1-7 y marca las tareas 1-8 como
+  completadas. El artifact portable Windows (run de GitHub Actions
+  `31369511579`, SHA-256
+  `3B9B8308DBF278088681DE142C384A99DF90267C6CD6EA202C502F182003C577`)
+  queda funcionalmente validado en una segunda máquina física, con QA
+  end-to-end offline (recorrido completo, los tres puzles, epílogo,
+  audio, autosave terminal, reapertura y estado read-only). La prueba
+  controlada de compatibilidad/sustitución entre dos builds distintas
+  (A→B→A) sigue registrada como no ejecutada, con el riesgo residual
+  aceptado explícitamente por el responsable del producto para `v1.0.0`.
+  Este cierre cubre exclusivamente el empaquetado Windows dentro de la
+  Fase 5 de `docs/production/V1_PRODUCTION_PLAN.md` §6 — no cierra esa
+  Fase 5 completa (que incluye QA general y accesibilidad, todavía
+  pendientes), ni publica `v1.0.0`, ni fusiona `feat/v1-production-scope`
+  en `main`. Una segunda auditoría, cruzando código, tests y
+  documentación reales (no solo las casillas del plan), encontró que
+  `V1_PRODUCTION_PLAN.md` §2, §3 y §5 seguían marcando como pendientes
+  la Biblioteca del Margen, el epílogo (pese a que sus 16 tareas de
+  `EPILOGUE_SPEC.md` §18 ya estaban completas), la conexión de
+  pistas/cuaderno y la integración de audio — todo ya implementado y
+  probado, incluido un recorrido real sobre el propio ejecutable Windows
+  (tarea 7). Se corrigieron esas casillas con su evidencia
+  correspondiente. Una tercera revisión completó la auditoría contra
+  código/tests reales para las Fases 2-5, las Puertas de calidad, las
+  decisiones de facto de §11 y el checklist de §12 de
+  `V1_PRODUCTION_PLAN.md`, marcando como completados los entregables,
+  criterios y pruebas con evidencia directa (mapas, validadores, tests
+  unitarios y E2E, `npm run check` en verde), y reclasificó la
+  personalización final: `EPILOGUE_SPEC.md` la documenta explícitamente
+  como trabajo futuro fuera del alcance del epílogo aprobado, y el
+  responsable del producto confirmó que `v1.0.0` se entrega sin ella —
+  deja de ser un requisito bloqueante (sin marcarse como implementada).
+  El arte y la duración medida del recorrido completo siguen
+  genuinamente pendientes, sin decisión de exclusión ni cifra inventada.
 
 ### Corregido
 

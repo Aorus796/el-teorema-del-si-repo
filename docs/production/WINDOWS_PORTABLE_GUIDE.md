@@ -7,8 +7,9 @@ arquitectura ni de seguridad ya cerradas — para eso está
 [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md), que
 sigue siendo la fuente de verdad sobre *por qué* se decidió cada cosa. Este
 documento explica *cómo hacerlo*, hoy, con el estado real del proyecto
-(tareas 1-7 de `WINDOWS_PACKAGING_DECISION.md` ya completadas; tarea 8
-pendiente — ver la sección 9).
+(tareas 1-8 de `WINDOWS_PACKAGING_DECISION.md` completadas — la Fase 5 de
+empaquetado Windows está cerrada; ver la sección 9 para lo que eso
+significa y lo que no).
 
 Esta guía cubre dos perfiles distintos:
 
@@ -30,7 +31,10 @@ principio a fin, audio, offline y assets (tarea 7 — ver
 no certifica que funcione en todas las versiones y ediciones posibles de
 Windows, y la prueba controlada de compatibilidad entre dos builds
 distintas no se ejecutó (riesgo residual aceptado explícitamente por el
-responsable del producto) — ver la sección 9 ("Qué falta todavía").
+responsable del producto) — ver la sección 9 ("Qué falta todavía"). Que
+el empaquetado Windows esté cerrado tampoco significa que `v1.0.0` esté
+publicada ni lista para entrega — eso depende del resto del contenido y
+del QA general del juego, fuera del alcance de esta guía.
 
 ## Índice
 
@@ -294,15 +298,15 @@ en `release/` o en el repositorio:
 
 ## 9. Qué falta todavía antes de `v1.0.0`
 
-Esta guía documenta el estado de las tareas 1-7 de
+Esta guía documenta el estado de las tareas 1-8 de
 `WINDOWS_PACKAGING_DECISION.md` (shell Electron, persistencia y CSP,
 configuración de `electron-builder` y primera candidata portable,
 generación reproducible vía GitHub Actions, esta documentación operativa,
 la prueba manual en una instalación Windows limpia concreta con
-persistencia tras un reinicio real, y el QA funcional completo del
-artefacto) — todas completadas. **Sigue pendiente**:
-
-- **Tarea 8**: cierre documental de la Fase 5.
+persistencia tras un reinicio real, el QA funcional completo del
+artefacto, y el cierre documental/auditoría final) — **todas completadas.
+La Fase 5 de empaquetado Windows está cerrada** (ver
+[`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md)).
 
 El portable ya se probó manualmente en una instalación Windows limpia
 concreta, distinta de las máquinas de desarrollo, incluida la persistencia
@@ -314,9 +318,22 @@ assets/renderizado, sobre el mismo artifact (ver
 [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). Eso no
 equivale a validar todas las versiones y ediciones posibles de Windows.
 La prueba controlada de compatibilidad/sustitución entre dos builds
-distintas **no se ejecutó**: es un riesgo residual aceptado
+distintas **sigue sin ejecutarse**: es un riesgo residual aceptado
 explícitamente por el responsable del producto para `v1.0.0`, documentado
-en detalle en `WINDOWS_PORTABLE_FULL_QA.md`.
+en detalle en `WINDOWS_PORTABLE_FULL_QA.md`. Tampoco existe todavía
+ninguna GitHub Release ni tag de entrega — la única forma soportada de
+obtener el portable sigue siendo el artifact de una ejecución de GitHub
+Actions (sección 1).
+
+**Cerrar la Fase 5 de empaquetado Windows no significa que `v1.0.0` esté
+lista ni publicada.** El resto del alcance de
+`docs/production/V1_PRODUCTION_PLAN.md` §6 ("Fase 5 — QA, accesibilidad
+básica, guardados y empaquetado") — la matriz de pruebas del recorrido
+completo, la corrección de defectos y la revisión de accesibilidad básica
+— no es responsabilidad de esta guía ni de `WINDOWS_PACKAGING_DECISION.md`,
+y sigue abierto. Tampoco está cerrado el resto del contenido de `v1.0.0`
+según `V1_PRODUCTION_PLAN.md` §2 y §3 — esta guía no audita ni certifica
+ese alcance.
 
 ## 10. Procedimiento de entrega de una candidata privada
 
