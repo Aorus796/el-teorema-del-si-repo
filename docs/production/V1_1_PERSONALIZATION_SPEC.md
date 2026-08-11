@@ -198,11 +198,10 @@ abiertas:
    Esta especificación propone la fase, pero no define el formato
    concreto de la aprobación humana (revisión de bocetos/prototipos en
    una PR, sesión síncrona, etc.) — se decide cuando llegue el momento.
-8. **Confirmación del roster exacto del Nivel B** (§6): esta
-   especificación audita y propone qué NPCs existentes entran en esa
-   categoría a partir del código real, pero la decisión final de
-   cuáles reciben diseño individual — y con qué nivel de detalle —
-   corresponde al responsable.
+8. ~~Confirmación del roster exacto del Nivel B~~ — **resuelta
+   (decisión de producto, 2026-08-11)**: Nivel B queda cerrado a
+   Alcaldesa Corolaria, Padre de la novia y Silogio; `plaza-worker` se
+   reclasifica como Nivel C enriquecido (§6).
 9. **Ubicación y cantidad exactas de los NPCs ambientales del Nivel C**
    (§6): esta especificación propone una distribución por mapa (§25)
    como punto de partida, no como asignación cerrada — las posiciones
@@ -277,36 +276,61 @@ humana:
 
 **VISUAL STYLE LOCK**: tras producir/prototipar los tres personajes de
 Nivel A (a partir de las referencias reales, cuando existan) y antes de
-diseñar cualquier NPC secundario o ambiental, el estilo visual
-resultante debe aprobarse explícitamente por el responsable del
-producto. Ningún NPC de Nivel B o C se diseña antes de este punto de
-control — evita rehacer trabajo si el estilo cambia. El mecanismo
-exacto de esa aprobación es una decisión pendiente (§5.7).
+**producir el arte final** de cualquier NPC secundario o ambiental, el
+estilo visual resultante debe aprobarse explícitamente por el
+responsable del producto. Ningún sprite definitivo de Nivel B o C se
+produce antes de este punto de control — evita rehacer trabajo si el
+estilo cambia. El mecanismo exacto de esa aprobación es una decisión
+pendiente (§5.7).
+
+**Matiz explícito para mitigar el riesgo de calendario de §26**: como
+los NPCs de Nivel B (§6) no están basados en personas reales y no
+dependen de ninguna fotografía, su **exploración conceptual** (bocetos,
+propuestas de silueta/paleta dentro del sistema modular de §10) puede
+empezar en paralelo a la espera del Visual Style Lock — solo su
+**producción final** (el sprite definitivo que se integra en el juego)
+queda gateada por él, igual que el resto del Nivel B/C. Esto no cambia
+la regla general ("ningún sprite definitivo antes del lock"); solo
+aclara que el trabajo preparatorio de estilo para personajes inventados
+no tiene que esperar a que existan las fotografías de Gonzalo/Elena/Max,
+a diferencia del propio Nivel A.
 
 Esta especificación **no** produce ni prototipa estos tres personajes
 — solo define la fase y su orden de dependencia (§22).
 
 ### Nivel B — Secundarios importantes (no basados en personas reales)
 
-Auditados arriba: **Alcaldesa Corolaria**, **Padre de la novia**
-(`bride-father`) y **Silogio** (`library-silogio`) son los NPCs con
-nombre propio y relevancia real de progresión/puzle. **Ayudante de la
-ceremonia** (`plaza-worker`) tiene nombre propio pero es diálogo de
-ambiente sin gating de progresión — queda como caso límite entre Nivel
-B y Nivel C; se propone tratarlo como Nivel B por ya tener identidad
-propia establecida en `v1.0.0`, pero la confirmación final es una
-decisión pendiente (§5.8). Ninguno de estos cuatro está basado en una
-persona real según ninguna fuente — sus diseños visuales pueden
-definirse libremente dentro del estilo aprobado en el Visual Style
-Lock, sin necesidad de referencia fotográfica. No se proponen
-animaciones adicionales a las ya existentes para ellos.
+**Confirmado (decisión de producto, 2026-08-11)**: Nivel B queda
+cerrado a exactamente tres NPCs, los que el roster auditado demuestra
+que gatean progresión real: **Alcaldesa Corolaria**, **Padre de la
+novia** (`bride-father`) y **Silogio** (`library-silogio`). Ninguno de
+los tres está basado en una persona real según ninguna fuente — sus
+diseños visuales pueden definirse libremente dentro del estilo aprobado
+en el Visual Style Lock, sin necesidad de referencia fotográfica. No se
+proponen animaciones adicionales a las ya existentes para ellos.
 
-### Nivel C — NPCs ambientales (nuevos, de relleno)
+`plaza-worker` ("Ayudante de la ceremonia") **no** entra en Nivel B —
+ver Nivel C.
+
+### Nivel C — NPCs ambientales (nuevos, de relleno, y uno ya existente)
+
+**`plaza-worker` reclasificado (decisión de producto, 2026-08-11)**: el
+roster auditado (§6, tabla) confirma que `plaza-worker` es diálogo de
+ambiente puro (3 líneas fijas) sin ningún gating de progresión — el
+mismo perfil que un NPC ambiental, no el de un secundario relevante
+para puzles. Se reclasifica de Nivel B a **Nivel C enriquecido**: ya
+tiene nombre propio e identidad establecida desde `v1.0.0`, así que
+puede conservar un diseño identificable dentro del sistema visual
+modular (§10) — pero **no** debe consumir el mismo esfuerzo artístico
+individual que Alcaldesa Corolaria, Padre de la novia o Silogio (Nivel
+B). Esto sustituye la clasificación "caso límite, decisión pendiente
+§5.8" de la versión anterior de este documento — queda resuelta.
 
 Ver §25 para la auditoría de mapas y la distribución propuesta
-(objetivo total: 8-15), y la sección "Comportamiento de NPCs
-ambientales" más abajo (§8 del pilar visual) para las reglas de
-movimiento/estado.
+(objetivo total: 8-15, sin cambios — `plaza-worker` ya existe y no
+cuenta como un NPC ambiental nuevo adicional a ese total), y la sección
+"Comportamiento de NPCs ambientales" más abajo (§8 del pilar visual)
+para las reglas de movimiento/estado.
 
 Clasificación de los datos personales pedida (A: genérico durante el
 juego / B: revelación progresiva / C: solo epílogo / D: solo
@@ -601,9 +625,11 @@ satisface los dos pilares ya aprobados explícitamente por el
 responsable** (§1, "Ampliación de alcance"), no "pequeño en términos
 absolutos" — sería deshonesto presentarlo como equivalente en esfuerzo a
 la versión anterior. En términos de horas de producción, el MUST
-implica del orden de 7-10 diseños de personaje individuales (3
-protagonistas + 3-4 secundarios) más un sistema de variantes para 8-15
-NPCs ambientales — un volumen de trabajo real de ilustración/diseño de
+implica del orden de 6-7 diseños de personaje individuales (3
+protagonistas + 3 secundarios de Nivel B) más un sistema de variantes
+para 8-15 NPCs ambientales de Nivel C (que ahora incluye a
+`plaza-worker` reclasificado, §6) — un volumen de trabajo real de
+ilustración/diseño de
 personajes, aunque no equivalga a rehacer el pipeline gráfico completo
 del juego (§3, §4 del pilar visual siguen siendo ciertos en ese sentido
 técnico específico: misma resolución, misma escala, mismo render
@@ -630,10 +656,9 @@ asociado a este volumen.
   (§6 Nivel A, §8) — bloqueado hasta recibir la fotografía.
 - Diseño/sprite personalizado de Elena, mismo tratamiento.
 - Diseño/sprite personalizado de Max, mismo tratamiento (§8).
-- Diseño visual individual y reconocible para los NPCs secundarios ya
-  existentes y relevantes (§6 Nivel B: Alcaldesa Corolaria, Padre de la
-  novia, Silogio, como mínimo — ver §5.8 para la confirmación de
-  `plaza-worker`).
+- Diseño visual individual y reconocible para los tres NPCs secundarios
+  confirmados (§6 Nivel B: Alcaldesa Corolaria, Padre de la novia,
+  Silogio — `plaza-worker` no cuenta aquí, ver Nivel C).
 - NPCs ambientales nuevos en los mapas ya existentes (§6 Nivel C, §25),
   objetivo 8-15 en total, mayoritariamente estáticos con frase corta.
 - Frases ambientales breves para esos NPCs (texto, reutilizando la
@@ -839,12 +864,12 @@ versiona en bruto por defecto). Ninguna acción en esta tarea.
   y C queda bloqueado por diseño — es una dependencia intencional, no
   accidental, pero debe gestionarse activamente contra el calendario
   (§26).
-- **Autoplay de la intro musical**: es la primera vez que el juego
-  intentaría reproducir audio antes de cualquier interacción confirmada
-  del usuario — el precedente actual (`playEpilogueTheme()`) solo se
-  dispara muy avanzada la partida, tras docenas de interacciones
-  previas; la intro es un caso nuevo que requiere resolver
-  explícitamente cuándo es seguro reproducirla (§24).
+- **Autoplay de la intro musical — decisión ya resuelta (§24)**: se
+  decidió explícitamente que la intro se dispara en la primera
+  interacción válida del usuario, no por autoplay al cargar la página —
+  el riesgo que queda no es "qué decidir" sino la implementación
+  concreta (`TitleScene` no recibe `audio` hoy), a resolver en su propia
+  tarea técnica (tarea 14, §22).
 - **Sourcing y licencia de audio nuevo**: si no se resuelve §5.12 con
   tiempo, el pilar de audio completo queda bloqueado — mismo tipo de
   riesgo de dependencia externa que las fotografías de referencia
@@ -942,8 +967,8 @@ avanzar en paralelo.
    obligatorio antes de las tareas 8-11. No es una tarea técnica de
    `autopilot`.
 8. **Secundarios importantes** — diseño individual de Alcaldesa
-   Corolaria, Padre de la novia y Silogio (MUST); confirmación pendiente
-   sobre `plaza-worker` (§5.8, §6 Nivel B). Depende de la tarea 7.
+   Corolaria, Padre de la novia y Silogio (MUST, §6 Nivel B, roster ya
+   confirmado). Depende de la tarea 7.
 9. **Sistema mínimo de variantes ambientales** — implementar la
    estrategia de reutilización de paletas/siluetas propuesta en §10.
    Depende de la tarea 7.
@@ -1114,26 +1139,23 @@ duplicados). No se propone:
 
 ### Intro musical (§14 del pilar de audio)
 
-**Cuándo puede comenzar de forma segura**: a diferencia del tema del
-epílogo (que ya ocurre tras mucha interacción previa), la intro se
-reproduciría en el momento de mayor riesgo de bloqueo por autoplay —
-justo al cargar `TitleScene`, antes de cualquier gesto. Dos opciones
-conceptuales, sin decidir cuál se implementa:
+**Decisión de producto (2026-08-11): resuelta.** La intro musical debe
+iniciarse a partir de la **primera interacción válida del usuario** que
+permita activar audio — **no** debe depender de autoplay con sonido al
+cargar la página. Esto corresponde a la opción B evaluada en la versión
+anterior de este documento (descartada la opción A, "intento inmediato
+en `TitleScene.enter()`", precisamente por depender de autoplay sin
+gesto previo):
 
-- **A. Intento inmediato en `TitleScene.enter()`**: se intenta
-  reproducir de inmediato; si el navegador la bloquea, el propio manejo
-  de errores ya existente en `AudioService` la absorbe de forma segura
-  (silencio, sin excepción) — el jugador simplemente no oye la intro
-  esa vez, sin ningún efecto negativo funcional.
-- **B. Disparo en la primera pulsación detectada en `TitleScene`**: la
-  primera vez que `InputManager` registra cualquier tecla, esa misma
-  pulsación sirve de gesto de usuario para desbloquear la reproducción.
-  Más fiable para que la intro realmente se oiga, pero requiere que
-  `TitleScene` reciba `audio` (hoy no lo recibe, `src/main.js:34`) y
-  algo de lógica adicional de "primera pulsación", ausente hoy.
-
-Ninguna se implementa en esta tarea; queda como decisión técnica para
-la tarea 14 del breakdown (§22).
+La primera vez que `InputManager` registra cualquier tecla dentro de
+`TitleScene`, esa misma pulsación sirve de gesto de usuario para
+desbloquear la reproducción de la intro. Esto requiere que `TitleScene`
+reciba `audio` (hoy no lo recibe, `src/main.js:34`) y algo de lógica
+adicional de "primera pulsación", ausente hoy — la implementación
+concreta de esa lógica, adaptada al flujo real de `TitleScene` (que ya
+distingue `wasPressed("interact")` de `wasPressed("load")`, ver
+`TitleScene.js:15-23`), se decide en su propia tarea técnica (tarea 14
+del breakdown, §22) — **no se implementa en esta tarea**.
 
 ### Música ambiental (§15)
 
@@ -1247,10 +1269,36 @@ revisión de calidad de scope de esta misma tarea)**:
   fotografías reales y cerrar el Visual Style Lock asume una entrega
   rápida (días, no semanas) que ninguna fuente garantiza — este
   documento no puede comprometer una fecha que no controla. Si las
-  fotografías llegan más tarde, **todo** el pilar visual (protagonistas,
-  secundarios, NPCs ambientales — el grueso del MUST, ver §13) se
-  desplaza en bloque; el pilar de audio (§23-24) es independiente y no
-  se ve afectado por este riesgo concreto.
+  fotografías llegan más tarde, los sprites finales de Gonzalo, Elena y
+  Max permanecen bloqueados hasta recibirlas y superar el Visual Style
+  Lock — eso **no se salta bajo ninguna circunstancia** (no se inventan
+  rasgos físicos para compensar el retraso, §3, §4).
+
+  **Estrategia explícita de mitigación (decisión de producto,
+  2026-08-11)**: un retraso en las fotografías **no bloquea todo el
+  desarrollo de `v1.1`** — el siguiente trabajo puede adelantarse en
+  paralelo, sin depender de ellas en absoluto:
+  - `personalizationConfig.js` (tarea 1, §22);
+  - nomenclatura/dedicatoria (tarea 2, §22);
+  - auditoría visual y definición de estilo previas al Visual Style Lock
+    (tareas 4-5, §22) — bocetos de dirección de arte que no requieren
+    todavía la referencia real;
+  - **exploración conceptual** (no arte final) de los secundarios ya
+    confirmados, que no son personas reales (Alcaldesa Corolaria, Padre
+    de la novia, Silogio — Nivel B, §6) — su producción final sigue
+    gateada por el Visual Style Lock, igual que el resto de Nivel B/C
+    (ver el matiz explícito en §6);
+  - sistema de variantes de NPC (tarea 9, §22) y su distribución por
+    mapa (§25);
+  - arquitectura/extensión de `AudioService` (tarea 13, §22);
+  - intro, música ambiental y SFX (tareas 14-17, §22) — todo el pilar de
+    audio es independiente del pilar visual.
+
+  Solo quedan bloqueadas por las fotografías: la tarea 6 (sprites
+  finales de Gonzalo/Elena/Max) y, en cascada, la tarea 7 (Visual Style
+  Lock) y las tareas que dependen de ella (8, 10, 12). El pilar de audio
+  (§23-24) es completamente independiente y no se ve afectado por este
+  riesgo en ningún caso.
 - **El margen de contingencia (8-9 de septiembre, 1-2 días) es nominal,
   no real**, si cualquier hito anterior se retrasa — especialmente el
   primero (fotografías), del que depende la mayoría del calendario. No
@@ -1262,3 +1310,102 @@ revisión de calidad de scope de esta misma tarea)**:
   no basta, volver a esta especificación para una decisión explícita de
   recorte del propio MUST — no comprimir QA (§18) ni el margen de
   contingencia.
+
+## 27. Expansion Gate / Scope Freeze
+
+El alcance definido en §13 (MUST/SHOULD/COULD/OUT) constituye el
+**SCOPE COMPROMETIDO de `v1.1`**. No se permite añadir ninguna feature
+adicional a este alcance hasta superar la Expansion Gate descrita abajo
+— y, superada esa gate, solo dentro de los límites estrictos de la
+sección "Qué se puede añadir si se supera la gate".
+
+### Expansion Gate
+
+**Ventana provisional**: aproximadamente entre el 27 y el 30 de agosto
+de 2026 (coincide con el hito "Integración y pulido" de §26).
+
+La Expansion Gate **solo** puede considerarse superada si **todas** las
+condiciones siguientes se cumplen a la vez:
+
+- Todos los MUST de §13 están implementados.
+- CI está en verde (`docker compose run --rm game npm run check`, y
+  `npm run verify`/Playwright cuando corresponda).
+- No existen defectos bloqueantes conocidos.
+- La compatibilidad de guardados `v1.0.0` → `v1.1` está verificada
+  (§16, prueba de regresión).
+- La personalización visual principal (Nivel A: Gonzalo, Elena, Max)
+  está integrada.
+- El audio principal (intro, ambiente, transición al epílogo, SFX
+  básicos) está integrado.
+- Los NPCs ambientales (Nivel C) están integrados.
+- Existe una build jugable integrada con todo lo anterior junto, no
+  piezas sueltas sin ensamblar.
+- Sigue existiendo margen real (no solo nominal, ver §26) para QA
+  completo y para el ciclo de Windows/release antes del 10 de
+  septiembre de 2026.
+
+**"Código terminado" no es, por sí solo, criterio suficiente para
+ampliar** — deben cumplirse las nueve condiciones de arriba a la vez,
+incluida la existencia de margen real restante.
+
+**La decisión de ampliar el alcance tras superar la gate requiere
+aprobación humana explícita** — no se decide por inferencia, ni por
+`autopilot`, ni porque una tarea concreta haya ido más rápido de lo
+esperado.
+
+### Qué se puede añadir si se supera la gate
+
+Incluso si la Expansion Gate se supera con las nueve condiciones
+cumplidas, **solo pueden considerarse 1-2 mejoras pequeñas y
+aisladas** — no una reapertura general del alcance.
+
+**Criterio orientativo de tamaño**:
+
+| Estimación | Tratamiento |
+|---|---|
+| ≤ 0,5 día, riesgo bajo | Buen candidato |
+| ~1 día, aislado, sin afectar persistencia/progresión | Puede valorarse |
+| ≥ 2 días, o cambios importantes en `GameState`, persistencia, mapas, progresión o arquitectura | Aplazar a una versión posterior — no entra en `v1.1` |
+
+**Ejemplos posibles del tamaño adecuado** (citados como referencia de
+escala, **sin aprobar ninguno todavía** — cualquiera de ellos requiere
+su propia aprobación explícita si se propone en su momento):
+
+- una variante ambiental pequeña adicional;
+- un detalle adicional de Max (dentro de lo ya aprobado, §8);
+- un NPC ambiental adicional, dentro o ligeramente por encima del
+  objetivo 8-15 (§25);
+- un pequeño detalle visual adicional;
+- un SFX adicional;
+- un pequeño pulido de presentación.
+
+**No se reintroducen como candidatos, bajo ninguna circunstancia**, ni
+siquiera tras superar la gate:
+
+- mapas nuevos;
+- puzles nuevos;
+- sistemas jugables nuevos;
+- pathfinding;
+- rediseño visual completo;
+- un sistema de audio complejo (mezclador general, configuración
+  expuesta al jugador, música por mapa — ver OUT en §13).
+
+### Hard Scope Freeze — 2 de septiembre de 2026
+
+A partir del **2 de septiembre de 2026**, con independencia de si la
+Expansion Gate se superó o no, y con independencia de si se aprobó
+alguna mejora pequeña bajo la sección anterior: **no se añade ninguna
+funcionalidad nueva**, de ningún tamaño.
+
+A partir de esa fecha, el trabajo se limita exclusivamente a:
+
+- corregir bugs;
+- resolver regresiones;
+- pulir contenido ya implementado (sin ampliar su alcance funcional);
+- QA;
+- verificación de compatibilidad;
+- empaquetado (packaging);
+- release.
+
+La fecha límite externa sigue siendo, sin cambios, el **10 de
+septiembre de 2026** (§26).
