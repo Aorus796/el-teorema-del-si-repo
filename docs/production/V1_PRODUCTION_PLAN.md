@@ -1106,27 +1106,26 @@ global de disponibilidad para `v1.0.0`.
 
 No se aplaza la candidata estable más allá del 3 de septiembre.
 
-> **Nota de preparación de release (2026-08-11)**: la candidata técnica de
-> `v1.0.0` (bump de versión en `package.json`/`package-lock.json`, cierre
-> de `CHANGELOG.md`, rama `release/v1.0.0` y PR contra `main`) se preparó
-> el 2026-08-11 — antes de las fechas de calendario originalmente
-> asignadas a las Fases 6-8 (4 de septiembre en adelante). Esto **no**
-> significa que esas fases ya se hayan ejecutado tal como las describe
-> este plan: sus entregables (congelación formal con ventana de
-> corrección de defectos, margen de contingencia, entrega del 10 de
-> septiembre) siguen sin marcar más abajo porque describen un proceso
-> ligado a fechas que todavía no han llegado. Lo que sí está resuelto de
-> forma anticipada, con evidencia real, es el contenido funcional que
-> esas fases iban a congelar y entregar: el recorrido completo ya existe,
-> ya pasó el QA de cierre documentado en
-> [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md) (**READY FOR
-> v1.0.0**), y la versión ya se marcó `1.0.0` en la rama de release. Lo
-> que sigue pendiente y depende de una decisión humana explícita es la
-> fusión de `release/v1.0.0` en `main`, la creación del tag `v1.0.0`, la
-> generación del ejecutable Windows final desde el commit/tag definitivo
-> y la publicación del GitHub Release — ver "Artefactos y entrega" en
-> §12 más abajo y el procedimiento paso a paso en
-> [`RELEASE_PROCEDURE_v1.0.0.md`](RELEASE_PROCEDURE_v1.0.0.md).
+> **Nota de publicación real (2026-08-11)**: `v1.0.0` ya fue integrada en
+> `main` (commit `ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733`), etiquetada
+> (`v1.0.0`) y publicada como GitHub Release el 2026-08-11 — **antes** de
+> las fechas de calendario originalmente asignadas a las Fases 6-8 (4 al
+> 10 de septiembre). Registro completo en
+> [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md). Esto **no** significa
+> que las Fases 6 y 7 se hayan ejecutado tal como las describe este plan:
+> ambas asumen un proceso de congelación con varias candidatas y un ciclo
+> de corrección de defectos dentro de una ventana de calendario que
+> todavía no ha llegado (4-9 de septiembre) — ese proceso, literalmente,
+> no ocurrió, porque no hizo falta: `V1_RELEASE_READINESS.md` ya había
+> verificado cero defectos bloqueantes o graves antes de publicar, con
+> una única candidata (`release/v1.0.0`) que se publicó directamente. Sus
+> casillas se dejan explícitamente sin marcar más abajo, con una nota por
+> ítem cuando el resultado sustantivo sí se cumplió por otra vía. La
+> **Fase 8 — Entrega**, en cambio, sí describe objetivos que la
+> publicación real satisface de forma directa (build web final,
+> ejecutable Windows final, verificación de integridad): sus casillas se
+> reconcilian con la evidencia real de la publicación, aunque ocurrió el
+> 2026-08-11 y no el 10 de septiembre de 2026 originalmente previsto.
 
 ### Fase 6 — Congelación de contenido y versión candidata
 
@@ -1134,6 +1133,17 @@ No se aplaza la candidata estable más allá del 3 de septiembre.
 
 La candidata estable ya debe existir al iniciar esta fase. La congelación
 prohíbe contenido y mecánicas nuevas.
+
+**Nota de reconciliación (2026-08-11)**: ninguna casilla de esta fase se
+marca `[x]`. El proceso que describen (congelación con ventana de
+corrección de defectos entre el 4 y el 7 de septiembre) no se ejecutó
+literalmente, y esa fecha todavía no ha llegado. No hubo múltiples
+candidatas ni corrección de defectos porque no hizo falta: la única
+candidata (`release/v1.0.0`) se publicó directamente con cero defectos
+bloqueantes o graves ya verificados en `V1_RELEASE_READINESS.md`. Los
+builds web y Windows sí quedaron reproducidos y verificados como parte
+de la publicación real (ver [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md)),
+pero no como resultado de esta fase — se registran ahí, no aquí.
 
 #### Entregables
 
@@ -1180,6 +1190,12 @@ de entrega.
 
 **Fechas:** 8 y 9 de septiembre.
 
+**Nota de reconciliación (2026-08-11)**: esta fase describe un margen de
+contingencia dentro de una ventana de calendario (8-9 de septiembre) que
+todavía no ha llegado. No se ejecutó porque `v1.0.0` se publicó antes,
+sin incidencias que requirieran ese margen. Ninguna casilla se marca
+`[x]`.
+
 #### Entregables
 
 - [ ] Resolución de incidencias críticas restantes, si existen.
@@ -1225,28 +1241,77 @@ estable y se documenta la limitación.
 
 **Fecha:** 10 de septiembre.
 
+**Nota de reconciliación (2026-08-11)**: la entrega real ocurrió el
+2026-08-11, antes de la fecha originalmente prevista (10 de septiembre
+de 2026) — ver [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md) para el
+registro completo. Las casillas de esta fase se marcan `[x]` cuando la
+publicación real aporta evidencia directa; se dejan `[ ]` cuando no hay
+evidencia de una comprobación manual interactiva específica sobre el
+artifact literal publicado (distinto de la comprobación automatizada de
+integridad, que sí existe).
+
 #### Entregables
 
-- [ ] Versión web final.
-- [ ] Ejecutable final para Windows.
-- [ ] Instrucciones breves de ejecución y controles.
-- [ ] Resultado de pruebas finales.
-- [ ] Copia segura de los recursos fuente editables y artefactos entregados.
+- [x] Versión web final — identificada: commit
+  `ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733` en `main`, el mismo que
+  produce el build estático validado continuamente por `npm run check`.
+- [x] Ejecutable final para Windows —
+  `El-Teorema-del-Si-1.0.0-win-x64-portable.exe`, generado y validado en
+  el run de GitHub Actions `31517093742` (`workflow_dispatch` sobre el
+  tag `v1.0.0`), publicado como asset de la Release.
+- [x] Instrucciones breves de ejecución y controles — ya existentes en
+  `README.md` y [`WINDOWS_PORTABLE_GUIDE.md`](WINDOWS_PORTABLE_GUIDE.md).
+- [x] Resultado de pruebas finales — 546/546 tests unitarios y build
+  estático correctos; checks `verify` y `package` en verde sobre el
+  commit publicado (PR #44); verificación de integridad tras la
+  publicación (ver "Criterios de aceptación" más abajo).
+- [ ] Copia segura de los recursos fuente editables y artefactos
+  entregados — no aplica en el sentido de "recursos fuente editables":
+  no existen assets de imagen (arte 100% procedimental); el único asset
+  de audio ya está documentado en `src/assets/audio/README.md`. El
+  artifact y `SHA256SUMS.txt` están conservados de forma segura como
+  assets de la GitHub Release y bajo el tag inmutable `v1.0.0`. Se deja
+  sin marcar porque no hay una "copia de resguardo" adicional distinta
+  del propio repositorio/Release ya publicados.
 
 #### Criterios de aceptación
 
-- [ ] Los archivos entregados son exactamente los artefactos probados.
-- [ ] La versión indicada coincide con `package.json` y con la identificación
-  de entrega autorizada.
-- [ ] Web y Windows arrancan sin herramientas de desarrollo.
-- [ ] El recorrido obligatorio y el epílogo siguen accesibles.
+- [x] Los archivos entregados son exactamente los artefactos probados —
+  verificación posterior a la publicación: `PublishedLength=99604577`,
+  `PublishedSHA256=5F7CB4D0085E4ADE5C2BCCFCE2DC8AD5FF31DD1D5225334949AAB688C6373669`,
+  `HashMatch=True`, `LengthMatch=True`.
+- [x] La versión indicada coincide con `package.json` y con la
+  identificación de entrega autorizada — `1.0.0` en `package.json`/
+  `package-lock.json` del commit `ff0c72b9...`, tag `v1.0.0`, Release "El
+  Teorema del Sí v1.0.0".
+- [x] Web y Windows arrancan sin herramientas de desarrollo — sin
+  cambios de arquitectura respecto al artifact ya validado en
+  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md)
+  (el único diff entre esa candidata y `v1.0.0` es la versión y la
+  documentación, sin cambios en `src/`/`electron/`).
+- [x] El recorrido obligatorio y el epílogo siguen accesibles — mismo
+  motivo: cero cambios de código entre la candidata de readiness ya
+  auditada y el commit publicado.
 
 #### Pruebas necesarias
 
-- [ ] Verificación de integridad de los artefactos.
-- [ ] Prueba de humo final en web.
-- [ ] Prueba de humo final en Windows.
-- [ ] Comprobación final de nueva partida y carga.
+- [x] Verificación de integridad de los artefactos — `HashMatch=True`,
+  `LengthMatch=True` (ver arriba).
+- [x] Prueba de humo final en web — el check `verify` de PR #44 (que
+  ejecuta la suite Playwright completa contra el build estático) pasó
+  sobre el commit exacto que se fusionó en `main`.
+- [ ] Prueba de humo final en Windows — el check `package` de PR #44 y
+  el run `31517093742` validan estructura, nombre, tamaño y SHA-256 del
+  `.exe` de forma automatizada, pero no hay evidencia en esta tarea de
+  una prueba manual interactiva (doble clic, título, movimiento) sobre
+  el binario `1.0.0` literal. El código subyacente es idéntico al ya
+  probado manualmente en las tareas 6-7
+  ([`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)), pero
+  no se reclama esa prueba como repetida aquí.
+- [ ] Comprobación final de nueva partida y carga — mismo motivo: cubierto
+  a nivel automatizado (Playwright, incluida la suite de guardado/carga),
+  sin una repetición manual interactiva sobre el artifact `1.0.0`
+  publicado documentada en esta tarea.
 
 #### Riesgos
 
@@ -1353,10 +1418,22 @@ un estado agregado del proyecto hasta ahora, auditado más abajo.
 
 ### Puerta D — Entrega
 
-- [ ] Artefactos finales iguales a los probados.
-- [ ] Prueba de humo final en web y Windows.
-- [ ] Checklist final completa.
-- [ ] Versión y documentación de entrega coherentes.
+- [x] Artefactos finales iguales a los probados — verificación posterior
+  a la publicación: `HashMatch=True`, `LengthMatch=True` (ver
+  [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md)).
+- [ ] Prueba de humo final en web y Windows — parcial: la web sí tiene
+  una prueba automatizada real sobre el commit final (check `verify` de
+  PR #44, Playwright completo); Windows solo tiene validación
+  automatizada de integridad/estructura del `.exe` (run `31517093742`),
+  sin una prueba manual interactiva documentada sobre ese binario
+  literal en esta tarea — ver el matiz idéntico en Fase 8 más arriba.
+- [x] Checklist final completa — §12 "Checklist final de entrega" queda
+  totalmente auditado: cada elemento está `[x]` con evidencia, o
+  explícitamente `[ ]` con una anotación de riesgo aceptado o "no
+  aplica" — ninguno queda sin revisar.
+- [x] Versión y documentación de entrega coherentes — `1.0.0` en
+  `package.json`/`package-lock.json`, tag `v1.0.0`, GitHub Release "El
+  Teorema del Sí v1.0.0", `CHANGELOG.md` cerrado para `1.0.0`.
 
 ## 10. Registro de riesgos prioritarios
 
@@ -1497,15 +1574,16 @@ de disponibilidad para `v1.0.0`.
 - [x] `docker compose run --rm game npm run check` superado.
 - [x] `git diff --check` sin errores.
 - [x] Prueba manual completa superada — tarea 7.
-- [ ] Consola sin errores — sin marcar aquí deliberadamente: aunque existe
-  evidencia real vía `collectJavaScriptErrors()` en tests E2E segmentados
-  (ver §5, §6 Fase 5, Puerta C), esta casilla de entrega final exige una
-  verificación específica sobre el candidato final concreto, que todavía
-  no existe.
-- [ ] Compatibilidad de guardados verificada — mismo motivo: la
-  verificación existe a nivel de desarrollo (fixtures en
-  `GameState.test.js`), no como comprobación formal sobre un candidato
-  final.
+- [x] Consola sin errores — el candidato final ya existe (`main` en
+  `ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733`, publicado como `v1.0.0`):
+  el check `verify` de PR #44 ejecutó la suite Playwright completa —
+  incluida `collectJavaScriptErrors()` con aserción real en 13 tests —
+  contra exactamente ese commit antes del merge.
+- [x] Compatibilidad de guardados verificada — mismo commit final:
+  el check `verify` de PR #44 incluye la suite E2E de guardado/carga por
+  localización y la migración real de formato 1 en navegador
+  (`tests/e2e/game.spec.js`), además de las ~35 variantes unitarias en
+  `GameState.test.js`.
 - [x] Nueva partida, guardado, carga y partida terminada verificados —
   `tests/e2e/game.spec.js` y tarea 7.
 - [x] Instalación limpia verificada —
@@ -1519,27 +1597,37 @@ de disponibilidad para `v1.0.0`.
 
 ### Artefactos y entrega
 
-**AHORA (2026-08-11)**: existe una rama `release/v1.0.0` con la versión
-ya fijada en `1.0.0` (`package.json`/`package-lock.json`), `CHANGELOG.md`
-cerrado para `1.0.0`, y una PR abierta contra `main` (sin fusionar). Esto
-identifica *cuál será* el candidato — no sustituye a los artefactos
-finales, que dependen del merge. **TODAVÍA PENDIENTE**: ningún elemento
-de esta lista se marca `[x]` todavía, porque todos dependen de que
-`release/v1.0.0` se fusione en `main`, de que se cree el tag `v1.0.0`
-sobre el commit definitivo de `main`, y de que el workflow de GitHub
-Actions `windows-portable.yml` se ejecute (vía `workflow_dispatch`) sobre
-ese commit/tag para generar
-`El-Teorema-del-Si-1.0.0-win-x64-portable.exe`. Ninguna de esas tres
-acciones se ejecuta en esta tarea.
+**Cierre (2026-08-11)**: `release/v1.0.0` se fusionó en `main`
+(PR #44, commit `ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733`), se creó el
+tag `v1.0.0` sobre ese mismo commit, y `windows-portable.yml` se ejecutó
+vía `workflow_dispatch` sobre ese tag (run `31517093742`, `success`)
+generando y validando `El-Teorema-del-Si-1.0.0-win-x64-portable.exe`,
+publicado junto con `SHA256SUMS.txt` en la GitHub Release "El Teorema
+del Sí v1.0.0" (no draft, no prerelease). Registro completo en
+[`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md).
 
-- [ ] Build web final identificado.
-- [ ] Ejecutable Windows final identificado.
-- [ ] Ambos artefactos corresponden a la misma versión probada.
-- [ ] Controles e instrucciones de ejecución incluidos.
-- [ ] Recursos fuente editables conservados.
-- [ ] No hay secretos, credenciales ni material de licencia dudosa.
-- [ ] No hay binarios grandes no autorizados en el repositorio.
-- [ ] La versión declarada coincide con `package.json`.
-- [ ] Cualquier tag o publicación ha sido realizada solo con autorización
-  explícita.
-- [ ] Copia final entregada el 10 de septiembre de 2026.
+- [x] Build web final identificado — commit `ff0c72b9...` en `main`.
+- [x] Ejecutable Windows final identificado —
+  `El-Teorema-del-Si-1.0.0-win-x64-portable.exe`, run `31517093742`.
+- [x] Ambos artefactos corresponden a la misma versión probada — mismo
+  commit `ff0c72b9...`, `package.json` en `1.0.0`.
+- [x] Controles e instrucciones de ejecución incluidos — `README.md`,
+  `WINDOWS_PORTABLE_GUIDE.md`.
+- [ ] Recursos fuente editables conservados — no aplica: no existen
+  assets de imagen fuente (arte 100% procedimental); el único asset de
+  audio ya está documentado en `src/assets/audio/README.md`. Se deja sin
+  marcar por no ser aplicable, no por estar pendiente.
+- [x] No hay secretos, credenciales ni material de licencia dudosa — ya
+  auditado (Fase 4): único asset con licencia (`epilogue-theme-provisional.wav`)
+  generado localmente por síntesis, sin material de terceros.
+- [x] No hay binarios grandes no autorizados en el repositorio — mismo
+  audito, único binario >500 KB es ese `.wav` (~2,02 MB), justificado.
+- [x] La versión declarada coincide con `package.json` — `1.0.0` en el
+  commit publicado, coherente con el tag y la Release.
+- [x] Cualquier tag o publicación ha sido realizada solo con
+  autorización explícita — la publicación de `v1.0.0` (merge, tag,
+  Release) se realizó como decisión humana explícita, fuera del alcance
+  de cualquier acción automatizada de `autopilot`.
+- [x] Copia final entregada — publicada el **2026-08-11**, antes de la
+  fecha originalmente prevista (10 de septiembre de 2026); ver
+  [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md).
