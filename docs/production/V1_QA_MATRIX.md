@@ -7,13 +7,18 @@ documento. Fecha de compilación: 2026-08-11.
 
 Columnas: **Unit/Integration** (`node --test` en `tests/`), **E2E**
 (Playwright, `tests/e2e/game.spec.js`), **Manual** (prueba manual humana
-registrada), **Windows** (validado sobre el ejecutable empaquetado),
-**Offline** (validado sin conexión a Internet), **Evidencia** (archivo
-concreto), **Resultado**.
+registrada, jugando realmente el juego), **Windows** (validado sobre el
+ejecutable empaquetado), **Offline** (validado sin conexión a Internet),
+**Evidencia** (archivo concreto), **Resultado**.
 
 Ninguna celda se marca PASS sin una evidencia citada. Una celda vacía
 significa que esa capa concreta no se ejecutó para ese requisito — no
-implica fallo si otras capas sí lo cubren.
+implica fallo si otras capas sí lo cubren. Dos filas (deducibilidad de
+puzles, progresión de objetivos) se basan en **auditoría estática de
+código/specs**, no en una prueba manual jugada — se marca explícitamente
+así en su columna "Evidencia" y las cinco columnas de capa quedan vacías
+("—"), para no confundir una revisión de código con una prueba manual
+real.
 
 | Requisito | Unit/Integration | E2E | Manual | Windows | Offline | Evidencia | Resultado |
 |---|---|---|---|---|---|---|---|
@@ -21,8 +26,8 @@ implica fallo si otras capas sí lo cubren.
 | P2 — "El paseo imposible" | ✅ | ✅ | ✅ | ✅ | ✅ | `tests/puzzles/P2*`; `game.spec.js:569`; `WINDOWS_PORTABLE_FULL_QA.md` | PASS |
 | Biblioteca — "El catálogo perfecto" | ✅ | ✅ | ✅ | ✅ | ✅ | `tests/puzzles/LibraryCatalogue*.test.js`; `game.spec.js:386`; `WINDOWS_PORTABLE_FULL_QA.md` | PASS |
 | Archivo — "La pregunta correcta" | ✅ | ✅ | ✅ | ✅ | ✅ | `tests/puzzles/ArchiveCriteria*.test.js`; `game.spec.js:192`; `WINDOWS_PORTABLE_FULL_QA.md` | PASS |
-| Puzles deducibles con información/pistas disponibles en el juego | — | — | ✅ (auditoría de código/specs) | — | — | Biblioteca: reglas siempre visibles en pantalla (`LibraryCatalogueScene.js`, `LIBRARY_CATALOGUE_SPEC.md`); Archivo: evidencias siempre visibles (`ArchiveCriteriaScene.js`); los tres puzles: sistema de pistas de 3 niveles, libre y sin coste, nivel 3 revela la solución (`P2Hints.js`, `LibraryCatalogueHints.js`, `ArchiveCriteriaHints.js`) | PASS (ver matiz sobre P2 en `V1_PRODUCTION_PLAN.md` §5) |
-| Objetivos/progresión narrativa indican el siguiente paso sin revelar la solución | — | — | ✅ (auditoría de código) | — | — | `OBJECTIVE_LABELS` en `src/scenes/WorldScene.js` — 10 objetivos reales auditados, ninguno revela una solución de puzle | PASS |
+| Puzles deducibles con información/pistas disponibles en el juego | — | — | — | — | — | **Auditoría estática de código/specs** (no prueba manual jugada): Biblioteca: reglas siempre visibles en pantalla (`LibraryCatalogueScene.js`, `LIBRARY_CATALOGUE_SPEC.md`); Archivo: evidencias siempre visibles (`ArchiveCriteriaScene.js`); los tres puzles: sistema de pistas de 3 niveles, libre y sin coste, nivel 3 revela la solución (`P2Hints.js`, `LibraryCatalogueHints.js`, `ArchiveCriteriaHints.js`) | PASS (ver matiz sobre P2 en `V1_PRODUCTION_PLAN.md` §5) |
+| Objetivos/progresión narrativa indican el siguiente paso sin revelar la solución | — | — | — | — | — | **Auditoría estática de código** (no prueba manual jugada): `OBJECTIVE_LABELS` en `src/scenes/WorldScene.js` — 10 objetivos reales auditados, ninguno revela una solución de puzle | PASS |
 | Cuaderno y pistas (conexión, deduplicación) | ✅ | ✅ (implícito en cada puzle) | ✅ | ✅ | ✅ | `GameState.addNotebookEntry()`; `tests/state/GameState.test.js` | PASS |
 | Guardar/cargar en cada localización obligatoria | ✅ | ✅ | ✅ | ✅ | ✅ | `game.spec.js` (guardado/carga por localización: líneas 777, 932, 1153, 1424, 1644, 1848); `WINDOWS_PORTABLE_FULL_QA.md` | PASS |
 | Migración de guardados (formatos 1-4) | ✅ | ✅ (formato 1 en navegador real) | — | — | — | `tests/state/GameState.test.js` (formatos 1/2/3/4/999); `game.spec.js:1848` | PASS |
@@ -46,8 +51,10 @@ implica fallo si otras capas sí lo cubren.
 | Reinicio real de Windows con persistencia | — | — | ✅ | ✅ | — | `WINDOWS_CLEAN_INSTALL_VALIDATION.md` | PASS |
 | Compatibilidad/sustitución entre dos builds distintas (A→B→A) | — | — | — | — | — | `WINDOWS_PORTABLE_FULL_QA.md` (sección dedicada) | **NO EJECUTADO** — riesgo residual aceptado explícitamente por el responsable del producto, no bloqueante |
 | Duración completa del recorrido | — | — | — | — | — | `WINDOWS_PORTABLE_FULL_QA.md` | **NO MEDIDA** — riesgo aceptado, no bloqueante |
+| Rendimiento y escalado pixel-perfect (medición formal) | — | — | ✅ (parcial: solo epílogo) | — | — | `EPILOGUE_MANUAL_VALIDATION.md` (legibilidad 480×270, solo epílogo); sin medición de FPS/tiempos de carga en ningún punto del juego | **NO EJECUTADA (medición formal)** — riesgo aceptado, no bloqueante; se apoya en ausencia de fallos visibles en el recorrido real completo (`WINDOWS_PORTABLE_FULL_QA.md`), evidencia informal |
 | Accesibilidad básica (operable 100% con teclado) | ✅ | ✅ (ningún test usa mouse/click) | — | ✅ | — | `src/core/InputManager.js` (solo `keydown`/`keyup`); los 15 tests de `game.spec.js` usan exclusivamente `page.keyboard`; `WINDOWS_PORTABLE_FULL_QA.md` | PASS (alcance básico; no es una certificación WCAG) |
 | Defectos bloqueantes o graves conocidos | — | — | — | — | — | Issues de GitHub habilitados, 0 issues (abiertos o cerrados); sin `BUGS.md`/`ISSUES.md`; `CHANGELOG.md` solo registra correcciones ya aplicadas | **NINGUNO REGISTRADO** a fecha 2026-08-11 — no es una afirmación absoluta de "cero defectos", es la constatación de que ninguno está documentado |
+| Defectos menores de nomenclatura (personaje/localización/UI) | — | — | — | — | — | **Auditoría estática de código** (no prueba manual): `worldMaps.js` ("La Investigadora"/"Padre de la Investigadora" vs. "la novia"/"el padre de la novia" en diálogos y objetivos; "Biblioteca" vs. "Biblioteca del Margen"); `LibraryCatalogueScene.js` (fase sin traducir en pantalla, a diferencia de `ArchiveCriteriaScene.js`) | **4 ENCONTRADOS, NO BLOQUEANTES** — ver `V1_PRODUCTION_PLAN.md` §5 "Defectos menores conocidos" |
 
 ## Notas sobre cobertura numérica (orientativa, no exhaustiva)
 

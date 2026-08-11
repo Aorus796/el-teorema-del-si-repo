@@ -103,7 +103,7 @@ end-to-end offline completo
 
 ## Riesgos aceptados (no bloqueantes)
 
-Todos aceptados explícitamente por el responsable del producto:
+### Aceptados explícitamente por el responsable del producto
 
 - **Compatibilidad/sustitución entre dos builds distintas (A→B→A)**: no
   ejecutada. Riesgo residual aceptado.
@@ -114,6 +114,36 @@ Todos aceptados explícitamente por el responsable del producto:
   renderizado procedimental sin defectos visuales conocidos. La
   presentación visual actual se acepta para `v1.0.0`; el pulido gráfico
   adicional queda como trabajo futuro, no como bloqueo.
+
+### Clasificados como no bloqueantes por esta auditoría (2026-08-11)
+
+Pendientes de una aceptación explícita separada si el responsable del
+producto quiere registrarla como tal:
+
+- **Rendimiento y escalado pixel-perfect (medición formal)**: **no
+  ejecutada** — no hay medición de FPS ni de tiempos de carga
+  registrada. La revisión dedicada de legibilidad a 480×270 solo cubre
+  las escenas del epílogo (`EPILOGUE_MANUAL_VALIDATION.md`), no el resto
+  del juego con el mismo nivel de detalle formal. No se presenta como
+  PASS: se apoya en la ausencia de defectos funcionales visibles durante
+  el recorrido real completo (`WINDOWS_PORTABLE_FULL_QA.md`), evidencia
+  informal pero real. Clasificado como riesgo residual no bloqueante por
+  su naturaleza (cosmético/de rendimiento, no funcional) — no por una
+  aceptación explícita previa del responsable del producto sobre este
+  punto en concreto.
+- **Defectos menores de nomenclatura** (4, encontrados en la auditoría
+  estática de textos de este mismo cierre): dos inconsistencias de
+  nombre de personaje ("La Investigadora"/"la novia" y "Padre de la
+  Investigadora"/"el padre de la novia"), una de nombre de localización
+  ("Biblioteca"/"Biblioteca del Margen"), y un valor de fase de puzle sin
+  traducir visible en pantalla. Ninguno afecta jugabilidad, lógica ni
+  guardado, por lo que esta auditoría los clasifica como no bloqueantes
+  — igual que en el punto anterior, esa clasificación es un juicio de
+  esta auditoría, no una aceptación explícita previa y separada del
+  responsable del producto sobre estos hallazgos concretos (que no
+  existían hasta este cierre). Ver el detalle completo en
+  `V1_PRODUCTION_PLAN.md` §5 "Calidad y entrega" → "Defectos menores
+  conocidos".
 
 ## Trabajo explícitamente post-`v1.0.0`
 
@@ -128,7 +158,9 @@ Todos aceptados explícitamente por el responsable del producto:
 ## Defectos bloqueantes o graves conocidos
 
 **Ninguno.** Ver "Evidencia QA" más arriba para el detalle de la
-auditoría.
+auditoría. (Sí existen 4 defectos **menores** de nomenclatura,
+registrados en "Riesgos aceptados" más arriba — ninguno bloqueante ni
+grave.)
 
 ## Estado de las Fases (`V1_PRODUCTION_PLAN.md` §6)
 
@@ -179,10 +211,13 @@ completo (Plaza → Puentes → Biblioteca → Archivo → epílogo) está
 implementado, probado a nivel unitario, E2E y manual, y validado tanto
 en la versión web como en el ejecutable Windows empaquetado, incluida
 una segunda máquina física y un reinicio real del sistema operativo. No
-existe ningún defecto bloqueante o grave conocido. Los únicos elementos
-sin cerrar son riesgos explícitamente aceptados por el responsable del
-producto (compatibilidad A→B→A, duración no cronometrada, pulido visual
-opcional) o trabajo explícitamente diferido a después de `v1.0.0`
+existe ningún defecto bloqueante o grave conocido — sí existen 4 defectos
+**menores** de nomenclatura, encontrados y documentados en esta misma
+auditoría, ninguno bloqueante. Los únicos elementos sin cerrar son
+riesgos explícitamente aceptados por el responsable del producto
+(compatibilidad A→B→A, duración no cronometrada, pulido visual opcional,
+medición formal de rendimiento/escalado, los 4 defectos menores de
+nomenclatura) o trabajo explícitamente diferido a después de `v1.0.0`
 (personalización final).
 
 **Esta conclusión NO implica**: que `feat/v1-production-scope` ya se

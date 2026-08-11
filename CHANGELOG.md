@@ -571,6 +571,24 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   un registro local. Reconcilió Fase 4 (arte, audio, textos) contra
   evidencia ya existente, dejando como riesgo aceptado no bloqueante
   únicamente el pulido visual/rendimiento sin medir.
+- Auditoría estática completa de textos, nombres, objetivos y pistas
+  (§11 "Estrategia de arte y audio" y Fase 4 de `V1_PRODUCTION_PLAN.md`,
+  parte del mismo cierre de release-readiness): revisó nombres de
+  personajes/localizaciones, diálogos de `WorldScene.js`, títulos y
+  mensajes de fallo de los tres puzles, créditos del epílogo, los 10
+  objetivos y las 4 entradas de cuaderno, sin jugar de nuevo. Encontró y
+  documentó **4 defectos menores, no bloqueantes** (nomenclatura, no
+  lógica ni datos): "La Investigadora"/"Padre de la Investigadora" en
+  los `label` de NPC de `worldMaps.js` frente a "la novia"/"el padre de
+  la novia" en el resto del juego; "Biblioteca" (nombre oficial del
+  mapa) frente a "Biblioteca del Margen" (narrativa); y un valor de fase
+  de puzle sin traducir visible en pantalla en `LibraryCatalogueScene.js`.
+  Registrados en `V1_PRODUCTION_PLAN.md` §5 "Defectos menores conocidos"
+  y en `V1_QA_MATRIX.md`, sin modificar código — su corrección queda
+  como trabajo de pulido menor futuro. Cierra también §11 "Estrategia de
+  arte y audio" (antes solo el audio tenía decisión de facto) y registra
+  la medición formal de rendimiento/escalado pixel-perfect como riesgo
+  aceptado no bloqueante, no ejecutada.
 
 ### Corregido
 

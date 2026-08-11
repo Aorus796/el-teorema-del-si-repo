@@ -463,10 +463,38 @@ jugables.
   nunca defectos pendientes. Esto no es una afirmación absoluta de
   ausencia total de bugs — es la constatación factual de que no hay
   ninguno documentado.
-- No aplica actualmente: no existe ningún defecto menor registrado que
-  requiera una solución alternativa o justificación de entrega (mismo
-  fundamento que el punto anterior). Si en el futuro se registra alguno,
-  esta casilla debe volver a `[ ]` hasta documentarlo.
+- [x] Los defectos menores aceptados están registrados con una solución
+  alternativa clara o una justificación de entrega — **defectos menores
+  conocidos** (encontrados en la auditoría estática de textos de esta
+  misma tarea, 2026-08-11; ninguno bloqueante ni grave, todos de
+  nomenclatura/presentación, no de lógica ni de datos):
+  1. El `label` del NPC de la novia en el epílogo dice **"La
+     Investigadora"** (`src/content/worldMaps.js`, objeto
+     `bride-epilogue`), visible literalmente en el prompt de interacción
+     `"[E] Hablar con La Investigadora"`, mientras que el diálogo que se
+     abre a continuación y el resto del juego la llaman consistentemente
+     **"la novia"**.
+  2. Mismo patrón para el NPC "Padre de la Investigadora"
+     (`src/content/worldMaps.js`, objeto `bride-father`) frente a "el
+     padre de la novia" en diálogos y objetivos.
+  3. El mapa de la Biblioteca tiene `name: "Biblioteca"` (mostrado en el
+     HUD y en las salidas), mientras toda la narrativa y el objetivo
+     correspondiente la llaman **"Biblioteca del Margen"**.
+  4. La pantalla de "El catálogo perfecto" (`LibraryCatalogueScene.js`)
+     muestra el valor interno sin traducir de la fase del puzle (por
+     ejemplo `"Fase: arranging"`), a diferencia de la pantalla gemela
+     "La pregunta correcta" (`ArchiveCriteriaScene.js`), que sí traduce
+     su fase equivalente al español.
+
+  **Justificación de entrega**: ninguno de los cuatro afecta la
+  jugabilidad, la lógica de los puzles, el guardado, ni introduce
+  información falsa o contradictoria sobre hechos narrativos — son
+  discrepancias de nomenclatura/presentación entre pantallas distintas
+  que el jugador no ve simultáneamente. Se aceptan como conocidos y no
+  bloqueantes para `v1.0.0`; su corrección (unificar el nombre mostrado
+  del personaje/localización, traducir el enum de fase) queda como
+  trabajo de pulido menor, no como parte de esta tarea documental (que
+  no modifica código).
 - [ ] La versión candidata estable existe al cerrar el 3 de septiembre —
   fecha futura, todavía no alcanzada.
 - [ ] Del 4 al 9 de septiembre no se incorpora contenido nuevo — fecha
@@ -778,14 +806,27 @@ implementa y valida de forma independiente con el flujo completo de
   (riesgo de pulido visual adicional, no bloqueante).
 - [x] Audio aprobado integrado de forma acotada — pista del epílogo
   integrada y validada, incluido su funcionamiento offline (tarea 7).
-- [ ] Revisión completa de textos, nombres, objetivos y pistas — parcial:
-  esta misma tarea auditó y confirmó los 10 objetivos reales del juego y
-  las pistas/reglas de los tres puzles, sin contradicciones (ver §5
-  "Recorrido y contenido" más abajo, "deducibilidad" y "objetivos"). No
-  cubre una revisión dedicada de consistencia de nombres de
-  personajes/lugares ni de los textos generales de diálogo fuera de las
-  pistas de puzle — se mantiene sin marcar por esa parte pendiente, no
-  por la parte de objetivos/pistas ya auditada.
+- [x] Revisión completa de textos, nombres, objetivos y pistas —
+  auditoría estática completa realizada en esta tarea (sin jugar de
+  nuevo), cubriendo nombres de personajes, nombres de localizaciones,
+  diálogos de `WorldScene.js`, títulos/instrucciones/mensajes de fallo de
+  los tres puzles, créditos del epílogo, los 10 objetivos y las 4
+  entradas de cuaderno. La revisión **encontró 4 defectos menores
+  reales**, no bloqueantes, ahora registrados explícitamente en
+  "Defectos menores conocidos" más abajo (§5 "Calidad y entrega"): dos
+  inconsistencias de nombre de personaje ("La Investigadora"/"Padre de
+  la Investigadora" en los `label` de `worldMaps.js` frente a "la
+  novia"/"el padre de la novia" en el 100% de los diálogos y objetivos),
+  una inconsistencia de nombre de localización ("Biblioteca" en el
+  nombre oficial del mapa y en las salidas, frente a "Biblioteca del
+  Margen" en toda la narrativa), y un valor de fase sin traducir visible
+  en pantalla en `LibraryCatalogueScene.js` (`"Fase: arranging"` en vez
+  de un texto en español, a diferencia de `ArchiveCriteriaScene.js`, que
+  sí traduce su fase equivalente). No se detectó ninguna contradicción de
+  hechos narrativos, ni en las pistas/reglas de los tres puzles, ni en
+  las entradas de cuaderno (ninguna adelanta información de un puzle
+  posterior). Se marca `[x]` porque la revisión en sí es completa y
+  real — no porque no se haya encontrado nada.
 - ~~Personalización aprobada aplicada sin incluir datos privados en
   lugares no previstos~~ — fuera del alcance bloqueante de `v1.0.0` (ver
   §2, §4); no implementada, no exigida para esta versión.
@@ -812,12 +853,20 @@ implementa y valida de forma independiente con el flujo completo de
 - [x] No se han añadido binarios grandes sin autorización — único
   binario >500 KB fuera de `node_modules`/`.git`/`release`/`builds` es
   el mismo `.wav` (~2,02 MB), ya justificado y documentado.
-- [x] Textos y pistas no se contradicen — auditados (ver
-  "deducibilidad"/"objetivos" en §5 más abajo); sin contradicción
-  detectada. **Que "quepan en la interfaz" (legibilidad/desbordamiento
-  visual) no se marca aquí** — ver el matiz de legibilidad en "El
-  rendimiento y el escalado pixel-perfect se mantienen", más abajo, que
-  solo tiene revisión dedicada para las escenas del epílogo.
+- [x] Textos y pistas no se contradicen — matizado: las **pistas y
+  reglas de los tres puzles** (ver "deducibilidad" en §5 más abajo) no
+  presentan ninguna contradicción entre sí ni con su propia solución. La
+  auditoría completa de textos sí encontró 3 inconsistencias reales de
+  **nomenclatura** (no de hechos narrativos) — nombres de personaje y de
+  localización nombrados de forma distinta según la pantalla, ver
+  "Defectos menores conocidos" en §5 más abajo. Se marca `[x]` en el
+  sentido estricto de "no se contradicen los hechos" (nadie afirma algo
+  falso ni incompatible con otra escena); las inconsistencias de nombre
+  quedan registradas aparte, no bajo esta casilla. **Que "quepan en la
+  interfaz" (legibilidad/desbordamiento visual) no se marca aquí** — ver
+  el matiz de legibilidad en "El rendimiento y el escalado pixel-perfect
+  se mantienen", más abajo, que solo tiene revisión dedicada para las
+  escenas del epílogo.
 - No aplica para `v1.0.0`: la personalización queda fuera de alcance (ver
   §2, §4) — no hay personalización que revise por tono ni por datos.
 - [x] La ausencia o fallo de audio no bloquea el recorrido — degradación
@@ -838,8 +887,11 @@ implementa y valida de forma independiente con el flujo completo de
   visibles reportados (`WINDOWS_PORTABLE_FULL_QA.md`), con menor grado
   de detalle formal que la revisión del epílogo.
 - [x] Revisión de todos los diálogos, objetivos y entradas de cuaderno —
-  completada en esta misma tarea (ver §5 "Recorrido y contenido" más
-  abajo).
+  completada en esta misma tarea (auditoría estática completa, ver
+  "Revisión completa de textos, nombres, objetivos y pistas" más
+  arriba). Encontró 4 defectos menores de nomenclatura, registrados en
+  "Defectos menores conocidos" en §5 — no invalida que la revisión en sí
+  se haya realizado sobre todos los diálogos, objetivos y entradas.
 - [x] Prueba con audio y prueba con audio no disponible —
   `EPILOGUE_MANUAL_VALIDATION.md`.
 - [ ] Prueba manual completa cronometrada — recorrido completo real
@@ -888,7 +940,11 @@ estable. No se recortan pistas necesarias ni legibilidad.
   `BUGS.md`/`ISSUES.md` con defectos documentados como abiertos;
   `CHANGELOG.md` solo registra correcciones ya aplicadas. Esto no es una
   afirmación absoluta de "cero bugs" — es la constatación factual de que
-  no hay ninguno documentado.
+  no hay ninguno documentado. La auditoría estática de textos de esta
+  misma tarea sí encontró 4 defectos **menores** (nomenclatura de
+  personajes/localización, un enum sin traducir) — ninguno bloqueante ni
+  grave; ver "Defectos menores conocidos" en §5 "Calidad y entrega" más
+  abajo.
 - [x] Revisión de accesibilidad básica y navegación por teclado —
   **accesibilidad básica para el alcance v1 validada; no constituye
   certificación WCAG.** Evidencia: el juego es operable al 100% con
@@ -1343,14 +1399,23 @@ el 2 de agosto:
   decisión aparte redactado antes de empezar, pero el mapeo
   flujo-por-flujo (qué se automatiza vs. qué es manual) es observable y
   consistente en el código y las pruebas reales.
-- [ ] **Estrategia de arte y audio:** decisión parcial. El audio tiene una
-  decisión de facto documentada (pista provisional/sustituible del
-  epílogo, aceptada para `v1.0.0` sin sustitución obligatoria — ver §2).
-  El arte **no** tiene ninguna decisión equivalente registrada, ni
-  siquiera provisional: no hay paleta/resolución/formato de recursos
-  fuente definidos porque el juego no usa assets de imagen (renderizado
-  procedimental). Esta casilla combinada sigue sin cerrar por la mitad
-  correspondiente al arte.
+- [x] **Estrategia de arte y audio:** decisión de facto vigente y cerrada
+  para `v1.0.0`, en dos partes:
+  - **Audio**: pista única del epílogo (`epilogue-theme-provisional.wav`),
+    generada localmente por síntesis (sin muestras de terceros),
+    integrada y validada (funcionamiento y offline, tarea 7). Sigue
+    etiquetada como "provisional y sustituible" en su propio nombre y
+    README, pero no existe ninguna decisión que exija reemplazarla antes
+    de `v1.0.0` — aceptada tal cual.
+  - **Arte**: el juego usa renderizado procedimental sobre `<canvas>`,
+    sin ningún asset de imagen externo, sin pipeline de arte ni recursos
+    fuente que gestionar. La presentación visual actual se acepta para
+    `v1.0.0` — no existe ningún asset gráfico concreto identificado como
+    obligatorio, y el recorrido real completo no encontró fallos
+    visibles de renderizado (`WINDOWS_PORTABLE_FULL_QA.md`). No se exige
+    un pase visual dedicado antes de `v1.0.0`; el pulido gráfico
+    adicional queda como trabajo futuro, no bloqueante (ver "Pase visual
+    coherente" en Fase 4 más arriba).
 
 Una decisión no está cerrada si solo enumera opciones. Debe indicar la opción
 elegida, la razón, su impacto en calendario y el criterio que permitirá
