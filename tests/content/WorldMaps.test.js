@@ -150,9 +150,24 @@ test("axiom-plaza tiene exactamente un bride-epilogue como npc con requiresFlag 
 
   assert.equal(bride.type, "npc");
   assert.equal(bride.requiresFlag, "giftCodeSolved");
-  assert.equal(typeof bride.label, "string");
-  assert.ok(bride.label.length > 0);
+  assert.equal(bride.label, "la novia");
   assert.ok(bride.interactionRadius > 0);
+});
+
+test("bride-epilogue ya no usa el label heredado \"La Investigadora\"", () => {
+  const map = getWorldMap("axiom-plaza");
+  const bride = map.objects.find((object) => object.id === "bride-epilogue");
+
+  assert.notEqual(bride?.label, "La Investigadora");
+});
+
+test("bride-father tiene el label coherente con su hablante real en los diálogos", () => {
+  const map = getWorldMap("axiom-plaza");
+  const father = map.objects.find((object) => object.id === "bride-father");
+
+  assert.equal(father?.type, "npc");
+  assert.equal(father?.label, "Padre de la novia");
+  assert.notEqual(father?.label, "Padre de la Investigadora");
 });
 
 test("bride-epilogue no colisiona ni solapa nada en axiom-plaza", () => {

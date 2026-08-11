@@ -1,4 +1,5 @@
 import { getWorldMap } from "../content/worldMaps.js";
+import { COUPLE_DEDICATION } from "../content/personalizationConfig.js";
 
 export const CREDITS_STEP = Object.freeze({
   CLOSING_SHOT: "closing-shot",
@@ -20,7 +21,8 @@ const CLOSING_LINE =
   "No existe un sí para siempre. Existen dos personas que pueden volver a elegirse cada día.";
 const CLOSING_LINE_MAX_CHARS = 48;
 const TITLE_TEXT = "EL TEOREMA DEL SÍ";
-const DEDICATION_TEXT = "Por todos los síes que aún quedan por elegir.";
+const DEDICATION_MAX_CHARS = 44;
+const DEDICATION_LINE_HEIGHT = 16;
 const CREDITS_LINE_1 = "CREADO CON CARIÑO";
 const CREDITS_LINE_2 = "COMO REGALO DE BODA";
 const CREDITS_LINE_3 = "GRACIAS POR JUGAR";
@@ -211,7 +213,13 @@ function renderDedication(context) {
   context.fillStyle = "#f1dfb5";
   context.font = "bold 11px monospace";
   context.textAlign = "center";
-  context.fillText(DEDICATION_TEXT, 240, 135);
+
+  const lines = wrapTextToLines(COUPLE_DEDICATION, DEDICATION_MAX_CHARS);
+  const blockHeight = (lines.length - 1) * DEDICATION_LINE_HEIGHT;
+  const startY = 135 - blockHeight / 2;
+  lines.forEach((line, index) => {
+    context.fillText(line, 240, startY + index * DEDICATION_LINE_HEIGHT);
+  });
 
   context.fillStyle = "#c9bea4";
   context.font = "7px monospace";
