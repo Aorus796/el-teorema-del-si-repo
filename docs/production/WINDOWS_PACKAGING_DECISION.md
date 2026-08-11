@@ -46,10 +46,15 @@ completo, la corrección de defectos, y la revisión de accesibilidad
 básica, ninguna de las cuales es objeto de este documento ni de sus
 tareas 1-8. **Lo que queda cerrado aquí es exclusivamente el subconjunto
 de empaquetado Windows dentro de esa Fase 5** — no la Fase 5 completa del
-plan de producción, que sigue abierta hasta que se complete el resto de
-su alcance. `v1.0.0` **no está publicada** por este cierre: sigue
+plan de producción, que en el momento de este cierre seguía abierta
+hasta que se completara el resto de su alcance. `v1.0.0` **no estaba
+publicada** por este cierre en particular: en ese momento seguía
 dependiendo del resto del contenido y del QA general del juego, según
-`V1_PRODUCTION_PLAN.md`.
+`V1_PRODUCTION_PLAN.md`. **Actualización (2026-08-11): `v1.0.0` ya fue
+publicada** — ver
+[`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md). Este párrafo se
+conserva sin reescribir como registro histórico del momento en que se
+cerró específicamente el empaquetado Windows.
 
 El resto de la implementación de `v1.0.0` se hará en tareas futuras
 separadas, siguiendo el flujo obligatorio de `CLAUDE.md` (planner →
@@ -1030,13 +1035,17 @@ este orden. Las tareas 1 a 8 ya están completadas.
    del producto para `v1.0.0` — este cierre no la convierte en validada
    ni en PASS.
 
-   **Esto NO significa** que `v1.0.0` esté publicada, ni que se haya
-   fusionado `feat/v1-production-scope` en `main`, ni que se haya creado
-   ningún tag o GitHub Release, ni que la Fase 5 completa de
+   **En el momento de este cierre (tarea 8), esto NO significaba** que
+   `v1.0.0` estuviera publicada, ni que se hubiera fusionado
+   `feat/v1-production-scope` en `main`, ni que se hubiera creado ningún
+   tag o GitHub Release, ni que la Fase 5 completa de
    `V1_PRODUCTION_PLAN.md` §6 (QA general del recorrido, accesibilidad
-   básica, corrección de defectos) esté cerrada — ese alcance más amplio
-   no es objeto de este documento ni de sus tareas 1-8, y sigue abierto
-   en `V1_PRODUCTION_PLAN.md`. Ver
+   básica, corrección de defectos) estuviera cerrada — ese alcance más
+   amplio no era objeto de este documento ni de sus tareas 1-8. **Todo
+   eso se completó después**: la Fase 5 completa se cerró en el cierre
+   de release-readiness, y `v1.0.0` fue integrada en `main`, etiquetada y
+   publicada como GitHub Release el 2026-08-11 — ver
+   [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md). Ver
    [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md)
    para la lista factual de lo que realmente sigue pendiente para
    `v1.0.0`.

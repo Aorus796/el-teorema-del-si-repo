@@ -1,5 +1,12 @@
 # Hoja de ruta de producción
 
+> **Nota (2026-08-11)**: este documento es la hoja de ruta original,
+> anterior al plan de producción de `v1.0.0`. `v1.0.0` ya fue publicada
+> — ver [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md). Ninguna
+> casilla sin marcar de este documento describe una tarea activa: la
+> selección de tareas pasa siempre por `CLAUDE.md` y la skill
+> `autopilot`, nunca por este archivo.
+
 ## Hitos publicados
 
 - [x] `v0.1.0-docs`: GDD inicial y estructura documental.

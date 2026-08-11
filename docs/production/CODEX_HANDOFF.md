@@ -193,7 +193,9 @@ Alcance reducido de v1:
 - cuaderno
 - pistas
 - guardado y carga
-- epílogo personalizado
+- epílogo (mecánica; **sin personalizar** — ver "Personalización futura"
+  más abajo: no se implementó en `v1.0.0`, decisión vigente del
+  responsable del producto)
 - ejecutable Windows
 
 Fuera del alcance principal:
