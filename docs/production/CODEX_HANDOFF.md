@@ -643,11 +643,15 @@ implementación queda en:
 docs/production/NEXT_CODEX_TASK.md
 ```
 
-Según el «Orden de trabajo posterior» de este documento, la siguiente
-prioridad de producción es la **resolución final y el epílogo** (punto 3).
-Su diseño y detalle no forman parte de este documento — ver
-`docs/production/V1_PRODUCTION_PLAN.md` y la selección de tareas vigente
-en `CLAUDE.md` y la skill `autopilot`.
+**Actualización posterior (2026-08-11)**: en el momento en que se
+escribió este documento, la siguiente prioridad de producción era la
+resolución final y el epílogo (punto 3 de «Orden de trabajo posterior»
+más abajo). Desde entonces el epílogo se implementó por completo, se
+cerró el empaquetado Windows, se completó el QA de cierre y **`v1.0.0`
+ya fue integrada en `main`, etiquetada y publicada como GitHub Release**
+— ver [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md). Este documento
+no describe ninguna tarea activa: la selección de tareas vigente pasa
+siempre por `CLAUDE.md` y la skill `autopilot`, nunca por este archivo.
 
 ---
 
@@ -695,7 +699,14 @@ trabajo posterior».
 
 ## Personalización futura
 
-No implementar durante el bloque del Archivo.
+No implementar durante el bloque del Archivo. **Actualización
+(2026-08-11): esta personalización no se implementó en ningún momento
+del ciclo de `v1.0.0` — `v1.0.0` ya fue publicada sin ella, por decisión
+vigente del responsable del producto (ver
+`docs/production/V1_PRODUCTION_PLAN.md` §2 y §4). Los datos siguientes
+no deben aplicarse retroactivamente a `v1.0.0`; pertenecen a un ciclo de
+trabajo posterior, que requerirá su propia especificación y aprobación
+antes de implementarse.**
 
 Datos aprobados:
 
@@ -741,15 +752,25 @@ Max se implementará después del epílogo como compañero visual seguro, inicia
 
 ## Orden de trabajo posterior
 
+**Actualización (2026-08-11)**: los puntos 3, 6 y 7 se completaron
+después de escribir este documento, y `v1.0.0` ya fue publicada — ver
+[`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md). Los puntos 4 y 5
+siguen sin implementar, correctamente, como trabajo del ciclo post-v1.
+
 1. ~~Consecuencias del catálogo y mapa del Archivo~~ — completado en
    `7a0c13c`.
 2. ~~Archive Criteria: lógica, escena e integración completas~~ —
    completado.
-3. Resolución final y epílogo.
-4. Personalización centralizada.
-5. Max como compañero visual.
-6. Empaquetado Windows.
-7. QA y release final.
+3. ~~Resolución final y epílogo.~~ — completado (mecánica del epílogo
+   íntegra, sin personalización).
+4. Personalización centralizada — todavía sin implementar; fuera del
+   alcance de `v1.0.0`, pertenece al ciclo post-v1.
+5. Max como compañero visual — todavía sin implementar; fuera del
+   alcance de `v1.0.0`, pertenece al ciclo post-v1.
+6. ~~Empaquetado Windows.~~ — completado (8/8 tareas,
+   `WINDOWS_PACKAGING_DECISION.md`).
+7. ~~QA y release final.~~ — completado: `v1.0.0` integrada en `main`,
+   etiquetada y publicada como GitHub Release.
 
 ---
 

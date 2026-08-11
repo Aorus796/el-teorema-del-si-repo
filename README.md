@@ -9,19 +9,21 @@ real.
 
 ## Estado del proyecto
 
-Versión estable: **`v1.0.0`**. Recorrido principal implementado y
-jugable de principio a fin: las cuatro localizaciones, los tres puzles
-principales, el cuaderno de pistas, el guardado y carga (con migración
-entre formatos), y el epílogo completo. Disponible como versión web
-estática y como ejecutable portable para Windows. La personalización
+Versión estable actual: **[`v1.0.0`](https://github.com/Aorus796/el-teorema-del-si-repo/releases/tag/v1.0.0)**,
+publicada el 2026-08-11. Recorrido principal implementado y jugable de
+principio a fin: las cuatro localizaciones, los tres puzles principales,
+el cuaderno de pistas, el guardado y carga (con migración entre
+formatos), y el epílogo completo. Disponible como versión web estática y
+como portable Windows publicado en la GitHub Release. La personalización
 final (nombres reales, fecha, mascota, dedicatoria) queda fuera del
 alcance de `v1.0.0` y se implementará después, como trabajo posterior.
 
-Ver el detalle completo de evidencia, la matriz de QA y los riesgos
-residuales aceptados en
+Ver el detalle completo de evidencia, la matriz de QA, los riesgos
+residuales aceptados y el registro de la publicación en
 [`docs/production/V1_PRODUCTION_PLAN.md`](docs/production/V1_PRODUCTION_PLAN.md),
-[`docs/production/V1_QA_MATRIX.md`](docs/production/V1_QA_MATRIX.md) y
-[`docs/production/V1_RELEASE_READINESS.md`](docs/production/V1_RELEASE_READINESS.md).
+[`docs/production/V1_QA_MATRIX.md`](docs/production/V1_QA_MATRIX.md),
+[`docs/production/V1_RELEASE_READINESS.md`](docs/production/V1_RELEASE_READINESS.md)
+y [`docs/production/V1_RELEASE_CLOSURE.md`](docs/production/V1_RELEASE_CLOSURE.md).
 
 ## Documentación principal
 
@@ -30,6 +32,7 @@ residuales aceptados en
 - [Arquitectura técnica](docs/technical/ARCHITECTURE.md)
 - [Plan de producción de `v1.0.0`](docs/production/V1_PRODUCTION_PLAN.md)
 - [Release readiness de `v1.0.0`](docs/production/V1_RELEASE_READINESS.md)
+- [Cierre de release de `v1.0.0`](docs/production/V1_RELEASE_CLOSURE.md)
 - [Guía operativa del portable Windows](docs/production/WINDOWS_PORTABLE_GUIDE.md)
 - [Procedimiento de publicación de `v1.0.0`](docs/production/RELEASE_PROCEDURE_v1.0.0.md)
 - [Registro de decisiones](docs/decisions/README.md)
@@ -59,6 +62,14 @@ docker compose run --rm playwright
 ```
 
 ### Ejecutable de escritorio (Windows)
+
+El portable Windows oficial de `v1.0.0`
+(`El-Teorema-del-Si-1.0.0-win-x64-portable.exe`) está publicado como
+asset de la
+[GitHub Release `v1.0.0`](https://github.com/Aorus796/el-teorema-del-si-repo/releases/tag/v1.0.0),
+junto con `SHA256SUMS.txt` para verificar su integridad.
+
+También puede generarse localmente desde el código fuente:
 
 ```bash
 npm run desktop:dev             # Electron en modo desarrollo

@@ -1,11 +1,20 @@
 # Procedimiento de publicación de `v1.0.0`
 
-Documento puramente procedimental: describe los pasos que quedan
-**después** de que la PR `release/v1.0.0` → `main` se fusione. Ninguno de
-estos pasos se ejecuta en la tarea que crea este documento (2026-08-11).
-Todos requieren una decisión humana explícita.
+**EJECUTADO CON ÉXITO el 2026-08-11.** Ver "Resultado de ejecución" al
+final de este documento para los datos reales de la publicación. Este
+documento sigue siendo el runbook de referencia del procedimiento
+seguido — no se convierte en un documento puramente histórico: describe
+exactamente los pasos que se ejecutaron, en el mismo orden, y sirve como
+referencia para cualquier publicación futura equivalente (por ejemplo,
+`v1.1.0`), adaptando los valores concretos.
 
-## 0. Estado previo a este procedimiento
+Documento puramente procedimental: describe los pasos que quedan
+**después** de que la PR `release/v1.0.0` → `main` se fusione. Todos
+requerían una decisión humana explícita antes de ejecutarse — no fueron
+ejecutados por `autopilot` en ningún momento.
+
+## 0. Estado previo a este procedimiento (histórico, 2026-08-11, antes de
+publicar)
 
 - `release/v1.0.0` tiene la versión fijada en `1.0.0`
   (`package.json`/`package-lock.json`), `CHANGELOG.md` cerrado para
@@ -117,3 +126,35 @@ gh release create v1.0.0 \
   constancia explícita de la fecha de publicación real.
 - Ninguno de estos pasos de cierre está incluido en el procedimiento
   descrito aquí arriba (1-5); son mantenimiento documental posterior.
+
+## Resultado de ejecución (2026-08-11)
+
+Los 6 pasos anteriores se ejecutaron en este orden, con los siguientes
+datos reales:
+
+- **Paso 1 (fusión)**: PR #44 fusionada en `main`. Commit:
+  `ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733`.
+- **Paso 2 (tag)**: tag `v1.0.0` creado sobre ese mismo commit
+  (`v1.0.0^{}` resuelve exactamente a `ff0c72b9...`).
+- **Paso 3 (artifact)**: `windows-portable.yml` disparado vía
+  `workflow_dispatch` con `--ref v1.0.0`. Workflow run: `31517093742`.
+  Resultado: `success`. Artifact: `El-Teorema-del-Si-1.0.0-win-x64-portable.exe`,
+  `99604577` bytes, SHA-256
+  `5F7CB4D0085E4ADE5C2BCCFCE2DC8AD5FF31DD1D5225334949AAB688C6373669`,
+  Authenticode `NotSigned`.
+- **Paso 4 (verificación previa)**: hash y tamaño confirmados contra el
+  log del run `31517093742` antes de publicar.
+- **Paso 5 (GitHub Release)**: "El Teorema del Sí v1.0.0" publicada,
+  **no draft**, **no prerelease**, con el `.exe` verificado y
+  `SHA256SUMS.txt` como assets.
+- **Verificación posterior a la publicación** (redescarga desde la
+  Release ya publicada): `PublishedLength=99604577`,
+  `PublishedSHA256=5F7CB4D0085E4ADE5C2BCCFCE2DC8AD5FF31DD1D5225334949AAB688C6373669`,
+  `HashMatch=True`, `LengthMatch=True`.
+- **Paso 6 (después de publicar)**: `V1_PRODUCTION_PLAN.md` §12 y
+  `V1_RELEASE_READINESS.md` reconciliados con estos datos reales; nuevo
+  [`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md) creado como registro
+  compacto y definitivo.
+
+**EJECUTADO CON ÉXITO.** Registro completo y factual en
+[`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md).

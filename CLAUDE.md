@@ -143,8 +143,12 @@ pueden ir por detrás del código real. Antes de elegir una tarea:
 
 - Nunca hagas commit ni push directamente sobre `main`.
 - Una rama corta por tarea, creada desde el estado limpio de la rama de
-  trabajo actual (hoy `feat/v1-production-scope`), con nombre descriptivo
-  (`feature/...`, `fix/...`, `docs/...`).
+  trabajo actual (hoy `main`, ya que `v1.0.0` se integró en `main` el
+  2026-08-11 — ver
+  [`docs/production/V1_RELEASE_CLOSURE.md`](docs/production/V1_RELEASE_CLOSURE.md);
+  `feat/v1-production-scope` cumplió su propósito y ya no es la base de
+  nuevas tareas), con nombre descriptivo (`feature/...`, `fix/...`,
+  `docs/...`).
 - Commits pequeños y revisables; sigue el estilo ya usado en el historial
   (`feat:`, `fix:`, `docs:` + descripción breve en imperativo).
 - No hagas rebase, no reescribas historial publicado, no fuerces push.
@@ -167,6 +171,10 @@ pueden ir por detrás del código real. Antes de elegir una tarea:
 - Ampliar el alcance de `v1.0.0` (ver `AGENTS.md` → "Fuera de alcance") o
   adelantar epílogo/personalización/Max sin autorización — esta sesión de
   automatización no debe avanzar ninguna funcionalidad de juego.
+  `v1.0.0` ya está publicada y congelada (ver
+  `docs/production/V1_RELEASE_CLOSURE.md`): cualquier funcionalidad
+  nueva pertenece a un ciclo post-v1 con su propia especificación y
+  aprobación explícita, nunca a una tarea de mantenimiento documental.
 - Crear accesos temporales, teclas secretas, parámetros de URL o menús de
   depuración.
 - Ejecutar la suite completa (`npm run verify`) tras cada edición pequeña;

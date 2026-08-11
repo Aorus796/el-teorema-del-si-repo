@@ -6,11 +6,15 @@
 pixel art, concebida como regalo de boda. El jugador explora Axioma,
 investiga la desaparición de la novia y reúne pistas mediante exploración,
 diálogos, cuaderno y puzles. `v0.5.0` era la versión base en el momento de
-crear este documento y contiene un primer vertical slice jugable que va de la
-Plaza del Axioma al Paseo de los Siete Puentes, integra P2 y termina al
-desbloquear la pista de la biblioteca. Consulta siempre la versión vigente en
-`package.json` y en las etiquetas Git; no asumas que este documento refleja
-automáticamente la última versión.
+crear este documento y contenía un primer vertical slice jugable que iba de
+la Plaza del Axioma al Paseo de los Siete Puentes, integraba P2 y terminaba
+al desbloquear la pista de la biblioteca. **`v1.0.0` ya fue publicada
+(2026-08-11)** con el recorrido completo (las cuatro localizaciones, los
+tres puzles, el epílogo) — ver
+[`docs/production/V1_RELEASE_CLOSURE.md`](docs/production/V1_RELEASE_CLOSURE.md).
+Consulta siempre la versión vigente en `package.json` y en las etiquetas
+Git; no asumas que este documento refleja automáticamente la última
+versión.
 
 Estas instrucciones se aplican a todo el repositorio.
 
@@ -125,7 +129,16 @@ detente y solicita autorización explícita.
 
 ## Alcance congelado de `v1.0.0`
 
-Fecha objetivo de entrega: **10 de septiembre de 2026**.
+Fecha objetivo de entrega original: **10 de septiembre de 2026**.
+
+**`v1.0.0` ya fue integrada en `main`, etiquetada y publicada como GitHub
+Release el 2026-08-11 — antes de esa fecha objetivo (ver
+[`docs/production/V1_RELEASE_CLOSURE.md`](docs/production/V1_RELEASE_CLOSURE.md)).
+El alcance descrito debajo queda congelado como definición histórica de
+`v1.0.0`, no como trabajo pendiente. Cualquier tarea nueva a partir de
+ahora pertenece al ciclo post-v1: requiere su propia especificación y
+aprobación explícita antes de implementarse (ver "Fuera de alcance" más
+abajo) — no se decide por inferencia de este documento.
 
 La versión `v1.0.0` debe limitarse a:
 
@@ -170,9 +183,13 @@ o de estrategia de distribución en general, requiere una nueva aprobación
 explícita — no debe asumirse ni introducirse silenciosamente en una tarea
 posterior. Debe conservarse siempre la versión web funcional.
 
-La estabilidad y la finalización del recorrido principal tienen prioridad
-sobre cualquier mejora opcional. Prioriza completar, probar y pulir este
-recorrido antes de proponer contenido adicional.
+La estabilidad y la finalización del recorrido principal tuvieron
+prioridad sobre cualquier mejora opcional durante el desarrollo de
+`v1.0.0`, y ese recorrido ya está completo, probado y publicado. Con
+`v1.0.0` congelada, no propongas ni implementes contenido adicional,
+personalización, o cambios al recorrido publicado sin una especificación
+y aprobación explícitas para el ciclo post-v1 — ver "Fuera de alcance"
+más abajo.
 
 ## Fuera de alcance
 

@@ -21,6 +21,9 @@ rendimiento/escalado no ejecutada, cuatro defectos menores de
 nomenclatura/presentación conocidos y no corregidos — ninguno
 bloqueante). La personalización final (nombres reales, fecha, mascota,
 dedicatoria) queda fuera de esta versión, como trabajo posterior.
+Publicada como GitHub Release el 2026-08-11 — ver
+[`docs/production/V1_RELEASE_CLOSURE.md`](docs/production/V1_RELEASE_CLOSURE.md)
+para el registro completo de la publicación (tag, artifact, checksum).
 
 ### Añadido
 

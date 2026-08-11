@@ -148,9 +148,25 @@ aprobado, y la decisión vigente del responsable del producto es cerrar
 requisito de esta versión. Esa misma revisión también completó la
 auditoría de `V1_PRODUCTION_PLAN.md` contra código/tests para las Fases
 2-5, las Puertas de calidad, las decisiones de facto de §11 y el
-checklist de §12. Esta es la versión vigente de la lista.
+checklist de §12. Esta es la versión vigente de la lista **en el momento
+en que se escribió** (tarea 8, previa a la tarea de release-readiness).
 
-### A. Bloqueantes realmente abiertos
+**Actualización posterior (2026-08-11, cierre post-release)**: desde
+entonces se ejecutó una auditoría de release-readiness completa
+(`V1_RELEASE_READINESS.md`) que reclasificó explícitamente los puntos de
+la categoría A de abajo (arte/pase visual, duración, defectos/accesibilidad,
+matriz de pruebas) como **riesgos aceptados no bloqueantes**, no como
+bloqueantes abiertos — y `v1.0.0` **ya fue publicada** sin resolverlos,
+por decisión explícita del responsable del producto. Los ítems de la
+categoría D también se completaron todos. Esta sección se conserva sin
+reescribir como registro histórico de esa evaluación intermedia; el
+estado real y vigente está en
+[`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md) y
+[`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md).
+
+### A. Bloqueantes realmente abiertos (histórico — ver actualización de
+arriba: reclasificados como riesgos aceptados no bloqueantes antes de
+publicar `v1.0.0`)
 
 - **Arte**: no se encontró ningún asset gráfico concreto identificado
   como pendiente de sustitución (el juego renderiza todo
@@ -201,18 +217,25 @@ checklist de §12. Esta es la versión vigente de la lista.
   "Orden de trabajo posterior" de `CODEX_HANDOFF.md` posterior al
   epílogo: mismo tratamiento — fuera de alcance de `v1.0.0`.
 
-### D. Acciones de release todavía no realizadas (fuera de alcance de esta tarea y de esta PR)
+### D. Acciones de release — histórico: en el momento de esta tarea (8)
+estaban todas sin realizar; **todas se completaron desde entonces**, ver
+[`V1_RELEASE_CLOSURE.md`](V1_RELEASE_CLOSURE.md)
 
-- Fusión de `feat/v1-production-scope` en `main`.
-- Cambio de versión a `1.0.0` en `package.json`.
-- Creación de cualquier tag.
-- Creación de cualquier GitHub Release.
-- Congelación de contenido (Fase 6), margen de contingencia (Fase 7) y
-  entrega final (Fase 8) de `V1_PRODUCTION_PLAN.md`.
-- Artefactos finales identificados/congelados y checklist de entrega de
-  `V1_PRODUCTION_PLAN.md` §12 "Artefactos y entrega" (deliberadamente sin
-  tocar en esta auditoría: depende de una candidata final congelada que
-  todavía no existe).
+- ~~Fusión de `feat/v1-production-scope` en `main`.~~ — completado
+  (PR #44, commit `ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733`).
+- ~~Cambio de versión a `1.0.0` en `package.json`.~~ — completado.
+- ~~Creación de cualquier tag.~~ — completado (tag `v1.0.0`).
+- ~~Creación de cualquier GitHub Release.~~ — completado ("El Teorema
+  del Sí v1.0.0", publicada).
+- Congelación de contenido (Fase 6) y margen de contingencia (Fase 7) de
+  `V1_PRODUCTION_PLAN.md`: no se ejecutaron como procesos ligados a sus
+  fechas de calendario (todavía no alcanzadas) — `v1.0.0` se publicó
+  antes, por una vía distinta; ver la nota de reconciliación en
+  `V1_PRODUCTION_PLAN.md` §6. Entrega final (Fase 8): sus objetivos
+  sustantivos sí se cumplieron mediante la publicación real.
+- ~~Artefactos finales identificados/congelados y checklist de entrega de
+  `V1_PRODUCTION_PLAN.md` §12~~ — completado y reconciliado con
+  evidencia real de la publicación.
 
 ### Contenido/mecánica que la auditoría confirmó como YA COMPLETADO (no listado como pendiente)
 
