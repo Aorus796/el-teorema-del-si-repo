@@ -1,5 +1,11 @@
 import { getWorldMap } from "../content/worldMaps.js";
 import { COUPLE_DEDICATION } from "../content/personalizationConfig.js";
+import {
+  BRIDE_PALETTE,
+  PROTAGONIST_PALETTE,
+} from "../content/characterPalettes.js";
+
+export { BRIDE_PALETTE, PROTAGONIST_PALETTE };
 
 export const CREDITS_STEP = Object.freeze({
   CLOSING_SHOT: "closing-shot",
@@ -29,18 +35,6 @@ const CREDITS_LINE_3 = "GRACIAS POR JUGAR";
 const FINAL_CARD_TEXT = "Pulsa para guardar y volver al menú";
 const CONTINUE_HINT = "E / Enter: continuar";
 const SAVE_ERROR_MESSAGE = "No se pudo guardar el final. Vuelve a intentarlo.";
-
-export const PROTAGONIST_PALETTE = {
-  silhouette: "#1c1829",
-  head: "#d9a06f",
-  body: "#5dc1b9",
-};
-
-export const BRIDE_PALETTE = {
-  silhouette: "#302637",
-  head: "#d9a06f",
-  body: "#6c6387",
-};
 
 export class CreditsScene {
   constructor({ input, ui, state, storage, scenes }) {

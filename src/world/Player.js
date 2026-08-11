@@ -1,3 +1,5 @@
+import { PROTAGONIST_PALETTE } from "../content/characterPalettes.js";
+
 export class Player {
   constructor({ x, y, facing = "down" }) {
     this.x = x;
@@ -60,13 +62,13 @@ export class Player {
     const screenX = Math.round(this.x - camera.x);
     const screenY = Math.round(this.y - camera.y);
 
-    context.fillStyle = "#1c1829";
+    context.fillStyle = PROTAGONIST_PALETTE.silhouette;
     context.fillRect(screenX - 6, screenY - 9, 12, 18);
 
-    context.fillStyle = "#d9a06f";
+    context.fillStyle = PROTAGONIST_PALETTE.head;
     context.fillRect(screenX - 4, screenY - 10, 8, 7);
 
-    context.fillStyle = "#5dc1b9";
+    context.fillStyle = PROTAGONIST_PALETTE.body;
     context.fillRect(screenX - 5, screenY - 3, 10, 10);
 
     context.fillStyle = "#f5e8c8";
