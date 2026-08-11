@@ -1,58 +1,106 @@
 # El Teorema del Sí
 
-Aventura narrativa de puzles matemáticos en pixel art, diseñada como regalo de boda. El jugador explora el pueblo de Axioma, investiga la desaparición de la novia y resuelve una cadena de acertijos que culmina en la combinación de un candado físico.
+Aventura narrativa de puzles en un pueblo llamado Axioma, diseñada como
+regalo de boda. El jugador explora la Plaza del Axioma, el Paseo de los
+Siete Puentes, la Biblioteca del Margen y un Archivo compacto,
+investigando la desaparición de la novia y resolviendo tres puzles
+principales que culminan en un epílogo con la combinación de un candado
+real.
 
 ## Estado del proyecto
 
-**Diseño base completo. Desarrollo todavía no iniciado.**
+Recorrido principal implementado y jugable de principio a fin: las
+cuatro localizaciones, los tres puzles principales, el cuaderno de
+pistas, el guardado y carga (con migración entre formatos), y el
+epílogo completo. El juego funciona tanto como versión web estática
+como ejecutable portable para Windows. La personalización final
+(nombres reales, fecha, mascota, dedicatoria) queda fuera del alcance
+de `v1.0.0` y se implementará después, como trabajo posterior.
 
-El concepto, la historia, el mundo, los personajes, el mapa, las mecánicas, los puzles, la dirección artística, la experiencia de usuario, la arquitectura técnica y el plan de producción están documentados. Las decisiones siguen siendo revisables durante los prototipos.
+Ver el estado detallado, la matriz de QA y qué falta exactamente para
+`v1.0.0` en
+[`docs/production/V1_PRODUCTION_PLAN.md`](docs/production/V1_PRODUCTION_PLAN.md),
+[`docs/production/V1_QA_MATRIX.md`](docs/production/V1_QA_MATRIX.md) y
+[`docs/production/V1_RELEASE_READINESS.md`](docs/production/V1_RELEASE_READINESS.md).
 
 ## Documentación principal
 
 - [Game Design Document consolidado](docs/GDD.md)
-- [Documento Word](docs/El_Teorema_del_Si_GDD.docx)
 - [Catálogo de puzles](docs/puzzles/README.md)
 - [Arquitectura técnica](docs/technical/ARCHITECTURE.md)
-- [Plan de producción](docs/production/ROADMAP.md)
+- [Plan de producción de `v1.0.0`](docs/production/V1_PRODUCTION_PLAN.md)
+- [Guía operativa del portable Windows](docs/production/WINDOWS_PORTABLE_GUIDE.md)
 - [Registro de decisiones](docs/decisions/README.md)
 - [Historial de cambios](CHANGELOG.md)
 - [Sistema de automatización con Claude Code](docs/development/AUTOMATION.md)
 
-## Próximo hito
+## Desarrollo
 
-Construir los prototipos de papel y la especificación ejecutable de los tres sistemas de mayor riesgo:
+Requiere Node.js `>=22.12.0`.
 
-1. **P2 - El paseo imposible**: grafos, recorrido físico y soluciones alternativas.
-2. **P6 - La máquina que hace demasiado**: estados, invariantes y solución lateral.
-3. **P10 - Lo que sabemos que el otro sabe**: tablero de deducción, persistencia y dificultad alta.
+```bash
+npm ci                  # instalación reproducible desde package-lock.json
+npm run dev              # servidor de desarrollo (versión web)
+npm run test              # pruebas unitarias (node --test)
+npm run build              # build estático en builds/browser
+npm run check              # test + build
+npm run test:e2e            # pruebas end-to-end con Playwright
+npm run verify              # check + test:e2e — quality gate completo
+```
 
-Después se desarrollará el prototipo técnico mínimo y el vertical slice del prólogo.
+En Windows sin Node instalado localmente, el quality gate equivalente se
+ejecuta con Docker:
 
-## Tecnología prevista
+```powershell
+docker compose run --rm game npm run check
+docker compose run --rm playwright
+```
 
-- HTML, CSS y JavaScript.
-- Canvas 2D para el mundo.
-- HTML y CSS para menús, diálogos, cuaderno y paneles complejos.
-- Tiled para mapas.
-- Aseprite o LibreSprite para pixel art.
-- Electron como opción provisional para la versión final de Windows.
+### Ejecutable de escritorio (Windows)
 
-Las versiones y dependencias concretas se fijarán al iniciar el prototipo técnico.
+```bash
+npm run desktop:dev             # Electron en modo desarrollo
+npm run desktop:package:win     # genera el portable Windows x64 en release/
+```
+
+El portable Windows es un único `.exe` autocontenido (sin instalador),
+sin firma digital. Ver
+[`docs/production/WINDOWS_PACKAGING_DECISION.md`](docs/production/WINDOWS_PACKAGING_DECISION.md)
+para las decisiones de arquitectura y seguridad, y
+[`docs/production/WINDOWS_PORTABLE_GUIDE.md`](docs/production/WINDOWS_PORTABLE_GUIDE.md)
+para obtenerlo, verificarlo y ejecutarlo.
+
+## Controles básicos
+
+| Acción | Teclas |
+|---|---|
+| Moverse | `WASD` o flechas |
+| Interactuar / confirmar | `E` o `Enter` |
+| Abrir cuaderno | `Q` o `Tab` |
+| Guardar | `K` |
+| Cargar | `L` |
+| Reiniciar intento de puzle | `R` |
+| Cancelar / volver | `Escape` |
+
+El juego es completamente operable con teclado — no requiere ratón.
 
 ## Estructura del repositorio
 
 ```text
 .
-├── .github/                Plantillas de colaboración
-├── assets/                 Fuentes y exportaciones artísticas
-├── builds/                 Builds locales; no se versionan
-├── content/                Datos narrativos y de juego
-├── docs/                   Diseño, arquitectura y producción
-├── src/                    Código fuente
-├── tests/                  Pruebas automatizadas y casos de aceptación
-└── tools/                  Validadores y utilidades de construcción
+├── .github/                 Plantillas de colaboración y workflows de CI
+├── docs/                    Diseño, arquitectura y producción
+├── electron/                Shell mínimo de Electron (proceso principal)
+├── src/                     Código fuente del juego (lógica, estado,
+│                             contenido, escenas, assets)
+├── tests/                   Pruebas unitarias, E2E, de workflows y documentales
+└── tools/                   Scripts de build, servidor de desarrollo y validadores
 ```
+
+`assets/` y `content/` en la raíz son directorios heredados del diseño
+inicial y están vacíos: el contenido y los assets reales del juego viven
+bajo `src/content/` y `src/assets/` — el arte es 100% renderizado
+procedimental sobre `<canvas>`, sin sprites externos.
 
 ## Principios del proyecto
 
@@ -60,18 +108,20 @@ Las versiones y dependencias concretas se fijarán al iniciar el prototipo técn
 - Toda solución obligatoria debe ser deducible con información del juego.
 - Los errores no deben destruir progreso.
 - La novia participa activamente en su propio rescate.
-- La combinación del candado nunca se muestra directamente.
+- La combinación del candado nunca se muestra directamente en el código
+  fuente ni en esta documentación.
 - El alcance se protege antes que añadir contenido secundario.
-- El guardado y la entrega física tienen prioridad sobre el pulido opcional.
+- El guardado y la entrega tienen prioridad sobre el pulido opcional.
 
 ## Contribución
 
-Consulta [CONTRIBUTING.md](CONTRIBUTING.md). Antes de implementar una decisión que cambie arquitectura, alcance, narrativa o reglas de un puzle, registra una ADR en `docs/decisions/`.
+Consulta [CONTRIBUTING.md](CONTRIBUTING.md) y
+[AGENTS.md](AGENTS.md). Antes de implementar una decisión que cambie
+arquitectura, alcance, narrativa o reglas de un puzle, registra una ADR
+en `docs/decisions/`.
 
 ## Licencia
 
-Todavía no se ha elegido una licencia pública. Mientras no exista un archivo `LICENSE`, el proyecto debe considerarse de uso privado y con todos los derechos reservados.
-
-## Publicación en GitHub
-
-Las instrucciones de inicialización, ramas y primera publicación están en [`docs/GITHUB_SETUP.md`](docs/GITHUB_SETUP.md).
+Todavía no se ha elegido una licencia pública. Mientras no exista un
+archivo `LICENSE`, el proyecto debe considerarse de uso privado y con
+todos los derechos reservados.

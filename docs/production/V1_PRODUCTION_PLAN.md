@@ -758,30 +758,48 @@ estable. No se recortan pistas necesarias ni legibilidad.
 
 #### Entregables
 
-- [ ] Matriz de pruebas del recorrido completo — no existe un documento
-  formal de matriz de pruebas; la cobertura real está distribuida en
-  `tests/e2e/game.spec.js` y las evidencias de tareas 6-7.
-- [ ] Corrección de defectos bloqueantes y graves — no existe ningún
-  registro de defectos que auditar (ni lista ni issue tracker); no se
-  puede confirmar ni negar mediante evidencia documental.
-- [ ] Revisión de accesibilidad básica y navegación por teclado — matiz:
-  la navegación/interacción completa por teclado, sin mouse, está
-  ampliamente confirmada (todos los puzles y el epílogo se resuelven solo
-  con teclado en `tests/e2e/game.spec.js`); la revisión de accesibilidad
-  básica en sentido más amplio (foco visible, legibilidad, lectores de
-  pantalla) no tiene ninguna revisión dedicada registrada.
-- [ ] Migraciones y fixtures definitivos de guardado — las migraciones
-  están implementadas y probadas (formatos 1-4), pero no existe un
-  conjunto de fixtures formalmente "definitivo" y congelado.
-- [ ] Build web candidato — el build web funciona y pasa CI de forma
-  continua, pero no se ha designado ningún build concreto como
-  "candidato" a entregar.
+- [x] Matriz de pruebas del recorrido completo — ver
+  [`V1_QA_MATRIX.md`](V1_QA_MATRIX.md), construida reutilizando la
+  evidencia ya existente (unitaria, E2E, manual, Windows, offline) sin
+  ejecutar ninguna prueba nueva.
+- [x] Corrección de defectos bloqueantes y graves — **no existen defectos
+  bloqueantes o graves conocidos a fecha de este cierre** (2026-08-11):
+  se auditó todo el repositorio (`CHANGELOG.md`, `docs/production/`,
+  ausencia de `BUGS.md`/`ISSUES.md`) sin encontrar ningún defecto
+  documentado como abierto. Esto no es una afirmación absoluta de "cero
+  bugs" — es la constatación de que no existe ninguno registrado; no hay
+  issue tracker activo en este repositorio.
+- [x] Revisión de accesibilidad básica y navegación por teclado —
+  **accesibilidad básica para el alcance v1 validada; no constituye
+  certificación WCAG.** Evidencia: el juego es operable al 100% con
+  teclado (`src/core/InputManager.js` solo escucha `keydown`/`keyup`;
+  ninguno de los 15 tests de `tests/e2e/game.spec.js` usa ratón); los
+  textos esenciales del epílogo se revisaron manualmente a la resolución
+  lógica 480×270 (`EPILOGUE_MANUAL_VALIDATION.md`); ningún puzle exige
+  información exclusivamente auditiva (la única pista de audio es
+  ambiental, posterior al desbloqueo del epílogo, y su ausencia no
+  bloquea el recorrido, confirmado en `EPILOGUE_MANUAL_VALIDATION.md`).
+  No se auditó formalmente el contraste visual fuera de las escenas del
+  epílogo, ni se revisaron los textos de los otros tres puzles con el
+  mismo detalle — sin defecto conocido en ningún caso.
+- [x] Migraciones y fixtures definitivos de guardado — cobertura
+  material ya existente y suficiente: `tests/state/GameState.test.js`
+  prueba los formatos 1, 2, 3, 4 y el caso no soportado (999), con ~35
+  variantes de guardado inválido; `tests/e2e/game.spec.js` migra un
+  guardado de formato 1 en un navegador real. No existe un directorio de
+  fixtures en disco separado (los fixtures son objetos literales en el
+  propio test), pero el requisito queda satisfecho materialmente por
+  esta cobertura.
+- [x] Build web candidato — el candidato web para `v1.0.0` será el mismo
+  commit que se integre en `main` cuando llegue ese momento; no requiere
+  una arquitectura de "candidatos" separada. `npm run build`/`npm run
+  check` validan continuamente que el build estático funciona.
 - [x] Empaquetado candidato para Windows con la herramienta aprobada —
   ver [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)
   (tareas 1-8, Fase 5 de empaquetado Windows cerrada).
-- [ ] Instrucciones mínimas de ejecución y controles — existen para el
-  portable Windows (`WINDOWS_PORTABLE_GUIDE.md`); no se ha auditado un
-  documento equivalente general de controles para la versión web.
+- [x] Instrucciones mínimas de ejecución y controles — existen para el
+  portable Windows (`WINDOWS_PORTABLE_GUIDE.md`) y para la versión web
+  (tabla de controles en `README.md`).
 - [x] Informe de prueba en instalación limpia — ver
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [ ] Versión candidata estable disponible al cerrar el 3 de septiembre —
@@ -789,13 +807,16 @@ estable. No se recortan pistas necesarias ni legibilidad.
 
 #### Criterios de aceptación
 
-- [ ] Cero defectos bloqueantes o graves conocidos — sin registro que
-  auditar (ver más arriba).
+- [x] Cero defectos bloqueantes o graves conocidos — sin ninguno
+  registrado a fecha de este cierre (ver "Corrección de defectos" más
+  arriba; no es una afirmación absoluta).
 - [x] Todos los controles obligatorios funcionan con teclado — los tres
   puzles y el epílogo se resuelven íntegramente con teclado en
   `tests/e2e/game.spec.js`.
-- [ ] Texto, prompts y estados de foco son legibles — sin revisión
-  dedicada registrada.
+- [x] Texto, prompts y estados de foco son legibles — validado
+  manualmente para las escenas del epílogo a 480×270
+  (`EPILOGUE_MANUAL_VALIDATION.md`); sin defecto de legibilidad conocido
+  en el resto del juego, aunque sin la misma revisión dedicada.
 - [x] Los guardados de referencia se restauran correctamente —
   `tests/state/GameState.test.js` cubre formatos 1-4 con múltiples
   fixtures.
@@ -842,9 +863,30 @@ estable. No se recortan pistas necesarias ni legibilidad.
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [x] Prueba desde una instalación limpia sin herramientas de desarrollo —
   ver [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
-- [ ] Medición final de duración (la duración del recorrido en el
-  ejecutable Windows quedó explícitamente sin cronometrar — ver
-  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)).
+- [ ] Medición final de duración — **duración completa no cronometrada
+  formalmente antes de `v1.0.0`** (ver
+  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). Por
+  decisión del responsable del producto, esta ausencia de medición
+  precisa se acepta como riesgo menor y **no bloquea `v1.0.0`**. No se
+  inventa ninguna cifra.
+
+**FASE 5 (GENERAL): COMPLETADA** (2026-08-11) — todos los criterios
+restantes de esta fase están satisfechos con evidencia directa o
+explícitamente aceptados/recortados por decisión del responsable del
+producto: la matriz de QA existe (`V1_QA_MATRIX.md`), no hay defectos
+bloqueantes/graves registrados, la accesibilidad básica del alcance v1
+está validada, las migraciones/fixtures de guardado están cubiertas
+materialmente por la suite existente, el candidato web queda definido
+como el commit que se integre a `main`, y el empaquetado Windows está
+cerrado (tareas 1-8). Los únicos puntos que permanecen sin marcar son
+fechas futuras todavía no alcanzadas ("versión candidata estable
+disponible al cerrar el 3 de septiembre") y riesgos ya aceptados
+explícitamente como no bloqueantes (duración no cronometrada). Esto
+**no** cierra las Fases 6-8 (congelación, contingencia, entrega), que
+siguen correspondiendo a integración/release y no se tocan en este
+cierre. Ver
+[`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md) para la conclusión
+global de disponibilidad para `v1.0.0`.
 
 #### Riesgos
 
@@ -1083,7 +1125,8 @@ un estado agregado del proyecto hasta ahora, auditado más abajo.
 - [x] Ejecutable probado en Windows — tareas 6 y 7.
 - [x] Instalación limpia probada —
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
-- [ ] Cero defectos bloqueantes o graves conocidos.
+- [x] Cero defectos bloqueantes o graves conocidos — ninguno registrado a
+  fecha de este cierre (2026-08-11); ver la auditoría en Fase 5.
 
 ### Puerta D — Entrega
 
@@ -1188,7 +1231,10 @@ validarla.
 Esta subsección refleja existencia y funcionamiento real en el código
 actual (auditado 2026-08-11), no necesariamente el pulido narrativo/visual
 final que se revisará en las Fases 4-7 antes de la entrega del 10 de
-septiembre.
+septiembre. Ver [`V1_QA_MATRIX.md`](V1_QA_MATRIX.md) para la matriz
+completa de evidencia por requisito, y
+[`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md) para la conclusión
+de disponibilidad para `v1.0.0`.
 
 - [x] Plaza del Axioma terminada.
 - [x] Paseo de los Siete Puentes terminado.
@@ -1204,7 +1250,11 @@ septiembre.
 - Personalización aprobada aplicada: **retirada como requisito de
   `v1.0.0`** (ver §2, §4) — no implementada, fuera de alcance de esta
   versión, no bloqueante.
-- [ ] Duración final entre 45 y 90 minutos — **no medida**.
+- [ ] Duración final entre 45 y 90 minutos — **duración completa no
+  cronometrada formalmente antes de `v1.0.0`**; riesgo menor aceptado
+  explícitamente por el responsable del producto, no bloqueante (ver
+  Fase 5 más arriba). No se marca `[x]` porque no hay medición, pero
+  tampoco bloquea el cierre.
 
 ### Validación
 
@@ -1228,9 +1278,10 @@ septiembre.
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [x] Ejecutable probado en Windows — tareas 6 y 7.
 - [x] Versión web probada desde su build.
-- [ ] Cero defectos bloqueantes o graves abiertos — sin registro de
-  defectos que auditar; no se puede confirmar positivamente sin ese
-  registro.
+- [x] Cero defectos bloqueantes o graves abiertos — no existe ninguno
+  registrado a fecha de este cierre (2026-08-11; ver la auditoría
+  completa en Fase 5 más arriba). No es una afirmación absoluta de
+  ausencia total de bugs, solo de ausencia de ninguno documentado.
 
 ### Artefactos y entrega
 

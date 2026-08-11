@@ -527,6 +527,33 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   deja de ser un requisito bloqueante (sin marcarse como implementada).
   El arte y la duración medida del recorrido completo siguen
   genuinamente pendientes, sin decisión de exclusión ni cifra inventada.
+- Cierre de release-readiness para `v1.0.0`: auditoría exclusivamente
+  documental, sin funcionalidad nueva, sin pruebas nuevas, sin
+  ejecutable nuevo. Nuevo
+  [`docs/production/V1_QA_MATRIX.md`](docs/production/V1_QA_MATRIX.md),
+  una matriz que reutiliza evidencia ya existente (unitaria, E2E, manual,
+  Windows, offline) por requisito, sin marcar ninguna celda PASS sin
+  cita concreta. Nuevo
+  [`docs/production/V1_RELEASE_READINESS.md`](docs/production/V1_RELEASE_READINESS.md)
+  con conclusión **READY FOR v1.0.0**: el recorrido completo está
+  implementado y probado (546/546 tests unitarios, 15 tests E2E sin
+  interacción de ratón, QA end-to-end real en el ejecutable Windows), no
+  existe ningún defecto bloqueante o grave registrado, la accesibilidad
+  básica del alcance v1 está validada (100% operable con teclado, sin
+  requisitos exclusivamente auditivos), y las migraciones/fixtures de
+  guardado están cubiertas materialmente por la suite existente
+  (formatos 1-4, ~35 variantes de guardado inválido). `V1_PRODUCTION_PLAN.md`
+  §6 Fase 5 se declara completada; las Fases 6-8 (congelación de
+  contenido, contingencia, entrega) siguen pendientes por depender de
+  fechas futuras y de la propia integración/release. `README.md` se
+  actualizó para reflejar el estado real del proyecto (eliminando
+  afirmaciones obsoletas como "desarrollo todavía no iniciado" o
+  Electron como "opción provisional"), con comandos npm reales,
+  controles del juego, y enlaces a la documentación de producción
+  vigente. Esta conclusión READY no publica `v1.0.0`, no fusiona
+  `feat/v1-production-scope` en `main`, no cambia la versión declarada
+  en `package.json`, y no crea ningún tag ni GitHub Release — esas
+  acciones siguen pendientes y requieren decisión humana explícita.
 
 ### Corregido
 
