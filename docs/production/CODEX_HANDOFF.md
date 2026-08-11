@@ -708,7 +708,9 @@ vigente del responsable del producto (ver
 `docs/production/V1_PRODUCTION_PLAN.md` §2 y §4). Los datos siguientes
 no deben aplicarse retroactivamente a `v1.0.0`; pertenecen a un ciclo de
 trabajo posterior, que requerirá su propia especificación y aprobación
-antes de implementarse.**
+antes de implementarse. Esa especificación ya existe como propuesta —
+ver [`V1_1_PERSONALIZATION_SPEC.md`](V1_1_PERSONALIZATION_SPEC.md)
+(alcance sin aprobar todavía, sin implementación).**
 
 Datos aprobados:
 
