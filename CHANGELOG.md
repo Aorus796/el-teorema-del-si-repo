@@ -4,6 +4,24 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ## [No publicado]
 
+## [1.0.0] - 2026-08-11
+
+Primera versión estable: recorrido narrativo completo de principio a fin
+(Plaza del Axioma, Paseo de los Siete Puentes, Biblioteca del Margen,
+Archivo compacto), los tres puzles principales, cuaderno de pistas,
+guardado y carga con migración entre formatos, epílogo completo (código
+de regalo, diálogo final, créditos, autosave terminal), versión web
+estática y ejecutable portable para Windows, con QA de cierre y
+documentación de release-readiness. Ver
+[`docs/production/V1_RELEASE_READINESS.md`](docs/production/V1_RELEASE_READINESS.md)
+para el detalle completo de evidencia y riesgos residuales aceptados
+(compatibilidad A→B→A entre builds no ejecutada, duración no
+cronometrada, pase visual dedicado no ejecutado, medición formal de
+rendimiento/escalado no ejecutada, cuatro defectos menores de
+nomenclatura/presentación conocidos y no corregidos — ninguno
+bloqueante). La personalización final (nombres reales, fecha, mascota,
+dedicatoria) queda fuera de esta versión, como trabajo posterior.
+
 ### Añadido
 
 - Game Design Document consolidado.
@@ -618,10 +636,3 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `app.isPackaged` al construir las opciones de `BrowserWindow`. El
   toolchain de desarrollo requiere ahora Node `>=22.12.0` (antes `>=20`),
   coherente con lo que exige instalar `electron@43.3.0`.
-
-### Pendiente
-
-- Prototipos de papel de P2, P6 y P10.
-- Prototipo técnico mínimo.
-- Vertical slice del prólogo.
-- Selección del candado y parametrización de P11.

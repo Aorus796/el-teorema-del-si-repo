@@ -11,6 +11,19 @@ modificó código funcional.
 (`feat/v1-production-scope`, tras la fusión de PR #42, cierre de la Fase
 5 de empaquetado Windows).
 
+## Preparación de release (2026-08-11)
+
+Con esta conclusión ya establecida (**READY FOR v1.0.0**), se preparó una
+candidata técnica de release: rama `release/v1.0.0` creada desde
+`feat/v1-production-scope` (HEAD `5e2ee716bcc359302620fb49b21e5c1e89012f79`,
+que incluye el cierre de release-readiness de PR #43), con la versión
+fijada a `1.0.0` en `package.json`/`package-lock.json`, `CHANGELOG.md`
+cerrado para `1.0.0`, y una Pull Request abierta contra `main` (todavía
+sin fusionar). Esta preparación **no cambia ninguna conclusión de este
+documento** — es la ejecución técnica de una candidata ya declarada
+lista, no una nueva auditoría ni una publicación. Ver "Pendientes
+puramente de release" más abajo para lo que sigue sin ejecutar.
+
 ## Alcance de `v1.0.0`
 
 Según [`V1_PRODUCTION_PLAN.md`](V1_PRODUCTION_PLAN.md) §3, con las
@@ -187,18 +200,30 @@ grave.)
 
 ## Pendientes puramente de release
 
-Ninguno de estos se ejecuta en esta tarea ni en esta PR:
+**Ya ejecutado** en la preparación de release del 2026-08-11 (ver
+"Preparación de release" al inicio de este documento): rama
+`release/v1.0.0` creada, versión fijada a `1.0.0` en
+`package.json`/`package-lock.json`, `CHANGELOG.md` cerrado para `1.0.0`,
+PR abierta contra `main`.
 
-- Fusión de `feat/v1-production-scope` en `main` (requiere decisión
-  humana explícita, fuera del alcance de `autopilot`).
-- Cambio de versión a `1.0.0` en `package.json`.
-- Creación de cualquier tag.
+**Todavía sin ejecutar**, y ninguno se ejecuta en esta tarea:
+
+- Fusión de `release/v1.0.0` en `main` (requiere decisión humana
+  explícita, fuera del alcance de `autopilot`).
+- Creación de cualquier tag (`v1.0.0` debe apuntar al commit definitivo
+  de `main` después del merge, no a un commit de `release/v1.0.0`).
 - Creación de cualquier GitHub Release.
+- Generación del ejecutable Windows final
+  (`El-Teorema-del-Si-1.0.0-win-x64-portable.exe`) desde el commit/tag
+  definitivo de `main` — el workflow `windows-portable.yml` ya soporta
+  esto vía `workflow_dispatch`, sin necesitar cambios. Procedimiento
+  completo paso a paso en
+  [`RELEASE_PROCEDURE_v1.0.0.md`](RELEASE_PROCEDURE_v1.0.0.md).
 - Fases 6, 7 y 8 de `V1_PRODUCTION_PLAN.md` (congelación de contenido,
   margen de contingencia, entrega final del 10 de septiembre).
 - Identificación y congelación formal de los artefactos finales
-  (`V1_PRODUCTION_PLAN.md` §12 "Artefactos y entrega", deliberadamente
-  sin tocar en este cierre).
+  (`V1_PRODUCTION_PLAN.md` §12 "Artefactos y entrega" — ninguna casilla
+  se marca todavía, porque todas dependen del merge).
 
 ## Conclusión
 
@@ -219,11 +244,13 @@ medición formal de rendimiento/escalado, los 4 defectos menores de
 nomenclatura) o trabajo explícitamente diferido a después de `v1.0.0`
 (personalización final).
 
-**Esta conclusión NO implica**: que `feat/v1-production-scope` ya se
-haya fusionado en `main` (no se ha hecho, y esa fusión requiere una
-decisión humana explícita, no automatizada); que exista ya una versión
-`1.0.0`, un tag o un GitHub Release (ninguno existe); ni que las Fases
-6-8 del plan de producción (congelación de contenido, margen de
-contingencia, entrega formal del 10 de septiembre de 2026) estén
-completadas — siguen correspondiendo a pasos de integración y release
-todavía no ejecutados.
+**Esta conclusión NO implica**: que `release/v1.0.0` (ni el
+`feat/v1-production-scope` del que parte) ya se haya fusionado en `main`
+(no se ha hecho, y esa fusión requiere una decisión humana explícita, no
+automatizada); que exista ya un tag `v1.0.0` o un GitHub Release
+(ninguno de los dos existe, aunque la versión `1.0.0` ya está fijada en
+`package.json`/`package-lock.json` de la rama `release/v1.0.0`, todavía
+sin fusionar); ni que las Fases 6-8 del plan de producción (congelación
+de contenido, margen de contingencia, entrega formal del 10 de
+septiembre de 2026) estén completadas — siguen correspondiendo a pasos
+de integración y release todavía no ejecutados.

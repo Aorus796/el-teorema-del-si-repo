@@ -9,16 +9,16 @@ real.
 
 ## Estado del proyecto
 
-Recorrido principal implementado y jugable de principio a fin: las
-cuatro localizaciones, los tres puzles principales, el cuaderno de
-pistas, el guardado y carga (con migración entre formatos), y el
-epílogo completo. El juego funciona tanto como versión web estática
-como ejecutable portable para Windows. La personalización final
-(nombres reales, fecha, mascota, dedicatoria) queda fuera del alcance
-de `v1.0.0` y se implementará después, como trabajo posterior.
+Versión estable: **`v1.0.0`**. Recorrido principal implementado y
+jugable de principio a fin: las cuatro localizaciones, los tres puzles
+principales, el cuaderno de pistas, el guardado y carga (con migración
+entre formatos), y el epílogo completo. Disponible como versión web
+estática y como ejecutable portable para Windows. La personalización
+final (nombres reales, fecha, mascota, dedicatoria) queda fuera del
+alcance de `v1.0.0` y se implementará después, como trabajo posterior.
 
-Ver el estado detallado, la matriz de QA y qué falta exactamente para
-`v1.0.0` en
+Ver el detalle completo de evidencia, la matriz de QA y los riesgos
+residuales aceptados en
 [`docs/production/V1_PRODUCTION_PLAN.md`](docs/production/V1_PRODUCTION_PLAN.md),
 [`docs/production/V1_QA_MATRIX.md`](docs/production/V1_QA_MATRIX.md) y
 [`docs/production/V1_RELEASE_READINESS.md`](docs/production/V1_RELEASE_READINESS.md).
@@ -29,7 +29,9 @@ Ver el estado detallado, la matriz de QA y qué falta exactamente para
 - [Catálogo de puzles](docs/puzzles/README.md)
 - [Arquitectura técnica](docs/technical/ARCHITECTURE.md)
 - [Plan de producción de `v1.0.0`](docs/production/V1_PRODUCTION_PLAN.md)
+- [Release readiness de `v1.0.0`](docs/production/V1_RELEASE_READINESS.md)
 - [Guía operativa del portable Windows](docs/production/WINDOWS_PORTABLE_GUIDE.md)
+- [Procedimiento de publicación de `v1.0.0`](docs/production/RELEASE_PROCEDURE_v1.0.0.md)
 - [Registro de decisiones](docs/decisions/README.md)
 - [Historial de cambios](CHANGELOG.md)
 - [Sistema de automatización con Claude Code](docs/development/AUTOMATION.md)

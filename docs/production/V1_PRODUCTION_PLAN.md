@@ -1106,6 +1106,28 @@ global de disponibilidad para `v1.0.0`.
 
 No se aplaza la candidata estable más allá del 3 de septiembre.
 
+> **Nota de preparación de release (2026-08-11)**: la candidata técnica de
+> `v1.0.0` (bump de versión en `package.json`/`package-lock.json`, cierre
+> de `CHANGELOG.md`, rama `release/v1.0.0` y PR contra `main`) se preparó
+> el 2026-08-11 — antes de las fechas de calendario originalmente
+> asignadas a las Fases 6-8 (4 de septiembre en adelante). Esto **no**
+> significa que esas fases ya se hayan ejecutado tal como las describe
+> este plan: sus entregables (congelación formal con ventana de
+> corrección de defectos, margen de contingencia, entrega del 10 de
+> septiembre) siguen sin marcar más abajo porque describen un proceso
+> ligado a fechas que todavía no han llegado. Lo que sí está resuelto de
+> forma anticipada, con evidencia real, es el contenido funcional que
+> esas fases iban a congelar y entregar: el recorrido completo ya existe,
+> ya pasó el QA de cierre documentado en
+> [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md) (**READY FOR
+> v1.0.0**), y la versión ya se marcó `1.0.0` en la rama de release. Lo
+> que sigue pendiente y depende de una decisión humana explícita es la
+> fusión de `release/v1.0.0` en `main`, la creación del tag `v1.0.0`, la
+> generación del ejecutable Windows final desde el commit/tag definitivo
+> y la publicación del GitHub Release — ver "Artefactos y entrega" en
+> §12 más abajo y el procedimiento paso a paso en
+> [`RELEASE_PROCEDURE_v1.0.0.md`](RELEASE_PROCEDURE_v1.0.0.md).
+
 ### Fase 6 — Congelación de contenido y versión candidata
 
 **Fechas:** 4 al 7 de septiembre.
@@ -1496,6 +1518,19 @@ de disponibilidad para `v1.0.0`.
   ausencia total de bugs, solo de ausencia de ninguno documentado.
 
 ### Artefactos y entrega
+
+**AHORA (2026-08-11)**: existe una rama `release/v1.0.0` con la versión
+ya fijada en `1.0.0` (`package.json`/`package-lock.json`), `CHANGELOG.md`
+cerrado para `1.0.0`, y una PR abierta contra `main` (sin fusionar). Esto
+identifica *cuál será* el candidato — no sustituye a los artefactos
+finales, que dependen del merge. **TODAVÍA PENDIENTE**: ningún elemento
+de esta lista se marca `[x]` todavía, porque todos dependen de que
+`release/v1.0.0` se fusione en `main`, de que se cree el tag `v1.0.0`
+sobre el commit definitivo de `main`, y de que el workflow de GitHub
+Actions `windows-portable.yml` se ejecute (vía `workflow_dispatch`) sobre
+ese commit/tag para generar
+`El-Teorema-del-Si-1.0.0-win-x64-portable.exe`. Ninguna de esas tres
+acciones se ejecuta en esta tarea.
 
 - [ ] Build web final identificado.
 - [ ] Ejecutable Windows final identificado.
