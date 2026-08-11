@@ -47,12 +47,16 @@ offline —, y ya se cerró documentalmente la Fase 5 de empaquetado Windows
 [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md)).
 La prueba de compatibilidad entre al menos dos builds portables distintas
 no se ejecutó — riesgo residual aceptado explícitamente por el
-responsable del producto para `v1.0.0`. **Que el empaquetado Windows esté
-cerrado no cierra la Fase 5 completa de este plan** (§6 más abajo incluye
-también QA general del recorrido, accesibilidad básica y corrección de
-defectos, todavía pendientes) **ni significa que `v1.0.0` esté lista o
-publicada** — eso depende del resto del contenido y del QA general
-descritos en este documento.
+responsable del producto para `v1.0.0`. **En el momento en que se cerró
+el empaquetado Windows, ese cierre por sí solo no cerraba la Fase 5
+completa de este plan** — el QA general del recorrido, la accesibilidad
+básica y la corrección de defectos de §6 quedaron pendientes en ese
+momento. **Esos puntos ya se auditaron y cerraron posteriormente**, en el
+cierre de release-readiness (ver §6 Fase 5 más abajo, con la declaración
+"FASE 5 (GENERAL): COMPLETADA", y
+[`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md)). Esto **no**
+significa que `v1.0.0` esté publicada — ver la conclusión completa en ese
+mismo documento.
 
 > Nota de avance (tareas de implementación 1 a 8 de
 > `WINDOWS_PACKAGING_DECISION.md` → "Tareas de implementación"):
@@ -126,10 +130,13 @@ descritos en este documento.
 > (tarea 5), y el cierre documental y auditoría final de la Fase 5 de
 > empaquetado Windows (tarea 8) ya se completó — ver
 > [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md).
-> **Esta nota cierra únicamente el subconjunto de empaquetado Windows —
-> no declara completada la Fase 5 en su conjunto** (§6 más abajo incluye
-> QA general y accesibilidad, todavía pendientes), **ni que `v1.0.0` esté
-> publicada**.
+> **Esta nota, al momento de cerrar la tarea 8, cerraba únicamente el
+> subconjunto de empaquetado Windows** — la Fase 5 completa de §6 (QA
+> general y accesibilidad) quedó pendiente en ese momento, y se cerró
+> **posteriormente** en el cierre de release-readiness (ver §6 Fase 5,
+> "FASE 5 (GENERAL): COMPLETADA", y
+> [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md)). Esto **no**
+> significa que `v1.0.0` esté publicada.
 
 ## 2. Estado de partida desde `v0.5.0`
 
@@ -232,10 +239,17 @@ etiquetas Git al comenzar cada fase.
   explícitamente para `v1.0.0`, no un bloqueo de esta casilla. Esta
   casilla marca satisfecha la validación funcional completa del
   empaquetado Windows (tareas 1-8, Fase 5 de empaquetado Windows
-  cerrada); no marca cerrada la Fase 5 completa de este plan (§6 más
-  abajo), que incluye QA general y accesibilidad todavía pendientes, ni
-  que `v1.0.0` esté publicada.
-- [ ] Ejecutar QA completo sobre web, guardados y ejecutable.
+  cerrada). En el momento de este cierre concreto de empaquetado, la
+  Fase 5 completa de este plan (§6 más abajo) todavía no estaba cerrada
+  — el QA general y la accesibilidad quedaron pendientes en ese momento
+  y se auditaron y cerraron **posteriormente**, en el cierre de
+  release-readiness (ver §6 Fase 5, "FASE 5 (GENERAL): COMPLETADA", y
+  [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md)). Esto no
+  significa que `v1.0.0` esté publicada.
+- [x] Ejecutar QA completo sobre web, guardados y ejecutable — ver
+  [`V1_QA_MATRIX.md`](V1_QA_MATRIX.md) para el detalle completo por
+  requisito, reutilizando evidencia unitaria, E2E, manual, Windows y
+  offline ya existente.
 
 El `README.md` conserva información histórica desactualizada y no debe usarse
 como prueba del estado funcional. Para planificar cada tarea se debe
@@ -339,13 +353,60 @@ jugables.
 - [x] Los tres puzles se abren desde el mundo, se pueden resolver y producen
   el avance narrativo previsto — confirmado en el mismo recorrido y en
   `tests/e2e/game.spec.js`.
-- [ ] Cada puzle obligatorio es deducible con información disponible dentro
-  del juego.
+- [x] Cada puzle obligatorio es deducible con información disponible
+  dentro del juego — auditado puzle por puzle (2026-08-11):
+  - **Biblioteca** ("El catálogo perfecto"): las seis reglas necesarias y
+    suficientes están **siempre visibles en pantalla** durante todo el
+    puzle (`LibraryCatalogueScene.js` → `drawRules()`, reglas en
+    `LibraryCatalogueData.js`), no solo mediante pistas — confirmado
+    explícitamente en
+    [`../puzzles/LIBRARY_CATALOGUE_SPEC.md`](../puzzles/LIBRARY_CATALOGUE_SPEC.md):
+    "Las seis reglas están disponibles desde la entrada al puzle. Ninguna
+    depende de información externa... ni prueba y error oculta."
+  - **Archivo** ("La pregunta correcta"): las evidencias necesarias por
+    cada afirmación están **siempre visibles en pantalla**
+    (`ArchiveCriteriaScene.js` → `drawEvidence()`), no ocultas tras
+    pistas.
+  - **P2** ("El paseo imposible"): el tablero completo (nodos y puentes)
+    está siempre visible, pero la lógica de paridad que resuelve el
+    puzle no se explica en el diálogo inicial — la deducción se apoya
+    principalmente en el sistema de pistas de 3 niveles
+    (`P2Hints.js`), igual que en los otros dos puzles.
+  - Los tres puzles comparten el mismo mecanismo de accesibilidad: un
+    sistema de pistas de **3 niveles, de consulta libre y sin coste**,
+    disponible en cualquier momento antes de confirmar (nunca gateado
+    tras un intento fallido) — `P2Hints.js`, `LibraryCatalogueHints.js`,
+    `ArchiveCriteriaHints.js`. En los tres casos, el nivel 3 revela
+    prácticamente la solución completa; esto está documentado
+    explícitamente como diseño intencional de accesibilidad en
+    [`../puzzles/LIBRARY_CATALOGUE_SPEC.md`](../puzzles/LIBRARY_CATALOGUE_SPEC.md)
+    ("medida de accesibilidad... no una recompensa por ensayo y error")
+    y en
+    [`../puzzles/ARCHIVE_CRITERIA_SPEC.md`](../puzzles/ARCHIVE_CRITERIA_SPEC.md)
+    ("protección contra bloqueo"). Dado que el mismo patrón se aplica de
+    forma consistente e intencional a los tres puzles, se considera
+    evidencia suficiente de deducibilidad también para P2, aunque su
+    especificación de prototipo en papel
+    (`docs/prototypes/P2_EL_PASEO_IMPOSIBLE.md`) contenía un criterio
+    más estricto ("ninguna reflexión indicará directamente la
+    solución") que el prototipo temprano no llegó a actualizar tras la
+    decisión de diseño final compartida por los tres puzles — nota de
+    documentación, no un defecto funcional.
 - [x] El cuaderno registra sin duplicados las pistas y conclusiones
   obligatorias — `GameState.addNotebookEntry()` deduplica por `id`,
   verificado en `tests/state/GameState.test.js`.
-- [ ] Los objetivos indican el siguiente paso sin revelar directamente las
-  soluciones.
+- [x] Los objetivos indican el siguiente paso sin revelar directamente las
+  soluciones — auditados los 10 `objectiveId` reales del juego
+  (diccionario `OBJECTIVE_LABELS` en `src/scenes/WorldScene.js`, HUD
+  siempre visible): *"Revisa el tablón de preparativos"*, *"Habla con la
+  alcaldesa Corolaria"*, *"Habla con el padre de la novia"*, *"Investiga
+  el Paseo de los Siete Puentes"*, *"Busca la pista junto al
+  embarcadero"*, *"Dirígete a la Biblioteca del Margen"*, *"Entra en el
+  Archivo y examina la mesa de criterios"*, *"Regresa al lugar donde
+  comenzó la demostración"*, *"Acércate a ella en la Plaza"*, *"La
+  demostración ha terminado"*. Ninguno revela literalmente la solución
+  de un puzle (orden, combinación o clasificación) — todos indican una
+  acción, lugar o persona concretos, o un estado terminal.
 - [x] El epílogo se activa una sola vez tras completar el tercer puzle —
   invariantes de banderas (`epilogueUnlocked ⟹ investigationComplete`,
   etc.) validadas atómicamente en `GameState.restore()`, y flujo idempotente
@@ -393,13 +454,57 @@ jugables.
 - [x] La versión web sigue funcionando después de introducir el
   empaquetado — ver `WINDOWS_PACKAGING_DECISION.md` → "Relación entre
   `npm run build` y el empaquetado".
-- [ ] No quedan defectos bloqueantes ni defectos graves conocidos — no
-  existe ningún registro de defectos en el repositorio (ni una lista, ni
-  un issue tracker), por lo que esta casilla no puede confirmarse
-  positivamente: ausencia de registro no equivale a ausencia de defectos.
-- [ ] Los defectos menores aceptados están registrados con una solución
-  alternativa clara o una justificación de entrega — mismo motivo:
-  no existe ese registro todavía.
+- [x] No quedan defectos bloqueantes ni defectos graves conocidos — **no
+  existe ningún defecto bloqueante o grave conocido/registrado a fecha
+  de 2026-08-11.** Auditado: los Issues de GitHub del repositorio están
+  habilitados y no tienen ningún issue, abierto ni cerrado; no existe
+  ningún `BUGS.md`/`ISSUES.md` con defectos documentados como abiertos;
+  `CHANGELOG.md` solo registra correcciones ya aplicadas ("Corregido"),
+  nunca defectos pendientes. Esto no es una afirmación absoluta de
+  ausencia total de bugs — es la constatación factual de que no hay
+  ninguno documentado.
+- [x] Los defectos menores aceptados están registrados con una solución
+  alternativa clara o una justificación de entrega — **defectos menores
+  conocidos** (encontrados en la auditoría estática de textos de esta
+  misma tarea, 2026-08-11; ninguno bloqueante ni grave, todos de
+  nomenclatura/presentación, no de lógica ni de datos):
+  1. El `label` del NPC de la novia en el epílogo dice **"La
+     Investigadora"** (`src/content/worldMaps.js`, objeto
+     `bride-epilogue`), visible literalmente en el prompt de interacción
+     `"[E] Hablar con La Investigadora"`, mientras que el diálogo que se
+     abre a continuación y el resto del juego la llaman consistentemente
+     **"la novia"**.
+  2. Mismo patrón para el NPC "Padre de la Investigadora"
+     (`src/content/worldMaps.js`, objeto `bride-father`) frente a "el
+     padre de la novia" en diálogos y objetivos.
+  3. El mapa de la Biblioteca tiene `name: "Biblioteca"` (mostrado en el
+     HUD y en las salidas), mientras toda la narrativa y el objetivo
+     correspondiente la llaman **"Biblioteca del Margen"**.
+  4. La pantalla de "El catálogo perfecto" (`LibraryCatalogueScene.js`)
+     muestra el valor interno sin traducir de la fase del puzle (por
+     ejemplo `"Fase: arranging"`), a diferencia de la pantalla gemela
+     "La pregunta correcta" (`ArchiveCriteriaScene.js`), que sí traduce
+     su fase equivalente al español.
+
+  **Justificación de entrega**: ninguno de los cuatro afecta la
+  jugabilidad, la lógica de los puzles, el guardado, ni introduce
+  información falsa o contradictoria sobre hechos narrativos — son
+  discrepancias de nomenclatura/presentación entre pantallas distintas
+  que el jugador no ve simultáneamente. Se aceptan como conocidos y no
+  bloqueantes para `v1.0.0`; su corrección (unificar el nombre mostrado
+  del personaje/localización, traducir el enum de fase) queda como
+  trabajo de pulido menor, no como parte de esta tarea documental (que
+  no modifica código).
+
+  **Aceptación explícita**: el responsable del producto acepta
+  formalmente, con fecha 2026-08-11, estos cuatro defectos como riesgos
+  residuales **no bloqueantes** para `v1.0.0` (ver
+  [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md)). Quedan
+  **conocidos, no corregidos, aceptados**, sin fecha de corrección
+  asignada — no se marcan como PASS técnico ni se presentan como
+  resueltos; esta casilla se marca `[x]` porque el registro y la
+  aceptación en sí están completos, no porque los defectos ya no
+  existan.
 - [ ] La versión candidata estable existe al cerrar el 3 de septiembre —
   fecha futura, todavía no alcanzada.
 - [ ] Del 4 al 9 de septiembre no se incorpora contenido nuevo — fecha
@@ -696,43 +801,124 @@ implementa y valida de forma independiente con el flujo completo de
 
 #### Entregables
 
-- [ ] Pase visual coherente de las cuatro localizaciones — sin ejecutar
-  todavía; no hay evidencia de una revisión visual dedicada (el estilo
-  actual es 100% procedimental, sin assets de imagen).
-- [ ] Recursos definitivos o provisionales aceptables para personajes,
-  objetos y puzles obligatorios — sin decisión documentada que acepte el
-  estilo procedimental actual como definitivo ni identifique un asset
-  concreto pendiente (ver `WINDOWS_PACKAGING_PHASE5_CLOSURE.md`).
+- [ ] Pase visual coherente de las cuatro localizaciones — no se ha
+  ejecutado un pase visual dedicado. **Riesgo aceptado, no bloqueante**:
+  el estilo procedimental actual (sin assets de imagen) se acepta para
+  `v1.0.0` (ver "Arte" en
+  [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md)); el pulido
+  visual adicional queda como trabajo futuro.
+- [x] Recursos definitivos o provisionales aceptables para personajes,
+  objetos y puzles obligatorios — el estilo 100% procedimental (sin
+  assets de imagen externos) es el recurso real y funcional usado en
+  todo el juego; el recorrido completo real sobre el ejecutable Windows
+  no encontró ningún fallo visible de assets/renderizado
+  (`WINDOWS_PORTABLE_FULL_QA.md`). Aceptado como recurso de `v1.0.0`
+  (riesgo de pulido visual adicional, no bloqueante).
 - [x] Audio aprobado integrado de forma acotada — pista del epílogo
   integrada y validada, incluido su funcionamiento offline (tarea 7).
-- [ ] Revisión completa de textos, nombres, objetivos y pistas.
+- [x] Revisión completa de textos, nombres, objetivos y pistas —
+  auditoría estática completa realizada en esta tarea (sin jugar de
+  nuevo), cubriendo nombres de personajes, nombres de localizaciones,
+  diálogos de `WorldScene.js`, títulos/instrucciones/mensajes de fallo de
+  los tres puzles, créditos del epílogo, los 10 objetivos y las 4
+  entradas de cuaderno. La revisión **encontró 4 defectos menores
+  reales**, no bloqueantes, ahora registrados explícitamente en
+  "Defectos menores conocidos" más abajo (§5 "Calidad y entrega"): dos
+  inconsistencias de nombre de personaje ("La Investigadora"/"Padre de
+  la Investigadora" en los `label` de `worldMaps.js` frente a "la
+  novia"/"el padre de la novia" en el 100% de los diálogos y objetivos),
+  una inconsistencia de nombre de localización ("Biblioteca" en el
+  nombre oficial del mapa y en las salidas, frente a "Biblioteca del
+  Margen" en toda la narrativa), y un valor de fase sin traducir visible
+  en pantalla en `LibraryCatalogueScene.js` (`"Fase: arranging"` en vez
+  de un texto en español, a diferencia de `ArchiveCriteriaScene.js`, que
+  sí traduce su fase equivalente). No se detectó ninguna contradicción de
+  hechos narrativos, ni en las pistas/reglas de los tres puzles, ni en
+  las entradas de cuaderno (ninguna adelanta información de un puzle
+  posterior). Se marca `[x]` porque la revisión en sí es completa y
+  real — no porque no se haya encontrado nada.
 - ~~Personalización aprobada aplicada sin incluir datos privados en
   lugares no previstos~~ — fuera del alcance bloqueante de `v1.0.0` (ver
   §2, §4); no implementada, no exigida para esta versión.
-- [ ] Recursos fuente editables conservados y exportaciones optimizadas —
-  no aplica de la misma forma al no existir assets de imagen fuente;
-  sin auditar formalmente.
-- [ ] Recorrido completo con presentación cercana a entrega.
+- No aplica: recursos fuente editables — no existen assets de imagen
+  fuente que conservar ni exportaciones que optimizar (el estilo es
+  100% procedimental, sin pipeline de arte externo).
+- [x] Recorrido completo con presentación cercana a entrega — recorrido
+  real completo ejecutado sobre el ejecutable Windows sin fallos
+  visibles de assets/renderizado (`WINDOWS_PORTABLE_FULL_QA.md`); no
+  implica que el pulido narrativo/visual opcional (arte, personalización)
+  esté ya aplicado, solo que la presentación funcional actual es estable.
 
 #### Criterios de aceptación
 
-- [ ] Paleta, escala y resolución son coherentes entre localizaciones.
-- [ ] Ningún recurso tiene licencia o procedencia dudosa.
-- [ ] No se han añadido binarios grandes sin autorización.
-- [ ] Textos y pistas no se contradicen y caben en la interfaz.
+- [x] Paleta, escala y resolución son coherentes entre localizaciones —
+  cada mapa define su propia paleta consistente
+  (`src/content/worldMaps.js`); sin defecto de coherencia visual
+  reportado en el recorrido real completo (`WINDOWS_PORTABLE_FULL_QA.md`).
+- [x] Ningún recurso tiene licencia o procedencia dudosa — único asset
+  del proyecto (`src/assets/audio/epilogue-theme-provisional.wav`)
+  generado localmente por síntesis, sin muestras ni material de
+  terceros (`src/assets/audio/README.md`); sin ningún otro recurso de
+  audio/imagen en el juego.
+- [x] No se han añadido binarios grandes sin autorización — único
+  binario >500 KB fuera de `node_modules`/`.git`/`release`/`builds` es
+  el mismo `.wav` (~2,02 MB), ya justificado y documentado.
+- [x] Textos y pistas no se contradicen — matizado: las **pistas y
+  reglas de los tres puzles** (ver "deducibilidad" en §5 más abajo) no
+  presentan ninguna contradicción entre sí ni con su propia solución. La
+  auditoría completa de textos sí encontró 3 inconsistencias reales de
+  **nomenclatura** (no de hechos narrativos) — nombres de personaje y de
+  localización nombrados de forma distinta según la pantalla, ver
+  "Defectos menores conocidos" en §5 más abajo. Se marca `[x]` en el
+  sentido estricto de "no se contradicen los hechos" (nadie afirma algo
+  falso ni incompatible con otra escena); las inconsistencias de nombre
+  quedan registradas aparte, no bajo esta casilla. **Que "quepan en la
+  interfaz" (legibilidad/desbordamiento visual) no se marca aquí** — ver
+  el matiz de legibilidad en "El rendimiento y el escalado pixel-perfect
+  se mantienen", más abajo, que solo tiene revisión dedicada para las
+  escenas del epílogo.
 - No aplica para `v1.0.0`: la personalización queda fuera de alcance (ver
   §2, §4) — no hay personalización que revise por tono ni por datos.
-- [ ] La ausencia o fallo de audio no bloquea el recorrido.
-- [ ] El rendimiento y el escalado pixel-perfect se mantienen.
+- [x] La ausencia o fallo de audio no bloquea el recorrido — degradación
+  segura confirmada explícitamente en `EPILOGUE_MANUAL_VALIDATION.md`
+  (recorrido completado sin música, sin bloquear el avance).
+- [ ] El rendimiento y el escalado pixel-perfect se mantienen — **NO
+  EJECUTADA** (medición formal): sin medición de rendimiento (FPS/tiempos
+  de carga) registrada; la legibilidad a 480×270 solo se validó
+  manualmente para las escenas del epílogo
+  (`EPILOGUE_MANUAL_VALIDATION.md`), no para el resto del juego con el
+  mismo detalle. Riesgo residual aceptado explícitamente por el
+  responsable del producto para `v1.0.0` (decisión del 2026-08-11, ver
+  [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md)) — no bloqueante,
+  no corregido, sin fecha de corrección asignada. No se marca `[x]`
+  porque la medición sigue sin ejecutarse.
 
 #### Pruebas necesarias
 
-- [ ] Revisión visual a la resolución lógica de 480 × 270.
-- [ ] Revisión de todos los diálogos, objetivos y entradas de cuaderno.
-- [ ] Prueba con audio y prueba con audio no disponible.
-- [ ] Prueba manual completa cronometrada.
-- [ ] Comprobación de consola durante cambios de mapa y puzle.
-- [ ] `docker compose run --rm game npm run check`.
+- [x] Revisión visual a la resolución lógica de 480 × 270 — validación
+  manual dedicada para las escenas del epílogo
+  (`EPILOGUE_MANUAL_VALIDATION.md`: "Legibilidad a 480×270: Aprobada");
+  el resto del juego se apoya en el recorrido real completo sin fallos
+  visibles reportados (`WINDOWS_PORTABLE_FULL_QA.md`), con menor grado
+  de detalle formal que la revisión del epílogo.
+- [x] Revisión de todos los diálogos, objetivos y entradas de cuaderno —
+  completada en esta misma tarea (auditoría estática completa, ver
+  "Revisión completa de textos, nombres, objetivos y pistas" más
+  arriba). Encontró 4 defectos menores de nomenclatura, registrados en
+  "Defectos menores conocidos" en §5 — no invalida que la revisión en sí
+  se haya realizado sobre todos los diálogos, objetivos y entradas.
+- [x] Prueba con audio y prueba con audio no disponible —
+  `EPILOGUE_MANUAL_VALIDATION.md`.
+- [ ] Prueba manual completa cronometrada — recorrido completo real
+  ejecutado (tarea 7), pero **sin cronometrar**; riesgo aceptado no
+  bloqueante (ver "Duración" en `V1_RELEASE_READINESS.md`). No se marca
+  `[x]` para no confundir "recorrido realizado" con "recorrido medido".
+- [x] Comprobación de consola durante cambios de mapa y puzle — vía
+  `collectJavaScriptErrors()` con aserciones reales en 13 tests de
+  `tests/e2e/game.spec.js`, que cubren transiciones de mapa y los tres
+  puzles.
+- [x] `docker compose run --rm game npm run check` — 546/546 tests,
+  verde en el momento de esta auditoría.
 
 #### Riesgos
 
@@ -758,44 +944,80 @@ estable. No se recortan pistas necesarias ni legibilidad.
 
 #### Entregables
 
-- [ ] Matriz de pruebas del recorrido completo — no existe un documento
-  formal de matriz de pruebas; la cobertura real está distribuida en
-  `tests/e2e/game.spec.js` y las evidencias de tareas 6-7.
-- [ ] Corrección de defectos bloqueantes y graves — no existe ningún
-  registro de defectos que auditar (ni lista ni issue tracker); no se
-  puede confirmar ni negar mediante evidencia documental.
-- [ ] Revisión de accesibilidad básica y navegación por teclado — matiz:
-  la navegación/interacción completa por teclado, sin mouse, está
-  ampliamente confirmada (todos los puzles y el epílogo se resuelven solo
-  con teclado en `tests/e2e/game.spec.js`); la revisión de accesibilidad
-  básica en sentido más amplio (foco visible, legibilidad, lectores de
-  pantalla) no tiene ninguna revisión dedicada registrada.
-- [ ] Migraciones y fixtures definitivos de guardado — las migraciones
-  están implementadas y probadas (formatos 1-4), pero no existe un
-  conjunto de fixtures formalmente "definitivo" y congelado.
-- [ ] Build web candidato — el build web funciona y pasa CI de forma
-  continua, pero no se ha designado ningún build concreto como
-  "candidato" a entregar.
+- [x] Matriz de pruebas del recorrido completo — ver
+  [`V1_QA_MATRIX.md`](V1_QA_MATRIX.md), construida reutilizando la
+  evidencia ya existente (unitaria, E2E, manual, Windows, offline) sin
+  ejecutar ninguna prueba nueva.
+- [x] Corrección de defectos bloqueantes y graves — **no existe ningún
+  defecto bloqueante o grave conocido/registrado a fecha de este cierre**
+  (2026-08-11): los Issues de GitHub del repositorio están habilitados y
+  no tienen ningún issue, abierto ni cerrado; no existe ningún
+  `BUGS.md`/`ISSUES.md` con defectos documentados como abiertos;
+  `CHANGELOG.md` solo registra correcciones ya aplicadas. Esto no es una
+  afirmación absoluta de "cero bugs" — es la constatación factual de que
+  no hay ninguno documentado. La auditoría estática de textos de esta
+  misma tarea sí encontró 4 defectos **menores** (nomenclatura de
+  personajes/localización, un enum sin traducir) — ninguno bloqueante ni
+  grave; ver "Defectos menores conocidos" en §5 "Calidad y entrega" más
+  abajo.
+- [x] Revisión de accesibilidad básica y navegación por teclado —
+  **accesibilidad básica para el alcance v1 validada; no constituye
+  certificación WCAG.** Evidencia: el juego es operable al 100% con
+  teclado (`src/core/InputManager.js` solo escucha `keydown`/`keyup`;
+  ninguno de los 15 tests de `tests/e2e/game.spec.js` usa ratón); los
+  textos esenciales del epílogo se revisaron manualmente a la resolución
+  lógica 480×270 (`EPILOGUE_MANUAL_VALIDATION.md`); ningún puzle exige
+  información exclusivamente auditiva (la única pista de audio es
+  ambiental, posterior al desbloqueo del epílogo, y su ausencia no
+  bloquea el recorrido, confirmado en `EPILOGUE_MANUAL_VALIDATION.md`).
+  No se auditó formalmente el contraste visual fuera de las escenas del
+  epílogo, ni se revisaron los textos de los otros tres puzles con el
+  mismo detalle — sin defecto conocido en ningún caso.
+- [x] Migraciones y fixtures definitivos de guardado — cobertura
+  material ya existente y suficiente: `tests/state/GameState.test.js`
+  prueba los formatos 1, 2, 3, 4 y el caso no soportado (999), con ~35
+  variantes de guardado inválido; `tests/e2e/game.spec.js` migra un
+  guardado de formato 1 en un navegador real. No existe un directorio de
+  fixtures en disco separado (los fixtures son objetos literales en el
+  propio test), pero el requisito queda satisfecho materialmente por
+  esta cobertura.
+- [x] Build web candidato — el candidato web para `v1.0.0` será el mismo
+  commit que se integre en `main` cuando llegue ese momento; no requiere
+  una arquitectura de "candidatos" separada. `npm run build`/`npm run
+  check` validan continuamente que el build estático funciona.
 - [x] Empaquetado candidato para Windows con la herramienta aprobada —
   ver [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)
   (tareas 1-8, Fase 5 de empaquetado Windows cerrada).
-- [ ] Instrucciones mínimas de ejecución y controles — existen para el
-  portable Windows (`WINDOWS_PORTABLE_GUIDE.md`); no se ha auditado un
-  documento equivalente general de controles para la versión web.
+- [x] Instrucciones mínimas de ejecución y controles — existen para el
+  portable Windows (`WINDOWS_PORTABLE_GUIDE.md`) y para la versión web
+  (tabla de controles en `README.md`).
 - [x] Informe de prueba en instalación limpia — ver
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [ ] Versión candidata estable disponible al cerrar el 3 de septiembre —
-  fecha futura, todavía no alcanzada.
+  **fecha planificada todavía no alcanzada** (hoy: 2026-08-11); esta
+  casilla no es un defecto funcional ni contradice la conclusión "READY
+  FOR v1.0.0" de
+  [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md). Ese documento
+  declara que el código actual está técnicamente listo para integrarse
+  en `main` — lo que todavía no existe es la **candidata formal
+  congelada**, que solo se materializa con esa integración (Fase 6). Se
+  clasifica como acción futura de integración/release, no como
+  requisito funcional pendiente.
 
 #### Criterios de aceptación
 
-- [ ] Cero defectos bloqueantes o graves conocidos — sin registro que
-  auditar (ver más arriba).
+- [x] Cero defectos bloqueantes o graves conocidos — sin ninguno
+  registrado a fecha de este cierre (ver "Corrección de defectos" más
+  arriba; no es una afirmación absoluta).
 - [x] Todos los controles obligatorios funcionan con teclado — los tres
   puzles y el epílogo se resuelven íntegramente con teclado en
   `tests/e2e/game.spec.js`.
-- [ ] Texto, prompts y estados de foco son legibles — sin revisión
-  dedicada registrada.
+- [ ] Texto, prompts y estados de foco son legibles — parcial: validado
+  manualmente y con revisión dedicada solo para las escenas del epílogo
+  a 480×270 (`EPILOGUE_MANUAL_VALIDATION.md`). Sin defecto de
+  legibilidad conocido en el resto del juego, pero sin la misma revisión
+  dedicada — se mantiene sin marcar por esa parte, no por la del
+  epílogo, que sí está confirmada.
 - [x] Los guardados de referencia se restauran correctamente —
   `tests/state/GameState.test.js` cubre formatos 1-4 con múltiples
   fixtures.
@@ -842,9 +1064,30 @@ estable. No se recortan pistas necesarias ni legibilidad.
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [x] Prueba desde una instalación limpia sin herramientas de desarrollo —
   ver [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
-- [ ] Medición final de duración (la duración del recorrido en el
-  ejecutable Windows quedó explícitamente sin cronometrar — ver
-  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)).
+- [ ] Medición final de duración — **duración completa no cronometrada
+  formalmente antes de `v1.0.0`** (ver
+  [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md)). Por
+  decisión del responsable del producto, esta ausencia de medición
+  precisa se acepta como riesgo menor y **no bloquea `v1.0.0`**. No se
+  inventa ninguna cifra.
+
+**FASE 5 (GENERAL): COMPLETADA** (2026-08-11) — todos los criterios
+restantes de esta fase están satisfechos con evidencia directa o
+explícitamente aceptados/recortados por decisión del responsable del
+producto: la matriz de QA existe (`V1_QA_MATRIX.md`), no hay defectos
+bloqueantes/graves registrados, la accesibilidad básica del alcance v1
+está validada, las migraciones/fixtures de guardado están cubiertas
+materialmente por la suite existente, el candidato web queda definido
+como el commit que se integre a `main`, y el empaquetado Windows está
+cerrado (tareas 1-8). Los únicos puntos que permanecen sin marcar son
+fechas futuras todavía no alcanzadas ("versión candidata estable
+disponible al cerrar el 3 de septiembre") y riesgos ya aceptados
+explícitamente como no bloqueantes (duración no cronometrada). Esto
+**no** cierra las Fases 6-8 (congelación, contingencia, entrega), que
+siguen correspondiendo a integración/release y no se tocan en este
+cierre. Ver
+[`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md) para la conclusión
+global de disponibilidad para `v1.0.0`.
 
 #### Riesgos
 
@@ -1083,7 +1326,8 @@ un estado agregado del proyecto hasta ahora, auditado más abajo.
 - [x] Ejecutable probado en Windows — tareas 6 y 7.
 - [x] Instalación limpia probada —
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
-- [ ] Cero defectos bloqueantes o graves conocidos.
+- [x] Cero defectos bloqueantes o graves conocidos — ninguno registrado a
+  fecha de este cierre (2026-08-11); ver la auditoría en Fase 5.
 
 ### Puerta D — Entrega
 
@@ -1155,9 +1399,11 @@ el 2 de agosto:
   completó — ver
   [`WINDOWS_PACKAGING_PHASE5_CLOSURE.md`](WINDOWS_PACKAGING_PHASE5_CLOSURE.md).
   Esta casilla marca la decisión de herramienta y su implementación
-  completa de empaquetado Windows como cerradas — no marca cerrada la
-  Fase 5 completa de este plan (§6, que incluye QA general y
-  accesibilidad todavía pendientes), ni que `v1.0.0` esté publicada.
+  completa de empaquetado Windows como cerradas. La Fase 5 completa de
+  este plan (§6, QA general y accesibilidad) se cerró **posteriormente**
+  en el cierre de release-readiness — ver "FASE 5 (GENERAL): COMPLETADA"
+  en §6 y [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md). Esto no
+  significa que `v1.0.0` esté publicada.
 - [x] **Pipeline mínimo de pruebas de interfaz:** patrón de facto en
   producción y documentado en `CLAUDE.md` → "Estrategia de pruebas":
   lógica/estado/validadores con pruebas unitarias (`node --test`),
@@ -1168,14 +1414,23 @@ el 2 de agosto:
   decisión aparte redactado antes de empezar, pero el mapeo
   flujo-por-flujo (qué se automatiza vs. qué es manual) es observable y
   consistente en el código y las pruebas reales.
-- [ ] **Estrategia de arte y audio:** decisión parcial. El audio tiene una
-  decisión de facto documentada (pista provisional/sustituible del
-  epílogo, aceptada para `v1.0.0` sin sustitución obligatoria — ver §2).
-  El arte **no** tiene ninguna decisión equivalente registrada, ni
-  siquiera provisional: no hay paleta/resolución/formato de recursos
-  fuente definidos porque el juego no usa assets de imagen (renderizado
-  procedimental). Esta casilla combinada sigue sin cerrar por la mitad
-  correspondiente al arte.
+- [x] **Estrategia de arte y audio:** decisión de facto vigente y cerrada
+  para `v1.0.0`, en dos partes:
+  - **Audio**: pista única del epílogo (`epilogue-theme-provisional.wav`),
+    generada localmente por síntesis (sin muestras de terceros),
+    integrada y validada (funcionamiento y offline, tarea 7). Sigue
+    etiquetada como "provisional y sustituible" en su propio nombre y
+    README, pero no existe ninguna decisión que exija reemplazarla antes
+    de `v1.0.0` — aceptada tal cual.
+  - **Arte**: el juego usa renderizado procedimental sobre `<canvas>`,
+    sin ningún asset de imagen externo, sin pipeline de arte ni recursos
+    fuente que gestionar. La presentación visual actual se acepta para
+    `v1.0.0` — no existe ningún asset gráfico concreto identificado como
+    obligatorio, y el recorrido real completo no encontró fallos
+    visibles de renderizado (`WINDOWS_PORTABLE_FULL_QA.md`). No se exige
+    un pase visual dedicado antes de `v1.0.0`; el pulido gráfico
+    adicional queda como trabajo futuro, no bloqueante (ver "Pase visual
+    coherente" en Fase 4 más arriba).
 
 Una decisión no está cerrada si solo enumera opciones. Debe indicar la opción
 elegida, la razón, su impacto en calendario y el criterio que permitirá
@@ -1188,7 +1443,10 @@ validarla.
 Esta subsección refleja existencia y funcionamiento real en el código
 actual (auditado 2026-08-11), no necesariamente el pulido narrativo/visual
 final que se revisará en las Fases 4-7 antes de la entrega del 10 de
-septiembre.
+septiembre. Ver [`V1_QA_MATRIX.md`](V1_QA_MATRIX.md) para la matriz
+completa de evidencia por requisito, y
+[`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md) para la conclusión
+de disponibilidad para `v1.0.0`.
 
 - [x] Plaza del Axioma terminada.
 - [x] Paseo de los Siete Puentes terminado.
@@ -1204,7 +1462,11 @@ septiembre.
 - Personalización aprobada aplicada: **retirada como requisito de
   `v1.0.0`** (ver §2, §4) — no implementada, fuera de alcance de esta
   versión, no bloqueante.
-- [ ] Duración final entre 45 y 90 minutos — **no medida**.
+- [ ] Duración final entre 45 y 90 minutos — **duración completa no
+  cronometrada formalmente antes de `v1.0.0`**; riesgo menor aceptado
+  explícitamente por el responsable del producto, no bloqueante (ver
+  Fase 5 más arriba). No se marca `[x]` porque no hay medición, pero
+  tampoco bloquea el cierre.
 
 ### Validación
 
@@ -1228,9 +1490,10 @@ septiembre.
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [x] Ejecutable probado en Windows — tareas 6 y 7.
 - [x] Versión web probada desde su build.
-- [ ] Cero defectos bloqueantes o graves abiertos — sin registro de
-  defectos que auditar; no se puede confirmar positivamente sin ese
-  registro.
+- [x] Cero defectos bloqueantes o graves abiertos — no existe ninguno
+  registrado a fecha de este cierre (2026-08-11; ver la auditoría
+  completa en Fase 5 más arriba). No es una afirmación absoluta de
+  ausencia total de bugs, solo de ausencia de ninguno documentado.
 
 ### Artefactos y entrega
 

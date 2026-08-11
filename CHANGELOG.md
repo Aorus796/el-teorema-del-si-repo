@@ -527,6 +527,77 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   deja de ser un requisito bloqueante (sin marcarse como implementada).
   El arte y la duración medida del recorrido completo siguen
   genuinamente pendientes, sin decisión de exclusión ni cifra inventada.
+- Cierre de release-readiness para `v1.0.0`: auditoría exclusivamente
+  documental, sin funcionalidad nueva, sin pruebas nuevas, sin
+  ejecutable nuevo. Nuevo
+  [`docs/production/V1_QA_MATRIX.md`](docs/production/V1_QA_MATRIX.md),
+  una matriz que reutiliza evidencia ya existente (unitaria, E2E, manual,
+  Windows, offline) por requisito, sin marcar ninguna celda PASS sin
+  cita concreta. Nuevo
+  [`docs/production/V1_RELEASE_READINESS.md`](docs/production/V1_RELEASE_READINESS.md)
+  con conclusión **READY FOR v1.0.0**: el recorrido completo está
+  implementado y probado (546/546 tests unitarios, 15 tests E2E sin
+  interacción de ratón, QA end-to-end real en el ejecutable Windows), no
+  existe ningún defecto bloqueante o grave registrado, la accesibilidad
+  básica del alcance v1 está validada (100% operable con teclado, sin
+  requisitos exclusivamente auditivos), y las migraciones/fixtures de
+  guardado están cubiertas materialmente por la suite existente
+  (formatos 1-4, ~35 variantes de guardado inválido). `V1_PRODUCTION_PLAN.md`
+  §6 Fase 5 se declara completada; las Fases 6-8 (congelación de
+  contenido, contingencia, entrega) siguen pendientes por depender de
+  fechas futuras y de la propia integración/release. `README.md` se
+  actualizó para reflejar el estado real del proyecto (eliminando
+  afirmaciones obsoletas como "desarrollo todavía no iniciado" o
+  Electron como "opción provisional"), con comandos npm reales,
+  controles del juego, y enlaces a la documentación de producción
+  vigente. Esta conclusión READY no publica `v1.0.0`, no fusiona
+  `feat/v1-production-scope` en `main`, no cambia la versión declarada
+  en `package.json`, y no crea ningún tag ni GitHub Release — esas
+  acciones siguen pendientes y requieren decisión humana explícita.
+  Una revisión independiente encontró afirmaciones de "Fase 5 todavía
+  pendiente"/"QA general pendiente" que ya no reflejaban el cierre
+  posterior de release-readiness — corregidas para distinguir la
+  cronología (pendiente en el momento del cierre de empaquetado Windows,
+  cerrada después) sin perder el historial. Auditó además, con evidencia
+  real de código/specs, dos criterios de "definición de terminado" que
+  seguían sin marcar: la deducibilidad de los tres puzles (reglas y
+  evidencias siempre visibles en pantalla para Biblioteca y Archivo; un
+  sistema de pistas de 3 niveles libre y sin coste, documentado como
+  diseño de accesibilidad intencional, compartido por los tres) y la
+  progresión de los 10 objetivos reales del juego (ninguno revela una
+  solución). Unificó la semántica de "defectos conocidos" en todo el
+  plan verificando directamente los Issues de GitHub del repositorio
+  (0 issues, abiertos o cerrados) en vez de solo inferir la ausencia de
+  un registro local. Reconcilió Fase 4 (arte, audio, textos) contra
+  evidencia ya existente, dejando como riesgo aceptado no bloqueante
+  únicamente el pulido visual/rendimiento sin medir.
+- Auditoría estática completa de textos, nombres, objetivos y pistas
+  (§11 "Estrategia de arte y audio" y Fase 4 de `V1_PRODUCTION_PLAN.md`,
+  parte del mismo cierre de release-readiness): revisó nombres de
+  personajes/localizaciones, diálogos de `WorldScene.js`, títulos y
+  mensajes de fallo de los tres puzles, créditos del epílogo, los 10
+  objetivos y las 4 entradas de cuaderno, sin jugar de nuevo. Encontró y
+  documentó **4 defectos menores, no bloqueantes** (nomenclatura, no
+  lógica ni datos): "La Investigadora"/"Padre de la Investigadora" en
+  los `label` de NPC de `worldMaps.js` frente a "la novia"/"el padre de
+  la novia" en el resto del juego; "Biblioteca" (nombre oficial del
+  mapa) frente a "Biblioteca del Margen" (narrativa); y un valor de fase
+  de puzle sin traducir visible en pantalla en `LibraryCatalogueScene.js`.
+  Registrados en `V1_PRODUCTION_PLAN.md` §5 "Defectos menores conocidos"
+  y en `V1_QA_MATRIX.md`, sin modificar código — su corrección queda
+  como trabajo de pulido menor futuro. Cierra también §11 "Estrategia de
+  arte y audio" (antes solo el audio tenía decisión de facto) y registra
+  la medición formal de rendimiento/escalado pixel-perfect como riesgo
+  aceptado no bloqueante, no ejecutada.
+- Registrada la aceptación explícita del responsable del producto
+  (2026-08-11) sobre los dos riesgos residuales que la auditoría de
+  release-readiness había clasificado sin una aceptación previa
+  separada: la ausencia de medición formal de rendimiento/escalado
+  pixel-perfect y los cuatro defectos menores de nomenclatura. Ambos
+  quedan documentados como conocidos, no corregidos y no bloqueantes
+  para `v1.0.0` en `V1_PRODUCTION_PLAN.md`, `V1_QA_MATRIX.md` y
+  `V1_RELEASE_READINESS.md` — ninguno se convierte en PASS técnico, no
+  se corrigió ningún código ni se repitió ninguna prueba.
 
 ### Corregido
 
