@@ -495,6 +495,16 @@ jugables.
   del personaje/localización, traducir el enum de fase) queda como
   trabajo de pulido menor, no como parte de esta tarea documental (que
   no modifica código).
+
+  **Aceptación explícita**: el responsable del producto acepta
+  formalmente, con fecha 2026-08-11, estos cuatro defectos como riesgos
+  residuales **no bloqueantes** para `v1.0.0` (ver
+  [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md)). Quedan
+  **conocidos, no corregidos, aceptados**, sin fecha de corrección
+  asignada — no se marcan como PASS técnico ni se presentan como
+  resueltos; esta casilla se marca `[x]` porque el registro y la
+  aceptación en sí están completos, no porque los defectos ya no
+  existan.
 - [ ] La versión candidata estable existe al cerrar el 3 de septiembre —
   fecha futura, todavía no alcanzada.
 - [ ] Del 4 al 9 de septiembre no se incorpora contenido nuevo — fecha
@@ -872,11 +882,16 @@ implementa y valida de forma independiente con el flujo completo de
 - [x] La ausencia o fallo de audio no bloquea el recorrido — degradación
   segura confirmada explícitamente en `EPILOGUE_MANUAL_VALIDATION.md`
   (recorrido completado sin música, sin bloquear el avance).
-- [ ] El rendimiento y el escalado pixel-perfect se mantienen — sin
-  medición de rendimiento (FPS/tiempos de carga) registrada; la
-  legibilidad a 480×270 solo se validó manualmente para las escenas del
-  epílogo (`EPILOGUE_MANUAL_VALIDATION.md`), no para el resto del
-  juego con el mismo detalle.
+- [ ] El rendimiento y el escalado pixel-perfect se mantienen — **NO
+  EJECUTADA** (medición formal): sin medición de rendimiento (FPS/tiempos
+  de carga) registrada; la legibilidad a 480×270 solo se validó
+  manualmente para las escenas del epílogo
+  (`EPILOGUE_MANUAL_VALIDATION.md`), no para el resto del juego con el
+  mismo detalle. Riesgo residual aceptado explícitamente por el
+  responsable del producto para `v1.0.0` (decisión del 2026-08-11, ver
+  [`V1_RELEASE_READINESS.md`](V1_RELEASE_READINESS.md)) — no bloqueante,
+  no corregido, sin fecha de corrección asignada. No se marca `[x]`
+  porque la medición sigue sin ejecutarse.
 
 #### Pruebas necesarias
 

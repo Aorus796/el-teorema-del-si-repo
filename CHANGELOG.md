@@ -589,6 +589,15 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   arte y audio" (antes solo el audio tenía decisión de facto) y registra
   la medición formal de rendimiento/escalado pixel-perfect como riesgo
   aceptado no bloqueante, no ejecutada.
+- Registrada la aceptación explícita del responsable del producto
+  (2026-08-11) sobre los dos riesgos residuales que la auditoría de
+  release-readiness había clasificado sin una aceptación previa
+  separada: la ausencia de medición formal de rendimiento/escalado
+  pixel-perfect y los cuatro defectos menores de nomenclatura. Ambos
+  quedan documentados como conocidos, no corregidos y no bloqueantes
+  para `v1.0.0` en `V1_PRODUCTION_PLAN.md`, `V1_QA_MATRIX.md` y
+  `V1_RELEASE_READINESS.md` — ninguno se convierte en PASS técnico, no
+  se corrigió ningún código ni se repitió ninguna prueba.
 
 ### Corregido
 

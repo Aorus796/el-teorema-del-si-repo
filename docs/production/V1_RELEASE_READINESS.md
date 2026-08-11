@@ -114,12 +114,6 @@ end-to-end offline completo
   renderizado procedimental sin defectos visuales conocidos. La
   presentación visual actual se acepta para `v1.0.0`; el pulido gráfico
   adicional queda como trabajo futuro, no como bloqueo.
-
-### Clasificados como no bloqueantes por esta auditoría (2026-08-11)
-
-Pendientes de una aceptación explícita separada si el responsable del
-producto quiere registrarla como tal:
-
 - **Rendimiento y escalado pixel-perfect (medición formal)**: **no
   ejecutada** — no hay medición de FPS ni de tiempos de carga
   registrada. La revisión dedicada de legibilidad a 480×270 solo cubre
@@ -127,23 +121,28 @@ producto quiere registrarla como tal:
   del juego con el mismo nivel de detalle formal. No se presenta como
   PASS: se apoya en la ausencia de defectos funcionales visibles durante
   el recorrido real completo (`WINDOWS_PORTABLE_FULL_QA.md`), evidencia
-  informal pero real. Clasificado como riesgo residual no bloqueante por
-  su naturaleza (cosmético/de rendimiento, no funcional) — no por una
-  aceptación explícita previa del responsable del producto sobre este
-  punto en concreto.
+  informal pero real. **Aceptado explícitamente por el responsable del
+  producto el 2026-08-11** como riesgo residual no bloqueante para
+  `v1.0.0`; la medición sigue sin ejecutarse y no se corrige dentro de
+  este cierre.
 - **Defectos menores de nomenclatura** (4, encontrados en la auditoría
   estática de textos de este mismo cierre): dos inconsistencias de
   nombre de personaje ("La Investigadora"/"la novia" y "Padre de la
   Investigadora"/"el padre de la novia"), una de nombre de localización
   ("Biblioteca"/"Biblioteca del Margen"), y un valor de fase de puzle sin
   traducir visible en pantalla. Ninguno afecta jugabilidad, lógica ni
-  guardado, por lo que esta auditoría los clasifica como no bloqueantes
-  — igual que en el punto anterior, esa clasificación es un juicio de
-  esta auditoría, no una aceptación explícita previa y separada del
-  responsable del producto sobre estos hallazgos concretos (que no
-  existían hasta este cierre). Ver el detalle completo en
+  guardado. **Aceptados explícitamente por el responsable del producto
+  el 2026-08-11** como riesgos residuales no bloqueantes para `v1.0.0`:
+  quedan **conocidos, no corregidos, aceptados** — no se presentan como
+  PASS técnico ni como resueltos, y su corrección queda como trabajo de
+  pulido menor futuro, sin fecha asignada. Ver el detalle completo en
   `V1_PRODUCTION_PLAN.md` §5 "Calidad y entrega" → "Defectos menores
   conocidos".
+
+Los cinco riesgos anteriores comparten el mismo tratamiento: ninguno se
+corrigió, ninguno se mide o prueba de nuevo, ninguno se convierte en
+PASS — todos quedan documentados como aceptados y no bloqueantes para
+`v1.0.0` por decisión explícita del responsable del producto.
 
 ## Trabajo explícitamente post-`v1.0.0`
 
