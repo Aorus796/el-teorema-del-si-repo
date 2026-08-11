@@ -554,6 +554,23 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `feat/v1-production-scope` en `main`, no cambia la versión declarada
   en `package.json`, y no crea ningún tag ni GitHub Release — esas
   acciones siguen pendientes y requieren decisión humana explícita.
+  Una revisión independiente encontró afirmaciones de "Fase 5 todavía
+  pendiente"/"QA general pendiente" que ya no reflejaban el cierre
+  posterior de release-readiness — corregidas para distinguir la
+  cronología (pendiente en el momento del cierre de empaquetado Windows,
+  cerrada después) sin perder el historial. Auditó además, con evidencia
+  real de código/specs, dos criterios de "definición de terminado" que
+  seguían sin marcar: la deducibilidad de los tres puzles (reglas y
+  evidencias siempre visibles en pantalla para Biblioteca y Archivo; un
+  sistema de pistas de 3 niveles libre y sin coste, documentado como
+  diseño de accesibilidad intencional, compartido por los tres) y la
+  progresión de los 10 objetivos reales del juego (ninguno revela una
+  solución). Unificó la semántica de "defectos conocidos" en todo el
+  plan verificando directamente los Issues de GitHub del repositorio
+  (0 issues, abiertos o cerrados) en vez de solo inferir la ausencia de
+  un registro local. Reconcilió Fase 4 (arte, audio, textos) contra
+  evidencia ya existente, dejando como riesgo aceptado no bloqueante
+  únicamente el pulido visual/rendimiento sin medir.
 
 ### Corregido
 

@@ -52,10 +52,22 @@ Ver el detalle completo, requisito por requisito, en
   reutilizando evidencia existente, sin marcar ninguna celda PASS sin
   cita concreta.
 - **Defectos conocidos**: no existe ningún defecto bloqueante o grave
-  registrado en el repositorio a esta fecha (sin `BUGS.md`/issue
-  tracker activo; auditado `CHANGELOG.md` y `docs/production/`). No es
-  una afirmación absoluta de ausencia total de bugs, solo de ausencia de
-  ninguno documentado.
+  conocido/registrado a esta fecha. Los Issues de GitHub del
+  repositorio están habilitados y muestran 0 issues (abiertos o
+  cerrados); no existe `BUGS.md`/`ISSUES.md`; `CHANGELOG.md` solo
+  registra correcciones ya aplicadas. No es una afirmación absoluta de
+  ausencia total de bugs, solo de ausencia de ninguno documentado.
+- **Deducibilidad de los puzles y progresión de objetivos**: auditadas
+  con evidencia real de código/specs. Las reglas de la Biblioteca y las
+  evidencias del Archivo están siempre visibles en pantalla del puzle,
+  sin depender de pistas; los tres puzles comparten además un sistema de
+  pistas de 3 niveles, libre y sin coste, cuyo nivel 3 revela la
+  solución — diseño de accesibilidad documentado explícitamente en las
+  especificaciones de la Biblioteca y el Archivo. Los 10 objetivos
+  reales del juego (`OBJECTIVE_LABELS` en `WorldScene.js`) indican una
+  acción, lugar o persona concretos sin revelar ninguna solución. Ver el
+  detalle completo en `V1_PRODUCTION_PLAN.md` §5 y en
+  [`V1_QA_MATRIX.md`](V1_QA_MATRIX.md).
 - **Accesibilidad básica**: validada para el alcance de `v1` — el juego
   es 100% operable con teclado (`src/core/InputManager.js` solo escucha
   `keydown`/`keyup`; ningún test E2E usa ratón), sin requisitos
