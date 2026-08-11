@@ -515,9 +515,18 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   pistas/cuaderno y la integración de audio — todo ya implementado y
   probado, incluido un recorrido real sobre el propio ejecutable Windows
   (tarea 7). Se corrigieron esas casillas con su evidencia
-  correspondiente, sin marcar como completos la personalización final ni
-  el arte (pendientes genuinos, sin decisión de exclusión documentada) ni
-  la duración medida (explícitamente no cronometrada).
+  correspondiente. Una tercera revisión completó la auditoría contra
+  código/tests reales para las Fases 2-5, las Puertas de calidad, las
+  decisiones de facto de §11 y el checklist de §12 de
+  `V1_PRODUCTION_PLAN.md`, marcando como completados los entregables,
+  criterios y pruebas con evidencia directa (mapas, validadores, tests
+  unitarios y E2E, `npm run check` en verde), y reclasificó la
+  personalización final: `EPILOGUE_SPEC.md` la documenta explícitamente
+  como trabajo futuro fuera del alcance del epílogo aprobado, y el
+  responsable del producto confirmó que `v1.0.0` se entrega sin ella —
+  deja de ser un requisito bloqueante (sin marcarse como implementada).
+  El arte y la duración medida del recorrido completo siguen
+  genuinamente pendientes, sin decisión de exclusión ni cifra inventada.
 
 ### Corregido
 

@@ -136,56 +136,72 @@ versión concreta.
 
 ## Pendiente real para `v1.0.0`
 
-**Revisión posterior (2026-08-11, misma tarea)**: una primera versión de
-esta sección se derivó demasiado directamente de casillas de
-`V1_PRODUCTION_PLAN.md` sin contrastarlas contra el código, los tests y
-la documentación real. Una segunda auditoría, cruzando `src/`, `tests/`
-(unitarios y `tests/e2e/game.spec.js`), `EPILOGUE_SPEC.md`,
-`EPILOGUE_MANUAL_VALIDATION.md`, `CODEX_HANDOFF.md` y `CHANGELOG.md`,
-encontró que varias de esas casillas estaban desactualizadas — el
-contenido correspondiente ya estaba implementado y probado, incluida su
-validación real dentro del propio ejecutable Windows (tarea 7). Esas
-casillas ya se corrigieron en `V1_PRODUCTION_PLAN.md` (§2, §3, §5). Esta
-lista refleja el resultado de esa auditoría, no la primera versión.
+**Historial de esta sección**: una primera versión se derivó demasiado
+directamente de casillas de `V1_PRODUCTION_PLAN.md` sin contrastarlas
+contra el código/tests reales. Una segunda auditoría corrigió eso
+(Biblioteca, epílogo, cuaderno/pistas, audio). Una tercera revisión
+(2026-08-11, misma tarea) encontró que la personalización final estaba
+mal clasificada como bloqueante: `EPILOGUE_SPEC.md` establece
+explícitamente que es "trabajo futuro fuera de alcance" del epílogo
+aprobado, y la decisión vigente del responsable del producto es cerrar
+`v1.0.0` sin ella, dejándola para una versión posterior — no es un
+requisito de esta versión. Esa misma revisión también completó la
+auditoría de `V1_PRODUCTION_PLAN.md` contra código/tests para las Fases
+2-5, las Puertas de calidad, las decisiones de facto de §11 y el
+checklist de §12. Esta es la versión vigente de la lista.
 
-### 1. Requisitos funcionales/QA todavía realmente abiertos
+### A. Bloqueantes realmente abiertos
 
-- **Personalización final** (nombres reales, fecha, mascota, dedicatoria
-  del cierre). Genuinamente pendiente: los datos y marcadores ya están
-  aprobados y documentados en `CODEX_HANDOFF.md` → "Personalización
-  futura", pero la implementación (Fase 4 de `V1_PRODUCTION_PLAN.md`)
-  todavía no se ha ejecutado. No es una casilla obsoleta ni existe
-  ninguna decisión de excluirla del alcance de `v1.0.0`.
 - **Arte**: no se encontró ningún asset gráfico concreto identificado
   como pendiente de sustitución (el juego renderiza todo
   procedimentalmente sobre `<canvas>`, sin sprites ni imágenes en
   `src/assets`), pero tampoco existe una decisión documentada que acepte
-  el estilo procedimental actual como definitivo — el "pase visual
-  coherente" previsto en la Fase 4 de `V1_PRODUCTION_PLAN.md` no se ha
-  ejecutado todavía. Se mantiene como pendiente sin bloqueo identificado
-  concreto.
+  el estilo procedimental actual como definitivo para `v1.0.0` — el
+  "pase visual coherente" previsto en la Fase 4 de `V1_PRODUCTION_PLAN.md`
+  no se ha ejecutado todavía. No hay bloqueo visual concreto
+  identificado; el pulido visual adicional queda como pendiente
+  genérico, no como un defecto específico.
 - **Duración medida**: la duración real de un recorrido completo (45-90
   minutos objetivo) sigue sin cronometrarse — confirmado explícitamente
-  en la tarea 7 (`WINDOWS_PORTABLE_FULL_QA.md`).
-- **Matriz de pruebas del recorrido completo, corrección de defectos
-  bloqueantes/graves, y revisión de accesibilidad básica** (§6 Fase 5 de
-  `V1_PRODUCTION_PLAN.md`, más allá del empaquetado Windows) — sin
-  evidencia de haberse ejecutado como tales; la accesibilidad básica en
-  particular no tiene ninguna revisión dedicada registrada.
-- **Migraciones y fixtures definitivos de guardado, y build web
-  "candidato"** identificado y congelado formalmente para entrega — el
-  build web funciona y pasa CI de forma continua, pero no se ha
-  designado ningún build concreto como "candidato" a entregar.
+  en la tarea 7 (`WINDOWS_PORTABLE_FULL_QA.md`). No se ha decidido si
+  esto deja de ser bloqueante; sigue como requisito/decisión pendiente
+  hasta que el responsable del producto la mida o acepte explícitamente
+  el riesgo de no medirla.
+- **Corrección de defectos bloqueantes/graves y revisión de accesibilidad
+  básica** (§6 Fase 5 de `V1_PRODUCTION_PLAN.md`, más allá del
+  empaquetado Windows): no existe ningún registro de defectos conocidos
+  en el repositorio, por lo que "cero defectos" no puede confirmarse
+  positivamente; la navegación completa por teclado ya está confirmada
+  (todos los puzles y el epílogo se resuelven solo con teclado), pero la
+  revisión de accesibilidad básica en sentido más amplio (foco visible,
+  legibilidad) no tiene ninguna revisión dedicada registrada.
+- **Matriz de pruebas del recorrido completo, migraciones/fixtures
+  definitivos de guardado, y build web "candidato"** identificado y
+  congelado formalmente para entrega — no existen como artefactos
+  formales, aunque la cobertura funcional real (tests unitarios + E2E) sí
+  existe y está descrita en `V1_PRODUCTION_PLAN.md` §6 Fase 5.
 
-### 2. Decisiones/riesgos aceptados, no bloqueantes
+### B. Decisiones/riesgos aceptados, no bloqueantes
 
 - **Compatibilidad/sustitución entre dos builds distintas (A→B→A)**: no
   ejecutada, riesgo residual aceptado explícitamente por el responsable
   del producto para `v1.0.0` (ver arriba). Puede reevaluarse en el
-  futuro; no bloquea el cierre de la Fase 5 de empaquetado Windows ni
-  de `v1.0.0`.
+  futuro; no bloquea el cierre de la Fase 5 de empaquetado Windows ni de
+  `v1.0.0`.
 
-### 3. Acciones de release todavía no realizadas (fuera de alcance de esta tarea y de esta PR)
+### C. Trabajo fuera de `v1.0.0` (correctamente recortado, no bloqueante)
+
+- **Personalización final** (nombres reales, fecha, mascota, dedicatoria
+  del cierre): decisión vigente del responsable del producto — `v1.0.0`
+  se entrega sin ella; queda para una versión posterior. Los datos
+  aprobados y los marcadores previstos ya están documentados en
+  `CODEX_HANDOFF.md` → "Personalización futura" para cuando se retome. No
+  implementada, y **no se implementa en esta tarea**.
+- **Max** (el compañero canino) y cualquier otro elemento de
+  "Orden de trabajo posterior" de `CODEX_HANDOFF.md` posterior al
+  epílogo: mismo tratamiento — fuera de alcance de `v1.0.0`.
+
+### D. Acciones de release todavía no realizadas (fuera de alcance de esta tarea y de esta PR)
 
 - Fusión de `feat/v1-production-scope` en `main`.
 - Cambio de versión a `1.0.0` en `package.json`.
@@ -193,26 +209,42 @@ lista refleja el resultado de esa auditoría, no la primera versión.
 - Creación de cualquier GitHub Release.
 - Congelación de contenido (Fase 6), margen de contingencia (Fase 7) y
   entrega final (Fase 8) de `V1_PRODUCTION_PLAN.md`.
+- Artefactos finales identificados/congelados y checklist de entrega de
+  `V1_PRODUCTION_PLAN.md` §12 "Artefactos y entrega" (deliberadamente sin
+  tocar en esta auditoría: depende de una candidata final congelada que
+  todavía no existe).
 
-### Contenido/mecánica que la auditoría confirmó como YA COMPLETADO (no listado como pendiente — corrección respecto a la primera versión de esta sección)
+### Contenido/mecánica que la auditoría confirmó como YA COMPLETADO (no listado como pendiente)
 
 - **Biblioteca del Margen**: mapa completo, segundo puzle resuelto de
   principio a fin en `tests/e2e/game.spec.js`, y recorrido real sobre el
   ejecutable Windows (tarea 7). Sin funcionalidad pendiente detectada.
-- **Epílogo**: las 16 tareas de `EPILOGUE_SPEC.md` §18 están
-  implementadas (código real, test E2E completo,
-  `EPILOGUE_MANUAL_VALIDATION.md`, y recorrido real en el ejecutable
-  Windows). Solo la dedicatoria/textos con datos reales de la pareja
-  siguen pendientes — eso se rastrea en "Personalización final", no como
-  parte del epílogo en sí.
+- **Archivo compacto y tercer puzle**: mapa validado como compacto,
+  validador/estado separados del renderizado, pistas consultables
+  libremente antes del veredicto final, resuelto con teclado en
+  `tests/e2e/game.spec.js`.
+- **Epílogo** (mecánica/implementación): las 16 tareas de
+  `EPILOGUE_SPEC.md` §18 están implementadas (código real, test E2E
+  completo, `EPILOGUE_MANUAL_VALIDATION.md`, y recorrido real en el
+  ejecutable Windows). Solo la dedicatoria/textos con datos reales de la
+  pareja quedan fuera de `v1.0.0` — ver categoría C.
 - **Cuaderno y conexión de pistas**: las cuatro entradas de cuaderno del
   recorrido obligatorio existen en el código real, se disparan al
   resolver cada puzle/el epílogo, y se deduplican por `id` — verificado
-  en `tests/state/GameState.test.js`.
+  en `tests/state/GameState.test.js`. La arquitectura de pistas (§11 de
+  `V1_PRODUCTION_PLAN.md`) tiene una decisión de facto consolidada por
+  esta misma implementación.
 - **Audio del epílogo**: integrado, validado en funcionamiento y offline
   (tarea 7). El recurso actual está etiquetado como "provisional y
   sustituible" en su propio nombre/README, pero no existe ninguna
   decisión que exija reemplazarlo antes de `v1.0.0`.
+- **Formato de mapas (Biblioteca y Archivo)**: decisión de facto
+  consolidada — datos JavaScript planos, patrón 100% consistente entre
+  las cuatro localizaciones.
+- **Pipeline de pruebas de interfaz**: patrón de facto en producción
+  (unitarias para lógica/estado, Playwright para flujos jugables
+  completos, manual para verificación visual), documentado en
+  `CLAUDE.md` → "Estrategia de pruebas".
 
 Nada de lo anterior se implementó ni se modificó en esta tarea — es
 exclusivamente el resultado de auditar evidencia ya existente en el

@@ -16,11 +16,14 @@ sobre cualquier mejora opcional.
 
 ## 1. Objetivo de `v1.0.0`
 
-Entregar una aventura narrativa completa, estable y personalizada que pueda
-recorrerse de principio a fin en 45 a 90 minutos. La experiencia debe comenzar
-en la Plaza del Axioma, continuar por el Paseo de los Siete Puentes, la
-Biblioteca del Margen y un Archivo compacto, resolver tres puzles principales
-y concluir con un epílogo.
+Entregar una aventura narrativa completa y estable que pueda recorrerse
+de principio a fin en 45 a 90 minutos. La experiencia debe comenzar en la
+Plaza del Axioma, continuar por el Paseo de los Siete Puentes, la
+Biblioteca del Margen y un Archivo compacto, resolver tres puzles
+principales y concluir con un epílogo. La personalización final (nombres
+reales, fecha, mascota, dedicatoria con datos privados de la pareja)
+queda fuera del alcance bloqueante de `v1.0.0` por decisión vigente del
+responsable del producto — ver §2 y §4.
 
 La entrega debe conservar una versión web funcional y proporcionar un
 ejecutable para Windows probado en una instalación limpia. La tecnología de
@@ -182,7 +185,8 @@ etiquetas Git al comenzar cada fase.
   (`EPILOGUE_MANUAL_VALIDATION.md`), y un recorrido real adicional sobre
   el ejecutable Windows (tarea 7). La dedicatoria/textos siguen siendo
   genéricos, sin nombres ni fechas reales — eso se rastrea por separado
-  en "Aplicar la personalización final", más abajo, todavía pendiente.
+  en "Aplicar la personalización final", más abajo: no implementada, y ya
+  no bloqueante de `v1.0.0` (ver esa entrada para el detalle).
 - [ ] Sustituir o pulir el arte provisional necesario.
 - [x] Integrar el audio aprobado sin comprometer la estabilidad — la
   pista del epílogo (`epilogue-theme-provisional.wav`) está integrada,
@@ -192,12 +196,18 @@ etiquetas Git al comenzar cada fase.
   ninguna decisión documentada que exija reemplazarla antes de `v1.0.0`
   — si en el futuro se aprueba un recurso definitivo, esta casilla podría
   reabrirse explícitamente.
-- [ ] Aplicar la personalización final — sigue pendiente de forma
-  genuina: `CODEX_HANDOFF.md` → "Personalización futura" ya documenta los
-  datos aprobados (nombres, fecha, mascota) y los marcadores previstos,
-  pero la implementación en sí (Fase 4 de este plan) todavía no se ha
-  ejecutado. No es una casilla obsoleta — no existe ninguna decisión de
-  excluir la personalización del alcance de `v1.0.0`.
+- [ ] Aplicar la personalización final — **fuera del alcance bloqueante
+  de `v1.0.0`, trabajo para una versión posterior.** `EPILOGUE_SPEC.md`
+  establece explícitamente que la personalización de nombres, fechas y
+  mensajes privados es "trabajo futuro explícitamente fuera de alcance"
+  del epílogo aprobado, y que la tarjeta/dedicatoria genérica actual está
+  aprobada para `v1.0.0` sin personalizar. `CODEX_HANDOFF.md` →
+  "Personalización futura" ya documenta los datos aprobados (nombres,
+  fecha, mascota) y los marcadores previstos para cuando se implemente,
+  pero decisión vigente del responsable del producto: `v1.0.0` se cierra
+  primero como candidata estable sin esta personalización; no se
+  introduce antes. **No marcada como implementada** — sigue sin código
+  que la aplique — pero **ya no bloquea el cierre de `v1.0.0`**.
 - [x] Validar el empaquetado para Windows (herramienta ya aprobada:
   Electron + `electron-builder`, ver
   [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)). La
@@ -249,7 +259,9 @@ contrastar código, pruebas, `package.json`, etiquetas Git y este documento.
 - [x] Guardado y carga de todo el progreso obligatorio — ver §5 "Estado y
   guardado" más abajo, ya `[x]` en su totalidad.
 - [x] Epílogo — ver evidencia en §2 más arriba.
-- [ ] Personalización final aprobada — pendiente genuino, ver §2.
+- ~~Personalización final aprobada~~ — **retirada como requisito
+  bloqueante de `v1.0.0`** por decisión vigente del responsable del
+  producto (ver §2 y §4). No implementada; pasa a trabajo posterior.
 - [x] Ejecutable para Windows — tareas 1-8 de
   `WINDOWS_PACKAGING_DECISION.md` completadas, Fase 5 de empaquetado
   Windows cerrada, recorrido completo del contenido actual (incluida la
@@ -302,6 +314,13 @@ No forman parte de `v1.0.0`:
   aprobada (Electron + `electron-builder`, ver
   [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)) sin
   una nueva aprobación explícita.
+- **Personalización final** (nombres reales, fecha, mascota, dedicatoria
+  con datos privados de la pareja) — decisión vigente del responsable del
+  producto (2026-08-11): `v1.0.0` se entrega con la dedicatoria/textos del
+  epílogo genéricos, sin esos datos. Los datos aprobados y los marcadores
+  previstos siguen documentados en `CODEX_HANDOFF.md` → "Personalización
+  futura" para una versión posterior; no se implementan antes de
+  `v1.0.0`.
 
 Las salidas hacia zonas no incluidas pueden permanecer bloqueadas mediante
 una respuesta narrativa breve. No deben convertirse en nuevas áreas
@@ -331,8 +350,11 @@ jugables.
   invariantes de banderas (`epilogueUnlocked ⟹ investigationComplete`,
   etc.) validadas atómicamente en `GameState.restore()`, y flujo idempotente
   confirmado en el test E2E del epílogo completo.
-- [ ] La personalización aprobada está aplicada y revisada.
-- [ ] Una prueba cronometrada completa dura entre 45 y 90 minutos.
+- ~~La personalización aprobada está aplicada y revisada~~ — fuera del
+  alcance bloqueante de `v1.0.0` (ver §2, §4). No implementada; no exigida
+  para esta versión.
+- [ ] Una prueba cronometrada completa dura entre 45 y 90 minutos —
+  todavía sin medir (ver "Duración" en `WINDOWS_PACKAGING_PHASE5_CLOSURE.md`).
 
 ### Estado y guardado
 
@@ -348,20 +370,51 @@ jugables.
 
 ### Calidad y entrega
 
-- [ ] `docker compose run --rm game npm run check` termina con código 0.
-- [ ] El recorrido completo se supera manualmente solo con los controles
-  publicados.
-- [ ] La consola permanece sin errores durante una partida completa.
-- [ ] La versión web funciona desde el build estático.
-- [ ] El ejecutable funciona en una instalación limpia de Windows.
-- [ ] La versión web sigue funcionando después de introducir el empaquetado.
-- [ ] No quedan defectos bloqueantes ni defectos graves conocidos.
+- [x] `docker compose run --rm game npm run check` termina con código 0 —
+  cierto en el momento de esta auditoría (546/546 tests, build OK); es una
+  comprobación puntual, no un estado permanentemente garantizado hacia el
+  futuro.
+- [x] El recorrido completo se supera manualmente solo con los controles
+  publicados — recorrido real con teclado, sin comandos de desarrollo
+  (tarea 7, `WINDOWS_PORTABLE_FULL_QA.md`).
+- [x] La consola permanece sin errores durante una partida completa — no
+  como observación visual únicamente: `tests/e2e/game.spec.js` usa
+  `collectJavaScriptErrors()` (captura `pageerror`/`console` tipo error)
+  con aserción real `expect(errors).toEqual([])` en 13 tests, cubriendo
+  los tres puzles, el epílogo completo y el guardado/carga en cada
+  localización. El recorrido manual íntegro en un único proceso (tarea 7)
+  no pudo verificar la consola porque las DevTools están deliberadamente
+  bloqueadas en el ejecutable empaquetado — la cobertura real proviene de
+  los tests E2E segmentados, no de una única sesión continua.
+- [x] La versión web funciona desde el build estático — validado de forma
+  continua por `npm run check`.
+- [x] El ejecutable funciona en una instalación limpia de Windows — tareas
+  6 y 7.
+- [x] La versión web sigue funcionando después de introducir el
+  empaquetado — ver `WINDOWS_PACKAGING_DECISION.md` → "Relación entre
+  `npm run build` y el empaquetado".
+- [ ] No quedan defectos bloqueantes ni defectos graves conocidos — no
+  existe ningún registro de defectos en el repositorio (ni una lista, ni
+  un issue tracker), por lo que esta casilla no puede confirmarse
+  positivamente: ausencia de registro no equivale a ausencia de defectos.
 - [ ] Los defectos menores aceptados están registrados con una solución
-  alternativa clara o una justificación de entrega.
-- [ ] La versión candidata estable existe al cerrar el 3 de septiembre.
-- [ ] Del 4 al 9 de septiembre no se incorpora contenido nuevo.
+  alternativa clara o una justificación de entrega — mismo motivo:
+  no existe ese registro todavía.
+- [ ] La versión candidata estable existe al cerrar el 3 de septiembre —
+  fecha futura, todavía no alcanzada.
+- [ ] Del 4 al 9 de septiembre no se incorpora contenido nuevo — fecha
+  futura, todavía no alcanzada.
 
 ## 6. Plan por fases
+
+> Las casillas de esta sección reflejan el estado auditado contra
+> código/tests reales el 2026-08-11 (Fases 2, 3, 4 y 5 en particular; ver
+> `WINDOWS_PACKAGING_PHASE5_CLOSURE.md` para el detalle de esa auditoría).
+> Los textos de riesgos, fechas de calendario y reglas de recorte
+> conservan el plan histórico tal como se aprobó, y no se han
+> reinterpretado retroactivamente. La Fase 1 no se auditó en esta ronda —
+> sus casillas describen decisiones de diseño/planificación previas al
+> código, no estado de implementación.
 
 ### Fase 1 — Infraestructura, diseño cerrado y herramientas
 
@@ -434,37 +487,65 @@ epílogo, la web ni la entrega para Windows.
 
 #### Entregables
 
-- [ ] Mapa funcional de la Biblioteca del Margen.
-- [ ] Entrada desde la Plaza y retorno controlado.
-- [ ] Colisiones, objetos e interacciones obligatorias de la Biblioteca.
-- [ ] Secuencia narrativa que conduce desde la pista de P2 al segundo puzle.
-- [ ] Segundo puzle implementado según la decisión cerrada en la fase 1.
-- [ ] Validador y estado del segundo puzle separados de su renderizado.
-- [ ] Pistas y entradas de cuaderno asociadas.
-- [ ] Progreso y guardado ampliados con migración y pruebas.
-- [ ] Salida narrativa hacia el Archivo compacto.
+- [x] Mapa funcional de la Biblioteca del Margen — `src/content/worldMaps.js`.
+- [x] Entrada desde la Plaza y retorno controlado — matiz: la entrada real
+  es desde el Paseo de los Siete Puentes (`seven-bridges-to-library` /
+  `library-to-seven-bridges`, ambas con `targetPlayerState`); la Plaza
+  mantiene únicamente un `blocked-exit` marcador hacia la Biblioteca, no
+  una salida activa directa.
+- [x] Colisiones, objetos e interacciones obligatorias de la Biblioteca —
+  `solidRegions` y el NPC `library-silogio`, disparador del puzle
+  (`WorldScene.js`).
+- [x] Secuencia narrativa que conduce desde la pista de P2 al segundo
+  puzle — interacción con `library-silogio` abre `LibraryCatalogueScene`.
+- [x] Segundo puzle implementado según la decisión cerrada en la fase 1.
+- [x] Validador y estado del segundo puzle separados de su renderizado —
+  `LibraryCatalogueValidator.js`, `LibraryCatalogueState.js`,
+  `LibraryCatalogueData.js`, `LibraryCatalogueHints.js`, independientes
+  de `LibraryCatalogueScene.js`.
+- [x] Pistas y entradas de cuaderno asociadas — entrada
+  `library-catalogue-solution`, pistas vía `LibraryCatalogueHints.js`.
+- [x] Progreso y guardado ampliados con migración y pruebas —
+  `tests/state/GameState.test.js` cubre `libraryCatalogue` en formatos
+  1-4.
+- [x] Salida narrativa hacia el Archivo compacto — `library-to-archive`.
 
 #### Criterios de aceptación
 
-- [ ] Un guardado de la base puede abrirse y continuar hasta la Biblioteca.
-- [ ] El jugador puede entrar, explorar, resolver el segundo puzle, recibir
-  la siguiente pista y salir sin bloqueo.
-- [ ] La solución correcta, los errores y el reinicio producen estados
-  definidos.
-- [ ] Las pistas necesarias están disponibles antes de exigir la solución.
-- [ ] Cargar antes, durante y después del puzle restaura un estado coherente.
-- [ ] El segundo puzle puede completarse con teclado.
-- [ ] La Biblioteca no habilita ninguna zona fuera de alcance.
+- [x] Un guardado de la base puede abrirse y continuar hasta la Biblioteca
+  — migraciones de formato probadas en `GameState.test.js`.
+- [x] El jugador puede entrar, explorar, resolver el segundo puzle, recibir
+  la siguiente pista y salir sin bloqueo — `tests/e2e/game.spec.js`.
+- [x] La solución correcta, los errores y el reinicio producen estados
+  definidos — `tests/puzzles/LibraryCatalogueState.test.js` cubre la fase
+  `failed` con `failureCode`.
+- [ ] Las pistas necesarias están disponibles antes de exigir la solución
+  — sin evidencia específica localizada para la Biblioteca (a diferencia
+  del Archivo, donde sí se confirmó explícitamente; ver Fase 3).
+- [x] Cargar antes, durante y después del puzle restaura un estado
+  coherente — múltiples tests de restauración en `GameState.test.js`.
+- [x] El segundo puzle puede completarse con teclado — `game.spec.js`
+  resuelve el puzle exclusivamente con teclado.
+- [ ] La Biblioteca no habilita ninguna zona fuera de alcance — sin
+  evidencia específica auditada de esta comprobación en particular.
 
 #### Pruebas necesarias
 
-- [ ] Pruebas unitarias de reglas, validador y estados del segundo puzle.
-- [ ] Pruebas de mapa: identificadores únicos, colisiones y salidas válidas.
-- [ ] Pruebas de progresión desde `libraryObjectiveUnlocked` hasta la pista
-  del Archivo.
-- [ ] Pruebas de serialización, migración y restauración del nuevo estado.
-- [ ] Prueba manual completa Plaza → Paseo → Biblioteca.
-- [ ] `docker compose run --rm game npm run check`.
+- [x] Pruebas unitarias de reglas, validador y estados del segundo puzle —
+  `tests/puzzles/LibraryCatalogueData.test.js`,
+  `LibraryCatalogueValidator.test.js`, `LibraryCatalogueState.test.js`,
+  `LibraryCataloguePuzzle.test.js`, `tests/scenes/LibraryCatalogueScene.test.js`.
+- [x] Pruebas de mapa: identificadores únicos, colisiones y salidas válidas
+  — `tests/content/WorldMaps.test.js` (genérico para todos los mapas,
+  incluida la Biblioteca).
+- [x] Pruebas de progresión desde `libraryObjectiveUnlocked` hasta la pista
+  del Archivo — `tests/progression/LibraryCatalogueProgression.test.js`.
+- [x] Pruebas de serialización, migración y restauración del nuevo estado
+  — `GameState.test.js`.
+- [x] Prueba manual completa Plaza → Paseo → Biblioteca — cubierta dentro
+  del recorrido real de la tarea 7 (`WINDOWS_PORTABLE_FULL_QA.md`).
+- [x] `docker compose run --rm game npm run check` — verde en el momento
+  de esta auditoría.
 
 #### Riesgos
 
@@ -486,38 +567,74 @@ epílogo, la web ni la entrega para Windows.
 
 #### Entregables
 
-- [ ] Mapa compacto y funcional del Archivo.
-- [ ] Acceso desde la Biblioteca y retorno si lo requiere el flujo aprobado.
-- [ ] Secuencia de investigación final.
-- [ ] Tercer puzle implementado según la decisión cerrada en la fase 1.
-- [ ] Validador y estado del tercer puzle separados del renderizado.
-- [ ] Integración completa de pistas y cuaderno.
-- [ ] Epílogo funcional activado por la resolución del tercer puzle.
-- [ ] Guardado y carga antes, durante y después del final.
-- [ ] Primer recorrido funcional completo de inicio a epílogo.
+- [x] Mapa compacto y funcional del Archivo — `worldMaps.js`, validado
+  como compacto (`tests/content/WorldMaps.test.js`, límites de tamaño).
+- [x] Acceso desde la Biblioteca y retorno si lo requiere el flujo
+  aprobado — `library-to-archive` / `archive-to-library`.
+- [x] Secuencia de investigación final — clasificación de seis
+  afirmaciones con pistas consultables (`ArchiveCriteriaScene.js`).
+- [x] Tercer puzle implementado según la decisión cerrada en la fase 1.
+- [x] Validador y estado del tercer puzle separados del renderizado —
+  `ArchiveCriteriaValidator.js`, `ArchiveCriteriaState.js`,
+  `ArchiveCriteriaData.js`, `ArchiveCriteriaHints.js`.
+- [x] Integración completa de pistas y cuaderno — entrada
+  `archive-final-evidence`, 3 niveles de pista consultables libremente
+  durante la fase `classifying` (`ArchiveCriteriaScene.js`).
+- [x] Epílogo funcional activado por la resolución del tercer puzle —
+  `epilogueUnlocked` se activa al resolver el Archivo.
+- [x] Guardado y carga antes, durante y después del final —
+  `GameState.test.js` cubre `archiveCriteria` en sus cuatro fases y el
+  estado terminal del epílogo (`giftCodeSolved`/`epilogueCompleted`
+  restaurados de forma estable).
+- [x] Primer recorrido funcional completo de inicio a epílogo —
+  ejecutado realmente en la tarea 7 (`WINDOWS_PORTABLE_FULL_QA.md`); no
+  existe un único test E2E automatizado que recorra los tres puzles
+  seguidos desde una partida nueva real (cada test E2E siembra el estado
+  de la etapa que prueba), pero el recorrido manual real sí cubrió la
+  secuencia completa sin atajos.
 
 #### Criterios de aceptación
 
-- [ ] El recorrido completo no necesita accesos de desarrollo.
-- [ ] El Archivo es deliberadamente compacto y solo contiene elementos
-  necesarios para la conclusión.
-- [ ] El tercer puzle es deducible, reiniciable y resoluble con teclado.
-- [ ] Resolverlo actualiza una sola vez el progreso y abre el epílogo.
-- [ ] Cargar una partida terminada conserva el estado final.
-- [ ] El epílogo cierra la historia sin introducir nuevas localizaciones ni
-  un metapuzle largo.
-- [ ] Una medición preliminar del recorrido queda dentro o cerca del intervalo
-  de 45 a 90 minutos.
+- [x] El recorrido completo no necesita accesos de desarrollo — confirmado
+  en el mismo recorrido de la tarea 7 (sin consola ni `localStorage`).
+- [x] El Archivo es deliberadamente compacto y solo contiene elementos
+  necesarios para la conclusión — límites de tamaño verificados en tests.
+- [x] El tercer puzle es deducible, reiniciable y resoluble con teclado —
+  `tests/e2e/game.spec.js` lo resuelve íntegramente con teclado; pistas
+  consultables libremente antes de confirmar (`ArchiveCriteriaScene.js`).
+- [x] Resolverlo actualiza una sola vez el progreso y abre el epílogo —
+  `tests/progression/ArchiveCriteriaProgression.test.js` cubre
+  idempotencia.
+- [x] Cargar una partida terminada conserva el estado final —
+  `GameState.test.js` verifica que restaurar dos veces con
+  `giftCodeSolved=true` produce el mismo resultado.
+- [x] El epílogo cierra la historia sin introducir nuevas localizaciones ni
+  un metapuzle largo — hecho de diseño confirmado por el alcance
+  implementado (sin nuevas localizaciones).
+- [ ] Una medición preliminar del recorrido queda dentro o cerca del
+  intervalo de 45 a 90 minutos — **no medida**. La tarea 7 registró
+  explícitamente que la duración no se cronometró; no se inventa ninguna
+  cifra.
 
 #### Pruebas necesarias
 
-- [ ] Pruebas unitarias de reglas, validador y estados del tercer puzle.
-- [ ] Pruebas de mapa y transiciones de Biblioteca a Archivo.
-- [ ] Pruebas de progresión desde el segundo puzle hasta el epílogo.
-- [ ] Pruebas de idempotencia del final y de entradas de cuaderno.
-- [ ] Pruebas de guardado en todos los estados nuevos.
-- [ ] Prueba manual completa cronometrada.
-- [ ] `docker compose run --rm game npm run check`.
+- [x] Pruebas unitarias de reglas, validador y estados del tercer puzle —
+  suite dedicada bajo `src/puzzles/archive-criteria/` con sus tests.
+- [x] Pruebas de mapa y transiciones de Biblioteca a Archivo —
+  `WorldMaps.test.js`.
+- [x] Pruebas de progresión desde el segundo puzle hasta el epílogo —
+  `ArchiveCriteriaProgression.test.js`.
+- [x] Pruebas de idempotencia del final y de entradas de cuaderno —
+  `ArchiveCriteriaProgression.test.js` (varios tests dedicados),
+  reforzado por el test E2E del epílogo completo.
+- [x] Pruebas de guardado en todos los estados nuevos —
+  `GameState.test.js`.
+- [ ] Prueba manual completa cronometrada — el recorrido manual completo
+  sí se ejecutó (tarea 7), pero **sin cronometrar**; esta casilla exige
+  específicamente la medición de tiempo, que no existe. No se marca `[x]`
+  para no confundir "recorrido realizado" con "recorrido medido".
+- [x] `docker compose run --rm game npm run check` — verde en el momento
+  de esta auditoría.
 
 #### Riesgos
 
@@ -579,14 +696,22 @@ implementa y valida de forma independiente con el flujo completo de
 
 #### Entregables
 
-- [ ] Pase visual coherente de las cuatro localizaciones.
+- [ ] Pase visual coherente de las cuatro localizaciones — sin ejecutar
+  todavía; no hay evidencia de una revisión visual dedicada (el estilo
+  actual es 100% procedimental, sin assets de imagen).
 - [ ] Recursos definitivos o provisionales aceptables para personajes,
-  objetos y puzles obligatorios.
-- [ ] Audio aprobado integrado de forma acotada.
+  objetos y puzles obligatorios — sin decisión documentada que acepte el
+  estilo procedimental actual como definitivo ni identifique un asset
+  concreto pendiente (ver `WINDOWS_PACKAGING_PHASE5_CLOSURE.md`).
+- [x] Audio aprobado integrado de forma acotada — pista del epílogo
+  integrada y validada, incluido su funcionamiento offline (tarea 7).
 - [ ] Revisión completa de textos, nombres, objetivos y pistas.
-- [ ] Personalización aprobada aplicada sin incluir datos privados en lugares
-  no previstos.
-- [ ] Recursos fuente editables conservados y exportaciones optimizadas.
+- ~~Personalización aprobada aplicada sin incluir datos privados en
+  lugares no previstos~~ — fuera del alcance bloqueante de `v1.0.0` (ver
+  §2, §4); no implementada, no exigida para esta versión.
+- [ ] Recursos fuente editables conservados y exportaciones optimizadas —
+  no aplica de la misma forma al no existir assets de imagen fuente;
+  sin auditar formalmente.
 - [ ] Recorrido completo con presentación cercana a entrega.
 
 #### Criterios de aceptación
@@ -595,7 +720,8 @@ implementa y valida de forma independiente con el flujo completo de
 - [ ] Ningún recurso tiene licencia o procedencia dudosa.
 - [ ] No se han añadido binarios grandes sin autorización.
 - [ ] Textos y pistas no se contradicen y caben en la interfaz.
-- [ ] La personalización no rompe el tono ni revela datos no aprobados.
+- No aplica para `v1.0.0`: la personalización queda fuera de alcance (ver
+  §2, §4) — no hay personalización que revise por tono ni por datos.
 - [ ] La ausencia o fallo de audio no bloquea el recorrido.
 - [ ] El rendimiento y el escalado pixel-perfect se mantienen.
 
@@ -632,45 +758,84 @@ estable. No se recortan pistas necesarias ni legibilidad.
 
 #### Entregables
 
-- [ ] Matriz de pruebas del recorrido completo.
-- [ ] Corrección de defectos bloqueantes y graves.
-- [ ] Revisión de accesibilidad básica y navegación por teclado.
-- [ ] Migraciones y fixtures definitivos de guardado.
-- [ ] Build web candidato.
+- [ ] Matriz de pruebas del recorrido completo — no existe un documento
+  formal de matriz de pruebas; la cobertura real está distribuida en
+  `tests/e2e/game.spec.js` y las evidencias de tareas 6-7.
+- [ ] Corrección de defectos bloqueantes y graves — no existe ningún
+  registro de defectos que auditar (ni lista ni issue tracker); no se
+  puede confirmar ni negar mediante evidencia documental.
+- [ ] Revisión de accesibilidad básica y navegación por teclado — matiz:
+  la navegación/interacción completa por teclado, sin mouse, está
+  ampliamente confirmada (todos los puzles y el epílogo se resuelven solo
+  con teclado en `tests/e2e/game.spec.js`); la revisión de accesibilidad
+  básica en sentido más amplio (foco visible, legibilidad, lectores de
+  pantalla) no tiene ninguna revisión dedicada registrada.
+- [ ] Migraciones y fixtures definitivos de guardado — las migraciones
+  están implementadas y probadas (formatos 1-4), pero no existe un
+  conjunto de fixtures formalmente "definitivo" y congelado.
+- [ ] Build web candidato — el build web funciona y pasa CI de forma
+  continua, pero no se ha designado ningún build concreto como
+  "candidato" a entregar.
 - [x] Empaquetado candidato para Windows con la herramienta aprobada —
   ver [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md)
   (tareas 1-8, Fase 5 de empaquetado Windows cerrada).
-- [ ] Instrucciones mínimas de ejecución y controles.
+- [ ] Instrucciones mínimas de ejecución y controles — existen para el
+  portable Windows (`WINDOWS_PORTABLE_GUIDE.md`); no se ha auditado un
+  documento equivalente general de controles para la versión web.
 - [x] Informe de prueba en instalación limpia — ver
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
-- [ ] Versión candidata estable disponible al cerrar el 3 de septiembre.
+- [ ] Versión candidata estable disponible al cerrar el 3 de septiembre —
+  fecha futura, todavía no alcanzada.
 
 #### Criterios de aceptación
 
-- [ ] Cero defectos bloqueantes o graves conocidos.
-- [ ] Todos los controles obligatorios funcionan con teclado.
-- [ ] Texto, prompts y estados de foco son legibles.
-- [ ] Los guardados de referencia se restauran correctamente.
-- [ ] Guardar y cargar funciona en las cuatro localizaciones y tres puzles.
-- [ ] El build web y el ejecutable recorren el juego completo.
+- [ ] Cero defectos bloqueantes o graves conocidos — sin registro que
+  auditar (ver más arriba).
+- [x] Todos los controles obligatorios funcionan con teclado — los tres
+  puzles y el epílogo se resuelven íntegramente con teclado en
+  `tests/e2e/game.spec.js`.
+- [ ] Texto, prompts y estados de foco son legibles — sin revisión
+  dedicada registrada.
+- [x] Los guardados de referencia se restauran correctamente —
+  `tests/state/GameState.test.js` cubre formatos 1-4 con múltiples
+  fixtures.
+- [x] Guardar y cargar funciona en las cuatro localizaciones y tres
+  puzles — `tests/e2e/game.spec.js` guarda/carga en cada localización.
+- [x] El build web y el ejecutable recorren el juego completo — cobertura
+  E2E segmentada para la web, recorrido real completo para el ejecutable
+  (tarea 7).
 - [x] El ejecutable inicia en una instalación limpia de Windows — ver
   [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [x] El empaquetado no rompe ni sustituye la versión web — `builds/browser`
   servido sin Electron sigue siendo idéntico y funcional (ver
   [`WINDOWS_PACKAGING_DECISION.md`](WINDOWS_PACKAGING_DECISION.md) →
   "Relación entre `npm run build` y el empaquetado").
-- [ ] La consola no muestra errores durante la prueba completa.
-- [ ] `npm run check` pasa mediante Docker.
+- [x] La consola no muestra errores durante la prueba completa — mismo
+  matiz que en §5 "Calidad y entrega": evidencia real vía
+  `collectJavaScriptErrors()` en 13 tests E2E, no una única sesión
+  continua (las DevTools están bloqueadas en el ejecutable empaquetado).
+- [x] `npm run check` pasa mediante Docker — verde en el momento de esta
+  auditoría.
 
 #### Pruebas necesarias
 
-- [ ] Suite automatizada completa y build con
-  `docker compose run --rm game npm run check`.
-- [ ] Prueba manual de nueva partida a epílogo.
-- [ ] Prueba de carga desde fixtures y desde partidas creadas en la candidata.
-- [ ] Prueba de interrupción y reanudación en cada puzle.
-- [ ] Prueba de rutas de error y reinicio.
-- [ ] Prueba web desde `builds/browser`.
+- [x] Suite automatizada completa y build con
+  `docker compose run --rm game npm run check` — verde en el momento de
+  esta auditoría.
+- [x] Prueba manual de nueva partida a epílogo — tarea 7.
+- [x] Prueba de carga desde fixtures y desde partidas creadas en la
+  candidata — `GameState.test.js` (fixtures de formato) y
+  `tests/e2e/game.spec.js` (ciclo real guardar con K → recargar → cargar
+  con L).
+- [x] Prueba de interrupción y reanudación en cada puzle — tests
+  dedicados de restauración de intento incompleto para los tres puzles
+  (`failed` en el catálogo, `traversing` en P2, `classifying` en el
+  Archivo).
+- [x] Prueba de rutas de error y reinicio — `GameState.test.js` cubre
+  guardados inválidos/incompatibles con una tabla de variantes, sin
+  excepciones sin capturar.
+- [x] Prueba web desde `builds/browser` — validada de forma continua por
+  `npm run check`.
 - [x] Prueba del ejecutable en Windows — ver
   [`WINDOWS_PORTABLE_FULL_QA.md`](WINDOWS_PORTABLE_FULL_QA.md) (recorrido
   completo, offline, audio, assets) y
@@ -878,7 +1043,11 @@ claridad, dificultad y coste de integración.
 
 ## 9. Puertas de calidad
 
-Ninguna fase se considera cerrada sin las puertas que le correspondan:
+Ninguna fase se considera cerrada sin las puertas que le correspondan.
+Las puertas A y B son checklists reutilizables que se aplican a cada
+cambio/integración individual, no un estado global de una sola vez — sus
+casillas se mantienen sin marcar como plantilla. La puerta C sí describe
+un estado agregado del proyecto hasta ahora, auditado más abajo.
 
 ### Puerta A — Cambio local
 
@@ -897,14 +1066,23 @@ Ninguna fase se considera cerrada sin las puertas que le correspondan:
 
 ### Puerta C — Candidata estable
 
-- [ ] Suite automatizada completa superada.
-- [ ] Prueba manual completa de nueva partida a epílogo.
-- [ ] Consola sin errores durante el recorrido completo.
-- [ ] Compatibilidad de guardados verificada con fixtures.
-- [ ] Duración medida entre 45 y 90 minutos.
-- [ ] Versión web probada desde el build estático.
-- [ ] Ejecutable probado en Windows.
-- [ ] Instalación limpia probada.
+- [x] Suite automatizada completa superada — 546/546 tests en el momento
+  de esta auditoría.
+- [x] Prueba manual completa de nueva partida a epílogo — tarea 7.
+- [x] Consola sin errores durante el recorrido completo — vía
+  `collectJavaScriptErrors()` en 13 tests E2E (ver matiz en §5 y §6 Fase
+  5 más arriba: no es una única sesión continua, porque las DevTools
+  están bloqueadas en el ejecutable empaquetado).
+- [x] Compatibilidad de guardados verificada con fixtures —
+  `GameState.test.js` usa fixtures de formato 1-4 (como objetos
+  literales, no archivos de fixture en disco separados).
+- [ ] Duración medida entre 45 y 90 minutos — **no medida**. No se
+  inventa ninguna cifra.
+- [x] Versión web probada desde el build estático — validada de forma
+  continua por `npm run check`.
+- [x] Ejecutable probado en Windows — tareas 6 y 7.
+- [x] Instalación limpia probada —
+  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
 - [ ] Cero defectos bloqueantes o graves conocidos.
 
 ### Puerta D — Entrega
@@ -941,11 +1119,20 @@ el 2 de agosto:
 - [x] **Concepto del tercer puzle:** **La pregunta correcta**; mecánica,
   solución, dificultad, estados, pistas, coste y criterios definidos en
   [`ARCHIVE_CRITERIA_SPEC.md`](../puzzles/ARCHIVE_CRITERIA_SPEC.md).
-- [ ] **Arquitectura de pistas:** fuente de datos, desbloqueo, presentación,
-  no duplicación y persistencia.
-- [ ] **Formato de mapas de Biblioteca y Archivo:** continuar con datos
-  JavaScript o adoptar un formato aprobado compatible con la arquitectura.
-  Tiled no se considera obligatorio por estar mencionado en documentación.
+- [x] **Arquitectura de pistas:** decisión de facto ya consolidada por la
+  implementación real: fuente de datos por puzle (`LibraryCatalogueHints.js`,
+  `ArchiveCriteriaHints.js`, más P2 y las pistas del epílogo), desbloqueo
+  progresivo consultable durante el intento, presentación vía el cuaderno,
+  no-duplicación garantizada por `GameState.addNotebookEntry()`
+  (deduplica por `id`), y persistencia probada en `tests/state/GameState.test.js`
+  (incluida migración entre formatos). No existe un documento de decisión
+  independiente redactado antes de implementar, pero el patrón es
+  consistente entre los tres puzles y está en producción.
+- [x] **Formato de mapas de Biblioteca y Archivo:** decisión de facto
+  consolidada — continuar con datos JavaScript planos (`createMap({...})`
+  en `src/content/worldMaps.js`), sin Tiled ni ningún otro formato
+  externo. El patrón es 100% consistente entre las cuatro localizaciones
+  (`axiom-plaza`, `seven-bridges-walk`, `library`, `archive`).
 - [x] **Herramienta de empaquetado Windows:** Electron como runtime de
   escritorio y `electron-builder` como herramienta de empaquetado,
   aprobados el 2026-08-04 por el responsable del producto. Primer
@@ -971,11 +1158,24 @@ el 2 de agosto:
   completa de empaquetado Windows como cerradas — no marca cerrada la
   Fase 5 completa de este plan (§6, que incluye QA general y
   accesibilidad todavía pendientes), ni que `v1.0.0` esté publicada.
-- [ ] **Pipeline mínimo de pruebas de interfaz:** definir qué flujos se
-  automatizan y cuáles se registran manualmente sin introducir dependencias
-  no aprobadas.
-- [ ] **Estrategia de arte y audio:** paleta, resolución, formatos, recursos
-  fuente, procedencia, volumen mínimo y fecha límite.
+- [x] **Pipeline mínimo de pruebas de interfaz:** patrón de facto en
+  producción y documentado en `CLAUDE.md` → "Estrategia de pruebas":
+  lógica/estado/validadores con pruebas unitarias (`node --test`),
+  flujos completos jugables (los tres puzles, guardado/carga por
+  localización, el epílogo íntegro) con Playwright en
+  `tests/e2e/game.spec.js`, y comprobación manual adicional para cambios
+  visuales/pixel-perfect (`AGENTS.md`). No existe un documento de
+  decisión aparte redactado antes de empezar, pero el mapeo
+  flujo-por-flujo (qué se automatiza vs. qué es manual) es observable y
+  consistente en el código y las pruebas reales.
+- [ ] **Estrategia de arte y audio:** decisión parcial. El audio tiene una
+  decisión de facto documentada (pista provisional/sustituible del
+  epílogo, aceptada para `v1.0.0` sin sustitución obligatoria — ver §2).
+  El arte **no** tiene ninguna decisión equivalente registrada, ni
+  siquiera provisional: no hay paleta/resolución/formato de recursos
+  fuente definidos porque el juego no usa assets de imagen (renderizado
+  procedimental). Esta casilla combinada sigue sin cerrar por la mitad
+  correspondiente al arte.
 
 Una decisión no está cerrada si solo enumera opciones. Debe indicar la opción
 elegida, la razón, su impacto en calendario y el criterio que permitirá
@@ -985,32 +1185,52 @@ validarla.
 
 ### Producto
 
-- [ ] Plaza del Axioma terminada.
-- [ ] Paseo de los Siete Puentes terminado.
-- [ ] Biblioteca del Margen terminada.
-- [ ] Archivo compacto terminado.
-- [ ] P2 terminado e integrado.
-- [ ] Segundo puzle terminado e integrado.
-- [ ] Tercer puzle terminado e integrado.
-- [ ] Cuaderno y pistas completos.
-- [ ] Guardado y carga completos.
-- [ ] Epílogo completo.
-- [ ] Personalización aprobada aplicada.
-- [ ] Duración final entre 45 y 90 minutos.
+Esta subsección refleja existencia y funcionamiento real en el código
+actual (auditado 2026-08-11), no necesariamente el pulido narrativo/visual
+final que se revisará en las Fases 4-7 antes de la entrega del 10 de
+septiembre.
+
+- [x] Plaza del Axioma terminada.
+- [x] Paseo de los Siete Puentes terminado.
+- [x] Biblioteca del Margen terminada.
+- [x] Archivo compacto terminado.
+- [x] P2 terminado e integrado.
+- [x] Segundo puzle terminado e integrado.
+- [x] Tercer puzle terminado e integrado.
+- [x] Cuaderno y pistas completos.
+- [x] Guardado y carga completos.
+- [x] Epílogo completo (mecánica/implementación; ver matiz de
+  personalización más abajo).
+- Personalización aprobada aplicada: **retirada como requisito de
+  `v1.0.0`** (ver §2, §4) — no implementada, fuera de alcance de esta
+  versión, no bloqueante.
+- [ ] Duración final entre 45 y 90 minutos — **no medida**.
 
 ### Validación
 
-- [ ] Tests automatizados superados.
-- [ ] `docker compose run --rm game npm run check` superado.
-- [ ] `git diff --check` sin errores.
-- [ ] Prueba manual completa superada.
-- [ ] Consola sin errores.
-- [ ] Compatibilidad de guardados verificada.
-- [ ] Nueva partida, guardado, carga y partida terminada verificados.
-- [ ] Instalación limpia verificada.
-- [ ] Ejecutable probado en Windows.
-- [ ] Versión web probada desde su build.
-- [ ] Cero defectos bloqueantes o graves abiertos.
+- [x] Tests automatizados superados — 546/546 en el momento de esta
+  auditoría.
+- [x] `docker compose run --rm game npm run check` superado.
+- [x] `git diff --check` sin errores.
+- [x] Prueba manual completa superada — tarea 7.
+- [ ] Consola sin errores — sin marcar aquí deliberadamente: aunque existe
+  evidencia real vía `collectJavaScriptErrors()` en tests E2E segmentados
+  (ver §5, §6 Fase 5, Puerta C), esta casilla de entrega final exige una
+  verificación específica sobre el candidato final concreto, que todavía
+  no existe.
+- [ ] Compatibilidad de guardados verificada — mismo motivo: la
+  verificación existe a nivel de desarrollo (fixtures en
+  `GameState.test.js`), no como comprobación formal sobre un candidato
+  final.
+- [x] Nueva partida, guardado, carga y partida terminada verificados —
+  `tests/e2e/game.spec.js` y tarea 7.
+- [x] Instalación limpia verificada —
+  [`WINDOWS_CLEAN_INSTALL_VALIDATION.md`](WINDOWS_CLEAN_INSTALL_VALIDATION.md).
+- [x] Ejecutable probado en Windows — tareas 6 y 7.
+- [x] Versión web probada desde su build.
+- [ ] Cero defectos bloqueantes o graves abiertos — sin registro de
+  defectos que auditar; no se puede confirmar positivamente sin ese
+  registro.
 
 ### Artefactos y entrega
 

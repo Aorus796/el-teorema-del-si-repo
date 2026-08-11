@@ -137,9 +137,18 @@ La versión `v1.0.0` debe limitarse a:
 - Cuaderno y sistema de pistas.
 - Guardado y carga.
 - Epílogo.
-- Personalización final.
 - Ejecutable para Windows.
 - Duración objetivo total de 45 a 90 minutos.
+
+**Personalización final: retirada del alcance obligatorio de `v1.0.0`**
+(decisión del responsable del producto, 2026-08-11). `docs/production/EPILOGUE_SPEC.md`
+ya documentaba la personalización (nombres, fecha, mascota, dedicatoria
+con datos privados de la pareja) como trabajo futuro explícitamente fuera
+del alcance del epílogo aprobado, con la tarjeta/dedicatoria genérica
+actual aceptada para `v1.0.0` sin personalizar. `v1.0.0` se entrega sin
+ella; los datos aprobados y los marcadores previstos siguen documentados
+en `docs/production/CODEX_HANDOFF.md` → "Personalización futura" para una
+versión posterior. Ver "Fuera de alcance" más abajo.
 
 La tecnología de empaquetado del ejecutable para Windows ya está decidida y
 aprobada: Electron como runtime de escritorio y `electron-builder` como
@@ -176,6 +185,10 @@ No implementes ni planifiques como requisito de `v1.0.0`:
 - Metapuzle largo.
 - Migración a otro motor.
 - Rehacer la arquitectura.
+- Personalización final (nombres reales, fecha, mascota, dedicatoria con
+  datos privados de la pareja) — trabajo futuro documentado en
+  `docs/production/CODEX_HANDOFF.md` → "Personalización futura", no
+  bloqueante de `v1.0.0` (ver "Alcance congelado" más arriba).
 
 Estos elementos solo pueden retomarse con autorización explícita y sin poner
 en riesgo el alcance congelado.
