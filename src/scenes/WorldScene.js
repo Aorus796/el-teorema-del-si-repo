@@ -1,4 +1,10 @@
 import { getWorldMap } from "../content/worldMaps.js";
+import {
+  DEFAULT_NPC_PALETTE,
+  NAMED_NPC_PALETTES,
+  NPC_HEAD,
+  NPC_SILHOUETTE,
+} from "../content/characterPalettes.js";
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
 import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
@@ -942,30 +948,12 @@ function renderObjects(context, camera, objects, state) {
 }
 
 function renderNpc(context, x, y, object) {
-  const palettes = {
-    "mayor-corolaria": {
-      body: "#8e4566",
-      accent: "#d6b65f",
-    },
-    "bride-father": {
-      body: "#486987",
-      accent: "#efe2bf",
-    },
-    "plaza-worker": {
-      body: "#6c8756",
-      accent: "#d9a06f",
-    },
-  };
+  const palette = NAMED_NPC_PALETTES[object.id] ?? DEFAULT_NPC_PALETTE;
 
-  const palette = palettes[object.id] ?? {
-    body: "#6c6387",
-    accent: "#efe2bf",
-  };
-
-  context.fillStyle = "#302637";
+  context.fillStyle = NPC_SILHOUETTE;
   context.fillRect(x + 1, y + 5, 12, 14);
 
-  context.fillStyle = "#d9a06f";
+  context.fillStyle = NPC_HEAD;
   context.fillRect(x + 3, y, 8, 7);
 
   context.fillStyle = palette.body;
