@@ -257,11 +257,11 @@ test("una excepción síncrona de play() queda absorbida y no deja el servicio e
   const service = new AudioService(FakeAudio);
 
   assert.doesNotThrow(() => service.playMusic(OTHER_MUSIC_PATH));
-  assert.equal(service.activeMusicSrc, OTHER_MUSIC_PATH);
+  assert.equal(service.activeMusicSrc, null);
   assert.doesNotThrow(() => service.stopMusic());
 });
 
-test("un fallo al construir el elemento de audio no lanza y dobla como no-op idempotente", () => {
+test("un fallo al construir el elemento de audio no lanza y no deja activeMusicSrc apuntando a una pista fantasma", () => {
   class ThrowingAudioConstructor {
     constructor() {
       throw new Error("no se pudo crear el elemento de audio");
@@ -272,7 +272,7 @@ test("un fallo al construir el elemento de audio no lanza y dobla como no-op ide
 
   assert.doesNotThrow(() => service.playMusic(OTHER_MUSIC_PATH));
   assert.equal(service.activeMusic, null);
-  assert.equal(service.activeMusicSrc, OTHER_MUSIC_PATH);
+  assert.equal(service.activeMusicSrc, null);
 
   assert.doesNotThrow(() => service.playMusic(OTHER_MUSIC_PATH));
 });
@@ -303,6 +303,153 @@ test("un fallo de audio no expone ninguna propiedad relacionada con GameState o 
     "activeMusic",
     "activeMusicSrc",
   ]);
+});
+
+// --- Corrección: una pista que falla no queda registrada como activa ---
+
+test("un fallo síncrono de play() no deja activeMusicSrc apuntando a una pista fantasma", () => {
+  const FakeAudio = createFakeAudioConstructor({
+    playImplementation: () => {
+      throw new Error("play síncrono falló");
+    },
+  });
+  const service = new AudioService(FakeAudio);
+
+  service.playMusic(OTHER_MUSIC_PATH);
+
+  assert.equal(service.activeMusic, null);
+  assert.equal(service.activeMusicSrc, null);
+});
+
+test("tras un fallo síncrono, el mismo src puede reproducirse en un segundo intento", () => {
+  let shouldFail = true;
+  const FakeAudio = createFakeAudioConstructor({
+    playImplementation: () => {
+      if (shouldFail) {
+        throw new Error("play síncrono falló");
+      }
+      return Promise.resolve();
+    },
+  });
+  const service = new AudioService(FakeAudio);
+
+  service.playMusic(OTHER_MUSIC_PATH);
+  assert.equal(service.activeMusicSrc, null);
+
+  shouldFail = false;
+  service.playMusic(OTHER_MUSIC_PATH);
+
+  assert.equal(service.activeMusicSrc, OTHER_MUSIC_PATH);
+  assert.equal(FakeAudio.instances.length, 2);
+  assert.equal(FakeAudio.instances[1].playCalls, 1);
+});
+
+test("un rechazo asíncrono de play() limpia la pista fallida sin dejar unhandled rejection", async () => {
+  let reject;
+  const FakeAudio = createFakeAudioConstructor({
+    playImplementation: () =>
+      new Promise((_resolve, rej) => {
+        reject = rej;
+      }),
+  });
+  const service = new AudioService(FakeAudio);
+
+  service.playMusic(OTHER_MUSIC_PATH);
+  assert.equal(service.activeMusicSrc, OTHER_MUSIC_PATH);
+
+  let unhandled = null;
+  const onUnhandledRejection = (reason) => {
+    unhandled = reason;
+  };
+  process.on("unhandledRejection", onUnhandledRejection);
+
+  reject(new Error("bloqueado por el navegador"));
+  await new Promise((resolve) => setImmediate(resolve));
+  process.off("unhandledRejection", onUnhandledRejection);
+
+  assert.equal(unhandled, null);
+  assert.equal(service.activeMusic, null);
+  assert.equal(service.activeMusicSrc, null);
+});
+
+test("tras un rechazo asíncrono, el mismo src puede reintentarse", async () => {
+  let reject;
+  const FakeAudio = createFakeAudioConstructor({
+    playImplementation: () =>
+      new Promise((_resolve, rej) => {
+        reject = rej;
+      }),
+  });
+  const service = new AudioService(FakeAudio);
+
+  service.playMusic(OTHER_MUSIC_PATH);
+  reject(new Error("bloqueado"));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  service.playMusic(OTHER_MUSIC_PATH);
+
+  assert.equal(service.activeMusicSrc, OTHER_MUSIC_PATH);
+  assert.equal(FakeAudio.instances.length, 2);
+});
+
+test("el rechazo tardío de la pista A no borra la pista B que la sustituyó", async () => {
+  let rejectA;
+  let resolveB;
+  const FakeAudio = createFakeAudioConstructor({
+    playImplementation(instance) {
+      if (instance.src === EPILOGUE_THEME_PATH) {
+        return new Promise((_resolve, rej) => {
+          rejectA = rej;
+        });
+      }
+      return new Promise((resolve) => {
+        resolveB = resolve;
+      });
+    },
+  });
+  const service = new AudioService(FakeAudio);
+
+  service.playMusic(EPILOGUE_THEME_PATH);
+  const elementA = FakeAudio.instances[0];
+
+  service.playMusic(OTHER_MUSIC_PATH);
+  const elementB = FakeAudio.instances[1];
+
+  rejectA(new Error("rechazo tardío de A"));
+  await new Promise((resolve) => setImmediate(resolve));
+  resolveB();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(service.activeMusic, elementB);
+  assert.equal(service.activeMusicSrc, OTHER_MUSIC_PATH);
+});
+
+test("playEpilogueTheme conserva su comportamiento observable tras la corrección de estado fantasma", () => {
+  const FakeAudio = createFakeAudioConstructor();
+  const service = new AudioService(FakeAudio);
+
+  service.playEpilogueTheme();
+  service.playEpilogueTheme();
+
+  assert.equal(FakeAudio.instances.length, 1);
+  assert.equal(FakeAudio.instances[0].playCalls, 1);
+  assert.equal(service.activeMusicSrc, EPILOGUE_THEME_PATH);
+});
+
+test("playSfx sigue siendo independiente incluso cuando la música activa acaba de fallar", () => {
+  const FakeAudio = createFakeAudioConstructor({
+    playImplementation: () => {
+      throw new Error("play síncrono falló");
+    },
+  });
+  const service = new AudioService(FakeAudio);
+
+  service.playMusic(OTHER_MUSIC_PATH);
+  assert.doesNotThrow(() => service.playSfx(SFX_PATH));
+
+  assert.equal(FakeAudio.instances.length, 2);
+  assert.equal(FakeAudio.instances[1].src, SFX_PATH);
+  assert.equal(FakeAudio.instances[1].playCalls, 1);
 });
 
 function createFakeAudioConstructor({ playImplementation } = {}) {

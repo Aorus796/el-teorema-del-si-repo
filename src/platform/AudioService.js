@@ -21,10 +21,17 @@ export class AudioService {
 
   /*
    * Reproduce `src` como la única música principal activa. Si `src` ya
-   * es la música activa, es un no-op (evita reiniciar una pista que ya
-   * suena, incluida tras un fallo de reproducción previo del mismo
-   * recurso, igual que ya hacía playEpilogueTheme()). Si había otra
-   * música activa, se detiene primero mediante stopMusic().
+   * es la música activa (con reproducción en curso), es un no-op. Si
+   * había otra música activa, se detiene primero mediante stopMusic().
+   *
+   * Una pista que no consigue reproducirse -- fallo síncrono al
+   * construir el elemento, `play()` síncrono que lanza, o su Promise
+   * rechazada de forma asíncrona -- nunca queda registrada como música
+   * activa: `activeMusic`/`activeMusicSrc` vuelven a null, permitiendo
+   * reintentar el mismo `src` más adelante. El rechazo asíncrono solo
+   * limpia el estado si el elemento fallido sigue siendo exactamente
+   * `this.activeMusic` en ese momento, para no borrar una pista B que ya
+   * sustituyó a la A cuyo rechazo llega tarde.
    */
   playMusic(src, { loop = false } = {}) {
     if (this.activeMusicSrc === src) {
@@ -33,7 +40,16 @@ export class AudioService {
 
     this.stopMusic();
     this.activeMusicSrc = src;
-    this.activeMusic = this.tryCreateAndPlay(src, { loop });
+    this.activeMusic = this.tryCreateAndPlay(src, { loop }, (element) => {
+      if (this.activeMusic === element) {
+        this.activeMusic = null;
+        this.activeMusicSrc = null;
+      }
+    });
+
+    if (!this.activeMusic) {
+      this.activeMusicSrc = null;
+    }
   }
 
   /*
@@ -77,7 +93,7 @@ export class AudioService {
     this.playMusic(EPILOGUE_THEME_PATH, { loop: false });
   }
 
-  tryCreateAndPlay(src, { loop }) {
+  tryCreateAndPlay(src, { loop }, onAsyncFailure) {
     if (!this.AudioConstructor) {
       return null;
     }
@@ -91,7 +107,11 @@ export class AudioService {
       const playResult = element.play();
 
       if (playResult && typeof playResult.then === "function") {
-        playResult.catch(() => {});
+        playResult.catch(() => {
+          if (onAsyncFailure) {
+            onAsyncFailure(element);
+          }
+        });
       }
 
       return element;
