@@ -971,8 +971,8 @@ function renderNpc(context, x, y, object) {
 
 function renderElena(context, x, y) {
   context.fillStyle = BRIDE_PALETTE.silhouette;
-  context.fillRect(x, y, 14, 16);
-  context.fillRect(x + 1, y + 16, 12, 4);
+  context.fillRect(x + 2, y, 10, 3);
+  context.fillRect(x + 1, y + 3, 12, 17);
 
   context.fillStyle = BRIDE_PALETTE.hair;
   context.fillRect(x + 3, y + 1, 8, 2);

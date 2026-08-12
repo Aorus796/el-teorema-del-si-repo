@@ -14,7 +14,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   procedural existente en `src/content/characterPalettes.js`. Tras la
   revisión visual humana, una segunda iteración añade separación
   torso/piernas, brazos y una segunda zona cromática de ropa (`bodyAccent`)
-  a Gonzalo y Elena, y patas, cola y separación cabeza-cuerpo a Max.
+  a Gonzalo y Elena, y patas, cola y separación cabeza-cuerpo a Max. Dos
+  correcciones focalizadas posteriores reconstruyen el contorno oscuro de
+  fondo de Gonzalo y Elena, que pasa de uno o dos rectángulos grandes a
+  varias piezas estrechas ajustadas al ancho real de cada franja del
+  cuerpo, para que se lea como borde estructural en vez de como un bloque
+  de fondo detrás del personaje; Max no lo necesitaba, al no usar nunca
+  una silueta de fondo equivalente.
 
 ## [1.0.0] - 2026-08-11
 

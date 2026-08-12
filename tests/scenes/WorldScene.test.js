@@ -1095,6 +1095,45 @@ test("render() sin giftCodeSolved (mayor-corolaria, bride-father, plaza-worker) 
   assert.equal(hairRects.length, 0);
 });
 
+test("la silueta de bride-epilogue es un contorno de varias piezas estrechas, no un bloque de fondo grande", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  setup.scene.player.x = 445;
+  setup.scene.player.y = 220;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const silhouetteRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === BRIDE_PALETTE.silhouette,
+  );
+
+  // Incluye 3 rects de los NPC genéricos (1 cada uno) más las piezas
+  // propias de bride-epilogue; por eso se filtran las que le pertenecen
+  // buscando las que no coinciden con el tamaño fijo (12x14) del render
+  // genérico de NPC.
+  const brideSilhouetteRects = silhouetteRects.filter(
+    (rect) => !(rect.width === 12 && rect.height === 14),
+  );
+
+  assert.ok(
+    brideSilhouetteRects.length >= 2,
+    `la silueta de bride-epilogue debe construirse con varias piezas de borde, no un único rectángulo de fondo (encontradas: ${brideSilhouetteRects.length})`,
+  );
+
+  const widths = brideSilhouetteRects.map((rect) => rect.width);
+  assert.ok(
+    Math.min(...widths) < Math.max(...widths),
+    "las piezas de silueta de bride-epilogue deben variar de ancho (más estrechas donde el cuerpo es más estrecho), no ser todas iguales a un único ancho de fondo",
+  );
+});
+
 test("render() repetido con giftCodeSolved sigue mostrando bride-epilogue de forma idéntica", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.investigationComplete = true;
@@ -1174,21 +1213,23 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved mu
   // quedar dentro del radio de interacción de bride-epilogue), así que la
   // cámara satura contra ese borde y dos NPC lejanos (mayor-corolaria y
   // plaza-worker) quedan fuera del viewport. Se comprueba, en su lugar,
-  // que la silueta de bride-epilogue se dibuja de verdad en su posición
-  // real de pantalla, calculada a partir del estado real de la cámara con
-  // el mismo desplazamiento fijo que usa WorldScene.renderNpc.
+  // que bride-epilogue se dibuja de verdad en su posición real de
+  // pantalla, calculada a partir del estado real de la cámara. Se ancla a
+  // la cabeza (BRIDE_PALETTE.head) en vez de a la silueta de fondo,
+  // porque la geometría exacta del contorno es una decisión cosmética que
+  // puede ajustarse en 1px sin que este test deba cambiar.
   const brideScreenX = Math.round(bride.x - scene.camera.x);
   const brideScreenY = Math.round(bride.y - scene.camera.y);
-  const brideSilhouetteVisible = context.fillRects.some(
+  const brideHeadVisible = context.fillRects.some(
     (rect) =>
-      rect.fillStyle === "#302637" &&
-      rect.x === brideScreenX &&
-      rect.y === brideScreenY &&
-      rect.width === 14 &&
-      rect.height === 16,
+      rect.fillStyle === BRIDE_PALETTE.head &&
+      rect.x === brideScreenX + 3 &&
+      rect.y === brideScreenY + 3 &&
+      rect.width === 8 &&
+      rect.height === 6,
   );
 
-  assert.equal(brideSilhouetteVisible, true);
+  assert.equal(brideHeadVisible, true);
 });
 
 test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {
