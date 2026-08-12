@@ -849,7 +849,10 @@ test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
     (rect) => rect.fillStyle === "#302637",
   );
 
-  assert.equal(silhouettes.length, 4);
+  // 3 NPC genéricos (1 rect de silueta cada uno) + bride-epilogue, cuya
+  // silueta está partida en dos piezas (torso/brazos y piernas) desde la
+  // corrección de contorno fino -- ver WorldScene.renderElena.
+  assert.equal(silhouettes.length, 5);
 });
 
 test("render() en axiom-plaza sin giftCodeSolved usa la paleta normal", () => {
@@ -1052,7 +1055,9 @@ test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bri
     (rect) => rect.fillStyle === "#302637",
   );
 
-  assert.equal(silhouettes.length, 4);
+  // Ver nota equivalente más arriba: bride-epilogue aporta 2 rects de
+  // silueta (torso/brazos + piernas), no 1.
+  assert.equal(silhouettes.length, 5);
 });
 
 test("render() con giftCodeSolved añade tres rectángulos con el color de pelo de bride-epilogue", () => {
@@ -1180,7 +1185,7 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved mu
       rect.x === brideScreenX &&
       rect.y === brideScreenY &&
       rect.width === 14 &&
-      rect.height === 21,
+      rect.height === 16,
   );
 
   assert.equal(brideSilhouetteVisible, true);

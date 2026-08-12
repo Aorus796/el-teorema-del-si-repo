@@ -63,7 +63,8 @@ export class Player {
     const screenY = Math.round(this.y - camera.y);
 
     context.fillStyle = PROTAGONIST_PALETTE.silhouette;
-    context.fillRect(screenX - 7, screenY - 14, 14, 22);
+    context.fillRect(screenX - 7, screenY - 14, 14, 16);
+    context.fillRect(screenX - 5, screenY + 2, 10, 6);
 
     context.fillStyle = PROTAGONIST_PALETTE.hair;
     context.fillRect(screenX - 4, screenY - 13, 8, 2);

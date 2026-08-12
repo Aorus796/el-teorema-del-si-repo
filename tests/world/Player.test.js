@@ -22,14 +22,15 @@ test("Player mantiene sus dimensiones y velocidad de colisión por defecto", () 
   assert.equal(player.facing, "down");
 });
 
-test("render() dibuja exactamente la silueta, el pelo, la cabeza, los brazos, el torso y las piernas con PROTAGONIST_PALETTE", () => {
+test("render() dibuja exactamente la silueta partida en dos, el pelo, la cabeza, los brazos, el torso y las piernas con PROTAGONIST_PALETTE", () => {
   const player = new Player({ x: 240, y: 192, facing: "down" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
   const [
-    silhouette,
+    silhouetteUpper,
+    silhouetteLower,
     hairCap,
     head,
     hairSide,
@@ -40,11 +41,18 @@ test("render() dibuja exactamente la silueta, el pelo, la cabeza, los brazos, el
     rightLeg,
   ] = context.fillRects;
 
-  assert.deepEqual(silhouette, {
+  assert.deepEqual(silhouetteUpper, {
     x: 233,
     y: 178,
     width: 14,
-    height: 22,
+    height: 16,
+    fillStyle: PROTAGONIST_PALETTE.silhouette,
+  });
+  assert.deepEqual(silhouetteLower, {
+    x: 235,
+    y: 194,
+    width: 10,
+    height: 6,
     fillStyle: PROTAGONIST_PALETTE.silhouette,
   });
   assert.deepEqual(hairCap, {
@@ -105,25 +113,48 @@ test("render() dibuja exactamente la silueta, el pelo, la cabeza, los brazos, el
   });
 });
 
+test("la silueta actúa como contorno fino: la pieza que respalda las piernas es más estrecha que el resto del cuerpo", () => {
+  const player = new Player({ x: 240, y: 192, facing: "down" });
+  const context = new FakeCanvasContext();
+
+  player.render(context, { x: 0, y: 0 });
+
+  const silhouetteRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === PROTAGONIST_PALETTE.silhouette,
+  );
+
+  assert.equal(
+    silhouetteRects.length,
+    2,
+    "la silueta debe estar partida en una pieza superior y una inferior, no ser un único bloque",
+  );
+
+  const [upper, lower] = silhouetteRects;
+  assert.ok(
+    lower.width < upper.width,
+    "la pieza de silueta que respalda las piernas debe ser más estrecha que la que respalda torso/brazos, para no leerse como un bloque oscuro uniforme",
+  );
+});
+
 test("render() resta la posición de la cámara antes de dibujar", () => {
   const player = new Player({ x: 240, y: 192, facing: "down" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 40, y: 20 });
 
-  const [silhouette] = context.fillRects;
-  assert.equal(silhouette.x, 233 - 40);
-  assert.equal(silhouette.y, 178 - 20);
+  const [silhouetteUpper] = context.fillRects;
+  assert.equal(silhouetteUpper.x, 233 - 40);
+  assert.equal(silhouetteUpper.y, 178 - 20);
 });
 
-test("render() dibuja un décimo rectángulo (marcador de orientación) tras las piernas", () => {
+test("render() dibuja un undécimo rectángulo (marcador de orientación) tras las piernas", () => {
   const player = new Player({ x: 240, y: 192, facing: "up" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
-  assert.equal(context.fillRects.length, 10);
-  const marker = context.fillRects[9];
+  assert.equal(context.fillRects.length, 11);
+  const marker = context.fillRects[10];
   assert.equal(marker.width, 3);
   assert.equal(marker.height, 3);
 });
@@ -135,10 +166,11 @@ test("render() usa exactamente los cinco colores de identidad de PROTAGONIST_PAL
   player.render(context, { x: 0, y: 0 });
 
   const paletteColors = context.fillRects
-    .slice(0, 9)
+    .slice(0, 10)
     .map((rect) => rect.fillStyle);
 
   assert.deepEqual(paletteColors, [
+    PROTAGONIST_PALETTE.silhouette,
     PROTAGONIST_PALETTE.silhouette,
     PROTAGONIST_PALETTE.hair,
     PROTAGONIST_PALETTE.head,
