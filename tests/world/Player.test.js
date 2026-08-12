@@ -22,48 +22,86 @@ test("Player mantiene sus dimensiones y velocidad de colisión por defecto", () 
   assert.equal(player.facing, "down");
 });
 
-test("render() dibuja exactamente la silueta, el pelo, la cabeza y el cuerpo con PROTAGONIST_PALETTE", () => {
+test("render() dibuja exactamente la silueta, el pelo, la cabeza, los brazos, el torso y las piernas con PROTAGONIST_PALETTE", () => {
   const player = new Player({ x: 240, y: 192, facing: "down" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
-  const [silhouette, hairCap, head, hairSide, body] = context.fillRects;
+  const [
+    silhouette,
+    hairCap,
+    head,
+    hairSide,
+    leftArm,
+    rightArm,
+    torso,
+    leftLeg,
+    rightLeg,
+  ] = context.fillRects;
 
   assert.deepEqual(silhouette, {
-    x: 234,
-    y: 183,
-    width: 12,
-    height: 18,
+    x: 233,
+    y: 178,
+    width: 14,
+    height: 22,
     fillStyle: PROTAGONIST_PALETTE.silhouette,
   });
   assert.deepEqual(hairCap, {
     x: 236,
-    y: 181,
+    y: 179,
     width: 8,
     height: 2,
     fillStyle: PROTAGONIST_PALETTE.hair,
   });
   assert.deepEqual(head, {
     x: 236,
-    y: 182,
+    y: 181,
     width: 8,
-    height: 7,
+    height: 6,
     fillStyle: PROTAGONIST_PALETTE.head,
   });
   assert.deepEqual(hairSide, {
     x: 243,
-    y: 182,
+    y: 181,
     width: 2,
-    height: 4,
+    height: 3,
     fillStyle: PROTAGONIST_PALETTE.hair,
   });
-  assert.deepEqual(body, {
-    x: 235,
-    y: 189,
-    width: 10,
-    height: 10,
+  assert.deepEqual(leftArm, {
+    x: 234,
+    y: 188,
+    width: 2,
+    height: 6,
+    fillStyle: PROTAGONIST_PALETTE.head,
+  });
+  assert.deepEqual(rightArm, {
+    x: 244,
+    y: 188,
+    width: 2,
+    height: 6,
+    fillStyle: PROTAGONIST_PALETTE.head,
+  });
+  assert.deepEqual(torso, {
+    x: 236,
+    y: 188,
+    width: 8,
+    height: 6,
     fillStyle: PROTAGONIST_PALETTE.body,
+  });
+  assert.deepEqual(leftLeg, {
+    x: 237,
+    y: 195,
+    width: 2,
+    height: 5,
+    fillStyle: PROTAGONIST_PALETTE.bodyAccent,
+  });
+  assert.deepEqual(rightLeg, {
+    x: 241,
+    y: 195,
+    width: 2,
+    height: 5,
+    fillStyle: PROTAGONIST_PALETTE.bodyAccent,
   });
 });
 
@@ -74,30 +112,30 @@ test("render() resta la posición de la cámara antes de dibujar", () => {
   player.render(context, { x: 40, y: 20 });
 
   const [silhouette] = context.fillRects;
-  assert.equal(silhouette.x, 234 - 40);
-  assert.equal(silhouette.y, 183 - 20);
+  assert.equal(silhouette.x, 233 - 40);
+  assert.equal(silhouette.y, 178 - 20);
 });
 
-test("render() dibuja un sexto rectángulo (marcador de orientación) tras el cuerpo", () => {
+test("render() dibuja un décimo rectángulo (marcador de orientación) tras las piernas", () => {
   const player = new Player({ x: 240, y: 192, facing: "up" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
-  assert.equal(context.fillRects.length, 6);
-  const marker = context.fillRects[5];
+  assert.equal(context.fillRects.length, 10);
+  const marker = context.fillRects[9];
   assert.equal(marker.width, 3);
   assert.equal(marker.height, 3);
 });
 
-test("render() usa exactamente los cuatro colores de PROTAGONIST_PALETTE, sin colores adicionales inventados", () => {
+test("render() usa exactamente los cinco colores de identidad de PROTAGONIST_PALETTE, en orden, sin colores adicionales inventados", () => {
   const player = new Player({ x: 240, y: 192 });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
   const paletteColors = context.fillRects
-    .slice(0, 5)
+    .slice(0, 9)
     .map((rect) => rect.fillStyle);
 
   assert.deepEqual(paletteColors, [
@@ -105,6 +143,10 @@ test("render() usa exactamente los cuatro colores de PROTAGONIST_PALETTE, sin co
     PROTAGONIST_PALETTE.hair,
     PROTAGONIST_PALETTE.head,
     PROTAGONIST_PALETTE.hair,
+    PROTAGONIST_PALETTE.head,
+    PROTAGONIST_PALETTE.head,
     PROTAGONIST_PALETTE.body,
+    PROTAGONIST_PALETTE.bodyAccent,
+    PROTAGONIST_PALETTE.bodyAccent,
   ]);
 });

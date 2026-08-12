@@ -16,12 +16,14 @@ test("PROTAGONIST_PALETTE y BRIDE_PALETTE reflejan los rasgos simplificados del 
     silhouette: "#1c1829",
     head: "#d9a06f",
     body: "#3f6fb0",
+    bodyAccent: "#6f93c2",
     hair: "#4a3324",
   });
   assert.deepEqual(BRIDE_PALETTE, {
     silhouette: "#302637",
     head: "#d9a06f",
     body: "#8a5f96",
+    bodyAccent: "#c9a8d1",
     hair: "#6b4226",
   });
   assert.equal(Object.isFrozen(PROTAGONIST_PALETTE), true);
@@ -39,17 +41,12 @@ test("NPC_SILHOUETTE conserva el valor ya usado por WorldScene.renderNpc", () =>
   assert.equal(NPC_SILHOUETTE, "#302637");
 });
 
-test("NAMED_NPC_PALETTES conserva exactamente los cuatro NPC ya diferenciados", () => {
+test("NAMED_NPC_PALETTES conserva exactamente los tres NPC ya diferenciados, sin bride-epilogue", () => {
   assert.deepEqual(Object.keys(NAMED_NPC_PALETTES).sort(), [
-    "bride-epilogue",
     "bride-father",
     "mayor-corolaria",
     "plaza-worker",
   ]);
-  assert.deepEqual(NAMED_NPC_PALETTES["bride-epilogue"], {
-    body: BRIDE_PALETTE.body,
-    accent: "#efe2bf",
-  });
   assert.deepEqual(NAMED_NPC_PALETTES["mayor-corolaria"], {
     body: "#8e4566",
     accent: "#d6b65f",

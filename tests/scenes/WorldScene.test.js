@@ -1177,10 +1177,10 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved mu
   const brideSilhouetteVisible = context.fillRects.some(
     (rect) =>
       rect.fillStyle === "#302637" &&
-      rect.x === brideScreenX + 1 &&
-      rect.y === brideScreenY + 5 &&
-      rect.width === 12 &&
-      rect.height === 14,
+      rect.x === brideScreenX &&
+      rect.y === brideScreenY &&
+      rect.width === 14 &&
+      rect.height === 21,
   );
 
   assert.equal(brideSilhouetteVisible, true);

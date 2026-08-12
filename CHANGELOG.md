@@ -11,7 +11,10 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `src/scenes/WorldScene.js` y `src/scenes/CreditsScene.js`, y preparación
   del render procedural independiente de Max en `src/render/MaxRenderer.js`
   (sin integrarlo todavía en ningún mapa jugable), manteniendo el render
-  procedural existente en `src/content/characterPalettes.js`.
+  procedural existente en `src/content/characterPalettes.js`. Tras la
+  revisión visual humana, una segunda iteración añade separación
+  torso/piernas, brazos y una segunda zona cromática de ropa (`bodyAccent`)
+  a Gonzalo y Elena, y patas, cola y separación cabeza-cuerpo a Max.
 
 ## [1.0.0] - 2026-08-11
 

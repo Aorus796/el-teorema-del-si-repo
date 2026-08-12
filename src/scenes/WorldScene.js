@@ -949,6 +949,11 @@ function renderObjects(context, camera, objects, state) {
 }
 
 function renderNpc(context, x, y, object) {
+  if (object.id === "bride-epilogue") {
+    renderElena(context, x, y);
+    return;
+  }
+
   const palette = NAMED_NPC_PALETTES[object.id] ?? DEFAULT_NPC_PALETTE;
 
   context.fillStyle = NPC_SILHOUETTE;
@@ -962,17 +967,31 @@ function renderNpc(context, x, y, object) {
 
   context.fillStyle = palette.accent;
   context.fillRect(x + 5, y + 8, 4, 4);
-
-  if (object.id === "bride-epilogue") {
-    renderElenaHair(context, x, y);
-  }
 }
 
-function renderElenaHair(context, x, y) {
+function renderElena(context, x, y) {
+  context.fillStyle = BRIDE_PALETTE.silhouette;
+  context.fillRect(x, y, 14, 21);
+
   context.fillStyle = BRIDE_PALETTE.hair;
-  context.fillRect(x + 3, y - 1, 8, 3);
-  context.fillRect(x + 1, y, 2, 12);
-  context.fillRect(x + 11, y, 2, 12);
+  context.fillRect(x + 3, y + 1, 8, 2);
+
+  context.fillStyle = BRIDE_PALETTE.head;
+  context.fillRect(x + 3, y + 3, 8, 6);
+
+  context.fillStyle = BRIDE_PALETTE.hair;
+  context.fillRect(x + 1, y + 3, 2, 14);
+  context.fillRect(x + 11, y + 3, 2, 14);
+
+  context.fillStyle = BRIDE_PALETTE.head;
+  context.fillRect(x + 1, y + 10, 2, 6);
+  context.fillRect(x + 11, y + 10, 2, 6);
+
+  context.fillStyle = BRIDE_PALETTE.body;
+  context.fillRect(x + 3, y + 10, 8, 6);
+
+  context.fillStyle = BRIDE_PALETTE.bodyAccent;
+  context.fillRect(x + 2, y + 16, 10, 4);
 }
 
 function renderHud(context, map, objectiveId) {

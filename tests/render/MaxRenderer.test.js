@@ -27,7 +27,7 @@ test("renderMax usa exclusivamente los tres colores de MAX_PALETTE, sin colores 
   }
 });
 
-test("renderMax dibuja cuerpo/cabeza y dos orejas erguidas, una máscara y un collar", () => {
+test("renderMax dibuja cuerpo/cabeza, dos orejas erguidas, patas delantera y trasera, cola, una máscara y un collar", () => {
   const context = new FakeCanvasContext();
 
   renderMax(context, 0, 0);
@@ -42,9 +42,77 @@ test("renderMax dibuja cuerpo/cabeza y dos orejas erguidas, una máscara y un co
     (rect) => rect.fillStyle === MAX_PALETTE.collar,
   );
 
-  assert.equal(bodyRects.length, 4);
+  assert.equal(bodyRects.length, 7);
   assert.equal(maskRects.length, 1);
   assert.equal(collarRects.length, 1);
+});
+
+test("renderMax dibuja al menos dos patas que llegan hasta la línea de suelo", () => {
+  const context = new FakeCanvasContext();
+
+  renderMax(context, 0, 0);
+
+  const groundLine = MAX_DIMENSIONS.height;
+  const legRects = context.fillRects.filter(
+    (rect) =>
+      rect.fillStyle === MAX_PALETTE.body &&
+      rect.y + rect.height === groundLine,
+  );
+
+  assert.ok(
+    legRects.length >= 2,
+    `se esperaban al menos dos patas llegando al suelo, se encontraron ${legRects.length}`,
+  );
+});
+
+test("renderMax conecta cada pata con el cuerpo o la cabeza, sin huecos flotantes", () => {
+  const context = new FakeCanvasContext();
+
+  renderMax(context, 0, 0);
+
+  const groundLine = MAX_DIMENSIONS.height;
+  const bodyRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === MAX_PALETTE.body,
+  );
+  const legRects = bodyRects.filter(
+    (rect) => rect.y + rect.height === groundLine,
+  );
+
+  for (const leg of legRects) {
+    const connectsAbove = bodyRects.some(
+      (rect) =>
+        rect !== leg &&
+        rect.y + rect.height >= leg.y &&
+        rect.x < leg.x + leg.width &&
+        rect.x + rect.width > leg.x,
+    );
+
+    assert.ok(
+      connectsAbove,
+      `la pata en x=${leg.x} queda flotando, sin ninguna forma que la toque por encima`,
+    );
+  }
+});
+
+test("renderMax dibuja una cola que sobresale del cuerpo principal hacia la derecha", () => {
+  const context = new FakeCanvasContext();
+
+  renderMax(context, 0, 0);
+
+  const bodyRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === MAX_PALETTE.body,
+  );
+  const mainBody = bodyRects.reduce((widest, rect) =>
+    rect.width * rect.height > widest.width * widest.height ? rect : widest,
+  );
+  const bodyRightEdge = mainBody.x + mainBody.width;
+
+  const tailRects = bodyRects.filter((rect) => rect.x >= bodyRightEdge);
+
+  assert.ok(
+    tailRects.length >= 1,
+    "se esperaba al menos una cola sobresaliendo del cuerpo principal",
+  );
 });
 
 test("renderMax se desplaza correctamente con el origen (x, y) dado", () => {

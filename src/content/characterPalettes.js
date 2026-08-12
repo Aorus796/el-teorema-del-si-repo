@@ -14,6 +14,7 @@ export const PROTAGONIST_PALETTE = Object.freeze({
   silhouette: "#1c1829",
   head: SKIN_TONE,
   body: "#3f6fb0",
+  bodyAccent: "#6f93c2",
   hair: "#4a3324",
 });
 
@@ -21,6 +22,7 @@ export const BRIDE_PALETTE = Object.freeze({
   silhouette: "#302637",
   head: SKIN_TONE,
   body: "#8a5f96",
+  bodyAccent: "#c9a8d1",
   hair: "#6b4226",
 });
 
@@ -40,9 +42,10 @@ export const NPC_SILHOUETTE = "#302637";
 export const NPC_HEAD = SKIN_TONE;
 
 // Paleta de los NPC con nombre que ya distinguían body/accent en
-// WorldScene.renderNpc antes de esta centralización.
+// WorldScene.renderNpc antes de esta centralización. bride-epilogue no
+// aparece aquí: Elena tiene su propio renderer dedicado en
+// WorldScene.renderElena, que consulta BRIDE_PALETTE directamente.
 export const NAMED_NPC_PALETTES = Object.freeze({
-  "bride-epilogue": Object.freeze({ body: BRIDE_PALETTE.body, accent: "#efe2bf" }),
   "mayor-corolaria": Object.freeze({ body: "#8e4566", accent: "#d6b65f" }),
   "bride-father": Object.freeze({ body: "#486987", accent: "#efe2bf" }),
   "plaza-worker": Object.freeze({ body: "#6c8756", accent: "#d9a06f" }),

@@ -218,6 +218,46 @@ test("el paso 1 dibuja dos personajes con las paletas reutilizadas del jugador y
   assert.ok(fillStyles.includes(BRIDE_PALETTE.body));
   assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.hair));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.hair));
+  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.bodyAccent));
+  assert.ok(fillStyles.includes(BRIDE_PALETTE.bodyAccent));
+});
+
+test("el paso 1 dibuja a Gonzalo y Elena con las 9 primitivas exactas en las posiciones esperadas, en orden", () => {
+  const { scene } = createScene();
+  scene.enter();
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  const [, , ...characterRects] = context.fillRects;
+  const [gonzalo, elena] = [
+    characterRects.slice(0, 9),
+    characterRects.slice(9, 18),
+  ];
+
+  assert.deepEqual(gonzalo, [
+    { x: 208, y: 188, width: 14, height: 22, fillStyle: PROTAGONIST_PALETTE.silhouette },
+    { x: 211, y: 189, width: 8, height: 2, fillStyle: PROTAGONIST_PALETTE.hair },
+    { x: 211, y: 191, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 218, y: 191, width: 2, height: 3, fillStyle: PROTAGONIST_PALETTE.hair },
+    { x: 209, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 219, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 211, y: 198, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.body },
+    { x: 212, y: 205, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
+    { x: 216, y: 205, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
+  ]);
+
+  assert.deepEqual(elena, [
+    { x: 230, y: 188, width: 14, height: 21, fillStyle: BRIDE_PALETTE.silhouette },
+    { x: 233, y: 189, width: 8, height: 2, fillStyle: BRIDE_PALETTE.hair },
+    { x: 233, y: 191, width: 8, height: 6, fillStyle: BRIDE_PALETTE.head },
+    { x: 231, y: 191, width: 2, height: 14, fillStyle: BRIDE_PALETTE.hair },
+    { x: 241, y: 191, width: 2, height: 14, fillStyle: BRIDE_PALETTE.hair },
+    { x: 231, y: 198, width: 2, height: 6, fillStyle: BRIDE_PALETTE.head },
+    { x: 241, y: 198, width: 2, height: 6, fillStyle: BRIDE_PALETTE.head },
+    { x: 233, y: 198, width: 8, height: 6, fillStyle: BRIDE_PALETTE.body },
+    { x: 232, y: 204, width: 10, height: 4, fillStyle: BRIDE_PALETTE.bodyAccent },
+  ]);
 });
 
 test("ningún texto renderizado cae fuera del canvas de 480x270 ni de sus márgenes", () => {
