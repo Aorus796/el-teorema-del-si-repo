@@ -4,6 +4,15 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ## [No publicado]
 
+### Añadido
+
+- Diseño visual personalizado de Gonzalo y Elena (pelo, silueta y paleta
+  propias aprobados en el Visual Style Lock) en `src/world/Player.js`,
+  `src/scenes/WorldScene.js` y `src/scenes/CreditsScene.js`, y preparación
+  del render procedural independiente de Max en `src/render/MaxRenderer.js`
+  (sin integrarlo todavía en ningún mapa jugable), manteniendo el render
+  procedural existente en `src/content/characterPalettes.js`.
+
 ## [1.0.0] - 2026-08-11
 
 Primera versión estable: recorrido narrativo completo de principio a fin

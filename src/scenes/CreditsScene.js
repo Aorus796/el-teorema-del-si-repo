@@ -160,6 +160,19 @@ function drawCharacter(context, x, y, palette) {
   context.fillRect(x + 2, y + 7, 10, 11);
 }
 
+function drawGonzaloHair(context, x, y, palette) {
+  context.fillStyle = palette.hair;
+  context.fillRect(x + 3, y - 1, 8, 3);
+  context.fillRect(x + 9, y, 3, 4);
+}
+
+function drawElenaHair(context, x, y, palette) {
+  context.fillStyle = palette.hair;
+  context.fillRect(x + 3, y - 1, 8, 3);
+  context.fillRect(x + 1, y, 2, 12);
+  context.fillRect(x + 11, y, 2, 12);
+}
+
 function renderClosingShot(context) {
   const dawnPalette = getWorldMap("axiom-plaza").dawnPalette;
 
@@ -170,7 +183,9 @@ function renderClosingShot(context) {
   context.fillRect(0, 190, 480, 80);
 
   drawCharacter(context, 208, 188, PROTAGONIST_PALETTE);
+  drawGonzaloHair(context, 208, 188, PROTAGONIST_PALETTE);
   drawCharacter(context, 230, 188, BRIDE_PALETTE);
+  drawElenaHair(context, 230, 188, BRIDE_PALETTE);
 
   context.fillStyle = "#3a2f22";
   context.font = "11px monospace";

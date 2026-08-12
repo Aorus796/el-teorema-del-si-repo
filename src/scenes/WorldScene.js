@@ -1,5 +1,6 @@
 import { getWorldMap } from "../content/worldMaps.js";
 import {
+  BRIDE_PALETTE,
   DEFAULT_NPC_PALETTE,
   NAMED_NPC_PALETTES,
   NPC_HEAD,
@@ -961,6 +962,17 @@ function renderNpc(context, x, y, object) {
 
   context.fillStyle = palette.accent;
   context.fillRect(x + 5, y + 8, 4, 4);
+
+  if (object.id === "bride-epilogue") {
+    renderElenaHair(context, x, y);
+  }
+}
+
+function renderElenaHair(context, x, y) {
+  context.fillStyle = BRIDE_PALETTE.hair;
+  context.fillRect(x + 3, y - 1, 8, 3);
+  context.fillRect(x + 1, y, 2, 12);
+  context.fillRect(x + 11, y, 2, 12);
 }
 
 function renderHud(context, map, objectiveId) {

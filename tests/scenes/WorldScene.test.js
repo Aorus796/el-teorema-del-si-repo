@@ -10,6 +10,7 @@ import {
 import { LibraryCatalogueScene } from "../../src/scenes/LibraryCatalogueScene.js";
 import { WorldScene } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
+import { BRIDE_PALETTE } from "../../src/content/characterPalettes.js";
 
 class FakeInput {
   constructor() {
@@ -1052,6 +1053,41 @@ test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bri
   );
 
   assert.equal(silhouettes.length, 4);
+});
+
+test("render() con giftCodeSolved añade tres rectángulos con el color de pelo de bride-epilogue", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  setup.scene.player.x = 445;
+  setup.scene.player.y = 220;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const hairRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === BRIDE_PALETTE.hair,
+  );
+
+  assert.equal(hairRects.length, 3);
+});
+
+test("render() sin giftCodeSolved (mayor-corolaria, bride-father, plaza-worker) no dibuja el color de pelo de bride-epilogue", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  const hairRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === BRIDE_PALETTE.hair,
+  );
+
+  assert.equal(hairRects.length, 0);
 });
 
 test("render() repetido con giftCodeSolved sigue mostrando bride-epilogue de forma idéntica", () => {

@@ -216,6 +216,8 @@ test("el paso 1 dibuja dos personajes con las paletas reutilizadas del jugador y
   assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.body));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.silhouette));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.body));
+  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.hair));
+  assert.ok(fillStyles.includes(BRIDE_PALETTE.hair));
 });
 
 test("ningún texto renderizado cae fuera del canvas de 480x270 ni de sus márgenes", () => {

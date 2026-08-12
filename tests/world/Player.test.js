@@ -22,13 +22,13 @@ test("Player mantiene sus dimensiones y velocidad de colisión por defecto", () 
   assert.equal(player.facing, "down");
 });
 
-test("render() dibuja exactamente la silueta, la cabeza y el cuerpo con PROTAGONIST_PALETTE", () => {
+test("render() dibuja exactamente la silueta, el pelo, la cabeza y el cuerpo con PROTAGONIST_PALETTE", () => {
   const player = new Player({ x: 240, y: 192, facing: "down" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
-  const [silhouette, head, body] = context.fillRects;
+  const [silhouette, hairCap, head, hairSide, body] = context.fillRects;
 
   assert.deepEqual(silhouette, {
     x: 234,
@@ -37,12 +37,26 @@ test("render() dibuja exactamente la silueta, la cabeza y el cuerpo con PROTAGON
     height: 18,
     fillStyle: PROTAGONIST_PALETTE.silhouette,
   });
+  assert.deepEqual(hairCap, {
+    x: 236,
+    y: 181,
+    width: 8,
+    height: 2,
+    fillStyle: PROTAGONIST_PALETTE.hair,
+  });
   assert.deepEqual(head, {
     x: 236,
     y: 182,
     width: 8,
     height: 7,
     fillStyle: PROTAGONIST_PALETTE.head,
+  });
+  assert.deepEqual(hairSide, {
+    x: 243,
+    y: 182,
+    width: 2,
+    height: 4,
+    fillStyle: PROTAGONIST_PALETTE.hair,
   });
   assert.deepEqual(body, {
     x: 235,
@@ -64,31 +78,33 @@ test("render() resta la posición de la cámara antes de dibujar", () => {
   assert.equal(silhouette.y, 183 - 20);
 });
 
-test("render() dibuja un cuarto rectángulo (marcador de orientación) tras el cuerpo", () => {
+test("render() dibuja un sexto rectángulo (marcador de orientación) tras el cuerpo", () => {
   const player = new Player({ x: 240, y: 192, facing: "up" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
-  assert.equal(context.fillRects.length, 4);
-  const marker = context.fillRects[3];
+  assert.equal(context.fillRects.length, 6);
+  const marker = context.fillRects[5];
   assert.equal(marker.width, 3);
   assert.equal(marker.height, 3);
 });
 
-test("render() usa exactamente los tres colores de PROTAGONIST_PALETTE, sin colores adicionales inventados", () => {
+test("render() usa exactamente los cuatro colores de PROTAGONIST_PALETTE, sin colores adicionales inventados", () => {
   const player = new Player({ x: 240, y: 192 });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
   const paletteColors = context.fillRects
-    .slice(0, 3)
+    .slice(0, 5)
     .map((rect) => rect.fillStyle);
 
   assert.deepEqual(paletteColors, [
     PROTAGONIST_PALETTE.silhouette,
+    PROTAGONIST_PALETTE.hair,
     PROTAGONIST_PALETTE.head,
+    PROTAGONIST_PALETTE.hair,
     PROTAGONIST_PALETTE.body,
   ]);
 });
