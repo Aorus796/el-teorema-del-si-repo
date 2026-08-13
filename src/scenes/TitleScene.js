@@ -1,10 +1,14 @@
+import { INTRO_THEME_PATH } from "../content/introAudioConfig.js";
+
 export class TitleScene {
-  constructor({ scenes, input, storage, state, ui }) {
+  constructor({ scenes, input, storage, state, ui, audio }) {
     this.scenes = scenes;
     this.input = input;
     this.storage = storage;
     this.state = state;
     this.ui = ui;
+    this.audio = audio;
+    this.introPlayed = false;
   }
 
   enter() {
@@ -13,14 +17,39 @@ export class TitleScene {
 
   update() {
     if (this.input.wasPressed("interact")) {
+      const introStarted = this.playIntroOnce();
       this.state.reset();
-      this.scenes.change("world", { restoreFromState: false });
+      this.scenes.change("world", {
+        restoreFromState: false,
+        introStarted,
+      });
       return;
     }
 
     if (this.input.wasPressed("load") && this.storage.hasSave()) {
-      this.scenes.change("world", { restoreFromState: true });
+      const introStarted = this.playIntroOnce();
+      this.scenes.change("world", {
+        restoreFromState: true,
+        introStarted,
+      });
     }
+  }
+
+  /*
+   * Dispara la intro musical la primera vez que se llama y devuelve
+   * `true` en ese caso; en llamadas posteriores es un no-op y devuelve
+   * `false`. El valor devuelto le permite a WorldScene saber si debe
+   * retrasar el arranque de la música ambiental para no cortar la intro
+   * a mitad de reproducción (ver WorldScene.enter()).
+   */
+  playIntroOnce() {
+    if (this.introPlayed) {
+      return false;
+    }
+
+    this.introPlayed = true;
+    this.audio.playMusic(INTRO_THEME_PATH);
+    return true;
   }
 
   render(context) {

@@ -1,3 +1,5 @@
+import { AMBIENT_THEME_PATH } from "../content/ambientAudioConfig.js";
+import { INTRO_THEME_DURATION_MS } from "../content/introAudioConfig.js";
 import { getWorldMap } from "../content/worldMaps.js";
 import {
   BRIDE_PALETTE,
@@ -82,14 +84,17 @@ export class WorldScene {
     this.camera = null;
     this.collisionMap = null;
     this.nearbyObject = null;
+    this.ambientStartTimeoutId = null;
   }
 
   enter({
     restoreFromState = false,
     mapId = null,
     entryPlayerState = null,
+    introStarted = false,
   } = {}) {
     this.ui.closeAll();
+    this.clearPendingAmbientStart();
 
     if (restoreFromState) {
       this.load();
@@ -102,11 +107,48 @@ export class WorldScene {
     }
 
     this.setupCurrentMap();
+
+    if (this.state.flags.epilogueCompleted) {
+      return;
+    }
+
+    /*
+     * Si esta transición disparó la intro musical de TitleScene en la
+     * misma pasada síncrona, retrasa el arranque del ambiental hasta que
+     * la intro termine de sonar: AudioService.playMusic() sustituye
+     * cualquier pista activa, así que arrancarlo de inmediato cortaría la
+     * intro a los 0ms. El setTimeout no bloquea la entrada al mundo: el
+     * jugador puede moverse e interactuar de inmediato, solo se demora
+     * cuándo empieza a sonar el ambiental.
+     */
+    if (introStarted) {
+      this.ambientStartTimeoutId = setTimeout(() => {
+        this.ambientStartTimeoutId = null;
+        this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
+      }, INTRO_THEME_DURATION_MS);
+      return;
+    }
+
+    this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
   }
 
   exit() {
     this.syncPlayerState();
     this.ui.closeAll();
+    this.clearPendingAmbientStart();
+  }
+
+  /*
+   * Cancela el arranque diferido del ambiental, si había uno programado.
+   * Se invoca al salir de la escena (para no reproducir audio ambiental
+   * tras abandonar el mundo) y al volver a entrar (para no acumular
+   * temporizadores si enter() se llama más de una vez sin exit() previo).
+   */
+  clearPendingAmbientStart() {
+    if (this.ambientStartTimeoutId !== null) {
+      clearTimeout(this.ambientStartTimeoutId);
+      this.ambientStartTimeoutId = null;
+    }
   }
 
   setupCurrentMap() {

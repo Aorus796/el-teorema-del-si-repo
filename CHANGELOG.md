@@ -27,6 +27,18 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   transición escalonada, y la cola pasa de un rectángulo horizontal a
   una forma en dos escalones que asciende hacia arriba y a la derecha;
   Gonzalo y Elena no se tocan en este retoque.
+- Ambientación sonora inicial: una intro musical breve se dispara la
+  primera vez que se interactúa válidamente en la pantalla de título
+  (`src/scenes/TitleScene.js`), y una música ambiental en loop suena
+  durante la exploración del mundo (`src/scenes/WorldScene.js`), salvo
+  cuando el epílogo ya se ha completado. Para que la intro pueda oírse
+  completa sin bloquear la entrada al mundo jugable, `WorldScene` retrasa
+  el arranque del ambiental `INTRO_THEME_DURATION_MS` (6 s) cuando la
+  transición viene acompañada del disparo de la intro, y cancela ese
+  arranque diferido si la escena se abandona antes (por ejemplo, al
+  alcanzar el epílogo). La transición de ambient a tema de epílogo ocurre
+  automáticamente al reutilizar el contrato ya existente de
+  `AudioService.playMusic()`, sin lógica adicional.
 
 ## [1.0.0] - 2026-08-11
 

@@ -19,6 +19,19 @@ function collectJavaScriptErrors(page) {
   return errors;
 }
 
+/*
+ * Neutraliza la reproducción real de audio en el navegador de test: evita
+ * depender de que el entorno CI pueda reproducir sonido (autoplay,
+ * dispositivos de audio, etc.) para los flujos que ahora disparan la
+ * intro musical o la música ambiental.
+ */
+async function disableAudioPlayback(page) {
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = () =>
+      Promise.reject(new Error("audio deshabilitado en el entorno de test"));
+  });
+}
+
 function buildGiftCodeKeystrokes(digits) {
   const keys = [];
 
@@ -39,6 +52,7 @@ function buildGiftCodeKeystrokes(digits) {
 test("carga la pantalla de título sin errores", async ({ page }) => {
   const errors = collectJavaScriptErrors(page);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   await expect(page).toHaveTitle(
@@ -58,6 +72,7 @@ test("inicia una partida y abre y cierra el cuaderno", async ({
 }) => {
   const errors = collectJavaScriptErrors(page);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -153,6 +168,7 @@ test("entra en la escena archive-criteria desde un guardado existente y vuelve a
     );
   }, savedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -252,6 +268,7 @@ test("resuelve el tercer puzle del Archivo con teclado y desbloquea el epílogo"
     );
   }, savedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -446,6 +463,7 @@ test("resuelve el segundo puzle del catálogo de la Biblioteca con teclado y des
     );
   }, savedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -629,6 +647,7 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
     );
   }, savedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -830,6 +849,7 @@ test("guarda y carga la partida en la Plaza del Axioma tras recargar la página"
     },
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -985,6 +1005,7 @@ test("restaura un intento fallido del catálogo de la Biblioteca tras recargar l
     },
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -1216,6 +1237,7 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
     },
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -1477,6 +1499,7 @@ test("restaura una clasificación incompleta del Archivo tras recargar la págin
     },
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -1766,6 +1789,7 @@ test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles c
     });
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -1899,6 +1923,7 @@ test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado"
     );
   }, legacySavedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -2040,6 +2065,7 @@ for (const variant of INVALID_SAVE_VARIANTS) {
       localStorage.setItem("el-teorema-del-si.save.v1", rawValue);
     }, variant.rawValue);
 
+    await disableAudioPlayback(page);
     await page.goto("/");
 
     const canvas = page.locator("#game-canvas");
@@ -2245,16 +2271,11 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     };
   });
 
-  // Neutraliza la reproducción real de audio de forma determinista: el test
-  // no debe depender de que el entorno CI pueda reproducir sonido, y esto
-  // además ejercita a propósito la ruta de degradación segura de
+  // Esto además ejercita a propósito la ruta de degradación segura de
   // AudioService.playEpilogueTheme() (ya cubierta a nivel unitario, aquí se
   // confirma en el navegador real que un fallo de play() no bloquea la
   // entrada en créditos). No se modifica src/platform/AudioService.js.
-  await page.addInitScript(() => {
-    HTMLMediaElement.prototype.play = () =>
-      Promise.reject(new Error("audio deshabilitado en el entorno de test"));
-  });
+  await disableAudioPlayback(page);
 
   await page.addInitScript((data) => {
     localStorage.setItem(
