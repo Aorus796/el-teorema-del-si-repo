@@ -17,7 +17,7 @@ export function renderMax(context, x, y) {
   context.fillRect(x + 2, y, 2, 3);
   context.fillRect(x + 6, y, 2, 3);
   context.fillRect(x + 1, y + 2, 7, 6);
-  context.fillRect(x + 5, y + 7, 7, 2);
+  context.fillRect(x + 6, y + 7, 4, 2);
   context.fillRect(x + 8, y + 9, 10, 6);
   context.fillRect(x + 9, y + 13, 2, 5);
   context.fillRect(x + 15, y + 13, 3, 5);
