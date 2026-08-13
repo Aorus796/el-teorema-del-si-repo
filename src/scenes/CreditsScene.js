@@ -149,15 +149,58 @@ export function wrapTextToLines(text, maxCharsPerLine) {
   return lines;
 }
 
-function drawCharacter(context, x, y, palette) {
-  context.fillStyle = palette.silhouette;
-  context.fillRect(x + 1, y + 5, 12, 18);
+function drawGonzalo(context, x, y) {
+  context.fillStyle = PROTAGONIST_PALETTE.silhouette;
+  context.fillRect(x + 2, y, 10, 3);
+  context.fillRect(x + 1, y + 3, 12, 7);
+  context.fillRect(x, y + 10, 14, 6);
+  context.fillRect(x + 3, y + 16, 8, 6);
 
-  context.fillStyle = palette.head;
-  context.fillRect(x + 3, y, 8, 7);
+  context.fillStyle = PROTAGONIST_PALETTE.hair;
+  context.fillRect(x + 3, y + 1, 8, 2);
 
-  context.fillStyle = palette.body;
-  context.fillRect(x + 2, y + 7, 10, 11);
+  context.fillStyle = PROTAGONIST_PALETTE.head;
+  context.fillRect(x + 3, y + 3, 8, 6);
+
+  context.fillStyle = PROTAGONIST_PALETTE.hair;
+  context.fillRect(x + 10, y + 3, 2, 3);
+
+  context.fillStyle = PROTAGONIST_PALETTE.head;
+  context.fillRect(x + 1, y + 10, 2, 6);
+  context.fillRect(x + 11, y + 10, 2, 6);
+
+  context.fillStyle = PROTAGONIST_PALETTE.body;
+  context.fillRect(x + 3, y + 10, 8, 6);
+
+  context.fillStyle = PROTAGONIST_PALETTE.bodyAccent;
+  context.fillRect(x + 4, y + 17, 2, 5);
+  context.fillRect(x + 8, y + 17, 2, 5);
+}
+
+function drawElena(context, x, y) {
+  context.fillStyle = BRIDE_PALETTE.silhouette;
+  context.fillRect(x + 2, y, 10, 3);
+  context.fillRect(x + 1, y + 3, 12, 17);
+
+  context.fillStyle = BRIDE_PALETTE.hair;
+  context.fillRect(x + 3, y + 1, 8, 2);
+
+  context.fillStyle = BRIDE_PALETTE.head;
+  context.fillRect(x + 3, y + 3, 8, 6);
+
+  context.fillStyle = BRIDE_PALETTE.hair;
+  context.fillRect(x + 1, y + 3, 2, 14);
+  context.fillRect(x + 11, y + 3, 2, 14);
+
+  context.fillStyle = BRIDE_PALETTE.head;
+  context.fillRect(x + 1, y + 10, 2, 6);
+  context.fillRect(x + 11, y + 10, 2, 6);
+
+  context.fillStyle = BRIDE_PALETTE.body;
+  context.fillRect(x + 3, y + 10, 8, 6);
+
+  context.fillStyle = BRIDE_PALETTE.bodyAccent;
+  context.fillRect(x + 2, y + 16, 10, 4);
 }
 
 function renderClosingShot(context) {
@@ -169,8 +212,8 @@ function renderClosingShot(context) {
   context.fillStyle = dawnPalette.groundB;
   context.fillRect(0, 190, 480, 80);
 
-  drawCharacter(context, 208, 188, PROTAGONIST_PALETTE);
-  drawCharacter(context, 230, 188, BRIDE_PALETTE);
+  drawGonzalo(context, 208, 188);
+  drawElena(context, 230, 188);
 
   context.fillStyle = "#3a2f22";
   context.font = "11px monospace";

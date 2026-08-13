@@ -194,10 +194,11 @@ abiertas:
    fuera del propio trabajo de nomenclatura de `v1.1`** (§7) — por
    defecto, no: se tratan solo los que la propia reforma resuelve de
    forma natural.
-7. **Mecanismo de aprobación del "Visual Style Lock" (§6, Nivel A).**
-   Esta especificación propone la fase, pero no define el formato
-   concreto de la aprobación humana (revisión de bocetos/prototipos en
-   una PR, sesión síncrona, etc.) — se decide cuando llegue el momento.
+7. ~~Mecanismo de aprobación del "Visual Style Lock" (§6, Nivel A)~~ —
+   **resuelta (aprobación directa del responsable del proyecto,
+   2026-08-12)**: el responsable aprobó directamente los rasgos físicos
+   simplificados de Gonzalo, Elena y Max, ya trasladados a
+   `characterPalettes.js` en esta misma tarea (§6).
 8. ~~Confirmación del roster exacto del Nivel B~~ — **resuelta
    (decisión de producto, 2026-08-11)**: Nivel B queda cerrado a
    Alcaldesa Corolaria, Padre de la novia y Silogio; `plaza-worker` se
@@ -269,7 +270,18 @@ Auditoría del estado actual real (código, no documentación):
 
 **MUST**: Gonzalo, Elena y Max reciben diseño visual personalizado a
 partir de referencia real — hoy **no disponible** (§4). Ningún rasgo
-físico se inventa en esta especificación. Estos tres personajes fijan
+físico se inventa en esta especificación.
+
+**Nota (2026-08-12)**: el responsable del proyecto aprobó directamente
+un conjunto de rasgos físicos simplificados para los tres personajes de
+Nivel A, ya implementados en `characterPalettes.js` (ver §22): Gonzalo
+(pelo oscuro, peinado lateral, silueta delgada, prenda azul), Elena
+(pelo castaño largo, silueta propia, paleta cálida/elegante) y Max
+(cuerpo canino, orejas erguidas, tonos tostados, máscara oscura, collar
+opcional). Esta lista no añade ningún rasgo adicional a los ya
+descritos aquí.
+
+Estos tres personajes fijan
 el lenguaje visual de todo `v1.1`; antes de producir el resto del
 roster (Niveles B y C) debe existir una fase explícita de aprobación
 humana:
@@ -966,6 +978,16 @@ avanzar en paralelo.
    resultante de la tarea 6 (§6 Nivel A, §5.7); punto de control
    obligatorio antes de las tareas 8-11. No es una tarea técnica de
    `autopilot`.
+
+   **Nota (2026-08-12)**: las tareas 6 y 7 quedan resueltas. La tarea 6
+   (diseño simplificado de Gonzalo, Elena y Max desde los rasgos ya
+   aprobados) se implementó en esta PR (`characterPalettes.js`,
+   `src/world/Player.js`, `src/scenes/WorldScene.js`,
+   `src/scenes/CreditsScene.js`, `src/render/MaxRenderer.js`). La tarea 7
+   (Visual Style Lock) fue aprobada directamente por el responsable del
+   proyecto el 2026-08-12, fuera del pipeline de `autopilot` — es una
+   aprobación humana, no una tarea técnica, tal y como ya aclaraba este
+   mismo punto.
 8. **Secundarios importantes** — diseño individual de Alcaldesa
    Corolaria, Padre de la novia y Silogio (MUST, §6 Nivel B, roster ya
    confirmado). Depende de la tarea 7.

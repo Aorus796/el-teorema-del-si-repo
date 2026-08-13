@@ -216,6 +216,86 @@ test("el paso 1 dibuja dos personajes con las paletas reutilizadas del jugador y
   assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.body));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.silhouette));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.body));
+  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.hair));
+  assert.ok(fillStyles.includes(BRIDE_PALETTE.hair));
+  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.bodyAccent));
+  assert.ok(fillStyles.includes(BRIDE_PALETTE.bodyAccent));
+});
+
+test("el paso 1 dibuja el pelo, la cabeza, los brazos, el cuerpo y la segunda zona cromática de Gonzalo y Elena en las posiciones esperadas", () => {
+  const { scene } = createScene();
+  scene.enter();
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  const byColor = (color) =>
+    context.fillRects.filter((rect) => rect.fillStyle === color);
+
+  assert.deepEqual(byColor(PROTAGONIST_PALETTE.hair), [
+    { x: 211, y: 189, width: 8, height: 2, fillStyle: PROTAGONIST_PALETTE.hair },
+    { x: 218, y: 191, width: 2, height: 3, fillStyle: PROTAGONIST_PALETTE.hair },
+  ]);
+  // PROTAGONIST_PALETTE.head y BRIDE_PALETTE.head son literalmente el
+  // mismo valor (SKIN_TONE compartido), así que filtrar por ese color
+  // devuelve las piezas de piel de ambos personajes juntas: cabeza y dos
+  // brazos de Gonzalo, luego cabeza y dos brazos de Elena.
+  assert.equal(PROTAGONIST_PALETTE.head, BRIDE_PALETTE.head);
+  assert.deepEqual(byColor(PROTAGONIST_PALETTE.head), [
+    { x: 211, y: 191, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 209, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 219, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 233, y: 191, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 231, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 241, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+  ]);
+  assert.deepEqual(byColor(PROTAGONIST_PALETTE.body), [
+    { x: 211, y: 198, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.body },
+  ]);
+  assert.deepEqual(byColor(PROTAGONIST_PALETTE.bodyAccent), [
+    { x: 212, y: 205, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
+    { x: 216, y: 205, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
+  ]);
+
+  assert.deepEqual(byColor(BRIDE_PALETTE.hair), [
+    { x: 233, y: 189, width: 8, height: 2, fillStyle: BRIDE_PALETTE.hair },
+    { x: 231, y: 191, width: 2, height: 14, fillStyle: BRIDE_PALETTE.hair },
+    { x: 241, y: 191, width: 2, height: 14, fillStyle: BRIDE_PALETTE.hair },
+  ]);
+  assert.deepEqual(byColor(BRIDE_PALETTE.body), [
+    { x: 233, y: 198, width: 8, height: 6, fillStyle: BRIDE_PALETTE.body },
+  ]);
+  assert.deepEqual(byColor(BRIDE_PALETTE.bodyAccent), [
+    { x: 232, y: 204, width: 10, height: 4, fillStyle: BRIDE_PALETTE.bodyAccent },
+  ]);
+});
+
+test("el paso 1 dibuja el contorno de Gonzalo y Elena como varias piezas estrechas, no como un bloque de fondo grande", () => {
+  const { scene } = createScene();
+  scene.enter();
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  for (const [label, silhouetteColor] of [
+    ["Gonzalo", PROTAGONIST_PALETTE.silhouette],
+    ["Elena", BRIDE_PALETTE.silhouette],
+  ]) {
+    const silhouetteRects = context.fillRects.filter(
+      (rect) => rect.fillStyle === silhouetteColor,
+    );
+
+    assert.ok(
+      silhouetteRects.length >= 2,
+      `${label}: el contorno debe tener varias piezas, no un único rectángulo de fondo (encontradas: ${silhouetteRects.length})`,
+    );
+
+    const widths = silhouetteRects.map((rect) => rect.width);
+    assert.ok(
+      Math.min(...widths) < Math.max(...widths),
+      `${label}: las piezas de contorno deben variar de ancho (más estrechas donde el cuerpo es más estrecho), no ser todas iguales a un único ancho de fondo`,
+    );
+  }
 });
 
 test("ningún texto renderizado cae fuera del canvas de 480x270 ni de sus márgenes", () => {

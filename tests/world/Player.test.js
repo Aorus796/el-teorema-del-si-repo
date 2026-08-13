@@ -22,35 +22,56 @@ test("Player mantiene sus dimensiones y velocidad de colisión por defecto", () 
   assert.equal(player.facing, "down");
 });
 
-test("render() dibuja exactamente la silueta, la cabeza y el cuerpo con PROTAGONIST_PALETTE", () => {
+test("render() dibuja pelo, cabeza, brazos, torso y piernas con PROTAGONIST_PALETTE en las posiciones esperadas", () => {
   const player = new Player({ x: 240, y: 192, facing: "down" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
-  const [silhouette, head, body] = context.fillRects;
+  const byColor = (color) =>
+    context.fillRects.filter((rect) => rect.fillStyle === color);
 
-  assert.deepEqual(silhouette, {
-    x: 234,
-    y: 183,
-    width: 12,
-    height: 18,
-    fillStyle: PROTAGONIST_PALETTE.silhouette,
-  });
-  assert.deepEqual(head, {
-    x: 236,
-    y: 182,
-    width: 8,
-    height: 7,
-    fillStyle: PROTAGONIST_PALETTE.head,
-  });
-  assert.deepEqual(body, {
-    x: 235,
-    y: 189,
-    width: 10,
-    height: 10,
-    fillStyle: PROTAGONIST_PALETTE.body,
-  });
+  assert.deepEqual(byColor(PROTAGONIST_PALETTE.hair), [
+    { x: 236, y: 179, width: 8, height: 2, fillStyle: PROTAGONIST_PALETTE.hair },
+    { x: 243, y: 181, width: 2, height: 3, fillStyle: PROTAGONIST_PALETTE.hair },
+  ]);
+
+  assert.deepEqual(byColor(PROTAGONIST_PALETTE.head), [
+    { x: 236, y: 181, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 234, y: 188, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 244, y: 188, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+  ]);
+
+  assert.deepEqual(byColor(PROTAGONIST_PALETTE.body), [
+    { x: 236, y: 188, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.body },
+  ]);
+
+  assert.deepEqual(byColor(PROTAGONIST_PALETTE.bodyAccent), [
+    { x: 237, y: 195, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
+    { x: 241, y: 195, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
+  ]);
+});
+
+test("la silueta es un contorno de varias piezas estrechas, no un bloque de fondo grande", () => {
+  const player = new Player({ x: 240, y: 192, facing: "down" });
+  const context = new FakeCanvasContext();
+
+  player.render(context, { x: 0, y: 0 });
+
+  const silhouetteRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === PROTAGONIST_PALETTE.silhouette,
+  );
+
+  assert.ok(
+    silhouetteRects.length >= 3,
+    `la silueta debe construirse con varias piezas de borde, no uno o dos rectángulos de fondo (encontradas: ${silhouetteRects.length})`,
+  );
+
+  const widths = silhouetteRects.map((rect) => rect.width);
+  assert.ok(
+    Math.min(...widths) < Math.max(...widths),
+    "las piezas de silueta deben variar de ancho (más estrechas donde el cuerpo es más estrecho), no ser todas iguales a un único ancho de fondo",
+  );
 });
 
 test("render() resta la posición de la cámara antes de dibujar", () => {
@@ -59,36 +80,44 @@ test("render() resta la posición de la cámara antes de dibujar", () => {
 
   player.render(context, { x: 40, y: 20 });
 
-  const [silhouette] = context.fillRects;
-  assert.equal(silhouette.x, 234 - 40);
-  assert.equal(silhouette.y, 183 - 20);
+  const [head] = context.fillRects.filter(
+    (rect) => rect.fillStyle === PROTAGONIST_PALETTE.head,
+  );
+  assert.equal(head.x, 236 - 40);
+  assert.equal(head.y, 181 - 20);
 });
 
-test("render() dibuja un cuarto rectángulo (marcador de orientación) tras el cuerpo", () => {
+test("render() dibuja el marcador de orientación al final, tras todas las demás formas", () => {
   const player = new Player({ x: 240, y: 192, facing: "up" });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
-  assert.equal(context.fillRects.length, 4);
-  const marker = context.fillRects[3];
+  const marker = context.fillRects.at(-1);
+  assert.equal(marker.fillStyle, "#f5e8c8");
   assert.equal(marker.width, 3);
   assert.equal(marker.height, 3);
 });
 
-test("render() usa exactamente los tres colores de PROTAGONIST_PALETTE, sin colores adicionales inventados", () => {
+test("render() no usa ningún color fuera de PROTAGONIST_PALETTE y el marcador de orientación", () => {
   const player = new Player({ x: 240, y: 192 });
   const context = new FakeCanvasContext();
 
   player.render(context, { x: 0, y: 0 });
 
-  const paletteColors = context.fillRects
-    .slice(0, 3)
-    .map((rect) => rect.fillStyle);
-
-  assert.deepEqual(paletteColors, [
+  const allowedColors = new Set([
     PROTAGONIST_PALETTE.silhouette,
+    PROTAGONIST_PALETTE.hair,
     PROTAGONIST_PALETTE.head,
     PROTAGONIST_PALETTE.body,
+    PROTAGONIST_PALETTE.bodyAccent,
+    "#f5e8c8",
   ]);
+
+  for (const rect of context.fillRects) {
+    assert.ok(
+      allowedColors.has(rect.fillStyle),
+      `color inesperado en render(): ${rect.fillStyle}`,
+    );
+  }
 });
