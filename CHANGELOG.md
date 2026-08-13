@@ -38,7 +38,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   arranque diferido si la escena se abandona antes (por ejemplo, al
   alcanzar el epílogo). La transición de ambient a tema de epílogo ocurre
   automáticamente al reutilizar el contrato ya existente de
-  `AudioService.playMusic()`, sin lógica adicional.
+  `AudioService.playMusic()`, sin lógica adicional. Cancelar desde el
+  mundo (tecla `cancel`) detiene la música activa antes de volver a la
+  pantalla de título, en vez de dejarla sonando indefinidamente allí; y
+  cargar una partida guardada dentro del propio mundo (tecla `load`)
+  reconcilia el audio con el estado restaurado —incluido el caso de
+  cargar un guardado con el epílogo ya completado, que detiene la música
+  en vez de arrancar el ambiental—.
 
 ## [1.0.0] - 2026-08-11
 

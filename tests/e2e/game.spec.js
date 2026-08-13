@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
@@ -24,12 +25,48 @@ function collectJavaScriptErrors(page) {
  * depender de que el entorno CI pueda reproducir sonido (autoplay,
  * dispositivos de audio, etc.) para los flujos que ahora disparan la
  * intro musical o la música ambiental.
+ *
+ * Además registra en `window.__audioEvents` una entrada por cada llamada
+ * real a `play()`/`pause()` sobre cualquier HTMLMediaElement, incluido el
+ * `src` resuelto del elemento en el momento de la llamada. Esto permite a
+ * los tests comprobar desde fuera qué pista sonó o se detuvo y en qué
+ * orden, interceptando únicamente los métodos nativos del DOM que
+ * AudioService ya usa -- sin instrumentar src/platform/AudioService.js ni
+ * introducir ningún acceso de depuración en la aplicación real.
+ *
+ * Por defecto (`resolvePlayback: false`, comportamiento histórico de este
+ * helper) `play()` sigue rechazando siempre su promesa, para conservar la
+ * cobertura ya existente de la ruta de degradación segura de
+ * AudioService ante un fallo de reproducción (ver el test del epílogo
+ * completo más abajo). Los tests que necesitan observar una pista
+ * "realmente" activa -- para comprobar después que algo la detiene de
+ * verdad -- pasan `resolvePlayback: true`: `play()` resuelve en vez de
+ * rechazar, así que AudioService.activeMusic permanece asignado hasta que
+ * el propio código de producción llame a stopMusic()/pause(), en vez de
+ * que un rechazo asíncrono lo limpie por su cuenta antes de que el test
+ * pueda comprobar nada.
  */
-async function disableAudioPlayback(page) {
-  await page.addInitScript(() => {
-    HTMLMediaElement.prototype.play = () =>
-      Promise.reject(new Error("audio deshabilitado en el entorno de test"));
-  });
+async function disableAudioPlayback(page, { resolvePlayback = false } = {}) {
+  await page.addInitScript((resolvePlayback) => {
+    window.__audioEvents = [];
+
+    const nativePause = HTMLMediaElement.prototype.pause;
+
+    HTMLMediaElement.prototype.play = function patchedPlay() {
+      window.__audioEvents.push({ type: "play", src: this.src });
+
+      return resolvePlayback
+        ? Promise.resolve()
+        : Promise.reject(
+            new Error("audio deshabilitado en el entorno de test"),
+          );
+    };
+
+    HTMLMediaElement.prototype.pause = function patchedPause() {
+      window.__audioEvents.push({ type: "pause", src: this.src });
+      return nativePause.call(this);
+    };
+  }, resolvePlayback);
 }
 
 function buildGiftCodeKeystrokes(digits) {
@@ -2620,6 +2657,294 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
 
     void worldFrameBeforeMechanism;
   });
+
+  expect(errors).toEqual([]);
+});
+
+/*
+ * Los dos tests siguientes cubren en el navegador real dos correcciones de
+ * lifecycle de audio de WorldScene.js que hasta ahora solo tenían
+ * cobertura unitaria (con FakeScenes/mock.timers, que no reproducen
+ * fielmente que SceneManager.change() invoca el exit() real de la escena
+ * saliente): cancelar desde dentro del mundo debe detener la música antes
+ * de volver al título, y cargar una partida estando ya dentro del mundo
+ * (WorldScene.update(), tecla "load") debe reconciliar el audio contra el
+ * estado recién restaurado en vez de dejar sonando lo que hubiera antes.
+ *
+ * Ambos tests usan un mismo truco para observar una pista "realmente"
+ * activa sin esperar los 6 segundos de INTRO_THEME_DURATION_MS: entran al
+ * mundo una primera vez (lo que consume TitleScene.playIntroOnce() y
+ * dispara la intro), cancelan de inmediato para volver al título, y
+ * entran una segunda vez. En esa segunda entrada, playIntroOnce() ya es
+ * un no-op, así que WorldScene.enter() arranca el ambiental de inmediato
+ * en vez de diferirlo con setTimeout -- evita duplicar aquí la espera
+ * real que sí usa el test del epílogo completo para otros fines, y
+ * mantiene esta cobertura rápida y determinista.
+ */
+
+function stripLeadingDotSlash(path) {
+  return path.replace(/^\.\//, "");
+}
+
+test("cancelar dentro del mundo detiene la música ambiental antes de volver al título", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
+
+  const titleFrame = await currentFrame();
+
+  /*
+   * Primera entrada: TitleScene.playIntroOnce() dispara la intro por
+   * primera vez, así que WorldScene.enter() difiere el arranque del
+   * ambiental 6 segundos (INTRO_THEME_DURATION_MS) mediante setTimeout.
+   * Cancelar de inmediato, antes de que ese temporizador llegue a
+   * disparar, ejercita la mitad de la corrección que cancela el arranque
+   * diferido pendiente (clearPendingAmbientStart()) sin que todavía haya
+   * ninguna música ambiental activa que detener -- la intro, en cambio,
+   * sí está sonando en este punto y stopMusic() la pausará, pero el
+   * filtro por `ambientSrcSuffix` de más abajo la excluye a propósito.
+   */
+  await page.keyboard.press("Enter");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await page.keyboard.press("Escape");
+  await expect.poll(currentFrame).toBe(titleFrame);
+
+  /*
+   * Segunda entrada: la intro ya se reprodujo una vez en esta página, así
+   * que WorldScene.enter() arranca el ambiental de inmediato, sin
+   * diferirlo. Con resolvePlayback:true ese play() resuelve en vez de
+   * rechazar, así que AudioService.activeMusic permanece asignado al
+   * elemento del ambiental hasta que algo lo detenga de verdad -- justo
+   * la condición necesaria para comprobar que cancelar lo detiene.
+   */
+  await page.keyboard.press("Enter");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.some(
+        (event) =>
+          event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+      );
+    })
+    .toBe(true);
+
+  /*
+   * WorldScene.update() llama a audio.stopMusic() de forma síncrona antes
+   * de scenes.change("title"), así que la llamada a pause() ya ha
+   * ocurrido en el momento en que el frame vuelve a coincidir con el del
+   * título -- aunque la comprobación de window.__audioEvents se lea
+   * después en este test, el evento en sí quedó registrado antes.
+   */
+  await page.keyboard.press("Escape");
+  await expect.poll(currentFrame).toBe(titleFrame);
+
+  const audioEvents = await readAudioEvents();
+  const ambientPauseEvents = audioEvents.filter(
+    (event) => event.type === "pause" && event.src.endsWith(ambientSrcSuffix),
+  );
+
+  expect(ambientPauseEvents.length).toBeGreaterThan(0);
+
+  expect(errors).toEqual([]);
+});
+
+test("cargar una partida con epílogo completado desde dentro del mundo detiene el ambiental sin reanudarlo", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const SAVE_KEY = "el-teorema-del-si.save.v1";
+
+  const readyPuzzles = {
+    libraryCatalogue: {
+      order: ["C", "M", "A", "R", "D"],
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+    archiveCriteria: {
+      verdicts: {
+        "voluntary-entry": null,
+        "followed-trail": null,
+        "never-disagreed": null,
+        "someone-refuses-now": null,
+        "present-choice": null,
+        "universal-future": null,
+      },
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+  };
+
+  const inProgressSave = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 240, y: 192, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: false,
+      preparationsBoardRead: false,
+      brideNoteReceived: false,
+      sevenBridgesUnlocked: false,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "review-preparations-board",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  /*
+   * Mismos valores de bandera que ya usa buildEpilogueReadySaveData() más
+   * arriba en este archivo para un epílogo completado, pero construidos
+   * a mano: GameState.restore() exige que epilogueCompleted implique
+   * giftCodeSolved, que a su vez implique epilogueStarted, que a su vez
+   * implique epilogueUnlocked, que a su vez implique
+   * investigationComplete (assertEpilogueFlagInvariants en
+   * src/state/GameState.js) -- si alguna quedara en false, restore()
+   * lanzaría y el test fallaría con un error claro en vez de una
+   * aserción confusa más adelante.
+   */
+  const completedSave = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 240, y: 192, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: true,
+      epilogueUnlocked: true,
+      epilogueStarted: true,
+      giftCodeSolved: true,
+      epilogueCompleted: true,
+    },
+    objectiveId: "epilogue-completed",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, inProgressSave);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
+
+  const titleFrame = await currentFrame();
+
+  // Primera carga: solo consume TitleScene.playIntroOnce(); el ambiental
+  // diferido que dispara no importa aquí, se cancela en el siguiente paso.
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await page.keyboard.press("Escape");
+  await expect.poll(currentFrame).toBe(titleFrame);
+
+  /*
+   * Segunda carga: la intro ya se consumió, así que el ambiental arranca
+   * de inmediato -- esta es la partida en curso, real, dentro del mundo,
+   * que el test necesita como punto de partida antes de forzar la rama
+   * "load" de WorldScene.update() sobre sí misma.
+   */
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.some(
+        (event) =>
+          event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+      );
+    })
+    .toBe(true);
+
+  /*
+   * Sin salir del mundo, sustituye el guardado por uno con
+   * epilogueCompleted:true -- mismo mecanismo que ya usan los tests de
+   * reload de este archivo para manipular localStorage directamente en
+   * vez de jugar el epílogo completo. El siguiente "KeyL" lo carga desde
+   * dentro de WorldScene.update() (una ruta distinta de restaurar al
+   * entrar desde el título) y debe forzar la rama de
+   * reconcileAudioAfterLoad() que detiene la música en vez de arrancar
+   * el ambiental.
+   */
+  await page.evaluate(
+    ({ key, data }) => {
+      localStorage.setItem(key, JSON.stringify(data));
+    },
+    { key: SAVE_KEY, data: completedSave },
+  );
+
+  await page.keyboard.press("KeyL");
+  await expect(toast).toHaveText("Partida cargada");
+
+  const audioEvents = await readAudioEvents();
+  const lastAmbientPauseIndex = audioEvents.findLastIndex(
+    (event) => event.type === "pause" && event.src.endsWith(ambientSrcSuffix),
+  );
+
+  expect(lastAmbientPauseIndex).toBeGreaterThan(-1);
+
+  const ambientPlayEventsAfterLastPause = audioEvents
+    .slice(lastAmbientPauseIndex + 1)
+    .filter(
+      (event) =>
+        event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+    );
+
+  expect(ambientPlayEventsAfterLastPause).toEqual([]);
 
   expect(errors).toEqual([]);
 });

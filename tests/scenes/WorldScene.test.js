@@ -965,6 +965,184 @@ test("cambiar de mapa dentro del mundo no dispara otra llamada a playMusic más 
   assert.equal(setup.audio.playMusicCalls.length, callsBefore);
 });
 
+test("cancelar con ambiental activo detiene la música antes de cambiar a title", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.input.press("cancel");
+
+  setup.scene.update(0);
+
+  assert.equal(setup.audio.stopMusicCalls, 1);
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "title", payload: {} },
+  ]);
+});
+
+test("cancelar con un arranque diferido del ambiental todavía pendiente detiene la música y cancela realmente el temporizador", () => {
+  mock.timers.enable({ apis: ["setTimeout"] });
+
+  try {
+    const setup = createWorldSceneFor("axiom-plaza", { introStarted: true });
+    setup.input.press("cancel");
+
+    setup.scene.update(0);
+
+    assert.equal(setup.audio.stopMusicCalls, 1);
+    assert.deepEqual(setup.audio.playMusicCalls, []);
+
+    mock.timers.tick(INTRO_THEME_DURATION_MS);
+
+    assert.deepEqual(setup.audio.playMusicCalls, []);
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test("transición de World hacia una escena de puzzle no detiene la música", () => {
+  const setup = createWorldAt("library");
+  const silogio = findObject("library", "library-silogio");
+
+  setup.scene.interact(silogio);
+
+  assert.equal(setup.audio.stopMusicCalls, 0);
+});
+
+test("completar el diálogo de bride-epilogue no detiene la música antes de reemplazarla con el tema del epílogo", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  setup.scene.interact(bride);
+
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal(
+      setup.audio.stopMusicCalls,
+      0,
+      `no debe detener la música antes del último turno (paso ${i})`,
+    );
+    setup.ui.dialogue.onComplete();
+  }
+
+  assert.equal(setup.audio.stopMusicCalls, 0);
+  assert.equal(setup.audio.playEpilogueThemeCalls, 1);
+});
+
+test("load() dentro de World con epilogueCompleted:false reconcilia el ambiental en loop tras la carga", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.epilogueCompleted = false;
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, input, audio } = createScene(storage);
+  scene.enter();
+
+  input.press("load");
+  scene.update(0);
+
+  assert.deepEqual(audio.playMusicCalls.at(-1), {
+    src: AMBIENT_THEME_PATH,
+    options: { loop: true },
+  });
+});
+
+test("load() dentro de World con epilogueCompleted:true detiene la música y no arranca el ambiental tras la carga", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = true;
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, input, audio } = createScene(storage);
+  scene.enter();
+
+  const callsBeforeLoad = audio.playMusicCalls.length;
+
+  input.press("load");
+  scene.update(0);
+
+  assert.equal(audio.stopMusicCalls, 1);
+  assert.deepEqual(audio.playMusicCalls.slice(callsBeforeLoad), []);
+});
+
+test("cargar dentro de World mientras el arranque diferido del ambiental sigue pendiente cancela el temporizador y reconcilia según el save cargado", () => {
+  mock.timers.enable({ apis: ["setTimeout"] });
+
+  try {
+    const saved = new GameState().toSaveData();
+    saved.flags.investigationComplete = true;
+    saved.flags.epilogueUnlocked = true;
+    saved.flags.epilogueStarted = true;
+    saved.flags.giftCodeSolved = true;
+    saved.flags.epilogueCompleted = true;
+    const storage = new FakeStorage({ loadResult: saved });
+    const input = new FakeInput();
+    const scenes = new FakeScenes();
+    const state = new GameState();
+    const ui = new FakeUi();
+    const audio = new FakeAudioService();
+    state.changeMap("axiom-plaza");
+    const scene = new WorldScene({
+      scenes,
+      input,
+      storage,
+      state,
+      ui,
+      audio,
+    });
+    scene.enter({ introStarted: true });
+
+    assert.deepEqual(audio.playMusicCalls, []);
+
+    input.press("load");
+    scene.update(0);
+
+    assert.equal(audio.stopMusicCalls, 1);
+    assert.deepEqual(audio.playMusicCalls, []);
+
+    mock.timers.tick(INTRO_THEME_DURATION_MS);
+
+    assert.deepEqual(audio.playMusicCalls, []);
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test("update() con tecla load y load() fallido no toca el audio en absoluto", () => {
+  const scenarios = [
+    () => new FakeStorage(),
+    () => new FakeStorage({ loadError: new Error("Fallo simulado") }),
+    () => {
+      const saved = new GameState().toSaveData();
+      saved.formatVersion = 999;
+      return new FakeStorage({ loadResult: saved });
+    },
+    () => {
+      const saved = new GameState().toSaveData();
+      delete saved.puzzles.libraryCatalogue.hintsRead;
+      return new FakeStorage({ loadResult: saved });
+    },
+  ];
+
+  for (const buildStorage of scenarios) {
+    withMockedConsoleError(() => {
+      const storage = buildStorage();
+      const { scene, input, audio } = createScene(storage);
+      scene.enter();
+
+      const callsBeforeLoad = audio.playMusicCalls.length;
+
+      input.press("load");
+
+      assert.doesNotThrow(() => scene.update(0));
+
+      assert.equal(audio.stopMusicCalls, 0);
+      assert.deepEqual(audio.playMusicCalls.slice(callsBeforeLoad), []);
+    });
+  }
+});
+
 test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.investigationComplete = true;

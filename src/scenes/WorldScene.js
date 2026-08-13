@@ -194,6 +194,8 @@ export class WorldScene {
 
     if (this.input.wasPressed("cancel")) {
       this.syncPlayerState();
+      this.clearPendingAmbientStart();
+      this.audio.stopMusic();
       this.scenes.change("title");
       return;
     }
@@ -210,6 +212,7 @@ export class WorldScene {
     if (this.input.wasPressed("load")) {
       if (this.load()) {
         this.setupCurrentMap();
+        this.reconcileAudioAfterLoad();
         this.ui.showToast("Partida cargada");
       }
       return;
@@ -665,6 +668,24 @@ export class WorldScene {
       this.ui.showToast("No se pudo cargar la partida", 3000);
       return false;
     }
+  }
+
+  /*
+   * Reconcilia el audio con el estado restaurado tras una carga exitosa
+   * dentro del mundo. Cubre incondicionalmente el caso de carrera donde
+   * había un arranque diferido del ambiental pendiente de la intro, y
+   * luego decide entre detener la música (epílogo ya completado) o
+   * garantizar el ambiental en loop (partida en curso).
+   */
+  reconcileAudioAfterLoad() {
+    this.clearPendingAmbientStart();
+
+    if (this.state.flags.epilogueCompleted) {
+      this.audio.stopMusic();
+      return;
+    }
+
+    this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
   }
 
   syncPlayerState() {
