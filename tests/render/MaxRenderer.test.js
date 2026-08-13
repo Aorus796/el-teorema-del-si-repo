@@ -27,7 +27,7 @@ test("renderMax usa exclusivamente los tres colores de MAX_PALETTE, sin colores 
   }
 });
 
-test("renderMax dibuja cuerpo/cabeza, dos orejas erguidas, patas delantera y trasera, cola, una máscara y un collar", () => {
+test("renderMax dibuja cuerpo/cabeza, dos orejas erguidas, patas delantera y trasera, cola y una máscara, sin collar", () => {
   const context = new FakeCanvasContext();
 
   renderMax(context, 0, 0);
@@ -42,9 +42,13 @@ test("renderMax dibuja cuerpo/cabeza, dos orejas erguidas, patas delantera y tra
     (rect) => rect.fillStyle === MAX_PALETTE.collar,
   );
 
-  assert.equal(bodyRects.length, 9);
+  assert.equal(bodyRects.length, 8);
   assert.equal(maskRects.length, 1);
-  assert.equal(collarRects.length, 1);
+  assert.equal(
+    collarRects.length,
+    0,
+    "el collar se eliminó por completo del render",
+  );
 });
 
 test("renderMax dibuja todas sus formas conectadas entre sí, sin piezas flotando por separado (cabeza, pecho, cuerpo, patas, cola)", () => {
