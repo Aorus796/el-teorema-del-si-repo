@@ -1,12 +1,13 @@
 /*
- * Genera la intro musical breve mediante síntesis aditiva local (pads de
- * acordes + arpegio suave + un filtro paso-bajo de un polo), usando
+ * Genera la intro musical breve mediante síntesis aditiva local (un
+ * motivo corto de cuatro notas staccato, sin pads sostenidos, con un
+ * filtro paso-bajo de un polo para suavizar el timbre), usando
  * exclusivamente las APIs nativas de Node (`node:fs`, `Buffer`) -- sin
  * dependencias nuevas, sin muestras, sin material de terceros y sin
- * conexión a red. Mismo enfoque que
- * tools/generate-epilogue-theme.mjs, adaptado a una pieza mucho más
- * breve (curiosa, cálida, ligeramente misteriosa) pensada para sonar
- * una sola vez tras la primera interacción del usuario en TitleScene.
+ * conexión a red. Mismo enfoque técnico general que
+ * tools/generate-epilogue-theme.mjs, pero con una dirección musical
+ * deliberadamente distinta (ágil y curiosa en vez de cálida y sostenida)
+ * tras el rechazo humano de la versión anterior de pads largos.
  *
  * Es un recurso ORIGINAL creado expresamente para este repositorio.
  *
@@ -19,50 +20,51 @@ import { resolve } from "node:path";
 const SAMPLE_RATE = 44100;
 const CHANNELS = 1;
 const BITS_PER_SAMPLE = 16;
-const SECONDS_PER_CHORD = 3;
 const OUTPUT_PATH = resolve(
   process.cwd(),
   "src/assets/audio/intro-theme.wav",
 );
 
-// Dos acordes (Am -> C, i -> III): arranca en el mismo tono menor cálido
-// que el tema del epílogo, para dar continuidad temática al conjunto, y
-// se abre hacia el relativo mayor en un gesto breve de "inicio de
-// aventura" sin resolver del todo -- ligeramente misterioso.
-const CHORDS = [
-  { root: 220.0, third: 261.63, fifth: 329.63 }, // Am (A3 C4 E4)
-  { root: 261.63, third: 329.63, fifth: 392.0 }, // C  (C4 E4 G4)
-];
+// Dos motivos de cuatro notas, en registro agudo (octavas 4-5), en un
+// modo mayor/lidio -- deliberadamente sin usar Am (evita el carácter
+// triste que motivó el rechazo de la versión anterior). El primer motivo
+// asciende por los grados 1-3-5-6 de Do mayor (un contorno abierto y
+// curioso); el segundo repite ese mismo gesto con una variación que
+// introduce el color lidio (4ª aumentada, Fa#) como nota de paso antes de
+// resolver en la tónica una octava por encima, cerrando la frase.
+const MOTIF_ONE = [261.63, 329.63, 392.0, 440.0]; // C4 E4 G4 A4
+const MOTIF_TWO = [329.63, 392.0, 369.99, 523.25]; // E4 G4 F#4 C5
 
-const PAD_TONE_AMPLITUDE = 0.14;
-const ARPEGGIO_AMPLITUDE = 0.1;
-const ARPEGGIO_NOTE_SECONDS = 0.4;
-const LOW_PASS_ALPHA = 0.35;
-const OVERALL_FADE_IN_SECONDS = 0.3;
-const OVERALL_FADE_OUT_SECONDS = 0.8;
+const NOTE_SECONDS = 0.25;
+const NOTE_ATTACK_SECONDS = 0.012;
+const GAP_SECONDS = 0.08;
+const REPEAT_GAP_SECONDS = 3.0;
+const TAIL_SECONDS = 0.3;
+const NOTE_AMPLITUDE = 0.55;
+const LOW_PASS_ALPHA = 0.55;
+const OVERALL_FADE_IN_SECONDS = 0.02;
+const OVERALL_FADE_OUT_SECONDS = 0.25;
+const PEAK_FRACTION = 0.75;
 
-const totalSeconds = CHORDS.length * SECONDS_PER_CHORD;
+const firstMotif = layoutMotif(MOTIF_ONE, 0);
+const secondMotif = layoutMotif(
+  MOTIF_TWO,
+  firstMotif.endTime + REPEAT_GAP_SECONDS,
+);
+const notes = [...firstMotif.notes, ...secondMotif.notes];
+const totalSeconds = secondMotif.endTime + TAIL_SECONDS;
 const totalSamples = Math.round(totalSeconds * SAMPLE_RATE);
 
 const rawSamples = new Float64Array(totalSamples);
 
 for (let i = 0; i < totalSamples; i += 1) {
-  const t = i / SAMPLE_RATE;
-  const chordIndex = Math.min(
-    CHORDS.length - 1,
-    Math.floor(t / SECONDS_PER_CHORD),
-  );
-  const chord = CHORDS[chordIndex];
-  const tInChord = t - chordIndex * SECONDS_PER_CHORD;
-
-  rawSamples[i] =
-    padValue(chord, t, tInChord) + arpeggioValue(chord, tInChord);
+  rawSamples[i] = sampleAt(i / SAMPLE_RATE, notes);
 }
 
 const smoothedSamples = applyOnePoleLowPass(rawSamples, LOW_PASS_ALPHA);
 applyOverallFade(smoothedSamples, SAMPLE_RATE, totalSeconds);
 
-const pcmSamples = quantizeToInt16(smoothedSamples, 0.8);
+const pcmSamples = quantizeToInt16(smoothedSamples, PEAK_FRACTION);
 const wavBuffer = encodeWavPcm16({
   sampleRate: SAMPLE_RATE,
   channels: CHANNELS,
@@ -73,51 +75,61 @@ const wavBuffer = encodeWavPcm16({
 await writeFile(OUTPUT_PATH, wavBuffer);
 
 console.log(
-  `Intro generada en ${OUTPUT_PATH} (${totalSeconds}s, ${wavBuffer.length} bytes).`,
+  `Intro generada en ${OUTPUT_PATH} (${totalSeconds.toFixed(2)}s, ${wavBuffer.length} bytes).`,
 );
 
-function padValue(chord, t, tInChord) {
-  const envelope = segmentEnvelope(tInChord, SECONDS_PER_CHORD, 0.3);
-  const tones = [chord.root, chord.third, chord.fifth];
-  const sum = tones.reduce(
-    (accumulator, frequency) =>
-      accumulator + Math.sin(2 * Math.PI * frequency * t),
-    0,
-  );
+/*
+ * Coloca un motivo de notas en el tiempo, cada una staccato
+ * (NOTE_SECONDS) separada por un silencio corto (GAP_SECONDS) de la
+ * siguiente. Devuelve tanto las notas colocadas como el instante en que
+ * termina la última nota (sin el silencio final), para poder encadenar
+ * el siguiente motivo con su propio hueco (REPEAT_GAP_SECONDS).
+ */
+function layoutMotif(frequencies, startTime) {
+  const placedNotes = [];
+  let cursor = startTime;
 
-  return (sum / tones.length) * PAD_TONE_AMPLITUDE * tones.length * envelope;
-}
-
-function arpeggioValue(chord, tInChord) {
-  const tones = [chord.root, chord.third, chord.fifth];
-  const noteIndex = Math.floor(tInChord / ARPEGGIO_NOTE_SECONDS);
-  const tInNote = tInChord - noteIndex * ARPEGGIO_NOTE_SECONDS;
-  const frequency = tones[noteIndex % tones.length] * 2;
-  const decayEnvelope = Math.max(
-    0,
-    1 - tInNote / (ARPEGGIO_NOTE_SECONDS * 0.9),
-  );
-  const attackEnvelope = Math.min(1, tInNote / 0.02);
-
-  return (
-    Math.sin(2 * Math.PI * frequency * tInNote) *
-    ARPEGGIO_AMPLITUDE *
-    decayEnvelope *
-    attackEnvelope
-  );
-}
-
-function segmentEnvelope(tInSegment, segmentSeconds, rampSeconds) {
-  if (tInSegment < rampSeconds) {
-    return tInSegment / rampSeconds;
+  for (const frequency of frequencies) {
+    placedNotes.push({ frequency, start: cursor, duration: NOTE_SECONDS });
+    cursor += NOTE_SECONDS + GAP_SECONDS;
   }
 
-  const tFromEnd = segmentSeconds - tInSegment;
-  if (tFromEnd < rampSeconds) {
-    return Math.max(0, tFromEnd / rampSeconds);
+  return { notes: placedNotes, endTime: cursor - GAP_SECONDS };
+}
+
+function sampleAt(t, placedNotes) {
+  for (const note of placedNotes) {
+    if (t < note.start || t >= note.start + note.duration) {
+      continue;
+    }
+
+    const tInNote = t - note.start;
+
+    return (
+      Math.sin(2 * Math.PI * note.frequency * tInNote) *
+      NOTE_AMPLITUDE *
+      noteEnvelope(tInNote)
+    );
   }
 
-  return 1;
+  return 0;
+}
+
+/*
+ * Envolvente ADSR corta: ataque casi inmediato (NOTE_ATTACK_SECONDS) y
+ * caída lineal hasta 0 exactamente al final de la nota -- sin cola
+ * sostenida, para un carácter staccato/pizzicato en vez del pad largo de
+ * la versión anterior.
+ */
+function noteEnvelope(tInNote) {
+  if (tInNote < NOTE_ATTACK_SECONDS) {
+    return tInNote / NOTE_ATTACK_SECONDS;
+  }
+
+  const decayElapsed = tInNote - NOTE_ATTACK_SECONDS;
+  const decayDuration = NOTE_SECONDS - NOTE_ATTACK_SECONDS;
+
+  return Math.max(0, 1 - decayElapsed / decayDuration);
 }
 
 function applyOnePoleLowPass(samples, alpha) {

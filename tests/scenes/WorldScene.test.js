@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+import test from "node:test";
 import { SceneManager } from "../../src/core/SceneManager.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
 import {
@@ -12,7 +12,6 @@ import { WorldScene } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
 import { BRIDE_PALETTE } from "../../src/content/characterPalettes.js";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
-import { INTRO_THEME_DURATION_MS } from "../../src/content/introAudioConfig.js";
 
 class FakeInput {
   constructor() {
@@ -844,10 +843,38 @@ test("completar el diálogo de bride-epilogue no añade campos del servicio de a
   assert.equal(serialized.includes("playEpilogueTheme"), false);
 });
 
-test("enter() sin epilogueCompleted reproduce la música ambiental en loop exactamente una vez", () => {
+test("enter() con una partida nueva, antes de completar el diálogo del padre de la novia, no reproduce música ambiental", () => {
   const setup = createWorldAt("axiom-plaza");
 
-  assert.deepEqual(setup.audio.playMusicCalls, [
+  assert.equal(setup.state.flags.brideNoteReceived, false);
+  assert.deepEqual(setup.audio.playMusicCalls, []);
+});
+
+test("enter() sobre un GameState restaurado con brideNoteReceived=true reproduce la música ambiental en loop exactamente una vez", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.brideNoteReceived = true;
+  saved.flags.sevenBridgesUnlocked = true;
+  saved.objectiveId = "investigate-seven-bridges";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const audio = new FakeAudioService();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage(),
+    state,
+    ui,
+    audio,
+  });
+
+  scene.enter();
+
+  assert.deepEqual(audio.playMusicCalls, [
     { src: AMBIENT_THEME_PATH, options: { loop: true } },
   ]);
 });
@@ -884,70 +911,42 @@ test("enter() sobre un GameState restaurado con epilogueCompleted=true no reprod
   assert.deepEqual(audio.playMusicCalls, []);
 });
 
-test("enter() con introStarted:true no reproduce el ambiental de inmediato, solo tras esperar la duración exacta de la intro", () => {
-  mock.timers.enable({ apis: ["setTimeout"] });
+test("completar el diálogo con el padre de la novia dispara la música ambiental en loop exactamente una vez, después de marcar brideNoteReceived", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.preparationsBoardRead = true;
 
-  try {
-    const setup = createWorldSceneFor("axiom-plaza", { introStarted: true });
+  setup.scene.interactWithBrideFather();
 
-    assert.deepEqual(setup.audio.playMusicCalls, []);
+  assert.equal(setup.state.flags.brideNoteReceived, false);
+  assert.deepEqual(setup.audio.playMusicCalls, []);
 
-    mock.timers.tick(INTRO_THEME_DURATION_MS - 1);
-    assert.deepEqual(setup.audio.playMusicCalls, []);
+  setup.ui.dialogue.onComplete();
 
-    mock.timers.tick(1);
-    assert.deepEqual(setup.audio.playMusicCalls, [
-      { src: AMBIENT_THEME_PATH, options: { loop: true } },
-    ]);
-  } finally {
-    mock.timers.reset();
-  }
-});
-
-test("enter() con introStarted:false arranca el ambiental de inmediato, igual que sin el campo", () => {
-  const setup = createWorldSceneFor("axiom-plaza", { introStarted: false });
-
+  assert.equal(setup.state.flags.brideNoteReceived, true);
   assert.deepEqual(setup.audio.playMusicCalls, [
     { src: AMBIENT_THEME_PATH, options: { loop: true } },
   ]);
 });
 
-test("salir de la escena antes de que expire el retraso de la intro cancela el arranque del ambiental", () => {
-  mock.timers.enable({ apis: ["setTimeout"] });
+test("reinteractuar con el padre de la novia tras brideNoteReceived:true no duplica la reproducción del ambiental", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.preparationsBoardRead = true;
 
-  try {
-    const setup = createWorldSceneFor("axiom-plaza", { introStarted: true });
+  setup.scene.interactWithBrideFather();
+  setup.ui.dialogue.onComplete();
 
-    setup.scene.exit();
-    mock.timers.tick(INTRO_THEME_DURATION_MS);
+  assert.equal(setup.audio.playMusicCalls.length, 1);
 
-    assert.deepEqual(setup.audio.playMusicCalls, []);
-  } finally {
-    mock.timers.reset();
-  }
+  setup.scene.interactWithBrideFather();
+
+  assert.equal(setup.audio.playMusicCalls.length, 1);
+  assert.ok(setup.ui.dialogue !== null);
 });
 
-test("volver a llamar enter() con introStarted:true antes de que expire un retraso anterior no duplica la reproducción del ambiental", () => {
-  mock.timers.enable({ apis: ["setTimeout"] });
-
-  try {
-    const setup = createWorldSceneFor("axiom-plaza", { introStarted: true });
-
-    mock.timers.tick(INTRO_THEME_DURATION_MS / 2);
-    setup.scene.enter({ introStarted: true });
-    mock.timers.tick(INTRO_THEME_DURATION_MS - 1);
-
-    assert.deepEqual(setup.audio.playMusicCalls, []);
-
-    mock.timers.tick(1);
-    assert.equal(setup.audio.playMusicCalls.length, 1);
-  } finally {
-    mock.timers.reset();
-  }
-});
-
-test("cambiar de mapa dentro del mundo no dispara otra llamada a playMusic más allá de la de enter()", () => {
+test("cambiar de mapa dentro del mundo, con el ambiental ya activo, no dispara otra llamada a playMusic", () => {
   const setup = createWorldAt("seven-bridges-walk");
+  setup.state.flags.brideNoteReceived = true;
+  setup.scene.enter();
   const exit = findObject(
     "seven-bridges-walk",
     "seven-bridges-to-library",
@@ -958,6 +957,7 @@ test("cambiar de mapa dentro del mundo no dispara otra llamada a playMusic más 
   setup.scene.player.facing = "right";
 
   const callsBefore = setup.audio.playMusicCalls.length;
+  assert.equal(callsBefore, 1);
 
   setup.scene.interactWithExit(exit);
 
@@ -967,6 +967,8 @@ test("cambiar de mapa dentro del mundo no dispara otra llamada a playMusic más 
 
 test("cancelar con ambiental activo detiene la música antes de cambiar a title", () => {
   const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.brideNoteReceived = true;
+  setup.scene.enter();
   setup.input.press("cancel");
 
   setup.scene.update(0);
@@ -977,24 +979,16 @@ test("cancelar con ambiental activo detiene la música antes de cambiar a title"
   ]);
 });
 
-test("cancelar con un arranque diferido del ambiental todavía pendiente detiene la música y cancela realmente el temporizador", () => {
-  mock.timers.enable({ apis: ["setTimeout"] });
+test("cancelar sin haber completado nunca el diálogo del padre de la novia también detiene la música (no-op seguro)", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.input.press("cancel");
 
-  try {
-    const setup = createWorldSceneFor("axiom-plaza", { introStarted: true });
-    setup.input.press("cancel");
+  setup.scene.update(0);
 
-    setup.scene.update(0);
-
-    assert.equal(setup.audio.stopMusicCalls, 1);
-    assert.deepEqual(setup.audio.playMusicCalls, []);
-
-    mock.timers.tick(INTRO_THEME_DURATION_MS);
-
-    assert.deepEqual(setup.audio.playMusicCalls, []);
-  } finally {
-    mock.timers.reset();
-  }
+  assert.equal(setup.audio.stopMusicCalls, 1);
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "title", payload: {} },
+  ]);
 });
 
 test("transición de World hacia una escena de puzzle no detiene la música", () => {
@@ -1030,9 +1024,19 @@ test("completar el diálogo de bride-epilogue no detiene la música antes de ree
   assert.equal(setup.audio.playEpilogueThemeCalls, 1);
 });
 
-test("load() dentro de World con epilogueCompleted:false reconcilia el ambiental en loop tras la carga", () => {
+/*
+ * Los tres tests siguientes cubren, uno por uno, los tres casos
+ * excluyentes de reconcileAudioAfterLoad(): epílogo completado (detiene),
+ * diálogo del padre ya completado sin epílogo completado (garantiza el
+ * ambiental en loop), y ninguno de los dos flags -- partida muy temprana
+ * -- (detiene explícitamente, en vez de conservar lo que hubiera sonando
+ * antes de la carga).
+ */
+test("load() dentro de World con brideNoteReceived:true y epilogueCompleted:false reconcilia el ambiental en loop tras la carga", () => {
   const saved = new GameState().toSaveData();
-  saved.flags.epilogueCompleted = false;
+  saved.flags.brideNoteReceived = true;
+  saved.flags.sevenBridgesUnlocked = true;
+  saved.objectiveId = "investigate-seven-bridges";
   const storage = new FakeStorage({ loadResult: saved });
   const { scene, input, audio } = createScene(storage);
   scene.enter();
@@ -1066,47 +1070,17 @@ test("load() dentro de World con epilogueCompleted:true detiene la música y no 
   assert.deepEqual(audio.playMusicCalls.slice(callsBeforeLoad), []);
 });
 
-test("cargar dentro de World mientras el arranque diferido del ambiental sigue pendiente cancela el temporizador y reconcilia según el save cargado", () => {
-  mock.timers.enable({ apis: ["setTimeout"] });
+test("load() dentro de World sin brideNoteReceived ni epilogueCompleted (partida muy temprana) detiene la música de forma explícita tras la carga", () => {
+  const saved = new GameState().toSaveData();
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, input, audio } = createScene(storage);
+  scene.enter();
 
-  try {
-    const saved = new GameState().toSaveData();
-    saved.flags.investigationComplete = true;
-    saved.flags.epilogueUnlocked = true;
-    saved.flags.epilogueStarted = true;
-    saved.flags.giftCodeSolved = true;
-    saved.flags.epilogueCompleted = true;
-    const storage = new FakeStorage({ loadResult: saved });
-    const input = new FakeInput();
-    const scenes = new FakeScenes();
-    const state = new GameState();
-    const ui = new FakeUi();
-    const audio = new FakeAudioService();
-    state.changeMap("axiom-plaza");
-    const scene = new WorldScene({
-      scenes,
-      input,
-      storage,
-      state,
-      ui,
-      audio,
-    });
-    scene.enter({ introStarted: true });
+  input.press("load");
+  scene.update(0);
 
-    assert.deepEqual(audio.playMusicCalls, []);
-
-    input.press("load");
-    scene.update(0);
-
-    assert.equal(audio.stopMusicCalls, 1);
-    assert.deepEqual(audio.playMusicCalls, []);
-
-    mock.timers.tick(INTRO_THEME_DURATION_MS);
-
-    assert.deepEqual(audio.playMusicCalls, []);
-  } finally {
-    mock.timers.reset();
-  }
+  assert.equal(audio.stopMusicCalls, 1);
+  assert.deepEqual(audio.playMusicCalls, []);
 });
 
 test("update() con tecla load y load() fallido no toca el audio en absoluto", () => {
@@ -1862,32 +1836,6 @@ function withMockedConsoleError(run) {
   } finally {
     console.error = originalConsoleError;
   }
-}
-
-/*
- * Variante de createWorldAt() que permite controlar el payload de
- * enter() (en particular `introStarted`), usada por las pruebas del
- * retraso del arranque del ambiental. createWorldAt() no sirve aquí
- * porque siempre llama a scene.enter() sin payload.
- */
-function createWorldSceneFor(mapId, enterPayload = {}) {
-  const input = new FakeInput();
-  const scenes = new FakeScenes();
-  const state = new GameState();
-  const ui = new FakeUi();
-  const audio = new FakeAudioService();
-  state.changeMap(mapId);
-  const scene = new WorldScene({
-    scenes,
-    input,
-    storage: new FakeStorage(),
-    state,
-    ui,
-    audio,
-  });
-  scene.enter(enterPayload);
-
-  return { input, scenes, state, ui, audio, scene };
 }
 
 function createWorldAt(

@@ -31,20 +31,29 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   primera vez que se interactúa válidamente en la pantalla de título
   (`src/scenes/TitleScene.js`), y una música ambiental en loop suena
   durante la exploración del mundo (`src/scenes/WorldScene.js`), salvo
-  cuando el epílogo ya se ha completado. Para que la intro pueda oírse
-  completa sin bloquear la entrada al mundo jugable, `WorldScene` retrasa
-  el arranque del ambiental `INTRO_THEME_DURATION_MS` (6 s) cuando la
-  transición viene acompañada del disparo de la intro, y cancela ese
-  arranque diferido si la escena se abandona antes (por ejemplo, al
-  alcanzar el epílogo). La transición de ambient a tema de epílogo ocurre
-  automáticamente al reutilizar el contrato ya existente de
-  `AudioService.playMusic()`, sin lógica adicional. Cancelar desde el
+  cuando el epílogo ya se ha completado. El ambiental ya no arranca por
+  un temporizador ligado a la duración de la intro: se dispara por un
+  evento narrativo propio, la primera vez que se completa el diálogo con
+  el padre de la novia (bandera `brideNoteReceived`, en
+  `WorldScene.interactWithBrideFather()`), sustituyendo a la intro si
+  esta seguía sonando en ese momento mediante el contrato ya existente de
+  `AudioService.playMusic()`, sin lógica adicional. La transición de
+  ambient a tema de epílogo ocurre de la misma forma. Cancelar desde el
   mundo (tecla `cancel`) detiene la música activa antes de volver a la
   pantalla de título, en vez de dejarla sonando indefinidamente allí; y
   cargar una partida guardada dentro del propio mundo (tecla `load`)
-  reconcilia el audio con el estado restaurado —incluido el caso de
-  cargar un guardado con el epílogo ya completado, que detiene la música
-  en vez de arrancar el ambiental—.
+  reconcilia el audio con el estado restaurado a través de
+  `reconcileAudioAfterLoad()`, con tres casos excluyentes: epílogo ya
+  completado detiene la música, diálogo del padre ya completado
+  garantiza el ambiental en loop, y cualquier otro caso (partida muy
+  temprana, antes de ese evento narrativo) detiene la música de forma
+  explícita para dejar el audio en un estado silencioso determinista.
+  Un rediseño posterior, tras el rechazo humano de la primera versión de
+  ambas pistas por motivos de carácter musical, regenera por completo
+  `intro-theme.wav` (motivo corto y ágil de cuatro notas staccato, en
+  registro agudo y modo mayor/lidio) y `ambient-theme.wav` (eventos
+  dispersos de baja densidad, registro grave y modo menor/dorio) —
+  ver `src/assets/audio/README.md` para el detalle musical completo.
 
 ## [1.0.0] - 2026-08-11
 

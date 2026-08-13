@@ -11,37 +11,53 @@ misma identidad musical mínima.
 ## `intro-theme.wav` — intro musical breve
 
 - **Origen**: generado con `tools/generate-intro-theme.mjs`, usando
-  únicamente APIs nativas de Node (`node:fs`, `Buffer`). Progresión de
-  dos acordes (Am → C), la misma tonalidad de apertura que el tema del
-  epílogo, para dar continuidad temática al conjunto sin resolver del
-  todo — un gesto breve, curioso y ligeramente misterioso pensado para
-  sonar una sola vez tras la primera interacción del usuario en
-  `TitleScene`.
+  únicamente APIs nativas de Node (`node:fs`, `Buffer`). Un motivo corto
+  de cuatro notas staccato (envolvente ADSR breve, sin cola sostenida),
+  en registro agudo (octavas 4-5), sobre un modo mayor/lidio —
+  deliberadamente sin usar Am, para evitar el carácter triste de la
+  versión anterior. El motivo se repite dos veces: la segunda introduce
+  una nota de paso lidia (4ª aumentada) antes de resolver en la tónica
+  una octava por encima. Pensado para sonar una sola vez, con un ataque
+  casi inmediato, tras la primera interacción del usuario en
+  `TitleScene`. Ya no dispara ningún temporizador en `WorldScene`: la
+  música ambiental arranca por un evento narrativo propio (ver más
+  abajo), y sustituye a la intro de forma natural si esta seguía sonando,
+  mediante el contrato ya existente de `AudioService.playMusic()`.
 - **Regenerar**: `node tools/generate-intro-theme.mjs` (o
   `docker compose run --rm game node tools/generate-intro-theme.mjs` si
   no hay Node instalado localmente) vuelve a escribir el mismo archivo
   de forma determinista.
-- **Formato**: WAV PCM de 16 bits, mono, 44100 Hz, ~6 segundos.
+- **Formato**: WAV PCM de 16 bits, mono, 44100 Hz, ~5.8 segundos.
 
 ## `ambient-theme.wav` — música ambiental principal (loop)
 
 - **Origen**: generado con `tools/generate-ambient-theme.mjs`, mismo
-  enfoque técnico que la intro. Progresión de cuatro acordes (C - G -
-  Am - F), deliberadamente distinta de la del epílogo para no anticipar
-  su identidad armónica, con una amplitud de pad y de arpegio más bajas
-  (perceptualmente más silenciosa que la intro y el epílogo) y un
-  arpegio muy escaso para no resultar protagonista. Pensada para
-  reproducirse con `loop: true` en `WorldScene` mientras dura la
-  exploración, en los cuatro mapas jugables por igual.
+  enfoque técnico general que la intro pero con una dirección musical
+  claramente distinta y discreta: eventos dispersos (una nota, o como
+  mucho una díada de dos tonos) sostenidos brevemente y separados por
+  silencios largos e irregulares, en vez del pad casi continuo de la
+  versión anterior. Registro grave (octava 3) y centro tonal en modo
+  menor/dorio (Re), distintos del registro agudo y el modo mayor/lidio de
+  la intro, para que ninguna de las dos piezas se perciba como la misma
+  idea a otra velocidad. Incluye un colchón de fundamental casi
+  inaudible para evitar silencio digital total entre eventos. Perceptual
+  y objetivamente mucho más silenciosa que la intro y el epílogo.
+  Arranca la primera vez que se completa el diálogo con el padre de la
+  novia (bandera `brideNoteReceived`, ver
+  `WorldScene.interactWithBrideFather()`) — ya no por un temporizador
+  ligado a la duración de la intro — y se reproduce con `loop: true` en
+  `WorldScene` mientras dura la exploración, en los cuatro mapas
+  jugables por igual.
 - **Regenerar**: `node tools/generate-ambient-theme.mjs` (o su
   equivalente Docker) vuelve a escribir el mismo archivo de forma
   determinista.
-- **Formato**: WAV PCM de 16 bits, mono, 44100 Hz, ~48 segundos antes de
-  repetirse. El inicio y el final llevan una rampa de fundido corta
-  (0.4 s / 0.6 s) para evitar clics al reiniciar el bucle; el punto de
-  bucle no es un crossfade real, así que se percibe una pausa breve,
-  aceptada como suficiente para v1.1 (`docs/production/
-  V1_1_PERSONALIZATION_SPEC.md` §15 — sin fade/crossfade complejo).
+- **Formato**: WAV PCM de 16 bits, mono, 44100 Hz, 44 segundos antes de
+  repetirse. El punto de bucle cae dentro de un tramo de silencio
+  prolongado (varios segundos antes y después del corte), no a mitad de
+  un evento sostenido, para minimizar el clic al reiniciar; el punto de
+  bucle no es un crossfade real, aceptado como suficiente para v1.1
+  (`docs/production/V1_1_PERSONALIZATION_SPEC.md` §15 — sin
+  fade/crossfade complejo).
 
 ## `epilogue-theme-provisional.wav` — tema del epílogo
 

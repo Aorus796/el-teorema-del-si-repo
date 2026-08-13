@@ -17,39 +17,34 @@ export class TitleScene {
 
   update() {
     if (this.input.wasPressed("interact")) {
-      const introStarted = this.playIntroOnce();
+      this.playIntroOnce();
       this.state.reset();
-      this.scenes.change("world", {
-        restoreFromState: false,
-        introStarted,
-      });
+      this.scenes.change("world", { restoreFromState: false });
       return;
     }
 
     if (this.input.wasPressed("load") && this.storage.hasSave()) {
-      const introStarted = this.playIntroOnce();
-      this.scenes.change("world", {
-        restoreFromState: true,
-        introStarted,
-      });
+      this.playIntroOnce();
+      this.scenes.change("world", { restoreFromState: true });
     }
   }
 
   /*
-   * Dispara la intro musical la primera vez que se llama y devuelve
-   * `true` en ese caso; en llamadas posteriores es un no-op y devuelve
-   * `false`. El valor devuelto le permite a WorldScene saber si debe
-   * retrasar el arranque de la música ambiental para no cortar la intro
-   * a mitad de reproducción (ver WorldScene.enter()).
+   * Dispara la intro musical la primera vez que se llama; en llamadas
+   * posteriores es un no-op. La música ambiental ya no depende de este
+   * disparo ni de su duración: arranca por un evento narrativo propio
+   * (completar el diálogo con el padre de la novia, ver
+   * WorldScene.interactWithBrideFather()), así que AudioService.playMusic()
+   * la sustituirá automáticamente si la intro sigue sonando cuando eso
+   * ocurra, sin lógica adicional aquí ni en WorldScene.
    */
   playIntroOnce() {
     if (this.introPlayed) {
-      return false;
+      return;
     }
 
     this.introPlayed = true;
     this.audio.playMusic(INTRO_THEME_PATH);
-    return true;
   }
 
   render(context) {

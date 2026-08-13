@@ -88,7 +88,7 @@ test("entrar en TitleScene sin pulsar ninguna tecla no dispara ninguna música",
   assert.deepEqual(setup.scenes.changes, []);
 });
 
-test("pulsar interact reproduce la intro exactamente una vez y cambia a world sin restaurar, marcando introStarted", () => {
+test("pulsar interact reproduce la intro exactamente una vez y cambia a world sin restaurar", () => {
   const setup = createScene();
 
   setup.input.press("interact");
@@ -100,12 +100,12 @@ test("pulsar interact reproduce la intro exactamente una vez y cambia a world si
   assert.deepEqual(setup.scenes.changes, [
     {
       name: "world",
-      payload: { restoreFromState: false, introStarted: true },
+      payload: { restoreFromState: false },
     },
   ]);
 });
 
-test("pulsar load con partida guardada reproduce la intro exactamente una vez y cambia a world restaurando, marcando introStarted", () => {
+test("pulsar load con partida guardada reproduce la intro exactamente una vez y cambia a world restaurando", () => {
   const setup = createScene({ hasSave: true });
 
   setup.input.press("load");
@@ -117,7 +117,7 @@ test("pulsar load con partida guardada reproduce la intro exactamente una vez y 
   assert.deepEqual(setup.scenes.changes, [
     {
       name: "world",
-      payload: { restoreFromState: true, introStarted: true },
+      payload: { restoreFromState: true },
     },
   ]);
 });
@@ -132,7 +132,7 @@ test("pulsar load sin partida guardada no dispara música ni cambio de escena", 
   assert.deepEqual(setup.scenes.changes, []);
 });
 
-test("una segunda pulsación de interact no vuelve a reproducir la intro y marca introStarted en false", () => {
+test("una segunda pulsación de interact no vuelve a reproducir la intro, pero sigue cambiando de escena", () => {
   const setup = createScene();
 
   setup.input.press("interact");
@@ -143,8 +143,12 @@ test("una segunda pulsación de interact no vuelve a reproducir la intro y marca
 
   assert.equal(setup.audio.playMusicCalls.length, 1);
   assert.equal(setup.scenes.changes.length, 2);
-  assert.equal(setup.scenes.changes[0].payload.introStarted, true);
-  assert.equal(setup.scenes.changes[1].payload.introStarted, false);
+  assert.deepEqual(setup.scenes.changes[0].payload, {
+    restoreFromState: false,
+  });
+  assert.deepEqual(setup.scenes.changes[1].payload, {
+    restoreFromState: false,
+  });
 });
 
 test("volver a llamar enter() no reinicia el flag de intro reproducida", () => {
@@ -159,15 +163,15 @@ test("volver a llamar enter() no reinicia el flag de intro reproducida", () => {
   setup.scene.update();
 
   assert.equal(setup.audio.playMusicCalls.length, 1);
-  assert.equal(setup.scenes.changes[1].payload.introStarted, false);
 });
 
-test("playIntroOnce() devuelve true la primera vez y false en llamadas posteriores", () => {
+test("playIntroOnce() reproduce la intro exactamente una vez, sin importar cuántas veces se llame", () => {
   const setup = createScene();
 
-  assert.equal(setup.scene.playIntroOnce(), true);
-  assert.equal(setup.scene.playIntroOnce(), false);
-  assert.equal(setup.scene.playIntroOnce(), false);
+  setup.scene.playIntroOnce();
+  setup.scene.playIntroOnce();
+  setup.scene.playIntroOnce();
+
   assert.equal(setup.audio.playMusicCalls.length, 1);
 });
 

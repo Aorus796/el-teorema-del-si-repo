@@ -1,5 +1,4 @@
 import { AMBIENT_THEME_PATH } from "../content/ambientAudioConfig.js";
-import { INTRO_THEME_DURATION_MS } from "../content/introAudioConfig.js";
 import { getWorldMap } from "../content/worldMaps.js";
 import {
   BRIDE_PALETTE,
@@ -84,17 +83,14 @@ export class WorldScene {
     this.camera = null;
     this.collisionMap = null;
     this.nearbyObject = null;
-    this.ambientStartTimeoutId = null;
   }
 
   enter({
     restoreFromState = false,
     mapId = null,
     entryPlayerState = null,
-    introStarted = false,
   } = {}) {
     this.ui.closeAll();
-    this.clearPendingAmbientStart();
 
     if (restoreFromState) {
       this.load();
@@ -113,42 +109,22 @@ export class WorldScene {
     }
 
     /*
-     * Si esta transición disparó la intro musical de TitleScene en la
-     * misma pasada síncrona, retrasa el arranque del ambiental hasta que
-     * la intro termine de sonar: AudioService.playMusic() sustituye
-     * cualquier pista activa, así que arrancarlo de inmediato cortaría la
-     * intro a los 0ms. El setTimeout no bloquea la entrada al mundo: el
-     * jugador puede moverse e interactuar de inmediato, solo se demora
-     * cuándo empieza a sonar el ambiental.
+     * El ambiental ya no arranca por un temporizador ligado a la intro de
+     * TitleScene: se dispara por un evento narrativo propio (completar el
+     * diálogo con el padre de la novia, ver interactWithBrideFather()).
+     * Si esa conversación ya ocurrió en una sesión anterior (partida
+     * restaurada), el ambiental debe sonar de inmediato al entrar; si
+     * todavía no, no se arranca nada aquí -- llegará más tarde por el
+     * propio disparo narrativo.
      */
-    if (introStarted) {
-      this.ambientStartTimeoutId = setTimeout(() => {
-        this.ambientStartTimeoutId = null;
-        this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
-      }, INTRO_THEME_DURATION_MS);
-      return;
+    if (this.state.flags.brideNoteReceived) {
+      this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
     }
-
-    this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
   }
 
   exit() {
     this.syncPlayerState();
     this.ui.closeAll();
-    this.clearPendingAmbientStart();
-  }
-
-  /*
-   * Cancela el arranque diferido del ambiental, si había uno programado.
-   * Se invoca al salir de la escena (para no reproducir audio ambiental
-   * tras abandonar el mundo) y al volver a entrar (para no acumular
-   * temporizadores si enter() se llama más de una vez sin exit() previo).
-   */
-  clearPendingAmbientStart() {
-    if (this.ambientStartTimeoutId !== null) {
-      clearTimeout(this.ambientStartTimeoutId);
-      this.ambientStartTimeoutId = null;
-    }
   }
 
   setupCurrentMap() {
@@ -194,7 +170,6 @@ export class WorldScene {
 
     if (this.input.wasPressed("cancel")) {
       this.syncPlayerState();
-      this.clearPendingAmbientStart();
       this.audio.stopMusic();
       this.scenes.change("title");
       return;
@@ -405,6 +380,7 @@ export class WorldScene {
       ],
       onComplete: () => {
         this.state.flags.brideNoteReceived = true;
+        this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
         this.state.flags.sevenBridgesUnlocked = true;
         this.state.objectiveId = "investigate-seven-bridges";
 
@@ -672,20 +648,26 @@ export class WorldScene {
 
   /*
    * Reconcilia el audio con el estado restaurado tras una carga exitosa
-   * dentro del mundo. Cubre incondicionalmente el caso de carrera donde
-   * había un arranque diferido del ambiental pendiente de la intro, y
-   * luego decide entre detener la música (epílogo ya completado) o
-   * garantizar el ambiental en loop (partida en curso).
+   * dentro del mundo, con tres casos excluyentes: si el epílogo ya está
+   * completado, detiene la música; si no, pero el diálogo con el padre de
+   * la novia ya se completó (brideNoteReceived), garantiza el ambiental en
+   * loop; en cualquier otro caso (partida muy temprana, antes de ese
+   * evento narrativo) detiene la música de forma explícita para dejar el
+   * audio en un estado silencioso determinista, en vez de conservar lo que
+   * hubiera sonando antes de la carga.
    */
   reconcileAudioAfterLoad() {
-    this.clearPendingAmbientStart();
-
     if (this.state.flags.epilogueCompleted) {
       this.audio.stopMusic();
       return;
     }
 
-    this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
+    if (this.state.flags.brideNoteReceived) {
+      this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
+      return;
+    }
+
+    this.audio.stopMusic();
   }
 
   syncPlayerState() {

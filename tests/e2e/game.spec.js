@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
+import { INTRO_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
@@ -2662,34 +2663,261 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
 });
 
 /*
- * Los dos tests siguientes cubren en el navegador real dos correcciones de
- * lifecycle de audio de WorldScene.js que hasta ahora solo tenían
- * cobertura unitaria (con FakeScenes/mock.timers, que no reproducen
- * fielmente que SceneManager.change() invoca el exit() real de la escena
- * saliente): cancelar desde dentro del mundo debe detener la música antes
- * de volver al título, y cargar una partida estando ya dentro del mundo
- * (WorldScene.update(), tecla "load") debe reconciliar el audio contra el
- * estado recién restaurado en vez de dejar sonando lo que hubiera antes.
+ * Los tres tests siguientes cubren en el navegador real el ciclo de vida
+ * de audio de WorldScene.js que hasta ahora solo tenía cobertura unitaria
+ * (con FakeScenes, que no reproduce fielmente que SceneManager.change()
+ * invoca el exit() real de la escena saliente): el disparo narrativo real
+ * de la música ambiental (completar el diálogo con el padre de la novia),
+ * cancelar desde dentro del mundo (debe detener la música antes de volver
+ * al título), y cargar una partida estando ya dentro del mundo
+ * (WorldScene.update(), tecla "load", debe reconciliar el audio contra el
+ * estado recién restaurado en vez de dejar sonando lo que hubiera antes).
  *
- * Ambos tests usan un mismo truco para observar una pista "realmente"
- * activa sin esperar los 6 segundos de INTRO_THEME_DURATION_MS: entran al
- * mundo una primera vez (lo que consume TitleScene.playIntroOnce() y
- * dispara la intro), cancelan de inmediato para volver al título, y
- * entran una segunda vez. En esa segunda entrada, playIntroOnce() ya es
- * un no-op, así que WorldScene.enter() arranca el ambiental de inmediato
- * en vez de diferirlo con setTimeout -- evita duplicar aquí la espera
- * real que sí usa el test del epílogo completo para otros fines, y
- * mantiene esta cobertura rápida y determinista.
+ * Los dos primeros ya no dependen de ningún temporizador ni del truco de
+ * "entrar dos veces" que usaba la versión anterior de este archivo (ligada
+ * al ya eliminado INTRO_THEME_DURATION_MS): siembran directamente
+ * `localStorage` con un guardado en el que `brideNoteReceived:true`, así
+ * que el ambiental ya suena en cuanto `WorldScene.enter()` restaura la
+ * partida, sin pasos intermedios.
  */
 
 function stripLeadingDotSlash(path) {
   return path.replace(/^\.\//, "");
 }
 
+test("completar el diálogo con el padre de la novia dispara la música ambiental, sustituyendo a la intro", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const SAVE_KEY = "el-teorema-del-si.save.v1";
+
+  const readyPuzzles = {
+    libraryCatalogue: {
+      order: ["C", "M", "A", "R", "D"],
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+    archiveCriteria: {
+      verdicts: {
+        "voluntary-entry": null,
+        "followed-trail": null,
+        "never-disagreed": null,
+        "someone-refuses-now": null,
+        "present-choice": null,
+        "universal-future": null,
+      },
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+  };
+
+  /*
+   * Jugador ya colocado dentro del radio de interacción de bride-father
+   * (x:304 y:176 width:14 height:18 interactionRadius:28 en
+   * src/content/worldMaps.js, centro en x:311 y:185) y con el tablón de
+   * preparativos ya leído, para ejercitar solo el paso que importa a este
+   * test -- completar el diálogo del padre -- sin tener que recorrer a
+   * pie el resto de la Plaza del Axioma primero.
+   */
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 311, y: 185, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 311, y: 185, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: false,
+      preparationsBoardRead: true,
+      brideNoteReceived: false,
+      sevenBridgesUnlocked: false,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "speak-to-bride-father",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, savedGame);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
+  const introSrcSuffix = stripLeadingDotSlash(INTRO_THEME_PATH);
+
+  const titleFrame = await currentFrame();
+
+  // La tecla "L" (cargar) también dispara TitleScene.playIntroOnce(), así
+  // que la intro suena al entrar -- justo la condición que este test
+  // necesita para comprobar después que el disparo narrativo la sustituye.
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.some(
+        (event) => event.type === "play" && event.src.endsWith(introSrcSuffix),
+      );
+    })
+    .toBe(true);
+
+  const ambientPlayedBeforeDialogue = (await readAudioEvents()).some(
+    (event) => event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+  );
+  expect(ambientPlayedBeforeDialogue).toBe(false);
+
+  // Abre el diálogo del padre de la novia (primera vez, sin
+  // brideNoteReceived): interactWithBrideFather() lo compone con cinco
+  // líneas, así que hacen falta cinco pulsaciones más para completarlo.
+  await page.keyboard.press("KeyE");
+
+  const dialogueSpeaker = page.locator("#dialogue-speaker");
+  const dialogueTextLocator = page.locator("#dialogue-text");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  await expect(dialogueSpeaker).toHaveText("Padre de la novia");
+
+  /*
+   * InputManager acumula las teclas pulsadas en un Set por código que se
+   * vacía una sola vez por frame (requestAnimationFrame): pulsar la misma
+   * tecla varias veces seguidas sin ceder tiempo entre medias colapsa
+   * varias pulsaciones en una sola efectiva (mismo problema, y misma
+   * solución, que ya documenta buildGiftCodeKeystrokes() más arriba en
+   * este archivo). Espera a que cambie el texto de la línea de diálogo
+   * entre pulsación y pulsación en vez de encadenarlas sin más.
+   */
+  const brideFatherLineCount = 5;
+  for (let i = 0; i < brideFatherLineCount - 1; i += 1) {
+    const previousLine = await dialogueTextLocator.textContent();
+    await page.keyboard.press("KeyE");
+    await expect
+      .poll(() => dialogueTextLocator.textContent())
+      .not.toBe(previousLine);
+  }
+
+  // Última pulsación: completa el diálogo, cierra el panel y ejecuta
+  // interactWithBrideFather().onComplete().
+  await page.keyboard.press("KeyE");
+  await expect(dialoguePanel).toBeHidden();
+
+  await expect(toast).toHaveText("Nota añadida al cuaderno");
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.some(
+        (event) => event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+      );
+    })
+    .toBe(true);
+
+  // El diálogo completado no autoguarda -- confirma que brideNoteReceived
+  // pasó a true guardando ahora la partida (tecla "K") y leyendo el
+  // guardado real resultante, en vez de depender solo del efecto
+  // observable en audio.
+  await page.keyboard.press("KeyK");
+  await expect(toast).toHaveText("Partida guardada");
+
+  const savedAfterCompletion = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)),
+    SAVE_KEY,
+  );
+  expect(savedAfterCompletion.flags.brideNoteReceived).toBe(true);
+
+  expect(errors).toEqual([]);
+});
+
 test("cancelar dentro del mundo detiene la música ambiental antes de volver al título", async ({
   page,
 }) => {
   const errors = collectJavaScriptErrors(page);
+
+  const readyPuzzles = {
+    libraryCatalogue: {
+      order: ["C", "M", "A", "R", "D"],
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+    archiveCriteria: {
+      verdicts: {
+        "voluntary-entry": null,
+        "followed-trail": null,
+        "never-disagreed": null,
+        "someone-refuses-now": null,
+        "present-choice": null,
+        "universal-future": null,
+      },
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+  };
+
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 240, y: 192, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: false,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, savedGame);
 
   await disableAudioPlayback(page, { resolvePlayback: true });
   await page.goto("/");
@@ -2703,31 +2931,15 @@ test("cancelar dentro del mundo detiene la música ambiental antes de volver al 
   const titleFrame = await currentFrame();
 
   /*
-   * Primera entrada: TitleScene.playIntroOnce() dispara la intro por
-   * primera vez, así que WorldScene.enter() difiere el arranque del
-   * ambiental 6 segundos (INTRO_THEME_DURATION_MS) mediante setTimeout.
-   * Cancelar de inmediato, antes de que ese temporizador llegue a
-   * disparar, ejercita la mitad de la corrección que cancela el arranque
-   * diferido pendiente (clearPendingAmbientStart()) sin que todavía haya
-   * ninguna música ambiental activa que detener -- la intro, en cambio,
-   * sí está sonando en este punto y stopMusic() la pausará, pero el
-   * filtro por `ambientSrcSuffix` de más abajo la excluye a propósito.
+   * brideNoteReceived:true en el guardado sembrado hace que
+   * WorldScene.enter() arranque el ambiental de inmediato al restaurar la
+   * partida, sin depender de la intro ni de ningún temporizador. Con
+   * resolvePlayback:true ese play() resuelve en vez de rechazar, así que
+   * AudioService.activeMusic permanece asignado al elemento del ambiental
+   * hasta que algo lo detenga de verdad -- justo la condición necesaria
+   * para comprobar que cancelar lo detiene.
    */
-  await page.keyboard.press("Enter");
-  await expect.poll(currentFrame).not.toBe(titleFrame);
-
-  await page.keyboard.press("Escape");
-  await expect.poll(currentFrame).toBe(titleFrame);
-
-  /*
-   * Segunda entrada: la intro ya se reprodujo una vez en esta página, así
-   * que WorldScene.enter() arranca el ambiental de inmediato, sin
-   * diferirlo. Con resolvePlayback:true ese play() resuelve en vez de
-   * rechazar, así que AudioService.activeMusic permanece asignado al
-   * elemento del ambiental hasta que algo lo detenga de verdad -- justo
-   * la condición necesaria para comprobar que cancelar lo detiene.
-   */
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("KeyL");
   await expect.poll(currentFrame).not.toBe(titleFrame);
 
   await expect
@@ -2806,9 +3018,9 @@ test("cargar una partida con epílogo completado desde dentro del mundo detiene 
     },
     flags: {
       examinedPrototypeSign: false,
-      preparationsBoardRead: false,
-      brideNoteReceived: false,
-      sevenBridgesUnlocked: false,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
       p2EvidenceFound: false,
       libraryObjectiveUnlocked: false,
       archiveUnlocked: false,
@@ -2818,7 +3030,7 @@ test("cargar una partida con epílogo completado desde dentro del mundo detiene 
       giftCodeSolved: false,
       epilogueCompleted: false,
     },
-    objectiveId: "review-preparations-board",
+    objectiveId: "investigate-seven-bridges",
     notebook: [],
     puzzles: readyPuzzles,
   };
@@ -2883,19 +3095,12 @@ test("cargar una partida con epílogo completado desde dentro del mundo detiene 
 
   const titleFrame = await currentFrame();
 
-  // Primera carga: solo consume TitleScene.playIntroOnce(); el ambiental
-  // diferido que dispara no importa aquí, se cancela en el siguiente paso.
-  await page.keyboard.press("KeyL");
-  await expect.poll(currentFrame).not.toBe(titleFrame);
-
-  await page.keyboard.press("Escape");
-  await expect.poll(currentFrame).toBe(titleFrame);
-
   /*
-   * Segunda carga: la intro ya se consumió, así que el ambiental arranca
-   * de inmediato -- esta es la partida en curso, real, dentro del mundo,
-   * que el test necesita como punto de partida antes de forzar la rama
-   * "load" de WorldScene.update() sobre sí misma.
+   * brideNoteReceived:true en inProgressSave hace que WorldScene.enter()
+   * arranque el ambiental de inmediato al restaurar la partida -- esta es
+   * la partida en curso, real, dentro del mundo, que el test necesita
+   * como punto de partida antes de forzar la rama "load" de
+   * WorldScene.update() sobre sí misma.
    */
   await page.keyboard.press("KeyL");
   await expect.poll(currentFrame).not.toBe(titleFrame);
