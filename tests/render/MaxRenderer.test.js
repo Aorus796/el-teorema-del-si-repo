@@ -42,7 +42,7 @@ test("renderMax dibuja cuerpo/cabeza, dos orejas erguidas, patas delantera y tra
     (rect) => rect.fillStyle === MAX_PALETTE.collar,
   );
 
-  assert.equal(bodyRects.length, 8);
+  assert.equal(bodyRects.length, 9);
   assert.equal(maskRects.length, 1);
   assert.equal(
     collarRects.length,

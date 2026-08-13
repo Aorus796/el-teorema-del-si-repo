@@ -14,9 +14,10 @@ export const MAX_DIMENSIONS = Object.freeze({ width: 22, height: 18 });
 
 export function renderMax(context, x, y) {
   context.fillStyle = MAX_PALETTE.body;
-  context.fillRect(x + 3, y + 1, 2, 3);
-  context.fillRect(x + 7, y + 1, 2, 3);
-  context.fillRect(x + 2, y + 3, 7, 6);
+  context.fillRect(x + 4, y + 1, 2, 3);
+  context.fillRect(x + 8, y + 1, 2, 3);
+  context.fillRect(x + 3, y + 3, 7, 6);
+  context.fillRect(x + 7, y + 8, 4, 2);
   context.fillRect(x + 8, y + 9, 10, 6);
   context.fillRect(x + 9, y + 13, 2, 5);
   context.fillRect(x + 15, y + 13, 3, 5);
@@ -24,5 +25,5 @@ export function renderMax(context, x, y) {
   context.fillRect(x + 19, y + 5, 3, 3);
 
   context.fillStyle = MAX_PALETTE.mask;
-  context.fillRect(x + 2, y + 6, 4, 3);
+  context.fillRect(x + 3, y + 6, 4, 3);
 }
