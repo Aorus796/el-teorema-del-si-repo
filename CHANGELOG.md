@@ -20,7 +20,13 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   varias piezas estrechas ajustadas al ancho real de cada franja del
   cuerpo, para que se lea como borde estructural en vez de como un bloque
   de fondo detrás del personaje; Max no lo necesitaba, al no usar nunca
-  una silueta de fondo equivalente.
+  una silueta de fondo equivalente. Un último retoque exclusivo de Max
+  (`src/render/MaxRenderer.js`) refina su silueta canina: la pata
+  delantera deja de leerse como una prolongación vertical de la cabeza,
+  se añade una pieza de pecho/cuello que conecta cabeza y cuerpo con una
+  transición escalonada, y la cola pasa de un rectángulo horizontal a
+  una forma en dos escalones que asciende hacia arriba y a la derecha;
+  Gonzalo y Elena no se tocan en este retoque.
 
 ## [1.0.0] - 2026-08-11
 

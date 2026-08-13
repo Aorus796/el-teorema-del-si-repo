@@ -10,21 +10,23 @@
  */
 import { MAX_PALETTE } from "../content/characterPalettes.js";
 
-export const MAX_DIMENSIONS = Object.freeze({ width: 22, height: 16 });
+export const MAX_DIMENSIONS = Object.freeze({ width: 22, height: 18 });
 
 export function renderMax(context, x, y) {
   context.fillStyle = MAX_PALETTE.body;
   context.fillRect(x + 2, y, 2, 3);
   context.fillRect(x + 6, y, 2, 3);
   context.fillRect(x + 1, y + 2, 7, 6);
-  context.fillRect(x + 7, y + 5, 11, 7);
-  context.fillRect(x + 3, y + 8, 2, 8);
-  context.fillRect(x + 14, y + 12, 2, 4);
-  context.fillRect(x + 18, y + 6, 3, 2);
+  context.fillRect(x + 6, y + 7, 4, 4);
+  context.fillRect(x + 8, y + 9, 10, 6);
+  context.fillRect(x + 9, y + 13, 2, 5);
+  context.fillRect(x + 15, y + 13, 3, 5);
+  context.fillRect(x + 17, y + 7, 3, 3);
+  context.fillRect(x + 19, y + 5, 3, 3);
 
   context.fillStyle = MAX_PALETTE.mask;
   context.fillRect(x + 1, y + 5, 4, 3);
 
   context.fillStyle = MAX_PALETTE.collar;
-  context.fillRect(x + 6, y + 6, 3, 2);
+  context.fillRect(x + 6, y + 8, 3, 2);
 }

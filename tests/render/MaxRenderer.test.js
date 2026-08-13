@@ -42,9 +42,52 @@ test("renderMax dibuja cuerpo/cabeza, dos orejas erguidas, patas delantera y tra
     (rect) => rect.fillStyle === MAX_PALETTE.collar,
   );
 
-  assert.equal(bodyRects.length, 7);
+  assert.equal(bodyRects.length, 9);
   assert.equal(maskRects.length, 1);
   assert.equal(collarRects.length, 1);
+});
+
+test("renderMax dibuja todas sus formas conectadas entre sí, sin piezas flotando por separado (cabeza, pecho, cuerpo, patas, cola)", () => {
+  const context = new FakeCanvasContext();
+
+  renderMax(context, 0, 0);
+
+  const bodyRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === MAX_PALETTE.body,
+  );
+
+  const touches = (a, b) => {
+    const xOverlap = a.x < b.x + b.width && a.x + a.width > b.x;
+    const yOverlap = a.y < b.y + b.height && a.y + a.height > b.y;
+    const xAdjacent = a.x === b.x + b.width || b.x === a.x + a.width;
+    const yAdjacent = a.y === b.y + b.height || b.y === a.y + a.height;
+    return (
+      (xOverlap && yOverlap) ||
+      (xOverlap && yAdjacent) ||
+      (yOverlap && xAdjacent)
+    );
+  };
+
+  const visited = new Set([0]);
+  const queue = [0];
+  while (queue.length > 0) {
+    const current = queue.pop();
+    for (let i = 0; i < bodyRects.length; i += 1) {
+      if (visited.has(i)) {
+        continue;
+      }
+      if (touches(bodyRects[current], bodyRects[i])) {
+        visited.add(i);
+        queue.push(i);
+      }
+    }
+  }
+
+  assert.equal(
+    visited.size,
+    bodyRects.length,
+    `algunas formas de Max quedan desconectadas del resto (conectadas: ${visited.size} de ${bodyRects.length})`,
+  );
 });
 
 test("renderMax dibuja al menos dos patas que llegan hasta la línea de suelo", () => {
