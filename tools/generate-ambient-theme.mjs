@@ -1,16 +1,21 @@
 /*
- * Genera la pista ambiental principal mediante síntesis aditiva local:
- * ya no un pad de acordes casi continuo, sino eventos dispersos (una nota
- * o, como mucho, una díada de dos tonos) separados por silencios largos,
- * más un colchón de fundamental casi inaudible para evitar silencio
- * digital total. Usa exclusivamente las APIs nativas de Node (`node:fs`,
- * `Buffer`) -- sin dependencias nuevas, sin muestras, sin material de
- * terceros y sin conexión a red. Mismo enfoque técnico general que
- * tools/generate-epilogue-theme.mjs, pero con una dirección musical
- * deliberadamente discreta y de baja densidad, distinta en registro y
- * centro tonal de la intro (tools/generate-intro-theme.mjs), tras el
- * rechazo humano de la versión anterior (un pad casi continuo demasiado
- * protagonista).
+ * Genera la pista ambiental principal (rediseño de v1.1, tercera
+ * iteración) mediante síntesis aditiva local, usando exclusivamente las
+ * APIs nativas de Node (`node:fs`, `Buffer`) -- sin dependencias nuevas,
+ * sin muestras, sin material de terceros y sin conexión a red. Mismo
+ * enfoque técnico general que tools/generate-intro-theme.mjs (síntesis de
+ * tonos senoidales + filtro paso-bajo de un polo), pero con una dirección
+ * musical deliberadamente más discreta: solo dos voces, un registro más
+ * grave y un filtro más oscuro, tras el rechazo humano de las dos
+ * versiones anteriores (un pad casi continuo demasiado protagonista, y
+ * después una versión de eventos dispersos en modo menor/dorio
+ * percibida como "funeraria", con huecos de 2.5-4s entre eventos).
+ *
+ * Esta versión sí tiene un pulso métrico regular y audible en 96 BPM
+ * (negra + una figura melódica corta en corcheas), en Re mayor -- sin
+ * ninguna nota menor de color -- para evitar el carácter fúnebre de la
+ * versión anterior, y sin ningún colchón de fundamental de relleno: con
+ * el pulso regular ya no hace falta nada para evitar silencio digital.
  *
  * Es un recurso ORIGINAL creado expresamente para este repositorio.
  *
@@ -28,53 +33,68 @@ const OUTPUT_PATH = resolve(
   "src/assets/audio/ambient-theme.wav",
 );
 
-// Paleta modal en registro grave (octava 3), centrada en Re -- Re menor /
-// dorio (grados 1, b3, 4, 5: D3, F3, G3, A3) -- deliberadamente distinta
-// del centro tonal mayor/lidio y del registro agudo (octavas 4-5) de la
-// intro, para que ambas piezas no se perciban como la misma idea a otra
-// velocidad.
+// 96 BPM en 4/4: notablemente más lento que el opening (128 BPM), para
+// que ambas pistas no se perciban como la misma idea a otra velocidad.
+const BPM = 96;
+const SECONDS_PER_BEAT = 60 / BPM;
+const SECONDS_PER_EIGHTH = SECONDS_PER_BEAT / 2;
+const BEATS_PER_MEASURE = 4;
+const SECONDS_PER_MEASURE = SECONDS_PER_BEAT * BEATS_PER_MEASURE;
+
+// Célula de 4 compases repetida 6 veces -> 6 * 4 compases * 2.5s = 60.0s,
+// con el punto de bucle cayendo exactamente en el downbeat del compás 1
+// de una hipotética séptima repetición.
+const MEASURES_PER_CELL = 4;
+const CELL_SECONDS = MEASURES_PER_CELL * SECONDS_PER_MEASURE;
+const REPEATS = 6;
+const TOTAL_SECONDS = REPEATS * CELL_SECONDS;
+
+// Re mayor / mixolidio, sin ninguna nota menor de color -- centro tonal
+// deliberadamente distinto del modo menor/dorio de la versión anterior,
+// causa objetiva del carácter "funerario" rechazado.
 const D3 = 146.83;
-const F3 = 174.61;
+const F_SHARP_3 = 185.0;
 const G3 = 196.0;
 const A3 = 220.0;
 
-// Siete eventos dispersos (nota única o díada) a lo largo del bucle, con
-// silencios irregulares de 2.5-4 s entre ellos -- sin el patrón rítmico
-// regular de la intro. El primer evento deja un hueco inicial de silencio
-// y el último termina bastante antes del final del clip, de forma que el
-// punto de bucle cae dentro de un tramo de silencio prolongado y no a
-// mitad de una nota sostenida.
-const EVENTS = [
-  { start: 2.0, duration: 2.0, tones: [D3] },
-  { start: 7.0, duration: 1.8, tones: [F3, A3] },
-  { start: 12.3, duration: 2.3, tones: [A3] },
-  { start: 17.4, duration: 2.0, tones: [D3, G3] },
-  { start: 23.2, duration: 1.9, tones: [F3] },
-  { start: 28.3, duration: 2.4, tones: [A3, D3] },
-  { start: 34.3, duration: 2.1, tones: [D3] },
-];
+const D4 = 293.66;
+const E4 = 329.63;
+const F_SHARP_4 = 369.99;
+const A4 = 440.0;
 
-const TOTAL_SECONDS = 44.0;
-const EVENT_ATTACK_SECONDS = 0.3;
-const EVENT_RELEASE_SECONDS = 0.5;
-const NOTE_AMPLITUDE = 0.35;
-const DRONE_FREQUENCY = D3;
-const DRONE_AMPLITUDE = 0.015;
-const LOW_PASS_ALPHA = 0.18;
-const OVERALL_FADE_IN_SECONDS = 0.05;
-const OVERALL_FADE_OUT_SECONDS = 0.3;
+// Voz 1: pulso de raíz en negras (registro octava 3), mismo patrón de
+// cuatro notas en cada compás -- regularidad métrica explícita.
+const PULSE_PITCHES = [D3, F_SHARP_3, G3, A3];
+
+// Voz 2: figura melódica corta en corcheas (registro octava 4), con
+// huecos deliberados (posiciones de corchea 2 y 5 del compás en silencio)
+// para no ser legato. Dos variantes con una diferencia mínima (las notas
+// intermedias intercambiadas), usada la variante en la tercera de cada
+// tres repeticiones de la célula.
+const MELODY_EIGHTH_POSITIONS = [0, 1, 3, 4, 6, 7];
+const MELODY_BASE = [D4, E4, F_SHARP_4, A4, F_SHARP_4, D4];
+const MELODY_VARIATION = [D4, F_SHARP_4, E4, A4, E4, D4];
+
+const PULSE_NOTE_SECONDS = 0.15;
+const PULSE_ATTACK_SECONDS = 0.05;
+const PULSE_AMPLITUDE = 0.3;
+
+const MELODY_NOTE_SECONDS = 0.18;
+const MELODY_ATTACK_SECONDS = 0.02;
+const MELODY_AMPLITUDE = 0.25;
+
+const LOW_PASS_ALPHA = 0.32;
 const PEAK_FRACTION = 0.32;
 
+const notes = buildNotes();
 const totalSamples = Math.round(TOTAL_SECONDS * SAMPLE_RATE);
 const rawSamples = new Float64Array(totalSamples);
 
 for (let i = 0; i < totalSamples; i += 1) {
-  rawSamples[i] = sampleAt(i / SAMPLE_RATE);
+  rawSamples[i] = sampleAt(i / SAMPLE_RATE, notes);
 }
 
 const smoothedSamples = applyOnePoleLowPass(rawSamples, LOW_PASS_ALPHA);
-applyOverallFade(smoothedSamples, SAMPLE_RATE, TOTAL_SECONDS);
-
 const pcmSamples = quantizeToInt16(smoothedSamples, PEAK_FRACTION);
 const wavBuffer = encodeWavPcm16({
   sampleRate: SAMPLE_RATE,
@@ -89,42 +109,90 @@ console.log(
   `Ambient generado en ${OUTPUT_PATH} (${TOTAL_SECONDS.toFixed(2)}s, ${wavBuffer.length} bytes).`,
 );
 
-function sampleAt(t) {
-  let value = DRONE_AMPLITUDE * Math.sin(2 * Math.PI * DRONE_FREQUENCY * t);
+/*
+ * Construye la lista completa de notas (las dos voces, en las seis
+ * repeticiones de la célula de 4 compases) como eventos con instante de
+ * inicio absoluto, igual que buildNotes() en
+ * tools/generate-intro-theme.mjs.
+ */
+function buildNotes() {
+  const placedNotes = [];
 
-  for (const event of EVENTS) {
-    if (t < event.start || t >= event.start + event.duration) {
+  for (let repeatIndex = 0; repeatIndex < REPEATS; repeatIndex += 1) {
+    const repeatStart = repeatIndex * CELL_SECONDS;
+    const isVariationRepeat = (repeatIndex + 1) % 3 === 0;
+    const melodySequence = isVariationRepeat ? MELODY_VARIATION : MELODY_BASE;
+
+    for (
+      let measureIndex = 0;
+      measureIndex < MEASURES_PER_CELL;
+      measureIndex += 1
+    ) {
+      const measureStart = repeatStart + measureIndex * SECONDS_PER_MEASURE;
+
+      // Voz 1: pulso de raíz, una nota por negra, nunca solapada con la
+      // siguiente (PULSE_NOTE_SECONDS < SECONDS_PER_BEAT).
+      for (let beatIndex = 0; beatIndex < BEATS_PER_MEASURE; beatIndex += 1) {
+        placedNotes.push({
+          frequency: PULSE_PITCHES[beatIndex],
+          start: measureStart + beatIndex * SECONDS_PER_BEAT,
+          duration: PULSE_NOTE_SECONDS,
+          attack: PULSE_ATTACK_SECONDS,
+          amplitude: PULSE_AMPLITUDE,
+        });
+      }
+
+      // Voz 2: figura melódica corta en corcheas, con huecos entre notas.
+      for (let i = 0; i < MELODY_EIGHTH_POSITIONS.length; i += 1) {
+        const eighthIndex = MELODY_EIGHTH_POSITIONS[i];
+
+        placedNotes.push({
+          frequency: melodySequence[i],
+          start: measureStart + eighthIndex * SECONDS_PER_EIGHTH,
+          duration: MELODY_NOTE_SECONDS,
+          attack: MELODY_ATTACK_SECONDS,
+          amplitude: MELODY_AMPLITUDE,
+        });
+      }
+    }
+  }
+
+  return placedNotes;
+}
+
+function sampleAt(t, placedNotes) {
+  let value = 0;
+
+  for (const note of placedNotes) {
+    if (t < note.start || t >= note.start + note.duration) {
       continue;
     }
 
-    const envelope = eventEnvelope(t - event.start, event.duration);
+    const tInNote = t - note.start;
 
-    for (const frequency of event.tones) {
-      value += NOTE_AMPLITUDE * envelope * Math.sin(2 * Math.PI * frequency * t);
-    }
+    value +=
+      Math.sin(2 * Math.PI * note.frequency * tInNote) *
+      note.amplitude *
+      noteEnvelope(tInNote, note.duration, note.attack);
   }
 
   return value;
 }
 
 /*
- * Envolvente de ataque lento (EVENT_ATTACK_SECONDS) y liberación suave
- * (EVENT_RELEASE_SECONDS) con una meseta sostenida entre ambas -- una
- * nota "que aparece y se disuelve" en vez de un ataque percusivo, acorde
- * al carácter atmosférico y no protagonista de esta pista.
+ * Envolvente por nota: ataque corto y caída hasta 0 antes de que llegue
+ * el siguiente onset de la misma voz -- un pulso audible y regular, nunca
+ * un drone sostenido.
  */
-function eventEnvelope(tInEvent, duration) {
-  if (tInEvent < EVENT_ATTACK_SECONDS) {
-    return tInEvent / EVENT_ATTACK_SECONDS;
+function noteEnvelope(tInNote, duration, attack) {
+  if (tInNote < attack) {
+    return tInNote / attack;
   }
 
-  const releaseStart = duration - EVENT_RELEASE_SECONDS;
+  const decayElapsed = tInNote - attack;
+  const decayDuration = duration - attack;
 
-  if (tInEvent >= releaseStart) {
-    return Math.max(0, (duration - tInEvent) / EVENT_RELEASE_SECONDS);
-  }
-
-  return 1;
+  return Math.max(0, 1 - decayElapsed / decayDuration);
 }
 
 function applyOnePoleLowPass(samples, alpha) {
@@ -136,24 +204,6 @@ function applyOnePoleLowPass(samples, alpha) {
   }
 
   return samples;
-}
-
-function applyOverallFade(samples, sampleRate, totalSecondsValue) {
-  const fadeInSamples = Math.round(OVERALL_FADE_IN_SECONDS * sampleRate);
-  const fadeOutSamples = Math.round(OVERALL_FADE_OUT_SECONDS * sampleRate);
-  const totalSamplesValue = samples.length;
-  const fadeOutStart = Math.round(
-    (totalSecondsValue - OVERALL_FADE_OUT_SECONDS) * sampleRate,
-  );
-
-  for (let i = 0; i < totalSamplesValue; i += 1) {
-    if (i < fadeInSamples) {
-      samples[i] *= i / fadeInSamples;
-    } else if (i >= fadeOutStart) {
-      const tFromFadeOutStart = i - fadeOutStart;
-      samples[i] *= Math.max(0, 1 - tFromFadeOutStart / fadeOutSamples);
-    }
-  }
 }
 
 function quantizeToInt16(samples, peakFraction) {

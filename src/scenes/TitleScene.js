@@ -1,50 +1,34 @@
-import { INTRO_THEME_PATH } from "../content/introAudioConfig.js";
-
 export class TitleScene {
-  constructor({ scenes, input, storage, state, ui, audio }) {
+  constructor({ scenes, input, storage, state, ui }) {
     this.scenes = scenes;
     this.input = input;
     this.storage = storage;
     this.state = state;
     this.ui = ui;
-    this.audio = audio;
-    this.introPlayed = false;
   }
 
   enter() {
     this.ui.closeAll();
   }
 
+  /*
+   * TitleScene no decide ni dispara ninguna música: WorldScene.enter() es
+   * la única autoridad de qué debe sonar (ver syncMusicToFlags() en
+   * WorldScene.js), y decide correctamente en el mismo tick síncrono en
+   * el que scenes.change("world", ...) se resuelve (SceneManager.change()
+   * es síncrono). Duplicar el disparo aquí sería lógica redundante y la
+   * fuente exacta del bug de sincronización que este diseño evita.
+   */
   update() {
     if (this.input.wasPressed("interact")) {
-      this.playIntroOnce();
       this.state.reset();
       this.scenes.change("world", { restoreFromState: false });
       return;
     }
 
     if (this.input.wasPressed("load") && this.storage.hasSave()) {
-      this.playIntroOnce();
       this.scenes.change("world", { restoreFromState: true });
     }
-  }
-
-  /*
-   * Dispara la intro musical la primera vez que se llama; en llamadas
-   * posteriores es un no-op. La música ambiental ya no depende de este
-   * disparo ni de su duración: arranca por un evento narrativo propio
-   * (completar el diálogo con el padre de la novia, ver
-   * WorldScene.interactWithBrideFather()), así que AudioService.playMusic()
-   * la sustituirá automáticamente si la intro sigue sonando cuando eso
-   * ocurra, sin lógica adicional aquí ni en WorldScene.
-   */
-  playIntroOnce() {
-    if (this.introPlayed) {
-      return;
-    }
-
-    this.introPlayed = true;
-    this.audio.playMusic(INTRO_THEME_PATH);
   }
 
   render(context) {

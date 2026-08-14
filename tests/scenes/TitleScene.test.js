@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { TitleScene } from "../../src/scenes/TitleScene.js";
-import { INTRO_THEME_PATH } from "../../src/content/introAudioConfig.js";
 
 class FakeInput {
   constructor() {
@@ -46,16 +45,6 @@ class FakeStorage {
   }
 }
 
-class FakeAudioService {
-  constructor() {
-    this.playMusicCalls = [];
-  }
-
-  playMusic(src, options) {
-    this.playMusicCalls.push({ src, options });
-  }
-}
-
 class FakeState {
   constructor() {
     this.resetCalls = 0;
@@ -72,31 +61,38 @@ function createScene({ hasSave = false } = {}) {
   const storage = new FakeStorage({ hasSave });
   const state = new FakeState();
   const ui = new FakeUi();
-  const audio = new FakeAudioService();
-  const scene = new TitleScene({ scenes, input, storage, state, ui, audio });
+  const scene = new TitleScene({ scenes, input, storage, state, ui });
 
-  return { input, scenes, storage, state, ui, audio, scene };
+  return { input, scenes, storage, state, ui, scene };
 }
 
-test("entrar en TitleScene sin pulsar ninguna tecla no dispara ninguna música", () => {
+/*
+ * TitleScene ya no decide ni dispara ninguna música: WorldScene.enter()
+ * es la única autoridad de qué debe sonar (ver syncMusicToFlags() en
+ * WorldScene.js), así que estos tests solo verifican lo que
+ * TitleScene.update() sigue haciendo -- reiniciar o no el estado y
+ * cambiar de escena con el payload correcto -- sin ninguna aserción de
+ * audio. La cobertura de qué música arranca al entrar en el mundo, en
+ * partida nueva o restaurada, vive en tests/scenes/WorldScene.test.js.
+ */
+
+test("entrar en TitleScene sin pulsar ninguna tecla no cambia de escena ni reinicia el estado", () => {
   const setup = createScene();
 
   setup.scene.enter();
   setup.scene.update();
 
-  assert.deepEqual(setup.audio.playMusicCalls, []);
   assert.deepEqual(setup.scenes.changes, []);
+  assert.equal(setup.state.resetCalls, 0);
 });
 
-test("pulsar interact reproduce la intro exactamente una vez y cambia a world sin restaurar", () => {
+test("pulsar interact reinicia el estado y cambia a world sin restaurar", () => {
   const setup = createScene();
 
   setup.input.press("interact");
   setup.scene.update();
 
-  assert.deepEqual(setup.audio.playMusicCalls, [
-    { src: INTRO_THEME_PATH, options: undefined },
-  ]);
+  assert.equal(setup.state.resetCalls, 1);
   assert.deepEqual(setup.scenes.changes, [
     {
       name: "world",
@@ -105,15 +101,13 @@ test("pulsar interact reproduce la intro exactamente una vez y cambia a world si
   ]);
 });
 
-test("pulsar load con partida guardada reproduce la intro exactamente una vez y cambia a world restaurando", () => {
+test("pulsar load con partida guardada cambia a world restaurando, sin reiniciar el estado", () => {
   const setup = createScene({ hasSave: true });
 
   setup.input.press("load");
   setup.scene.update();
 
-  assert.deepEqual(setup.audio.playMusicCalls, [
-    { src: INTRO_THEME_PATH, options: undefined },
-  ]);
+  assert.equal(setup.state.resetCalls, 0);
   assert.deepEqual(setup.scenes.changes, [
     {
       name: "world",
@@ -122,17 +116,17 @@ test("pulsar load con partida guardada reproduce la intro exactamente una vez y 
   ]);
 });
 
-test("pulsar load sin partida guardada no dispara música ni cambio de escena", () => {
+test("pulsar load sin partida guardada no reinicia el estado ni cambia de escena", () => {
   const setup = createScene({ hasSave: false });
 
   setup.input.press("load");
   setup.scene.update();
 
-  assert.deepEqual(setup.audio.playMusicCalls, []);
+  assert.equal(setup.state.resetCalls, 0);
   assert.deepEqual(setup.scenes.changes, []);
 });
 
-test("una segunda pulsación de interact no vuelve a reproducir la intro, pero sigue cambiando de escena", () => {
+test("pulsar interact dos veces seguidas reinicia el estado dos veces y cambia de escena dos veces", () => {
   const setup = createScene();
 
   setup.input.press("interact");
@@ -141,7 +135,7 @@ test("una segunda pulsación de interact no vuelve a reproducir la intro, pero s
   setup.input.press("interact");
   setup.scene.update();
 
-  assert.equal(setup.audio.playMusicCalls.length, 1);
+  assert.equal(setup.state.resetCalls, 2);
   assert.equal(setup.scenes.changes.length, 2);
   assert.deepEqual(setup.scenes.changes[0].payload, {
     restoreFromState: false,
@@ -151,7 +145,7 @@ test("una segunda pulsación de interact no vuelve a reproducir la intro, pero s
   });
 });
 
-test("volver a llamar enter() no reinicia el flag de intro reproducida", () => {
+test("volver a llamar enter() no altera el comportamiento de update()", () => {
   const setup = createScene();
 
   setup.input.press("interact");
@@ -162,29 +156,6 @@ test("volver a llamar enter() no reinicia el flag de intro reproducida", () => {
   setup.input.press("interact");
   setup.scene.update();
 
-  assert.equal(setup.audio.playMusicCalls.length, 1);
-});
-
-test("playIntroOnce() reproduce la intro exactamente una vez, sin importar cuántas veces se llame", () => {
-  const setup = createScene();
-
-  setup.scene.playIntroOnce();
-  setup.scene.playIntroOnce();
-  setup.scene.playIntroOnce();
-
-  assert.equal(setup.audio.playMusicCalls.length, 1);
-});
-
-test("TitleScene no envuelve audio.playMusic() en manejo de errores propio: confía en el contrato de AudioService (nunca lanza de forma síncrona, ver AudioService.playMusic) en vez de duplicar esa protección aquí", () => {
-  const setup = createScene();
-  setup.audio.playMusic = () => {
-    throw new Error("violación simulada del contrato de AudioService");
-  };
-
-  setup.input.press("interact");
-
-  assert.throws(
-    () => setup.scene.update(),
-    /violación simulada del contrato de AudioService/,
-  );
+  assert.equal(setup.state.resetCalls, 2);
+  assert.equal(setup.scenes.changes.length, 2);
 });

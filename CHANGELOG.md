@@ -27,33 +27,34 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   transición escalonada, y la cola pasa de un rectángulo horizontal a
   una forma en dos escalones que asciende hacia arriba y a la derecha;
   Gonzalo y Elena no se tocan en este retoque.
-- Ambientación sonora inicial: una intro musical breve se dispara la
-  primera vez que se interactúa válidamente en la pantalla de título
-  (`src/scenes/TitleScene.js`), y una música ambiental en loop suena
-  durante la exploración del mundo (`src/scenes/WorldScene.js`), salvo
-  cuando el epílogo ya se ha completado. El ambiental ya no arranca por
-  un temporizador ligado a la duración de la intro: se dispara por un
-  evento narrativo propio, la primera vez que se completa el diálogo con
-  el padre de la novia (bandera `brideNoteReceived`, en
-  `WorldScene.interactWithBrideFather()`), sustituyendo a la intro si
-  esta seguía sonando en ese momento mediante el contrato ya existente de
-  `AudioService.playMusic()`, sin lógica adicional. La transición de
-  ambient a tema de epílogo ocurre de la misma forma. Cancelar desde el
-  mundo (tecla `cancel`) detiene la música activa antes de volver a la
-  pantalla de título, en vez de dejarla sonando indefinidamente allí; y
-  cargar una partida guardada dentro del propio mundo (tecla `load`)
-  reconcilia el audio con el estado restaurado a través de
-  `reconcileAudioAfterLoad()`, con tres casos excluyentes: epílogo ya
-  completado detiene la música, diálogo del padre ya completado
-  garantiza el ambiental en loop, y cualquier otro caso (partida muy
-  temprana, antes de ese evento narrativo) detiene la música de forma
-  explícita para dejar el audio en un estado silencioso determinista.
-  Un rediseño posterior, tras el rechazo humano de la primera versión de
-  ambas pistas por motivos de carácter musical, regenera por completo
-  `intro-theme.wav` (motivo corto y ágil de cuatro notas staccato, en
-  registro agudo y modo mayor/lidio) y `ambient-theme.wav` (eventos
-  dispersos de baja densidad, registro grave y modo menor/dorio) —
-  ver `src/assets/audio/README.md` para el detalle musical completo.
+- Ambientación sonora inicial: `WorldScene.enter()` es la única
+  autoridad de qué música principal suena, con un contrato de tres
+  estados excluyentes basados en los flags narrativos ya existentes
+  (`syncMusicToFlags()`, compartido con `reconcileAudioAfterLoad()`):
+  epílogo ya completado detiene toda la música; diálogo con el padre de
+  la novia ya completado (`brideNoteReceived`) reproduce el ambiental en
+  loop; en cualquier otro caso (partida nueva o muy temprana) reproduce
+  el opening en loop. El opening suena en loop desde la primera
+  interacción del usuario en la pantalla de título hasta completar el
+  diálogo del padre de la novia, momento en el que el ambiental lo
+  sustituye (`WorldScene.interactWithBrideFather()`); `TitleScene` ya no
+  dispara ninguna música por su cuenta. La transición de ambient a tema
+  de epílogo ocurre de la misma forma. Cancelar desde el mundo (tecla
+  `cancel`) detiene la música activa antes de volver a la pantalla de
+  título, en vez de dejarla sonando indefinidamente allí; y cargar una
+  partida guardada dentro del propio mundo (tecla `load`) reconcilia el
+  audio con el estado restaurado a través de la misma lógica de tres
+  estados. Dos rediseños posteriores, tras el rechazo humano de las dos
+  versiones anteriores de ambas pistas por motivos de carácter musical
+  (una primera versión sin pulso rítmico regular, y una segunda con un
+  ambiental de carácter percibido como fúnebre), regeneran por completo
+  `intro-theme.wav` (ahora un loop de apertura con pulso regular en 128
+  BPM: arpegio, melodía corta y un click de refuerzo del pulso, en
+  registro agudo y modo mayor/lidio, todo staccato) y `ambient-theme.wav`
+  (pulso regular en 96 BPM: raíz en negras y una figura melódica corta en
+  corcheas, en registro grave y modo mayor/mixolidio, sin ninguna nota
+  menor de color) — ver `src/assets/audio/README.md` para el detalle
+  musical completo.
 
 ## [1.0.0] - 2026-08-11
 

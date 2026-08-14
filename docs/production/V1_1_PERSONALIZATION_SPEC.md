@@ -47,7 +47,7 @@ posterior a `v1.0.0`, estructurado en dos pilares:
    diferenciado de los NPCs secundarios ya existentes, y NPCs
    ambientales nuevos para que los mapas ya existentes se perciban más
    vivos.
-2. **Ambientación sonora**: intro musical breve, una pista ambiental
+2. **Ambientación sonora**: opening musical en loop, una pista ambiental
    principal para el recorrido, una transición coherente hacia el tema
    ya aprobado del epílogo, y efectos de sonido básicos — sin rehacer el
    sistema de audio actual, solo extenderlo lo mínimo necesario.
@@ -678,7 +678,9 @@ asociado a este volumen.
 
 **Pilar 2 — audio:**
 
-- Intro musical breve (~3-8 s) al comienzo de la experiencia (§14/§24).
+- Opening musical en loop (con pulso rítmico regular, no un one-shot
+  breve) desde el comienzo de la experiencia hasta completar el diálogo
+  con el padre de la novia (§14/§24).
 - Música ambiental principal, única, en loop, para el recorrido jugable
   normal (§15/§24).
 - Transición definida entre el ambiente normal y el tema ya aprobado
@@ -876,12 +878,13 @@ versiona en bruto por defecto). Ninguna acción en esta tarea.
   y C queda bloqueado por diseño — es una dependencia intencional, no
   accidental, pero debe gestionarse activamente contra el calendario
   (§26).
-- **Autoplay de la intro musical — decisión ya resuelta (§24)**: se
-  decidió explícitamente que la intro se dispara en la primera
-  interacción válida del usuario, no por autoplay al cargar la página —
-  el riesgo que queda no es "qué decidir" sino la implementación
-  concreta (`TitleScene` no recibe `audio` hoy), a resolver en su propia
-  tarea técnica (tarea 14, §22).
+- **Autoplay del opening musical — decisión ya resuelta (§24) e
+  implementada**: se decidió explícitamente que el opening se dispara en
+  la primera interacción válida del usuario, no por autoplay al cargar
+  la página. Implementado sin que `TitleScene` reciba `audio`:
+  `WorldScene.enter()` es la única autoridad de qué música suena (ver
+  §14), disparada de forma síncrona en el mismo cambio de escena que ya
+  requiere ese gesto previo del usuario.
 - **Sourcing y licencia de audio nuevo**: si no se resuelve §5.12 con
   tiempo, el pilar de audio completo queda bloqueado — mismo tipo de
   riesgo de dependencia externa que las fotografías de referencia
@@ -1159,25 +1162,32 @@ duplicados). No se propone:
   necesidad técnica real lo justifique (no identificada aquí);
 - ningún estado de audio persistido en `GameState` (§9, §15).
 
-### Intro musical (§14 del pilar de audio)
+### Opening musical (§14 del pilar de audio)
 
-**Decisión de producto (2026-08-11): resuelta.** La intro musical debe
-iniciarse a partir de la **primera interacción válida del usuario** que
-permita activar audio — **no** debe depender de autoplay con sonido al
-cargar la página. Esto corresponde a la opción B evaluada en la versión
-anterior de este documento (descartada la opción A, "intento inmediato
-en `TitleScene.enter()`", precisamente por depender de autoplay sin
-gesto previo):
+**Decisión de producto (2026-08-11): resuelta, e implementada con un
+contrato distinto del descrito originalmente en esta sección (ver nota
+de actualización más abajo).** El opening debe iniciarse a partir de la
+**primera interacción válida del usuario** que permita activar audio —
+**no** debe depender de autoplay con sonido al cargar la página. Esto
+corresponde a la opción B evaluada en la versión anterior de este
+documento (descartada la opción A, "intento inmediato en
+`TitleScene.enter()`", precisamente por depender de autoplay sin gesto
+previo).
 
-La primera vez que `InputManager` registra cualquier tecla dentro de
-`TitleScene`, esa misma pulsación sirve de gesto de usuario para
-desbloquear la reproducción de la intro. Esto requiere que `TitleScene`
-reciba `audio` (hoy no lo recibe, `src/main.js:34`) y algo de lógica
-adicional de "primera pulsación", ausente hoy — la implementación
-concreta de esa lógica, adaptada al flujo real de `TitleScene` (que ya
-distingue `wasPressed("interact")` de `wasPressed("load")`, ver
-`TitleScene.js:15-23`), se decide en su propia tarea técnica (tarea 14
-del breakdown, §22) — **no se implementa en esta tarea**.
+**Nota de actualización (implementación real, tercera iteración del
+audio de opening/ambient):** el opening ya no es un one-shot breve, sino
+un loop con pulso rítmico regular que suena desde la primera interacción
+hasta completar el diálogo con el padre de la novia. La primera
+interacción válida del usuario en `TitleScene` (`wasPressed("interact")`
+o `wasPressed("load")` con partida guardada) sigue siendo el gesto que
+desbloquea el audio, pero el disparo real ya no vive en `TitleScene`:
+`TitleScene` no recibe `audio` y no reproduce nada por su cuenta.
+`WorldScene.enter()` es la única autoridad de qué música suena
+(`syncMusicToFlags()`, con tres casos excluyentes según los flags
+`brideNoteReceived`/`epilogueCompleted`), y decide de forma síncrona en
+el mismo tick en que `scenes.change("world", ...)` se resuelve
+(`SceneManager.change()` es síncrono) — evita la lógica duplicada entre
+dos escenas que motivó la implementación original descrita arriba.
 
 ### Música ambiental (§15)
 

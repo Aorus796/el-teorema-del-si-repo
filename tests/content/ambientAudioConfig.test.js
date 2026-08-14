@@ -4,17 +4,21 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 
-// El ambient es un bucle de eventos dispersos (ver
-// tools/generate-ambient-theme.mjs): 40-60s cubre el rango esperado sin
-// acoplar el test a la duración exacta generada.
-const MIN_DURATION_SECONDS = 40.0;
-const MAX_DURATION_SECONDS = 60.0;
+// El ambient es un bucle de ~60s con pulso regular en 96 BPM (raíz en
+// negras + figura melódica corta en corcheas, ver
+// tools/generate-ambient-theme.mjs): 45-90s cubre el rango generado
+// (célula de 4 compases repetida 6 veces) sin acoplar el test a la
+// duración exacta.
+const MIN_DURATION_SECONDS = 45.0;
+const MAX_DURATION_SECONDS = 90.0;
 
-// A diferencia de la intro, el ambient incluye un colchón de fundamental
-// casi inaudible que suena de forma prácticamente continua, así que la
-// fracción de muestras no-cero es muy alta pese al diseño disperso de
-// los eventos principales.
-const MINIMUM_NON_ZERO_FRACTION = 0.5;
+// Sin ningún colchón de fundamental de relleno (eliminado en el rediseño
+// de v1.1), la fracción de muestras no-cero depende solo del pulso y la
+// figura melódica, ambos con envolventes cortas y huecos entre notas: más
+// baja que la de un pad casi continuo, pero sigue siendo una fracción
+// sustancial gracias a la densidad de onsets (ver
+// tests/content/audioLevels.test.js).
+const MINIMUM_NON_ZERO_FRACTION = 0.3;
 
 test("AMBIENT_THEME_PATH apunta a un archivo .wav bajo src/assets/audio/", () => {
   assert.match(AMBIENT_THEME_PATH, /^\.\/src\/assets\/audio\/.+\.wav$/);
@@ -38,7 +42,7 @@ test("el recurso musical del ambient tiene una cabecera RIFF/WAVE PCM válida", 
   assert.equal(wav.dataTag, "data");
 });
 
-test("el recurso musical del ambient dura entre 40 y 60 segundos", async () => {
+test("el recurso musical del ambient dura entre 45 y 90 segundos", async () => {
   const wav = await readAmbientThemeWav();
   const durationSeconds =
     wav.samples.length / wav.channels / wav.sampleRate;
@@ -69,11 +73,11 @@ test("el recurso musical del ambient contiene datos de audio reales, no solo mue
 
   assert.ok(
     nonZeroFraction > MINIMUM_NON_ZERO_FRACTION,
-    `debe haber una fracción alta de muestras distintas de cero, gracias al colchón de fundamental casi continuo (fracción real: ${nonZeroFraction})`,
+    `debe haber una fracción razonable de muestras distintas de cero, gracias al pulso y la figura melódica (fracción real: ${nonZeroFraction})`,
   );
   assert.ok(
     peakAmplitude > 500,
-    `la amplitud de pico debe ser audible en los eventos, aunque discreta (pico real: ${peakAmplitude} de 32767)`,
+    `la amplitud de pico debe ser audible en el pulso y la melodía, aunque discreta (pico real: ${peakAmplitude} de 32767)`,
   );
 });
 

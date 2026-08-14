@@ -33,7 +33,7 @@ const scenes = new SceneManager();
 
 scenes.register(
   "title",
-  new TitleScene({ scenes, input, storage, state, ui, audio }),
+  new TitleScene({ scenes, input, storage, state, ui }),
 );
 
 scenes.register(

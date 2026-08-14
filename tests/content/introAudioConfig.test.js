@@ -2,35 +2,36 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
-import { INTRO_THEME_PATH } from "../../src/content/introAudioConfig.js";
+import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 
-// La intro es un motivo corto y ágil (dos repeticiones de cuatro notas
-// staccato, ver tools/generate-intro-theme.mjs): 5.0-6.5s cubre el rango
-// esperado sin acoplar el test a la duración exacta generada.
-const MIN_DURATION_SECONDS = 5.0;
-const MAX_DURATION_SECONDS = 6.5;
+// El opening es un loop de ~30s con pulso regular en 128 BPM (arpegio +
+// melodía + click, todos staccato, ver tools/generate-intro-theme.mjs):
+// 30-60s cubre el rango generado (célula de 4 compases repetida 4-5
+// veces) sin acoplar el test a la duración exacta.
+const MIN_DURATION_SECONDS = 30.0;
+const MAX_DURATION_SECONDS = 60.0;
 
-// El diseño staccato deja silencios intencionados entre notas y entre las
-// dos repeticiones del motivo, así que la fracción de muestras no-cero es
-// bastante menor que la de una pista con pad continuo (epílogo/ambient
-// antiguo): 0.2 sigue siendo una señal inequívoca de que hay audio real,
-// muy por debajo de la fracción real observada (~0.35).
-const MINIMUM_NON_ZERO_FRACTION = 0.2;
+// El diseño staccato de las tres voces deja huecos cortos entre notas,
+// pero con densidad de onsets alta (varias notas por segundo, ver
+// tests/content/audioLevels.test.js) la fracción de muestras no-cero es
+// sustancial: 0.3 sigue siendo una señal inequívoca de audio real, por
+// debajo de la fracción real observada.
+const MINIMUM_NON_ZERO_FRACTION = 0.3;
 
-test("INTRO_THEME_PATH apunta a un archivo .wav bajo src/assets/audio/", () => {
-  assert.match(INTRO_THEME_PATH, /^\.\/src\/assets\/audio\/.+\.wav$/);
+test("OPENING_THEME_PATH apunta a un archivo .wav bajo src/assets/audio/", () => {
+  assert.match(OPENING_THEME_PATH, /^\.\/src\/assets\/audio\/.+\.wav$/);
 });
 
-test("el recurso musical de la intro existe físicamente en la ruta pública centralizada", async () => {
-  const resourcePath = resolveIntroThemePath();
+test("el recurso musical del opening existe físicamente en la ruta pública centralizada", async () => {
+  const resourcePath = resolveOpeningThemePath();
   const fileStats = await stat(resourcePath);
 
   assert.ok(fileStats.isFile());
   assert.ok(fileStats.size > 0, "el archivo no debe estar vacío");
 });
 
-test("el recurso musical de la intro tiene una cabecera RIFF/WAVE PCM válida", async () => {
-  const wav = await readIntroThemeWav();
+test("el recurso musical del opening tiene una cabecera RIFF/WAVE PCM válida", async () => {
+  const wav = await readOpeningThemeWav();
 
   assert.equal(wav.riffTag, "RIFF");
   assert.equal(wav.waveTag, "WAVE");
@@ -39,8 +40,8 @@ test("el recurso musical de la intro tiene una cabecera RIFF/WAVE PCM válida", 
   assert.equal(wav.dataTag, "data");
 });
 
-test("el recurso musical de la intro dura entre 5.0 y 6.5 segundos", async () => {
-  const wav = await readIntroThemeWav();
+test("el recurso musical del opening dura entre 30 y 60 segundos", async () => {
+  const wav = await readOpeningThemeWav();
   const durationSeconds =
     wav.samples.length / wav.channels / wav.sampleRate;
 
@@ -51,8 +52,8 @@ test("el recurso musical de la intro dura entre 5.0 y 6.5 segundos", async () =>
   );
 });
 
-test("el recurso musical de la intro contiene datos de audio reales, no solo muestras cero", async () => {
-  const wav = await readIntroThemeWav();
+test("el recurso musical del opening contiene datos de audio reales, no solo muestras cero", async () => {
+  const wav = await readOpeningThemeWav();
 
   assert.ok(wav.samples.length > 0, "debe contener al menos una muestra");
 
@@ -78,13 +79,13 @@ test("el recurso musical de la intro contiene datos de audio reales, no solo mue
   );
 });
 
-function resolveIntroThemePath() {
-  const relativePath = INTRO_THEME_PATH.replace(/^\.\//, "");
+function resolveOpeningThemePath() {
+  const relativePath = OPENING_THEME_PATH.replace(/^\.\//, "");
   return resolve(process.cwd(), relativePath);
 }
 
-async function readIntroThemeWav() {
-  const buffer = await readFile(resolveIntroThemePath());
+async function readOpeningThemeWav() {
+  const buffer = await readFile(resolveOpeningThemePath());
   return parseWavPcm16(buffer);
 }
 

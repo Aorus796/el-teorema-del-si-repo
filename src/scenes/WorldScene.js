@@ -1,4 +1,5 @@
 import { AMBIENT_THEME_PATH } from "../content/ambientAudioConfig.js";
+import { OPENING_THEME_PATH } from "../content/introAudioConfig.js";
 import { getWorldMap } from "../content/worldMaps.js";
 import {
   BRIDE_PALETTE,
@@ -103,23 +104,7 @@ export class WorldScene {
     }
 
     this.setupCurrentMap();
-
-    if (this.state.flags.epilogueCompleted) {
-      return;
-    }
-
-    /*
-     * El ambiental ya no arranca por un temporizador ligado a la intro de
-     * TitleScene: se dispara por un evento narrativo propio (completar el
-     * diálogo con el padre de la novia, ver interactWithBrideFather()).
-     * Si esa conversación ya ocurrió en una sesión anterior (partida
-     * restaurada), el ambiental debe sonar de inmediato al entrar; si
-     * todavía no, no se arranca nada aquí -- llegará más tarde por el
-     * propio disparo narrativo.
-     */
-    if (this.state.flags.brideNoteReceived) {
-      this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
-    }
+    this.syncMusicToFlags();
   }
 
   exit() {
@@ -380,7 +365,7 @@ export class WorldScene {
       ],
       onComplete: () => {
         this.state.flags.brideNoteReceived = true;
-        this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
+        this.syncMusicToFlags();
         this.state.flags.sevenBridgesUnlocked = true;
         this.state.objectiveId = "investigate-seven-bridges";
 
@@ -648,15 +633,28 @@ export class WorldScene {
 
   /*
    * Reconcilia el audio con el estado restaurado tras una carga exitosa
-   * dentro del mundo, con tres casos excluyentes: si el epílogo ya está
-   * completado, detiene la música; si no, pero el diálogo con el padre de
-   * la novia ya se completó (brideNoteReceived), garantiza el ambiental en
-   * loop; en cualquier otro caso (partida muy temprana, antes de ese
-   * evento narrativo) detiene la música de forma explícita para dejar el
-   * audio en un estado silencioso determinista, en vez de conservar lo que
-   * hubiera sonando antes de la carga.
+   * dentro del mundo. Comparte exactamente la misma lógica de tres casos
+   * excluyentes que enter() -- ver syncMusicToFlags() -- para que el
+   * resultado de cargar una partida nunca dependa de si la carga ocurrió
+   * al entrar en el mundo o durante una partida ya en curso.
    */
   reconcileAudioAfterLoad() {
+    this.syncMusicToFlags();
+  }
+
+  /*
+   * Única autoridad de qué música principal debe sonar, según los flags
+   * narrativos ya persistidos en el estado, con tres casos excluyentes:
+   * (1) epílogo completado: silencio total, deteniendo explícitamente
+   * cualquier música que pudiera seguir sonando de un estado anterior de
+   * esta misma instancia de escena (por ejemplo, el opening de una
+   * partida nueva iniciada antes de cargar una partida ya terminada);
+   * (2) diálogo con el padre de la novia ya completado sin el epílogo
+   * completado: ambiental en loop; (3) ningún hito narrativo alcanzado
+   * todavía (partida nueva o muy temprana): opening en loop. Se usa tanto
+   * desde enter() como desde reconcileAudioAfterLoad().
+   */
+  syncMusicToFlags() {
     if (this.state.flags.epilogueCompleted) {
       this.audio.stopMusic();
       return;
@@ -667,7 +665,7 @@ export class WorldScene {
       return;
     }
 
-    this.audio.stopMusic();
+    this.audio.playMusic(OPENING_THEME_PATH, { loop: true });
   }
 
   syncPlayerState() {

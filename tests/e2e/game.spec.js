@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
-import { INTRO_THEME_PATH } from "../../src/content/introAudioConfig.js";
+import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
+import { EPILOGUE_THEME_PATH } from "../../src/content/epilogueAudioConfig.js";
 import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
@@ -2663,29 +2664,34 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
 });
 
 /*
- * Los tres tests siguientes cubren en el navegador real el ciclo de vida
- * de audio de WorldScene.js que hasta ahora solo tenía cobertura unitaria
+ * Los tests siguientes cubren en el navegador real el ciclo de vida de
+ * audio de WorldScene.js que hasta ahora solo tenía cobertura unitaria
  * (con FakeScenes, que no reproduce fielmente que SceneManager.change()
  * invoca el exit() real de la escena saliente): el disparo narrativo real
  * de la música ambiental (completar el diálogo con el padre de la novia),
  * cancelar desde dentro del mundo (debe detener la música antes de volver
- * al título), y cargar una partida estando ya dentro del mundo
+ * al título), cargar una partida estando ya dentro del mundo
  * (WorldScene.update(), tecla "load", debe reconciliar el audio contra el
- * estado recién restaurado en vez de dejar sonando lo que hubiera antes).
+ * estado recién restaurado en vez de dejar sonando lo que hubiera antes),
+ * cargar directamente desde el título una partida con el epílogo ya
+ * completado (no debe dejar nada sonando en loop), y que el opening suena
+ * de forma continua y sin re-disparo desde el título hasta entrar al
+ * mundo en una partida nueva.
  *
- * Los dos primeros ya no dependen de ningún temporizador ni del truco de
- * "entrar dos veces" que usaba la versión anterior de este archivo (ligada
- * al ya eliminado INTRO_THEME_DURATION_MS): siembran directamente
- * `localStorage` con un guardado en el que `brideNoteReceived:true`, así
- * que el ambiental ya suena en cuanto `WorldScene.enter()` restaura la
- * partida, sin pasos intermedios.
+ * WorldScene.enter() es la única autoridad de qué música suena (ver
+ * syncMusicToFlags() en src/scenes/WorldScene.js): TitleScene ya no
+ * reproduce nada por su cuenta, así que ninguno de estos tests depende de
+ * ningún temporizador ni de entrar dos veces en una escena para forzar un
+ * estado de audio concreto -- siembran directamente `localStorage` con el
+ * guardado que corresponda y comprueban el resultado observable a través
+ * de `window.__audioEvents`.
  */
 
 function stripLeadingDotSlash(path) {
   return path.replace(/^\.\//, "");
 }
 
-test("completar el diálogo con el padre de la novia dispara la música ambiental, sustituyendo a la intro", async ({
+test("completar el diálogo con el padre de la novia dispara la música ambiental, sustituyendo al opening", async ({
   page,
 }) => {
   const errors = collectJavaScriptErrors(page);
@@ -2769,13 +2775,15 @@ test("completar el diálogo con el padre de la novia dispara la música ambienta
     canvas.evaluate((element) => element.toDataURL());
   const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
   const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
-  const introSrcSuffix = stripLeadingDotSlash(INTRO_THEME_PATH);
+  const openingSrcSuffix = stripLeadingDotSlash(OPENING_THEME_PATH);
 
   const titleFrame = await currentFrame();
 
-  // La tecla "L" (cargar) también dispara TitleScene.playIntroOnce(), así
-  // que la intro suena al entrar -- justo la condición que este test
-  // necesita para comprobar después que el disparo narrativo la sustituye.
+  // La tecla "L" (cargar) restaura una partida sin brideNoteReceived ni
+  // epilogueCompleted, así que WorldScene.enter() arranca el opening en
+  // loop por su propia autoridad (syncMusicToFlags()) al restaurar el
+  // estado -- justo la condición que este test necesita para comprobar
+  // después que el disparo narrativo del padre de la novia lo sustituye.
   await page.keyboard.press("KeyL");
   await expect.poll(currentFrame).not.toBe(titleFrame);
 
@@ -2783,7 +2791,8 @@ test("completar el diálogo con el padre de la novia dispara la música ambienta
     .poll(async () => {
       const events = await readAudioEvents();
       return events.some(
-        (event) => event.type === "play" && event.src.endsWith(introSrcSuffix),
+        (event) =>
+          event.type === "play" && event.src.endsWith(openingSrcSuffix),
       );
     })
     .toBe(true);
@@ -3150,6 +3159,325 @@ test("cargar una partida con epílogo completado desde dentro del mundo detiene 
     );
 
   expect(ambientPlayEventsAfterLastPause).toEqual([]);
+
+  expect(errors).toEqual([]);
+});
+
+test("cargar desde el título una partida con el epílogo ya completado no deja ningún opening ni ambiental sonando en loop", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+
+  const errors = collectJavaScriptErrors(page);
+
+  const readyPuzzles = {
+    libraryCatalogue: {
+      order: ["C", "M", "A", "R", "D"],
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+    archiveCriteria: {
+      verdicts: {
+        "voluntary-entry": null,
+        "followed-trail": null,
+        "never-disagreed": null,
+        "someone-refuses-now": null,
+        "present-choice": null,
+        "universal-future": null,
+      },
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+  };
+
+  /*
+   * Este guardado NO tiene epilogueCompleted:true todavía -- a propósito.
+   * Sembrar directamente epilogueCompleted:true y cargarlo desde un
+   * título recién llegado (versión anterior de este test) es trivialmente
+   * cierto incluso sin this.audio.stopMusic() en la rama epilogueCompleted
+   * de syncMusicToFlags(): si nunca sonó nada en la página, ninguna
+   * aserción de "nada suena" puede distinguir "se detuvo explícitamente"
+   * de "nunca hubo nada que detener".
+   *
+   * En su lugar, este guardado deja al jugador justo junto a la novia
+   * (giftCodeSolved:true) para que el propio flujo real del juego --no
+   * este test-- dispare audio.playEpilogueTheme() al completar el
+   * diálogo final (WorldScene.completeBrideDialogue()), lo deje activo
+   * durante CreditsScene y TitleScene (ninguna de las dos tiene lógica de
+   * audio propia -- ver sus comentarios) y solo entonces se cargue, con
+   * la tecla "L" desde el título -- la misma ruta
+   * TitleScene -> WorldScene.enter({restoreFromState:true}) que cubre la
+   * regresión-- el guardado real que CreditsScene.confirmFinalCard() ya
+   * generó con epilogueCompleted:true. Si se quitara
+   * this.audio.stopMusic() de esa rama, el tema del epílogo que quedó
+   * activo desde el paso anterior nunca se pausaría al hacer esa última
+   * carga, y la aserción final de este test fallaría.
+   */
+  const readyToMeetBrideSave = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 650, y: 270, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 650, y: 270, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: true,
+      epilogueUnlocked: true,
+      epilogueStarted: true,
+      giftCodeSolved: true,
+      epilogueCompleted: false,
+    },
+    objectiveId: "epilogue-meet-bride",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  // Parche de fillText igual al que ya usa el test "recorre el epílogo
+  // completo...", inyectado antes de que cargue el juego, sin tocar
+  // ningún archivo de src/: EpilogueGiftCodeScene y CreditsScene no usan
+  // el DOM, así que es la única forma de confirmar por texto exacto que
+  // se llegó de verdad al título real.
+  await page.addInitScript(() => {
+    window.__renderedTexts = [];
+
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function patchedFillText(
+      text,
+      x,
+      y,
+      maxWidth,
+    ) {
+      window.__renderedTexts.push(String(text));
+      return originalFillText.call(this, text, x, y, maxWidth);
+    };
+  });
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, readyToMeetBrideSave);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const interactionPrompt = page.locator("#interaction-prompt");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
+  const openingSrcSuffix = stripLeadingDotSlash(OPENING_THEME_PATH);
+  const epilogueThemeSrcSuffix = stripLeadingDotSlash(EPILOGUE_THEME_PATH);
+  const waitForRenderedText = (text) =>
+    expect
+      .poll(() =>
+        page.evaluate(
+          (needle) => window.__renderedTexts.includes(needle),
+          text,
+        ),
+      )
+      .toBe(true);
+
+  const titleFrame = await currentFrame();
+
+  await test.step("cargar la partida en curso, con la novia ya alcanzable", async () => {
+    await page.keyboard.press("KeyL");
+    await expect.poll(currentFrame).not.toBe(titleFrame);
+
+    await expect(interactionPrompt).toHaveText("[E] Hablar con la novia");
+
+    // brideNoteReceived:true dispara el ambiental de inmediato al
+    // restaurar (WorldScene.enter() -> syncMusicToFlags()) -- confirma
+    // que esta primera carga sí dejó algo sonando de verdad, la base
+    // necesaria para que la comprobación final de este test sea un
+    // guardián real.
+    await expect
+      .poll(async () => {
+        const events = await readAudioEvents();
+        return events.some(
+          (event) =>
+            event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+        );
+      })
+      .toBe(true);
+  });
+
+  await test.step("completa el diálogo final con la novia", async () => {
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeVisible();
+
+    let previousLine = await dialogueText.textContent();
+
+    for (let turn = 0; turn < 5; turn += 1) {
+      await page.keyboard.press("KeyE");
+
+      if (turn < 4) {
+        await expect.poll(() => dialogueText.textContent()).not.toBe(
+          previousLine,
+        );
+        previousLine = await dialogueText.textContent();
+      } else {
+        await expect(dialoguePanel).toBeHidden();
+      }
+    }
+
+    // completeBrideDialogue() llama a audio.playEpilogueTheme() antes de
+    // cambiar a "credits" -- confirma que de verdad quedó sonando.
+    await expect
+      .poll(async () => {
+        const events = await readAudioEvents();
+        return events.some(
+          (event) =>
+            event.type === "play" &&
+            event.src.endsWith(epilogueThemeSrcSuffix),
+        );
+      })
+      .toBe(true);
+  });
+
+  await test.step("recorre CreditsScene y confirma la tarjeta final", async () => {
+    for (let step = 0; step < 5; step += 1) {
+      const frameBeforeStep = await currentFrame();
+      await page.keyboard.press("KeyE");
+      await expect.poll(currentFrame).not.toBe(frameBeforeStep);
+    }
+
+    // "EL TEOREMA DEL SI" (sin tilde) es el texto literal de
+    // TitleScene.js, deliberadamente distinto de "EL TEOREMA DEL SÍ" (con
+    // tilde) del paso de título de CreditsScene -- confirma sin
+    // ambigüedad que confirmFinalCard() completó el guardado real y
+    // volvió al título real, no que se quedó en algún paso de créditos.
+    await waitForRenderedText("EL TEOREMA DEL SI");
+
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+    const savedData = JSON.parse(savedRaw);
+    expect(savedData.flags.epilogueCompleted).toBe(true);
+  });
+
+  const audioEventsBeforeFinalLoad = await readAudioEvents();
+
+  /*
+   * Ni CreditsScene ni TitleScene tienen ninguna lógica de audio propia
+   * (ver sus comentarios) -- confirma que, justo antes de la carga final,
+   * el tema del epílogo sigue activo, sin ningún pause() de por medio.
+   * Si esta comprobación fallara, el resto del test no demostraría nada:
+   * ya no quedaría nada sonando que this.audio.stopMusic() tuviera que
+   * detener.
+   */
+  const epilogueThemePauseEventsBeforeFinalLoad =
+    audioEventsBeforeFinalLoad.filter(
+      (event) =>
+        event.type === "pause" &&
+        event.src.endsWith(epilogueThemeSrcSuffix),
+    );
+  expect(epilogueThemePauseEventsBeforeFinalLoad).toEqual([]);
+
+  const titleFrameBeforeFinalLoad = await currentFrame();
+
+  // Última carga: título -> WorldScene.enter({restoreFromState:true}) ->
+  // load() -> syncMusicToFlags() con epilogueCompleted:true, exactamente
+  // la ruta que este test debe vigilar.
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrameBeforeFinalLoad);
+
+  // Da tiempo a que cualquier disparo de audio erróneo tuviera ocasión de
+  // ocurrir (un par de frames de margen) antes de comprobar los eventos.
+  await page.waitForTimeout(200);
+
+  const audioEventsAfterFinalLoad = await readAudioEvents();
+  const newAudioEvents = audioEventsAfterFinalLoad.slice(
+    audioEventsBeforeFinalLoad.length,
+  );
+
+  const epilogueThemePauseEventsAfterFinalLoad = newAudioEvents.filter(
+    (event) =>
+      event.type === "pause" && event.src.endsWith(epilogueThemeSrcSuffix),
+  );
+
+  // La comprobación que de verdad depende de this.audio.stopMusic() en la
+  // rama epilogueCompleted de syncMusicToFlags(): sin esa línea, el tema
+  // del epílogo que quedó activo desde el paso anterior nunca se
+  // pausaría al cargar desde el título.
+  expect(epilogueThemePauseEventsAfterFinalLoad.length).toBeGreaterThan(0);
+
+  const loopingPlayEvents = newAudioEvents.filter(
+    (event) =>
+      event.type === "play" &&
+      (event.src.endsWith(ambientSrcSuffix) ||
+        event.src.endsWith(openingSrcSuffix)),
+  );
+
+  expect(loopingPlayEvents).toEqual([]);
+
+  expect(errors).toEqual([]);
+});
+
+test("el opening suena de forma continua, sin re-disparo, desde el título hasta entrar al mundo en una partida nueva", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const openingSrcSuffix = stripLeadingDotSlash(OPENING_THEME_PATH);
+
+  const titleFrame = await currentFrame();
+
+  const audioEventsAtTitle = await readAudioEvents();
+  expect(audioEventsAtTitle).toEqual([]);
+
+  // "E" en el título inicia una partida nueva sin ninguna partida
+  // guardada: state.reset() deja todas las banderas narrativas en false,
+  // así que WorldScene.enter() debe arrancar el opening en loop por su
+  // propia autoridad, sin que TitleScene haya disparado nada antes.
+  await page.keyboard.press("KeyE");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.filter(
+        (event) =>
+          event.type === "play" && event.src.endsWith(openingSrcSuffix),
+      ).length;
+    })
+    .toBe(1);
+
+  // Ningún evento "pause" del opening debería haber ocurrido todavía: la
+  // pista sigue sonando de forma continua, sin interrupción ni
+  // re-disparo, mientras el jugador permanece dentro del mundo antes de
+  // completar el diálogo con el padre de la novia.
+  const audioEventsAfterEntry = await readAudioEvents();
+  const openingPauseEvents = audioEventsAfterEntry.filter(
+    (event) => event.type === "pause" && event.src.endsWith(openingSrcSuffix),
+  );
+  expect(openingPauseEvents).toEqual([]);
 
   expect(errors).toEqual([]);
 });
