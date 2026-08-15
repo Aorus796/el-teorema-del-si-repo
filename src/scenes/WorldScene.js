@@ -1,3 +1,5 @@
+import { AMBIENT_THEME_PATH } from "../content/ambientAudioConfig.js";
+import { OPENING_THEME_PATH } from "../content/introAudioConfig.js";
 import { getWorldMap } from "../content/worldMaps.js";
 import {
   BRIDE_PALETTE,
@@ -102,6 +104,7 @@ export class WorldScene {
     }
 
     this.setupCurrentMap();
+    this.syncMusicToFlags();
   }
 
   exit() {
@@ -152,6 +155,7 @@ export class WorldScene {
 
     if (this.input.wasPressed("cancel")) {
       this.syncPlayerState();
+      this.audio.stopMusic();
       this.scenes.change("title");
       return;
     }
@@ -168,6 +172,7 @@ export class WorldScene {
     if (this.input.wasPressed("load")) {
       if (this.load()) {
         this.setupCurrentMap();
+        this.reconcileAudioAfterLoad();
         this.ui.showToast("Partida cargada");
       }
       return;
@@ -360,6 +365,7 @@ export class WorldScene {
       ],
       onComplete: () => {
         this.state.flags.brideNoteReceived = true;
+        this.syncMusicToFlags();
         this.state.flags.sevenBridgesUnlocked = true;
         this.state.objectiveId = "investigate-seven-bridges";
 
@@ -623,6 +629,52 @@ export class WorldScene {
       this.ui.showToast("No se pudo cargar la partida", 3000);
       return false;
     }
+  }
+
+  /*
+   * Reconcilia el audio con el estado restaurado tras una carga exitosa
+   * dentro del mundo. Comparte exactamente la misma lógica de tres casos
+   * excluyentes que enter() -- ver syncMusicToFlags() -- para que el
+   * resultado de cargar una partida nunca dependa de si la carga ocurrió
+   * al entrar en el mundo o durante una partida ya en curso.
+   */
+  reconcileAudioAfterLoad() {
+    this.syncMusicToFlags();
+  }
+
+  /*
+   * Única autoridad de qué música principal debe sonar, según los flags
+   * narrativos ya persistidos en el estado, con tres casos excluyentes:
+   * (1) epílogo completado: silencio total, deteniendo explícitamente
+   * cualquier música que pudiera seguir sonando de un estado anterior de
+   * esta misma instancia de escena (por ejemplo, el opening de una
+   * partida nueva iniciada antes de cargar una partida ya terminada);
+   * (2) diálogo con el padre de la novia ya completado sin el epílogo
+   * completado: ambiental en loop; (3) ningún hito narrativo alcanzado
+   * todavía (partida nueva o muy temprana): opening en loop. Se usa tanto
+   * desde enter() como desde reconcileAudioAfterLoad().
+   *
+   * TitleScene también dispara el opening de forma optimista antes de
+   * cambiar a esta escena (ver el comentario de update() en
+   * TitleScene.js), pero esta función sigue siendo la única fuente de
+   * verdad: se ejecuta en el mismo tick síncrono y siempre corrige o
+   * confirma lo que corresponde según los flags. El disparo optimista de
+   * TitleScene nunca puede dejar sonando algo incorrecto, y cuando ya
+   * dejó activa la pista correcta, la llamada a playMusic() de aquí es un
+   * no-op (AudioService.playMusic() no reinicia una pista ya activa).
+   */
+  syncMusicToFlags() {
+    if (this.state.flags.epilogueCompleted) {
+      this.audio.stopMusic();
+      return;
+    }
+
+    if (this.state.flags.brideNoteReceived) {
+      this.audio.playMusic(AMBIENT_THEME_PATH, { loop: true });
+      return;
+    }
+
+    this.audio.playMusic(OPENING_THEME_PATH, { loop: true });
   }
 
   syncPlayerState() {

@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
+import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
+import { EPILOGUE_THEME_PATH } from "../../src/content/epilogueAudioConfig.js";
 import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
@@ -17,6 +20,55 @@ function collectJavaScriptErrors(page) {
   });
 
   return errors;
+}
+
+/*
+ * Neutraliza la reproducción real de audio en el navegador de test: evita
+ * depender de que el entorno CI pueda reproducir sonido (autoplay,
+ * dispositivos de audio, etc.) para los flujos que ahora disparan la
+ * intro musical o la música ambiental.
+ *
+ * Además registra en `window.__audioEvents` una entrada por cada llamada
+ * real a `play()`/`pause()` sobre cualquier HTMLMediaElement, incluido el
+ * `src` resuelto del elemento en el momento de la llamada. Esto permite a
+ * los tests comprobar desde fuera qué pista sonó o se detuvo y en qué
+ * orden, interceptando únicamente los métodos nativos del DOM que
+ * AudioService ya usa -- sin instrumentar src/platform/AudioService.js ni
+ * introducir ningún acceso de depuración en la aplicación real.
+ *
+ * Por defecto (`resolvePlayback: false`, comportamiento histórico de este
+ * helper) `play()` sigue rechazando siempre su promesa, para conservar la
+ * cobertura ya existente de la ruta de degradación segura de
+ * AudioService ante un fallo de reproducción (ver el test del epílogo
+ * completo más abajo). Los tests que necesitan observar una pista
+ * "realmente" activa -- para comprobar después que algo la detiene de
+ * verdad -- pasan `resolvePlayback: true`: `play()` resuelve en vez de
+ * rechazar, así que AudioService.activeMusic permanece asignado hasta que
+ * el propio código de producción llame a stopMusic()/pause(), en vez de
+ * que un rechazo asíncrono lo limpie por su cuenta antes de que el test
+ * pueda comprobar nada.
+ */
+async function disableAudioPlayback(page, { resolvePlayback = false } = {}) {
+  await page.addInitScript((resolvePlayback) => {
+    window.__audioEvents = [];
+
+    const nativePause = HTMLMediaElement.prototype.pause;
+
+    HTMLMediaElement.prototype.play = function patchedPlay() {
+      window.__audioEvents.push({ type: "play", src: this.src });
+
+      return resolvePlayback
+        ? Promise.resolve()
+        : Promise.reject(
+            new Error("audio deshabilitado en el entorno de test"),
+          );
+    };
+
+    HTMLMediaElement.prototype.pause = function patchedPause() {
+      window.__audioEvents.push({ type: "pause", src: this.src });
+      return nativePause.call(this);
+    };
+  }, resolvePlayback);
 }
 
 function buildGiftCodeKeystrokes(digits) {
@@ -39,6 +91,7 @@ function buildGiftCodeKeystrokes(digits) {
 test("carga la pantalla de título sin errores", async ({ page }) => {
   const errors = collectJavaScriptErrors(page);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   await expect(page).toHaveTitle(
@@ -58,6 +111,7 @@ test("inicia una partida y abre y cierra el cuaderno", async ({
 }) => {
   const errors = collectJavaScriptErrors(page);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -153,6 +207,7 @@ test("entra en la escena archive-criteria desde un guardado existente y vuelve a
     );
   }, savedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -252,6 +307,7 @@ test("resuelve el tercer puzle del Archivo con teclado y desbloquea el epílogo"
     );
   }, savedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -446,6 +502,7 @@ test("resuelve el segundo puzle del catálogo de la Biblioteca con teclado y des
     );
   }, savedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -629,6 +686,7 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
     );
   }, savedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -830,6 +888,7 @@ test("guarda y carga la partida en la Plaza del Axioma tras recargar la página"
     },
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -985,6 +1044,7 @@ test("restaura un intento fallido del catálogo de la Biblioteca tras recargar l
     },
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -1216,6 +1276,7 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
     },
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -1477,6 +1538,7 @@ test("restaura una clasificación incompleta del Archivo tras recargar la págin
     },
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -1766,6 +1828,7 @@ test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles c
     });
   };
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   /*
@@ -1899,6 +1962,7 @@ test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado"
     );
   }, legacySavedGame);
 
+  await disableAudioPlayback(page);
   await page.goto("/");
 
   const canvas = page.locator("#game-canvas");
@@ -2040,6 +2104,7 @@ for (const variant of INVALID_SAVE_VARIANTS) {
       localStorage.setItem("el-teorema-del-si.save.v1", rawValue);
     }, variant.rawValue);
 
+    await disableAudioPlayback(page);
     await page.goto("/");
 
     const canvas = page.locator("#game-canvas");
@@ -2245,16 +2310,11 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     };
   });
 
-  // Neutraliza la reproducción real de audio de forma determinista: el test
-  // no debe depender de que el entorno CI pueda reproducir sonido, y esto
-  // además ejercita a propósito la ruta de degradación segura de
+  // Esto además ejercita a propósito la ruta de degradación segura de
   // AudioService.playEpilogueTheme() (ya cubierta a nivel unitario, aquí se
   // confirma en el navegador real que un fallo de play() no bloquea la
   // entrada en créditos). No se modifica src/platform/AudioService.js.
-  await page.addInitScript(() => {
-    HTMLMediaElement.prototype.play = () =>
-      Promise.reject(new Error("audio deshabilitado en el entorno de test"));
-  });
+  await disableAudioPlayback(page);
 
   await page.addInitScript((data) => {
     localStorage.setItem(
@@ -2599,6 +2659,830 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
 
     void worldFrameBeforeMechanism;
   });
+
+  expect(errors).toEqual([]);
+});
+
+/*
+ * Los tests siguientes cubren en el navegador real el ciclo de vida de
+ * audio de WorldScene.js que hasta ahora solo tenía cobertura unitaria
+ * (con FakeScenes, que no reproduce fielmente que SceneManager.change()
+ * invoca el exit() real de la escena saliente): el disparo narrativo real
+ * de la música ambiental (completar el diálogo con el padre de la novia),
+ * cancelar desde dentro del mundo (debe detener la música antes de volver
+ * al título), cargar una partida estando ya dentro del mundo
+ * (WorldScene.update(), tecla "load", debe reconciliar el audio contra el
+ * estado recién restaurado en vez de dejar sonando lo que hubiera antes),
+ * cargar directamente desde el título una partida con el epílogo ya
+ * completado (no debe dejar nada sonando en loop), y que el opening suena
+ * de forma continua y sin re-disparo desde el título hasta entrar al
+ * mundo en una partida nueva.
+ *
+ * WorldScene.enter() (ver syncMusicToFlags() en src/scenes/WorldScene.js)
+ * sigue siendo la única autoridad final de qué música suena, pero
+ * TitleScene también dispara el opening de forma optimista antes de
+ * cambiar a "world" (salvo que un peek del save indique que corresponde
+ * saltárselo -- ver TitleScene.savedGameSkipsOpening()). Como
+ * WorldScene.enter() corrige o confirma en el mismo tick síncrono, y
+ * AudioService.playMusic() es un no-op cuando el src ya está activo,
+ * ninguno de estos tests depende de ningún temporizador ni de entrar dos
+ * veces en una escena para forzar un estado de audio concreto -- siembran
+ * directamente `localStorage` con el guardado que corresponda y comprueban
+ * el resultado observable a través de `window.__audioEvents`.
+ */
+
+function stripLeadingDotSlash(path) {
+  return path.replace(/^\.\//, "");
+}
+
+test("completar el diálogo con el padre de la novia dispara la música ambiental, sustituyendo al opening", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const SAVE_KEY = "el-teorema-del-si.save.v1";
+
+  const readyPuzzles = {
+    libraryCatalogue: {
+      order: ["C", "M", "A", "R", "D"],
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+    archiveCriteria: {
+      verdicts: {
+        "voluntary-entry": null,
+        "followed-trail": null,
+        "never-disagreed": null,
+        "someone-refuses-now": null,
+        "present-choice": null,
+        "universal-future": null,
+      },
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+  };
+
+  /*
+   * Jugador ya colocado dentro del radio de interacción de bride-father
+   * (x:304 y:176 width:14 height:18 interactionRadius:28 en
+   * src/content/worldMaps.js, centro en x:311 y:185) y con el tablón de
+   * preparativos ya leído, para ejercitar solo el paso que importa a este
+   * test -- completar el diálogo del padre -- sin tener que recorrer a
+   * pie el resto de la Plaza del Axioma primero.
+   */
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 311, y: 185, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 311, y: 185, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: false,
+      preparationsBoardRead: true,
+      brideNoteReceived: false,
+      sevenBridgesUnlocked: false,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "speak-to-bride-father",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, savedGame);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
+  const openingSrcSuffix = stripLeadingDotSlash(OPENING_THEME_PATH);
+
+  const titleFrame = await currentFrame();
+
+  // La tecla "L" (cargar) restaura una partida sin brideNoteReceived ni
+  // epilogueCompleted, así que WorldScene.enter() arranca el opening en
+  // loop por su propia autoridad (syncMusicToFlags()) al restaurar el
+  // estado -- justo la condición que este test necesita para comprobar
+  // después que el disparo narrativo del padre de la novia lo sustituye.
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.some(
+        (event) =>
+          event.type === "play" && event.src.endsWith(openingSrcSuffix),
+      );
+    })
+    .toBe(true);
+
+  const ambientPlayedBeforeDialogue = (await readAudioEvents()).some(
+    (event) => event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+  );
+  expect(ambientPlayedBeforeDialogue).toBe(false);
+
+  // Abre el diálogo del padre de la novia (primera vez, sin
+  // brideNoteReceived): interactWithBrideFather() lo compone con cinco
+  // líneas, así que hacen falta cinco pulsaciones más para completarlo.
+  await page.keyboard.press("KeyE");
+
+  const dialogueSpeaker = page.locator("#dialogue-speaker");
+  const dialogueTextLocator = page.locator("#dialogue-text");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  await expect(dialogueSpeaker).toHaveText("Padre de la novia");
+
+  /*
+   * InputManager acumula las teclas pulsadas en un Set por código que se
+   * vacía una sola vez por frame (requestAnimationFrame): pulsar la misma
+   * tecla varias veces seguidas sin ceder tiempo entre medias colapsa
+   * varias pulsaciones en una sola efectiva (mismo problema, y misma
+   * solución, que ya documenta buildGiftCodeKeystrokes() más arriba en
+   * este archivo). Espera a que cambie el texto de la línea de diálogo
+   * entre pulsación y pulsación en vez de encadenarlas sin más.
+   */
+  const brideFatherLineCount = 5;
+  for (let i = 0; i < brideFatherLineCount - 1; i += 1) {
+    const previousLine = await dialogueTextLocator.textContent();
+    await page.keyboard.press("KeyE");
+    await expect
+      .poll(() => dialogueTextLocator.textContent())
+      .not.toBe(previousLine);
+  }
+
+  // Última pulsación: completa el diálogo, cierra el panel y ejecuta
+  // interactWithBrideFather().onComplete().
+  await page.keyboard.press("KeyE");
+  await expect(dialoguePanel).toBeHidden();
+
+  await expect(toast).toHaveText("Nota añadida al cuaderno");
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.some(
+        (event) => event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+      );
+    })
+    .toBe(true);
+
+  // El diálogo completado no autoguarda -- confirma que brideNoteReceived
+  // pasó a true guardando ahora la partida (tecla "K") y leyendo el
+  // guardado real resultante, en vez de depender solo del efecto
+  // observable en audio.
+  await page.keyboard.press("KeyK");
+  await expect(toast).toHaveText("Partida guardada");
+
+  const savedAfterCompletion = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)),
+    SAVE_KEY,
+  );
+  expect(savedAfterCompletion.flags.brideNoteReceived).toBe(true);
+
+  expect(errors).toEqual([]);
+});
+
+test("cancelar dentro del mundo detiene la música ambiental antes de volver al título", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+
+  const readyPuzzles = {
+    libraryCatalogue: {
+      order: ["C", "M", "A", "R", "D"],
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+    archiveCriteria: {
+      verdicts: {
+        "voluntary-entry": null,
+        "followed-trail": null,
+        "never-disagreed": null,
+        "someone-refuses-now": null,
+        "present-choice": null,
+        "universal-future": null,
+      },
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+  };
+
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 240, y: 192, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: false,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, savedGame);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
+
+  const titleFrame = await currentFrame();
+
+  /*
+   * brideNoteReceived:true en el guardado sembrado hace que
+   * WorldScene.enter() arranque el ambiental de inmediato al restaurar la
+   * partida, sin depender de la intro ni de ningún temporizador. Con
+   * resolvePlayback:true ese play() resuelve en vez de rechazar, así que
+   * AudioService.activeMusic permanece asignado al elemento del ambiental
+   * hasta que algo lo detenga de verdad -- justo la condición necesaria
+   * para comprobar que cancelar lo detiene.
+   */
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.some(
+        (event) =>
+          event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+      );
+    })
+    .toBe(true);
+
+  /*
+   * WorldScene.update() llama a audio.stopMusic() de forma síncrona antes
+   * de scenes.change("title"), así que la llamada a pause() ya ha
+   * ocurrido en el momento en que el frame vuelve a coincidir con el del
+   * título -- aunque la comprobación de window.__audioEvents se lea
+   * después en este test, el evento en sí quedó registrado antes.
+   */
+  await page.keyboard.press("Escape");
+  await expect.poll(currentFrame).toBe(titleFrame);
+
+  const audioEvents = await readAudioEvents();
+  const ambientPauseEvents = audioEvents.filter(
+    (event) => event.type === "pause" && event.src.endsWith(ambientSrcSuffix),
+  );
+
+  expect(ambientPauseEvents.length).toBeGreaterThan(0);
+
+  expect(errors).toEqual([]);
+});
+
+test("cargar una partida con epílogo completado desde dentro del mundo detiene el ambiental sin reanudarlo", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const SAVE_KEY = "el-teorema-del-si.save.v1";
+
+  const readyPuzzles = {
+    libraryCatalogue: {
+      order: ["C", "M", "A", "R", "D"],
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+    archiveCriteria: {
+      verdicts: {
+        "voluntary-entry": null,
+        "followed-trail": null,
+        "never-disagreed": null,
+        "someone-refuses-now": null,
+        "present-choice": null,
+        "universal-future": null,
+      },
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+  };
+
+  const inProgressSave = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 240, y: 192, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: false,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  /*
+   * Mismos valores de bandera que ya usa buildEpilogueReadySaveData() más
+   * arriba en este archivo para un epílogo completado, pero construidos
+   * a mano: GameState.restore() exige que epilogueCompleted implique
+   * giftCodeSolved, que a su vez implique epilogueStarted, que a su vez
+   * implique epilogueUnlocked, que a su vez implique
+   * investigationComplete (assertEpilogueFlagInvariants en
+   * src/state/GameState.js) -- si alguna quedara en false, restore()
+   * lanzaría y el test fallaría con un error claro en vez de una
+   * aserción confusa más adelante.
+   */
+  const completedSave = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 240, y: 192, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: true,
+      epilogueUnlocked: true,
+      epilogueStarted: true,
+      giftCodeSolved: true,
+      epilogueCompleted: true,
+    },
+    objectiveId: "epilogue-completed",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, inProgressSave);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
+
+  const titleFrame = await currentFrame();
+
+  /*
+   * brideNoteReceived:true en inProgressSave hace que WorldScene.enter()
+   * arranque el ambiental de inmediato al restaurar la partida -- esta es
+   * la partida en curso, real, dentro del mundo, que el test necesita
+   * como punto de partida antes de forzar la rama "load" de
+   * WorldScene.update() sobre sí misma.
+   */
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.some(
+        (event) =>
+          event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+      );
+    })
+    .toBe(true);
+
+  /*
+   * Sin salir del mundo, sustituye el guardado por uno con
+   * epilogueCompleted:true -- mismo mecanismo que ya usan los tests de
+   * reload de este archivo para manipular localStorage directamente en
+   * vez de jugar el epílogo completo. El siguiente "KeyL" lo carga desde
+   * dentro de WorldScene.update() (una ruta distinta de restaurar al
+   * entrar desde el título) y debe forzar la rama de
+   * reconcileAudioAfterLoad() que detiene la música en vez de arrancar
+   * el ambiental.
+   */
+  await page.evaluate(
+    ({ key, data }) => {
+      localStorage.setItem(key, JSON.stringify(data));
+    },
+    { key: SAVE_KEY, data: completedSave },
+  );
+
+  await page.keyboard.press("KeyL");
+  await expect(toast).toHaveText("Partida cargada");
+
+  const audioEvents = await readAudioEvents();
+  const lastAmbientPauseIndex = audioEvents.findLastIndex(
+    (event) => event.type === "pause" && event.src.endsWith(ambientSrcSuffix),
+  );
+
+  expect(lastAmbientPauseIndex).toBeGreaterThan(-1);
+
+  const ambientPlayEventsAfterLastPause = audioEvents
+    .slice(lastAmbientPauseIndex + 1)
+    .filter(
+      (event) =>
+        event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+    );
+
+  expect(ambientPlayEventsAfterLastPause).toEqual([]);
+
+  expect(errors).toEqual([]);
+});
+
+test("cargar desde el título una partida con el epílogo ya completado no deja ningún opening ni ambiental sonando en loop", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+
+  const errors = collectJavaScriptErrors(page);
+
+  const readyPuzzles = {
+    libraryCatalogue: {
+      order: ["C", "M", "A", "R", "D"],
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+    archiveCriteria: {
+      verdicts: {
+        "voluntary-entry": null,
+        "followed-trail": null,
+        "never-disagreed": null,
+        "someone-refuses-now": null,
+        "present-choice": null,
+        "universal-future": null,
+      },
+      phase: "ready",
+      hintsRead: [],
+      attemptCount: 0,
+      failureCode: null,
+    },
+  };
+
+  /*
+   * Este guardado NO tiene epilogueCompleted:true todavía -- a propósito.
+   * Sembrar directamente epilogueCompleted:true y cargarlo desde un
+   * título recién llegado (versión anterior de este test) es trivialmente
+   * cierto incluso sin this.audio.stopMusic() en la rama epilogueCompleted
+   * de syncMusicToFlags(): si nunca sonó nada en la página, ninguna
+   * aserción de "nada suena" puede distinguir "se detuvo explícitamente"
+   * de "nunca hubo nada que detener".
+   *
+   * En su lugar, este guardado deja al jugador justo junto a la novia
+   * (giftCodeSolved:true) para que el propio flujo real del juego --no
+   * este test-- dispare audio.playEpilogueTheme() al completar el
+   * diálogo final (WorldScene.completeBrideDialogue()), lo deje activo
+   * durante CreditsScene y TitleScene (ninguna de las dos tiene lógica de
+   * audio propia -- ver sus comentarios) y solo entonces se cargue, con
+   * la tecla "L" desde el título -- la misma ruta
+   * TitleScene -> WorldScene.enter({restoreFromState:true}) que cubre la
+   * regresión-- el guardado real que CreditsScene.confirmFinalCard() ya
+   * generó con epilogueCompleted:true. Si se quitara
+   * this.audio.stopMusic() de esa rama, el tema del epílogo que quedó
+   * activo desde el paso anterior nunca se pausaría al hacer esa última
+   * carga, y la aserción final de este test fallaría.
+   */
+  const readyToMeetBrideSave = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 650, y: 270, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 650, y: 270, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: true,
+      epilogueUnlocked: true,
+      epilogueStarted: true,
+      giftCodeSolved: true,
+      epilogueCompleted: false,
+    },
+    objectiveId: "epilogue-meet-bride",
+    notebook: [],
+    puzzles: readyPuzzles,
+  };
+
+  // Parche de fillText igual al que ya usa el test "recorre el epílogo
+  // completo...", inyectado antes de que cargue el juego, sin tocar
+  // ningún archivo de src/: EpilogueGiftCodeScene y CreditsScene no usan
+  // el DOM, así que es la única forma de confirmar por texto exacto que
+  // se llegó de verdad al título real.
+  await page.addInitScript(() => {
+    window.__renderedTexts = [];
+
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function patchedFillText(
+      text,
+      x,
+      y,
+      maxWidth,
+    ) {
+      window.__renderedTexts.push(String(text));
+      return originalFillText.call(this, text, x, y, maxWidth);
+    };
+  });
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, readyToMeetBrideSave);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const interactionPrompt = page.locator("#interaction-prompt");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const ambientSrcSuffix = stripLeadingDotSlash(AMBIENT_THEME_PATH);
+  const openingSrcSuffix = stripLeadingDotSlash(OPENING_THEME_PATH);
+  const epilogueThemeSrcSuffix = stripLeadingDotSlash(EPILOGUE_THEME_PATH);
+  const waitForRenderedText = (text) =>
+    expect
+      .poll(() =>
+        page.evaluate(
+          (needle) => window.__renderedTexts.includes(needle),
+          text,
+        ),
+      )
+      .toBe(true);
+
+  const titleFrame = await currentFrame();
+
+  await test.step("cargar la partida en curso, con la novia ya alcanzable", async () => {
+    await page.keyboard.press("KeyL");
+    await expect.poll(currentFrame).not.toBe(titleFrame);
+
+    await expect(interactionPrompt).toHaveText("[E] Hablar con la novia");
+
+    // brideNoteReceived:true dispara el ambiental de inmediato al
+    // restaurar (WorldScene.enter() -> syncMusicToFlags()) -- confirma
+    // que esta primera carga sí dejó algo sonando de verdad, la base
+    // necesaria para que la comprobación final de este test sea un
+    // guardián real.
+    await expect
+      .poll(async () => {
+        const events = await readAudioEvents();
+        return events.some(
+          (event) =>
+            event.type === "play" && event.src.endsWith(ambientSrcSuffix),
+        );
+      })
+      .toBe(true);
+  });
+
+  await test.step("completa el diálogo final con la novia", async () => {
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeVisible();
+
+    let previousLine = await dialogueText.textContent();
+
+    for (let turn = 0; turn < 5; turn += 1) {
+      await page.keyboard.press("KeyE");
+
+      if (turn < 4) {
+        await expect.poll(() => dialogueText.textContent()).not.toBe(
+          previousLine,
+        );
+        previousLine = await dialogueText.textContent();
+      } else {
+        await expect(dialoguePanel).toBeHidden();
+      }
+    }
+
+    // completeBrideDialogue() llama a audio.playEpilogueTheme() antes de
+    // cambiar a "credits" -- confirma que de verdad quedó sonando.
+    await expect
+      .poll(async () => {
+        const events = await readAudioEvents();
+        return events.some(
+          (event) =>
+            event.type === "play" &&
+            event.src.endsWith(epilogueThemeSrcSuffix),
+        );
+      })
+      .toBe(true);
+  });
+
+  await test.step("recorre CreditsScene y confirma la tarjeta final", async () => {
+    for (let step = 0; step < 5; step += 1) {
+      const frameBeforeStep = await currentFrame();
+      await page.keyboard.press("KeyE");
+      await expect.poll(currentFrame).not.toBe(frameBeforeStep);
+    }
+
+    // "EL TEOREMA DEL SI" (sin tilde) es el texto literal de
+    // TitleScene.js, deliberadamente distinto de "EL TEOREMA DEL SÍ" (con
+    // tilde) del paso de título de CreditsScene -- confirma sin
+    // ambigüedad que confirmFinalCard() completó el guardado real y
+    // volvió al título real, no que se quedó en algún paso de créditos.
+    await waitForRenderedText("EL TEOREMA DEL SI");
+
+    const savedRaw = await page.evaluate(() =>
+      localStorage.getItem("el-teorema-del-si.save.v1"),
+    );
+    const savedData = JSON.parse(savedRaw);
+    expect(savedData.flags.epilogueCompleted).toBe(true);
+  });
+
+  const audioEventsBeforeFinalLoad = await readAudioEvents();
+
+  /*
+   * Ni CreditsScene ni TitleScene tienen ninguna lógica de audio propia
+   * (ver sus comentarios) -- confirma que, justo antes de la carga final,
+   * el tema del epílogo sigue activo, sin ningún pause() de por medio.
+   * Si esta comprobación fallara, el resto del test no demostraría nada:
+   * ya no quedaría nada sonando que this.audio.stopMusic() tuviera que
+   * detener.
+   */
+  const epilogueThemePauseEventsBeforeFinalLoad =
+    audioEventsBeforeFinalLoad.filter(
+      (event) =>
+        event.type === "pause" &&
+        event.src.endsWith(epilogueThemeSrcSuffix),
+    );
+  expect(epilogueThemePauseEventsBeforeFinalLoad).toEqual([]);
+
+  const titleFrameBeforeFinalLoad = await currentFrame();
+
+  // Última carga: título -> WorldScene.enter({restoreFromState:true}) ->
+  // load() -> syncMusicToFlags() con epilogueCompleted:true, exactamente
+  // la ruta que este test debe vigilar.
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrameBeforeFinalLoad);
+
+  // Da tiempo a que cualquier disparo de audio erróneo tuviera ocasión de
+  // ocurrir (un par de frames de margen) antes de comprobar los eventos.
+  await page.waitForTimeout(200);
+
+  const audioEventsAfterFinalLoad = await readAudioEvents();
+  const newAudioEvents = audioEventsAfterFinalLoad.slice(
+    audioEventsBeforeFinalLoad.length,
+  );
+
+  const epilogueThemePauseEventsAfterFinalLoad = newAudioEvents.filter(
+    (event) =>
+      event.type === "pause" && event.src.endsWith(epilogueThemeSrcSuffix),
+  );
+
+  // La comprobación que de verdad depende de this.audio.stopMusic() en la
+  // rama epilogueCompleted de syncMusicToFlags(): sin esa línea, el tema
+  // del epílogo que quedó activo desde el paso anterior nunca se
+  // pausaría al cargar desde el título.
+  expect(epilogueThemePauseEventsAfterFinalLoad.length).toBeGreaterThan(0);
+
+  const loopingPlayEvents = newAudioEvents.filter(
+    (event) =>
+      event.type === "play" &&
+      (event.src.endsWith(ambientSrcSuffix) ||
+        event.src.endsWith(openingSrcSuffix)),
+  );
+
+  expect(loopingPlayEvents).toEqual([]);
+
+  expect(errors).toEqual([]);
+});
+
+test("el opening suena de forma continua, sin re-disparo, desde el título hasta entrar al mundo en una partida nueva", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+
+  await disableAudioPlayback(page, { resolvePlayback: true });
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const currentFrame = () =>
+    canvas.evaluate((element) => element.toDataURL());
+  const readAudioEvents = () => page.evaluate(() => window.__audioEvents);
+  const openingSrcSuffix = stripLeadingDotSlash(OPENING_THEME_PATH);
+
+  const titleFrame = await currentFrame();
+
+  const audioEventsAtTitle = await readAudioEvents();
+  expect(audioEventsAtTitle).toEqual([]);
+
+  // "E" en el título inicia una partida nueva: TitleScene.update() dispara
+  // el opening en loop de forma optimista en la misma pasada síncrona en
+  // que cambia a WorldScene, que confirma la misma pista vía
+  // syncMusicToFlags() -- un no-op por AudioService.playMusic(), así que
+  // solo debe registrarse un único evento "play" del opening, no dos.
+  await page.keyboard.press("KeyE");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  await expect
+    .poll(async () => {
+      const events = await readAudioEvents();
+      return events.filter(
+        (event) =>
+          event.type === "play" && event.src.endsWith(openingSrcSuffix),
+      ).length;
+    })
+    .toBe(1);
+
+  // Ningún evento "pause" del opening debería haber ocurrido todavía: la
+  // pista sigue sonando de forma continua, sin interrupción ni
+  // re-disparo, mientras el jugador permanece dentro del mundo antes de
+  // completar el diálogo con el padre de la novia.
+  const audioEventsAfterEntry = await readAudioEvents();
+  const openingPauseEvents = audioEventsAfterEntry.filter(
+    (event) => event.type === "pause" && event.src.endsWith(openingSrcSuffix),
+  );
+  expect(openingPauseEvents).toEqual([]);
 
   expect(errors).toEqual([]);
 });

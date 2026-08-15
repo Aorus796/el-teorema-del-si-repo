@@ -11,6 +11,8 @@ import { LibraryCatalogueScene } from "../../src/scenes/LibraryCatalogueScene.js
 import { WorldScene } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
 import { BRIDE_PALETTE } from "../../src/content/characterPalettes.js";
+import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
+import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 
 class FakeInput {
   constructor() {
@@ -94,10 +96,20 @@ class FakeUi {
 class FakeAudioService {
   constructor() {
     this.playEpilogueThemeCalls = 0;
+    this.playMusicCalls = [];
+    this.stopMusicCalls = 0;
   }
 
   playEpilogueTheme() {
     this.playEpilogueThemeCalls += 1;
+  }
+
+  playMusic(src, options) {
+    this.playMusicCalls.push({ src, options });
+  }
+
+  stopMusic() {
+    this.stopMusicCalls += 1;
   }
 }
 
@@ -490,6 +502,7 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved no
     storage: new FakeStorage(),
     state,
     ui,
+    audio: new FakeAudioService(),
   });
 
   scene.enter();
@@ -831,6 +844,361 @@ test("completar el diálogo de bride-epilogue no añade campos del servicio de a
   assert.equal(serialized.includes("playEpilogueTheme"), false);
 });
 
+test("enter() con una partida nueva, antes de completar el diálogo del padre de la novia, reproduce el opening en loop", () => {
+  const setup = createWorldAt("axiom-plaza");
+
+  assert.equal(setup.state.flags.brideNoteReceived, false);
+  assert.deepEqual(setup.audio.playMusicCalls, [
+    { src: OPENING_THEME_PATH, options: { loop: true } },
+  ]);
+});
+
+test("enter() sobre un GameState restaurado con brideNoteReceived=true reproduce la música ambiental en loop exactamente una vez", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.brideNoteReceived = true;
+  saved.flags.sevenBridgesUnlocked = true;
+  saved.objectiveId = "investigate-seven-bridges";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const audio = new FakeAudioService();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage(),
+    state,
+    ui,
+    audio,
+  });
+
+  scene.enter();
+
+  assert.deepEqual(audio.playMusicCalls, [
+    { src: AMBIENT_THEME_PATH, options: { loop: true } },
+  ]);
+});
+
+test("enter() sobre un GameState restaurado con epilogueCompleted=true no reproduce ninguna música y detiene explícitamente la que pudiera sonar", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = true;
+  saved.objectiveId = "epilogue-completed";
+  saved.scene = "world";
+  saved.world.currentMapId = "axiom-plaza";
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const audio = new FakeAudioService();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage(),
+    state,
+    ui,
+    audio,
+  });
+
+  scene.enter();
+
+  assert.deepEqual(audio.playMusicCalls, []);
+  assert.equal(audio.stopMusicCalls, 1);
+});
+
+/*
+ * Caso de regresión crítico: bajo el contrato de tres estados, cargar
+ * desde el título una partida con epilogueCompleted:true SÍ puede
+ * encontrarse con el opening ya sonando en loop (arrancado por un
+ * enter() anterior sobre esta misma instancia de escena, por ejemplo una
+ * partida nueva iniciada antes de cargar una partida ya terminada) -- a
+ * diferencia del contrato anterior, en el que enter() con
+ * epilogueCompleted:true simplemente hacía return sin detener nada,
+ * porque bajo ese contrato nunca había nada sonando en ese punto. Este
+ * test reutiliza deliberadamente la misma instancia de WorldScene para
+ * dos llamadas a enter() sucesivas y comprueba que la segunda -- con
+ * epilogueCompleted:true -- llama a stopMusic() de forma explícita, en
+ * vez de limitarse a no arrancar nada nuevo.
+ */
+test("enter() con epilogueCompleted=true detiene el opening que hubiera quedado sonando de una llamada anterior a enter() sobre la misma instancia", () => {
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const audio = new FakeAudioService();
+  const state = new GameState();
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage(),
+    state,
+    ui,
+    audio,
+  });
+
+  // Primera llamada: partida nueva, sin ningún flag narrativo activo ->
+  // arranca el opening en loop.
+  scene.enter();
+
+  assert.deepEqual(audio.playMusicCalls, [
+    { src: OPENING_THEME_PATH, options: { loop: true } },
+  ]);
+  assert.equal(audio.stopMusicCalls, 0);
+
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = true;
+  saved.objectiveId = "epilogue-completed";
+  saved.scene = "world";
+  saved.world.currentMapId = "axiom-plaza";
+  const storage = new FakeStorage({ loadResult: saved });
+  scene.storage = storage;
+
+  // Segunda llamada, sobre la misma instancia: restaura una partida con
+  // el epílogo ya completado -> debe detener explícitamente el opening
+  // que quedó activo tras la primera llamada, sin arrancar nada nuevo.
+  scene.enter({ restoreFromState: true });
+
+  assert.equal(audio.stopMusicCalls, 1);
+  assert.deepEqual(audio.playMusicCalls, [
+    { src: OPENING_THEME_PATH, options: { loop: true } },
+  ]);
+});
+
+test("completar el diálogo con el padre de la novia dispara la música ambiental en loop exactamente una vez, después de marcar brideNoteReceived", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.preparationsBoardRead = true;
+
+  // createWorldAt() ya llamó a enter() con las banderas por defecto, así
+  // que el opening en loop ya suena antes de este punto.
+  assert.deepEqual(setup.audio.playMusicCalls, [
+    { src: OPENING_THEME_PATH, options: { loop: true } },
+  ]);
+
+  setup.scene.interactWithBrideFather();
+
+  assert.equal(setup.state.flags.brideNoteReceived, false);
+  assert.equal(setup.audio.playMusicCalls.length, 1);
+
+  setup.ui.dialogue.onComplete();
+
+  assert.equal(setup.state.flags.brideNoteReceived, true);
+  assert.deepEqual(setup.audio.playMusicCalls, [
+    { src: OPENING_THEME_PATH, options: { loop: true } },
+    { src: AMBIENT_THEME_PATH, options: { loop: true } },
+  ]);
+});
+
+test("reinteractuar con el padre de la novia tras brideNoteReceived:true no duplica la reproducción del ambiental", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.preparationsBoardRead = true;
+
+  setup.scene.interactWithBrideFather();
+  setup.ui.dialogue.onComplete();
+
+  // El opening en loop de enter() más el ambiental disparado al
+  // completar el diálogo del padre.
+  assert.equal(setup.audio.playMusicCalls.length, 2);
+
+  setup.scene.interactWithBrideFather();
+
+  assert.equal(setup.audio.playMusicCalls.length, 2);
+  assert.ok(setup.ui.dialogue !== null);
+});
+
+test("cambiar de mapa dentro del mundo, con el ambiental ya activo, no dispara otra llamada a playMusic", () => {
+  const setup = createWorldAt("seven-bridges-walk");
+  setup.state.flags.brideNoteReceived = true;
+  setup.scene.enter();
+  const exit = findObject(
+    "seven-bridges-walk",
+    "seven-bridges-to-library",
+  );
+  setup.state.flags.libraryObjectiveUnlocked = true;
+  setup.scene.player.x = 600;
+  setup.scene.player.y = 304;
+  setup.scene.player.facing = "right";
+
+  // El opening de la llamada a enter() implícita en createWorldAt() (con
+  // las banderas por defecto) más el ambiental de la llamada explícita a
+  // enter() de arriba, ya con brideNoteReceived:true.
+  const callsBefore = setup.audio.playMusicCalls.length;
+  assert.equal(callsBefore, 2);
+
+  setup.scene.interactWithExit(exit);
+
+  assert.equal(setup.state.world.currentMapId, "library");
+  assert.equal(setup.audio.playMusicCalls.length, callsBefore);
+});
+
+test("cancelar con ambiental activo detiene la música antes de cambiar a title", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.state.flags.brideNoteReceived = true;
+  setup.scene.enter();
+  setup.input.press("cancel");
+
+  setup.scene.update(0);
+
+  assert.equal(setup.audio.stopMusicCalls, 1);
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "title", payload: {} },
+  ]);
+});
+
+test("cancelar sin haber completado nunca el diálogo del padre de la novia también detiene la música (no-op seguro)", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.input.press("cancel");
+
+  setup.scene.update(0);
+
+  assert.equal(setup.audio.stopMusicCalls, 1);
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "title", payload: {} },
+  ]);
+});
+
+test("transición de World hacia una escena de puzzle no detiene la música", () => {
+  const setup = createWorldAt("library");
+  const silogio = findObject("library", "library-silogio");
+
+  setup.scene.interact(silogio);
+
+  assert.equal(setup.audio.stopMusicCalls, 0);
+});
+
+test("completar el diálogo de bride-epilogue no detiene la música antes de reemplazarla con el tema del epílogo", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const bride = findObject("axiom-plaza", "bride-epilogue");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.epilogueUnlocked = true;
+  setup.state.flags.epilogueStarted = true;
+  setup.state.flags.giftCodeSolved = true;
+  setup.state.flags.epilogueCompleted = false;
+
+  setup.scene.interact(bride);
+
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal(
+      setup.audio.stopMusicCalls,
+      0,
+      `no debe detener la música antes del último turno (paso ${i})`,
+    );
+    setup.ui.dialogue.onComplete();
+  }
+
+  assert.equal(setup.audio.stopMusicCalls, 0);
+  assert.equal(setup.audio.playEpilogueThemeCalls, 1);
+});
+
+/*
+ * Los tres tests siguientes cubren, uno por uno, los tres casos
+ * excluyentes de reconcileAudioAfterLoad() (delegados en
+ * syncMusicToFlags(), compartido con enter()): epílogo completado
+ * (detiene), diálogo del padre ya completado sin epílogo completado
+ * (garantiza el ambiental en loop), y ninguno de los dos flags -- partida
+ * muy temprana -- (arranca el opening en loop, en vez de conservar lo que
+ * hubiera sonando antes de la carga).
+ */
+test("load() dentro de World con brideNoteReceived:true y epilogueCompleted:false reconcilia el ambiental en loop tras la carga", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.brideNoteReceived = true;
+  saved.flags.sevenBridgesUnlocked = true;
+  saved.objectiveId = "investigate-seven-bridges";
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, input, audio } = createScene(storage);
+  scene.enter();
+
+  input.press("load");
+  scene.update(0);
+
+  assert.deepEqual(audio.playMusicCalls.at(-1), {
+    src: AMBIENT_THEME_PATH,
+    options: { loop: true },
+  });
+});
+
+test("load() dentro de World con epilogueCompleted:true detiene la música y no arranca el ambiental tras la carga", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.flags.epilogueStarted = true;
+  saved.flags.giftCodeSolved = true;
+  saved.flags.epilogueCompleted = true;
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, input, audio } = createScene(storage);
+  scene.enter();
+
+  const callsBeforeLoad = audio.playMusicCalls.length;
+
+  input.press("load");
+  scene.update(0);
+
+  assert.equal(audio.stopMusicCalls, 1);
+  assert.deepEqual(audio.playMusicCalls.slice(callsBeforeLoad), []);
+});
+
+test("load() dentro de World sin brideNoteReceived ni epilogueCompleted (partida muy temprana) arranca el opening en loop tras la carga", () => {
+  const saved = new GameState().toSaveData();
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, input, audio } = createScene(storage);
+  scene.enter();
+
+  const callsBeforeLoad = audio.playMusicCalls.length;
+
+  input.press("load");
+  scene.update(0);
+
+  assert.equal(audio.stopMusicCalls, 0);
+  assert.deepEqual(audio.playMusicCalls.slice(callsBeforeLoad), [
+    { src: OPENING_THEME_PATH, options: { loop: true } },
+  ]);
+});
+
+test("update() con tecla load y load() fallido no toca el audio en absoluto", () => {
+  const scenarios = [
+    () => new FakeStorage(),
+    () => new FakeStorage({ loadError: new Error("Fallo simulado") }),
+    () => {
+      const saved = new GameState().toSaveData();
+      saved.formatVersion = 999;
+      return new FakeStorage({ loadResult: saved });
+    },
+    () => {
+      const saved = new GameState().toSaveData();
+      delete saved.puzzles.libraryCatalogue.hintsRead;
+      return new FakeStorage({ loadResult: saved });
+    },
+  ];
+
+  for (const buildStorage of scenarios) {
+    withMockedConsoleError(() => {
+      const storage = buildStorage();
+      const { scene, input, audio } = createScene(storage);
+      scene.enter();
+
+      const callsBeforeLoad = audio.playMusicCalls.length;
+
+      input.press("load");
+
+      assert.doesNotThrow(() => scene.update(0));
+
+      assert.equal(audio.stopMusicCalls, 0);
+      assert.deepEqual(audio.playMusicCalls.slice(callsBeforeLoad), []);
+    });
+  }
+});
+
 test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.investigationComplete = true;
@@ -972,6 +1340,7 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved re
     storage: new FakeStorage(),
     state,
     ui,
+    audio: new FakeAudioService(),
   });
 
   scene.enter();
@@ -1199,6 +1568,7 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved mu
     storage: new FakeStorage(),
     state,
     ui,
+    audio: new FakeAudioService(),
   });
 
   scene.enter();
@@ -1289,13 +1659,14 @@ test("restaurar una partida con epilogueCompleted=true no dispara ningún cambio
   const scenes = new FakeScenes();
   const ui = new FakeUi();
   const state = new GameState();
+  const audio = new FakeAudioService();
   const scene = new WorldScene({
     scenes,
     input,
     storage: new FakeStorage({ loadResult: saved }),
     state,
     ui,
-    audio: { playEpilogueTheme: () => {} },
+    audio,
   });
 
   scene.enter({ restoreFromState: true });
@@ -1304,6 +1675,8 @@ test("restaurar una partida con epilogueCompleted=true no dispara ningún cambio
   assert.deepEqual(scenes.changes, []);
   assert.equal(state.scene, "world");
   assert.equal(state.world.currentMapId, "axiom-plaza");
+  assert.deepEqual(audio.playMusicCalls, []);
+  assert.equal(audio.stopMusicCalls, 1);
   assert.equal(state.objectiveId, "epilogue-completed");
 });
 
@@ -1332,6 +1705,7 @@ test("volver del catálogo conserva mapa, posición y datos persistentes", () =>
     storage,
     state,
     ui,
+    audio: new FakeAudioService(),
   });
   const catalogueScene = new LibraryCatalogueScene({
     scenes,
