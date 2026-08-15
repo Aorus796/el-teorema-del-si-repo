@@ -37,24 +37,29 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   el opening en loop. El opening suena en loop desde la primera
   interacción del usuario en la pantalla de título hasta completar el
   diálogo del padre de la novia, momento en el que el ambiental lo
-  sustituye (`WorldScene.interactWithBrideFather()`); `TitleScene` ya no
-  dispara ninguna música por su cuenta. La transición de ambient a tema
-  de epílogo ocurre de la misma forma. Cancelar desde el mundo (tecla
-  `cancel`) detiene la música activa antes de volver a la pantalla de
-  título, en vez de dejarla sonando indefinidamente allí; y cargar una
-  partida guardada dentro del propio mundo (tecla `load`) reconcilia el
-  audio con el estado restaurado a través de la misma lógica de tres
-  estados. Dos rediseños posteriores, tras el rechazo humano de las dos
-  versiones anteriores de ambas pistas por motivos de carácter musical
-  (una primera versión sin pulso rítmico regular, y una segunda con un
-  ambiental de carácter percibido como fúnebre), regeneran por completo
-  `intro-theme.wav` (ahora un loop de apertura con pulso regular en 128
-  BPM: arpegio, melodía corta y un click de refuerzo del pulso, en
-  registro agudo y modo mayor/lidio, todo staccato) y `ambient-theme.wav`
-  (pulso regular en 96 BPM: raíz en negras y una figura melódica corta en
-  corcheas, en registro grave y modo mayor/mixolidio, sin ninguna nota
-  menor de color) — ver `src/assets/audio/README.md` para el detalle
-  musical completo.
+  sustituye (`WorldScene.interactWithBrideFather()`). `TitleScene`
+  dispara el opening de forma optimista al empezar o cargar una partida
+  (salvo que un peek del save indique que ya corresponde saltárselo --
+  ver `TitleScene.savedGameSkipsOpening()`), y `WorldScene.enter()` sigue
+  siendo la autoridad final que corrige o confirma en el mismo tick
+  síncrono, sin producir un segundo `play()` real gracias al no-op de
+  `AudioService.playMusic()` cuando la pista ya está activa. La
+  transición de ambient a tema de epílogo ocurre de la misma forma.
+  Cancelar desde el mundo (tecla `cancel`) detiene la música activa antes
+  de volver a la pantalla de título, en vez de dejarla sonando
+  indefinidamente allí; y cargar una partida guardada dentro del propio
+  mundo (tecla `load`) reconcilia el audio con el estado restaurado a
+  través de la misma lógica de tres estados. Dos rediseños posteriores,
+  tras el rechazo humano de las dos versiones anteriores de ambas pistas
+  por motivos de carácter musical (una primera versión sin pulso rítmico
+  regular, y una segunda con un ambiental de carácter percibido como
+  fúnebre), regeneran por completo `intro-theme.wav` (ahora un loop de
+  apertura con pulso regular en 128 BPM: arpegio, melodía corta y un
+  click de refuerzo del pulso, en registro agudo y modo mayor/lidio, todo
+  staccato) y `ambient-theme.wav` (pulso regular en 96 BPM: raíz en
+  negras y una figura melódica corta en corcheas, en registro grave y
+  modo mayor/mixolidio, sin ninguna nota menor de color) — ver
+  `src/assets/audio/README.md` para el detalle musical completo.
 
 ## [1.0.0] - 2026-08-11
 

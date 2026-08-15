@@ -2678,13 +2678,17 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
  * de forma continua y sin re-disparo desde el título hasta entrar al
  * mundo en una partida nueva.
  *
- * WorldScene.enter() es la única autoridad de qué música suena (ver
- * syncMusicToFlags() en src/scenes/WorldScene.js): TitleScene ya no
- * reproduce nada por su cuenta, así que ninguno de estos tests depende de
- * ningún temporizador ni de entrar dos veces en una escena para forzar un
- * estado de audio concreto -- siembran directamente `localStorage` con el
- * guardado que corresponda y comprueban el resultado observable a través
- * de `window.__audioEvents`.
+ * WorldScene.enter() (ver syncMusicToFlags() en src/scenes/WorldScene.js)
+ * sigue siendo la única autoridad final de qué música suena, pero
+ * TitleScene también dispara el opening de forma optimista antes de
+ * cambiar a "world" (salvo que un peek del save indique que corresponde
+ * saltárselo -- ver TitleScene.savedGameSkipsOpening()). Como
+ * WorldScene.enter() corrige o confirma en el mismo tick síncrono, y
+ * AudioService.playMusic() es un no-op cuando el src ya está activo,
+ * ninguno de estos tests depende de ningún temporizador ni de entrar dos
+ * veces en una escena para forzar un estado de audio concreto -- siembran
+ * directamente `localStorage` con el guardado que corresponda y comprueban
+ * el resultado observable a través de `window.__audioEvents`.
  */
 
 function stripLeadingDotSlash(path) {
@@ -3452,10 +3456,11 @@ test("el opening suena de forma continua, sin re-disparo, desde el título hasta
   const audioEventsAtTitle = await readAudioEvents();
   expect(audioEventsAtTitle).toEqual([]);
 
-  // "E" en el título inicia una partida nueva sin ninguna partida
-  // guardada: state.reset() deja todas las banderas narrativas en false,
-  // así que WorldScene.enter() debe arrancar el opening en loop por su
-  // propia autoridad, sin que TitleScene haya disparado nada antes.
+  // "E" en el título inicia una partida nueva: TitleScene.update() dispara
+  // el opening en loop de forma optimista en la misma pasada síncrona en
+  // que cambia a WorldScene, que confirma la misma pista vía
+  // syncMusicToFlags() -- un no-op por AudioService.playMusic(), así que
+  // solo debe registrarse un único evento "play" del opening, no dos.
   await page.keyboard.press("KeyE");
   await expect.poll(currentFrame).not.toBe(titleFrame);
 

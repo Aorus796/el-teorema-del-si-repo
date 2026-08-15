@@ -84,7 +84,7 @@ const MELODY_ATTACK_SECONDS = 0.02;
 const MELODY_AMPLITUDE = 0.25;
 
 const LOW_PASS_ALPHA = 0.32;
-const PEAK_FRACTION = 0.32;
+const PEAK_FRACTION = 0.55;
 
 const notes = buildNotes();
 const totalSamples = Math.round(TOTAL_SECONDS * SAMPLE_RATE);

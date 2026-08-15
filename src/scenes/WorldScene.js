@@ -653,6 +653,15 @@ export class WorldScene {
    * completado: ambiental en loop; (3) ningún hito narrativo alcanzado
    * todavía (partida nueva o muy temprana): opening en loop. Se usa tanto
    * desde enter() como desde reconcileAudioAfterLoad().
+   *
+   * TitleScene también dispara el opening de forma optimista antes de
+   * cambiar a esta escena (ver el comentario de update() en
+   * TitleScene.js), pero esta función sigue siendo la única fuente de
+   * verdad: se ejecuta en el mismo tick síncrono y siempre corrige o
+   * confirma lo que corresponde según los flags. El disparo optimista de
+   * TitleScene nunca puede dejar sonando algo incorrecto, y cuando ya
+   * dejó activa la pista correcta, la llamada a playMusic() de aquí es un
+   * no-op (AudioService.playMusic() no reinicia una pista ya activa).
    */
   syncMusicToFlags() {
     if (this.state.flags.epilogueCompleted) {
