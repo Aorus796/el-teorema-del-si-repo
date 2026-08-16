@@ -64,7 +64,7 @@ export class Player {
 
     context.fillStyle = PROTAGONIST_PALETTE.silhouette;
     context.fillRect(screenX - 5, screenY - 14, 10, 3);
-    context.fillRect(screenX - 6, screenY - 11, 12, 7);
+    context.fillRect(screenX - 5, screenY - 11, 10, 7);
     context.fillRect(screenX - 7, screenY - 4, 14, 6);
     context.fillRect(screenX - 4, screenY + 2, 8, 6);
 
@@ -72,7 +72,7 @@ export class Player {
     context.fillRect(screenX - 4, screenY - 13, 8, 2);
 
     context.fillStyle = PROTAGONIST_PALETTE.head;
-    context.fillRect(screenX - 4, screenY - 11, 8, 6);
+    context.fillRect(screenX - 4, screenY - 11, 8, 7);
 
     context.fillStyle = PROTAGONIST_PALETTE.hair;
     context.fillRect(screenX + 3, screenY - 11, 2, 3);

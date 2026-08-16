@@ -37,7 +37,7 @@ test("render() dibuja pelo, cabeza, brazos, torso y piernas con PROTAGONIST_PALE
   ]);
 
   assert.deepEqual(byColor(PROTAGONIST_PALETTE.head), [
-    { x: 236, y: 181, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
+    { x: 236, y: 181, width: 8, height: 7, fillStyle: PROTAGONIST_PALETTE.head },
     { x: 234, y: 188, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
     { x: 244, y: 188, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
   ]);

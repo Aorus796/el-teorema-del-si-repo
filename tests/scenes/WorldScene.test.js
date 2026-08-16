@@ -10,7 +10,12 @@ import {
 import { LibraryCatalogueScene } from "../../src/scenes/LibraryCatalogueScene.js";
 import { WorldScene } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
-import { BRIDE_PALETTE } from "../../src/content/characterPalettes.js";
+import {
+  BRIDE_FATHER_PALETTE,
+  BRIDE_PALETTE,
+  MAYOR_PALETTE,
+  SILOGIO_PALETTE,
+} from "../../src/content/characterPalettes.js";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
@@ -1223,10 +1228,12 @@ test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // 3 NPC genéricos (1 rect de silueta cada uno) + bride-epilogue, cuya
+  // 1 NPC genérico (plaza-worker; mayor-corolaria y bride-father ya tienen
+  // renderers dedicados con su propia silueta) + bride-epilogue, cuya
   // silueta está partida en dos piezas (torso/brazos y piernas) desde la
-  // corrección de contorno fino -- ver WorldScene.renderElena.
-  assert.equal(silhouettes.length, 5);
+  // corrección de contorno fino -- ver WorldScene.renderElena. BRIDE_PALETTE
+  // .silhouette reutiliza el mismo valor "#302637" que NPC_SILHOUETTE.
+  assert.equal(silhouettes.length, 3);
 });
 
 test("render() en axiom-plaza sin giftCodeSolved usa la paleta normal", () => {
@@ -1405,7 +1412,10 @@ test("render() en axiom-plaza sin giftCodeSolved dibuja tres NPC, sin bride-epil
     (rect) => rect.fillStyle === "#302637",
   );
 
-  assert.equal(silhouettes.length, 3);
+  // Solo plaza-worker sigue usando el render genérico (1 rect de silueta);
+  // mayor-corolaria y bride-father tienen renderers dedicados con su propia
+  // paleta (MAYOR_PALETTE.silhouette / BRIDE_FATHER_PALETTE.silhouette).
+  assert.equal(silhouettes.length, 1);
 });
 
 test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bride-epilogue", () => {
@@ -1430,9 +1440,9 @@ test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bri
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // Ver nota equivalente más arriba: bride-epilogue aporta 2 rects de
-  // silueta (torso/brazos + piernas), no 1.
-  assert.equal(silhouettes.length, 5);
+  // Ver nota equivalente más arriba: 1 rect de plaza-worker + 2 rects de
+  // silueta de bride-epilogue (torso/brazos + piernas).
+  assert.equal(silhouettes.length, 3);
 });
 
 test("render() con giftCodeSolved añade tres rectángulos con el color de pelo de bride-epilogue", () => {
@@ -1470,6 +1480,131 @@ test("render() sin giftCodeSolved (mayor-corolaria, bride-father, plaza-worker) 
   assert.equal(hairRects.length, 0);
 });
 
+test("renderCorolaria dibuja entre 8 y 12 primitivas, todas de MAYOR_PALETTE, con la silueta en piezas de varios anchos", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "mayor-corolaria");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  assertDedicatedNpcRender({
+    fillRects: context.fillRects,
+    screenX,
+    screenY,
+    palette: MAYOR_PALETTE,
+    expectedOffsets: [
+      { x: 2, y: 5, width: 9, height: 2, color: "silhouette" },
+      { x: 0, y: 6, width: 13, height: 7, color: "silhouette" },
+      { x: 1, y: 12, width: 11, height: 8, color: "silhouette" },
+      { x: 3, y: 0, width: 7, height: 2, color: "hair" },
+      { x: 3, y: 2, width: 7, height: 5, color: "head" },
+      { x: 0, y: 7, width: 2, height: 6, color: "head" },
+      { x: 11, y: 7, width: 2, height: 6, color: "head" },
+      { x: 2, y: 7, width: 9, height: 6, color: "body" },
+      { x: 2, y: 13, width: 9, height: 6, color: "bodyAccent" },
+      { x: 6, y: 7, width: 2, height: 2, color: "bodyAccent" },
+    ],
+    expectedBoundingBox: { width: 13, height: 20 },
+  });
+});
+
+test("la base inferior de Corolaria es tan ancha como su torso, no una falda que se ensancha (a diferencia de Elena)", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "mayor-corolaria");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const torsoRect = context.fillRects.find(
+    (rect) =>
+      rect.fillStyle === MAYOR_PALETTE.body &&
+      rect.x === screenX + 2 &&
+      rect.y === screenY + 7,
+  );
+  const baseRect = context.fillRects.find(
+    (rect) =>
+      rect.fillStyle === MAYOR_PALETTE.bodyAccent &&
+      rect.x === screenX + 2 &&
+      rect.y === screenY + 13,
+  );
+
+  assert.ok(torsoRect, "no se encontró el torso de Corolaria");
+  assert.ok(baseRect, "no se encontró la base inferior de Corolaria");
+  assert.ok(
+    baseRect.width <= torsoRect.width,
+    "la base inferior de Corolaria no debe ensancharse más allá de su torso, a diferencia de la falda de Elena",
+  );
+});
+
+test("renderBrideFather dibuja entre 8 y 12 primitivas, todas de BRIDE_FATHER_PALETTE, con la silueta en piezas de varios anchos", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "bride-father");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  assertDedicatedNpcRender({
+    fillRects: context.fillRects,
+    screenX,
+    screenY,
+    palette: BRIDE_FATHER_PALETTE,
+    expectedOffsets: [
+      { x: 3, y: 0, width: 10, height: 3, color: "silhouette" },
+      { x: 3, y: 3, width: 10, height: 7, color: "silhouette" },
+      { x: 1, y: 10, width: 14, height: 6, color: "silhouette" },
+      { x: 4, y: 16, width: 8, height: 6, color: "silhouette" },
+      { x: 4, y: 1, width: 8, height: 2, color: "hair" },
+      { x: 4, y: 3, width: 8, height: 7, color: "head" },
+      { x: 1, y: 10, width: 2, height: 6, color: "head" },
+      { x: 13, y: 10, width: 2, height: 6, color: "head" },
+      { x: 3, y: 10, width: 10, height: 6, color: "body" },
+      { x: 5, y: 17, width: 2, height: 5, color: "bodyAccent" },
+      { x: 9, y: 17, width: 2, height: 5, color: "bodyAccent" },
+    ],
+    expectedBoundingBox: { width: 14, height: 22 },
+  });
+});
+
+test("renderSilogio dibuja entre 8 y 12 primitivas, todas de SILOGIO_PALETTE, con la silueta en piezas de varios anchos", () => {
+  const setup = createWorldAt("library");
+  const object = findObject("library", "library-silogio");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  assertDedicatedNpcRender({
+    fillRects: context.fillRects,
+    screenX,
+    screenY,
+    palette: SILOGIO_PALETTE,
+    expectedOffsets: [
+      { x: 4, y: 0, width: 5, height: 3, color: "silhouette" },
+      { x: 2, y: 3, width: 9, height: 9, color: "silhouette" },
+      { x: 0, y: 12, width: 12, height: 10, color: "silhouette" },
+      { x: 5, y: 0, width: 4, height: 2, color: "hair" },
+      { x: 3, y: 2, width: 6, height: 5, color: "head" },
+      { x: 1, y: 7, width: 1, height: 7, color: "head" },
+      { x: 10, y: 7, width: 1, height: 7, color: "head" },
+      { x: 3, y: 7, width: 6, height: 6, color: "body" },
+      { x: 3, y: 13, width: 6, height: 4, color: "bodyAccent" },
+      { x: 5, y: 8, width: 2, height: 2, color: "bodyAccent" },
+    ],
+    expectedBoundingBox: { width: 12, height: 22 },
+  });
+});
+
 test("la silueta de bride-epilogue es un contorno de varias piezas estrechas, no un bloque de fondo grande", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.investigationComplete = true;
@@ -1489,7 +1624,7 @@ test("la silueta de bride-epilogue es un contorno de varias piezas estrechas, no
     (rect) => rect.fillStyle === BRIDE_PALETTE.silhouette,
   );
 
-  // Incluye 3 rects de los NPC genéricos (1 cada uno) más las piezas
+  // Incluye 1 rect del NPC genérico restante (plaza-worker) más las piezas
   // propias de bride-epilogue; por eso se filtran las que le pertenecen
   // buscando las que no coinciden con el tamaño fijo (12x14) del render
   // genérico de NPC.
@@ -2010,6 +2145,80 @@ function findObject(mapId, objectId) {
 
   assert.ok(object, `No existe ${mapId}:${objectId}`);
   return object;
+}
+
+/*
+ * Reproduce el listado exacto de fillRect esperado (posición relativa,
+ * tamaño y color de paleta) para un render de NPC dedicado -- ver
+ * WorldScene.renderCorolaria/renderBrideFather/renderSilogio -- y verifica
+ * que: (a) el conteo de primitivas cae en el rango 8-12; (b) todas esas
+ * primitivas se dibujan exactamente en la posición y color esperados
+ * (cualquier color ajeno o hardcodeado haría que la primitiva esperada no
+ * aparezca); (c) la silueta tiene al menos 3 piezas con al menos dos
+ * anchos distintos; (d) el bounding box real coincide con el objetivo.
+ */
+function assertDedicatedNpcRender({
+  fillRects,
+  screenX,
+  screenY,
+  palette,
+  expectedOffsets,
+  expectedBoundingBox,
+}) {
+  assert.ok(
+    expectedOffsets.length >= 8 && expectedOffsets.length <= 12,
+    `se esperaban entre 8 y 12 primitivas, se transcribieron ${expectedOffsets.length}`,
+  );
+
+  const expectedRects = expectedOffsets.map((entry) => ({
+    x: screenX + entry.x,
+    y: screenY + entry.y,
+    width: entry.width,
+    height: entry.height,
+    fillStyle: palette[entry.color],
+  }));
+
+  const ownRects = fillRects.filter((rect) =>
+    expectedRects.some(
+      (expected) =>
+        expected.x === rect.x &&
+        expected.y === rect.y &&
+        expected.width === rect.width &&
+        expected.height === rect.height &&
+        expected.fillStyle === rect.fillStyle,
+    ),
+  );
+
+  assert.equal(
+    ownRects.length,
+    expectedRects.length,
+    "todas las primitivas esperadas deben dibujarse exactamente en su posición y color de paleta",
+  );
+
+  const silhouetteOffsets = expectedOffsets.filter(
+    (entry) => entry.color === "silhouette",
+  );
+  assert.ok(
+    silhouetteOffsets.length >= 3,
+    "la silueta debe construirse con al menos 3 piezas, no un único bloque de fondo",
+  );
+  const silhouetteWidths = silhouetteOffsets.map((entry) => entry.width);
+  assert.ok(
+    Math.min(...silhouetteWidths) < Math.max(...silhouetteWidths),
+    "las piezas de silueta deben variar de ancho",
+  );
+
+  const minX = Math.min(...expectedOffsets.map((entry) => entry.x));
+  const maxX = Math.max(
+    ...expectedOffsets.map((entry) => entry.x + entry.width),
+  );
+  const minY = Math.min(...expectedOffsets.map((entry) => entry.y));
+  const maxY = Math.max(
+    ...expectedOffsets.map((entry) => entry.y + entry.height),
+  );
+
+  assert.equal(maxX - minX, expectedBoundingBox.width);
+  assert.equal(maxY - minY, expectedBoundingBox.height);
 }
 
 function assertOutsideInteractionRadius(playerState, object) {

@@ -35,24 +35,56 @@ export const MAX_PALETTE = Object.freeze({
   collar: "#26201d",
 });
 
+// Paleta propia de la Alcaldesa Corolaria. Consumida por
+// WorldScene.renderCorolaria, que no consulta NAMED_NPC_PALETTES.
+export const MAYOR_PALETTE = Object.freeze({
+  silhouette: "#4a2e42",
+  head: SKIN_TONE,
+  hair: "#5c4a2e",
+  body: "#8e4566",
+  bodyAccent: "#d6b65f",
+});
+
+// Paleta propia del Padre de la novia. Consumida por
+// WorldScene.renderBrideFather, que no consulta NAMED_NPC_PALETTES.
+export const BRIDE_FATHER_PALETTE = Object.freeze({
+  silhouette: "#241f1c",
+  head: SKIN_TONE,
+  hair: "#5a5250",
+  body: "#486987",
+  bodyAccent: "#efe2bf",
+});
+
+// Paleta propia de Silogio. Consumida por WorldScene.renderSilogio, que no
+// consulta NAMED_NPC_PALETTES ni DEFAULT_NPC_PALETTE.
+export const SILOGIO_PALETTE = Object.freeze({
+  silhouette: "#22303a",
+  head: SKIN_TONE,
+  hair: "#9a9a9a",
+  body: "#4a6b6c",
+  bodyAccent: "#c98f3a",
+});
+
 // Silueta y color de cabeza compartidos por todos los NPC dibujados con
 // WorldScene.renderNpc -- distintos de PROTAGONIST_PALETTE.silhouette,
 // que es exclusivo del jugador.
 export const NPC_SILHOUETTE = "#302637";
 export const NPC_HEAD = SKIN_TONE;
 
-// Paleta de los NPC con nombre que ya distinguían body/accent en
-// WorldScene.renderNpc antes de esta centralización. bride-epilogue no
-// aparece aquí: Elena tiene su propio renderer dedicado en
-// WorldScene.renderElena, que consulta BRIDE_PALETTE directamente.
+// Paleta de los NPC con nombre que aún usan el render genérico de
+// WorldScene.renderNpc. mayor-corolaria y bride-father ya no aparecen
+// aquí: tienen renderers dedicados (WorldScene.renderCorolaria y
+// WorldScene.renderBrideFather) que consultan MAYOR_PALETTE y
+// BRIDE_FATHER_PALETTE directamente, igual que bride-epilogue con
+// BRIDE_PALETTE.
 export const NAMED_NPC_PALETTES = Object.freeze({
-  "mayor-corolaria": Object.freeze({ body: "#8e4566", accent: "#d6b65f" }),
-  "bride-father": Object.freeze({ body: "#486987", accent: "#efe2bf" }),
   "plaza-worker": Object.freeze({ body: "#6c8756", accent: "#d9a06f" }),
 });
 
 // Paleta usada por cualquier NPC sin entrada explícita en
-// NAMED_NPC_PALETTES (hoy: library-silogio).
+// NAMED_NPC_PALETTES. Sin consumidor real hoy: los NPC con nombre que
+// existían (mayor-corolaria, bride-father, library-silogio) ya tienen
+// renderers dedicados. Fallback para NPCs futuros de Nivel C.
 export const DEFAULT_NPC_PALETTE = Object.freeze({
   body: "#6c6387",
   accent: "#efe2bf",
