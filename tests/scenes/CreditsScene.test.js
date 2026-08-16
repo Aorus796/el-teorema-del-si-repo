@@ -11,6 +11,7 @@ import { SceneManager } from "../../src/core/SceneManager.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
 import { GameState } from "../../src/state/GameState.js";
 import { COUPLE_DEDICATION } from "../../src/content/personalizationConfig.js";
+import { MAX_PALETTE } from "../../src/content/characterPalettes.js";
 
 const TITLE_TEXT = "EL TEOREMA DEL SÍ";
 const CREDITS_LINE_1 = "CREADO CON CARIÑO";
@@ -296,6 +297,40 @@ test("el paso 1 dibuja el contorno de Gonzalo y Elena como varias piezas estrech
       `${label}: las piezas de contorno deben variar de ancho (más estrechas donde el cuerpo es más estrecho), no ser todas iguales a un único ancho de fondo`,
     );
   }
+});
+
+test("el paso 1 dibuja a Max junto a Gonzalo y Elena con un color de MAX_PALETTE", () => {
+  const { scene } = createScene();
+  scene.enter();
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  const allowedMaxColors = new Set(Object.values(MAX_PALETTE));
+  const maxRects = context.fillRects.filter((rect) =>
+    allowedMaxColors.has(rect.fillStyle),
+  );
+
+  assert.ok(
+    maxRects.length > 0,
+    "el paso 1 debe dibujar al menos un rectángulo con un color de MAX_PALETTE",
+  );
+
+  // renderClosingShot() invoca renderMax(context, 180, 190); la primera
+  // primitiva que dibuja renderMax() es fillRect(x + 4, y + 1, 2, 3) con
+  // MAX_PALETTE.body (ver src/render/MaxRenderer.js), así que en
+  // coordenadas absolutas debe aparecer en (184, 191).
+  const bodyRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === MAX_PALETTE.body,
+  );
+
+  assert.deepEqual(bodyRects[0], {
+    x: 184,
+    y: 191,
+    width: 2,
+    height: 3,
+    fillStyle: MAX_PALETTE.body,
+  });
 });
 
 test("ningún texto renderizado cae fuera del canvas de 480x270 ni de sus márgenes", () => {

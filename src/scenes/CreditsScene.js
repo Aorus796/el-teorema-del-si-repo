@@ -4,6 +4,7 @@ import {
   BRIDE_PALETTE,
   PROTAGONIST_PALETTE,
 } from "../content/characterPalettes.js";
+import { renderMax } from "../render/MaxRenderer.js";
 
 export { BRIDE_PALETTE, PROTAGONIST_PALETTE };
 
@@ -214,6 +215,7 @@ function renderClosingShot(context) {
 
   drawGonzalo(context, 208, 188);
   drawElena(context, 230, 188);
+  renderMax(context, 180, 190);
 
   context.fillStyle = "#3a2f22";
   context.font = "11px monospace";

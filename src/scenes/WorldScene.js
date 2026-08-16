@@ -13,8 +13,19 @@ import {
   SILOGIO_PALETTE,
 } from "../content/characterPalettes.js";
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
+import {
+  LIBRARY_CATALOGUE_PHASE,
+} from "../puzzles/library-catalogue/LibraryCatalogueState.js";
+import {
+  ARCHIVE_CRITERIA_PHASE,
+} from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
+import { MAX_DIMENSIONS } from "../render/MaxRenderer.js";
 import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
+import {
+  computeMaxSpawnCandidates,
+  MaxCompanion,
+} from "../world/MaxCompanion.js";
 import { Player } from "../world/Player.js";
 
 const VIEWPORT_WIDTH = 480;
@@ -88,6 +99,15 @@ export class WorldScene {
     this.camera = null;
     this.collisionMap = null;
     this.nearbyObject = null;
+    this.maxCompanion = null;
+    /*
+     * Foto del estado resuelto de los tres puzles tomada justo antes de
+     * cambiar a su escena, para poder distinguir -- al volver a
+     * setupCurrentMap() -- una resolución real (false -> true) de una
+     * reentrada a un puzle ya resuelto o de una carga de partida (que
+     * nunca arma este campo). Ver getPuzzleSolvedSnapshot().
+     */
+    this.pendingPuzzleSolvedSnapshot = null;
   }
 
   enter({
@@ -136,10 +156,60 @@ export class WorldScene {
     });
 
     this.camera.follow(this.player);
+
+    /*
+     * Reposiciona a Max en cada reconstrucción del mapa (carga inicial,
+     * cambio de mapa, regreso desde cualquier sub-escena de puzzle o
+     * carga de partida en curso), sin necesidad de reconciliar la
+     * posición anterior: siempre parte del offset relativo a la posición
+     * ya normalizada del jugador para este mapa.
+     */
+    this.maxCompanion = new MaxCompanion(
+      resolveMaxSpawnPosition(this.player, this.collisionMap),
+    );
+
+    /*
+     * Si esta reconstrucción llega justo después de una resolución real
+     * de puzle (pendingPuzzleSolvedSnapshot armado antes del
+     * scenes.change() correspondiente), dispara la reacción de Max
+     * exactamente una vez por resolución real -- nunca al reentrar a un
+     * puzle ya resuelto ni al cargar una partida (que nunca arma este
+     * campo).
+     */
+    if (this.pendingPuzzleSolvedSnapshot !== null) {
+      const currentSnapshot = this.getPuzzleSolvedSnapshot();
+      const hasNewlySolvedPuzzle = Object.keys(
+        this.pendingPuzzleSolvedSnapshot,
+      ).some(
+        (puzzleId) =>
+          !this.pendingPuzzleSolvedSnapshot[puzzleId] &&
+          currentSnapshot[puzzleId],
+      );
+
+      if (hasNewlySolvedPuzzle) {
+        this.maxCompanion.triggerReaction();
+      }
+    }
+
+    this.pendingPuzzleSolvedSnapshot = null;
     this.nearbyObject = null;
   }
 
+  getPuzzleSolvedSnapshot() {
+    return {
+      p2: this.state.puzzles.p2.phase === P2_PHASE.SOLVED,
+      libraryCatalogue:
+        this.state.puzzles.libraryCatalogue.phase ===
+        LIBRARY_CATALOGUE_PHASE.SOLVED,
+      archiveCriteria:
+        this.state.puzzles.archiveCriteria.phase ===
+        ARCHIVE_CRITERIA_PHASE.SOLVED,
+    };
+  }
+
   update(deltaSeconds) {
+    this.maxCompanion?.tickReaction(deltaSeconds);
+
     if (this.ui.isDialogueOpen()) {
       if (this.input.wasPressed("interact")) {
         this.ui.advanceDialogue();
@@ -185,6 +255,7 @@ export class WorldScene {
     const axis = this.input.getAxis();
     this.player.update(deltaSeconds, axis, this.collisionMap);
     this.camera.follow(this.player);
+    this.maxCompanion.follow(deltaSeconds, this.player.x, this.player.y);
 
     this.nearbyObject = findNearbyObject(
       this.player,
@@ -215,6 +286,16 @@ export class WorldScene {
   interact(object) {
     this.audio.playSfx(INTERACT_SFX_PATH);
     this.ui.hidePrompt();
+
+    /*
+     * Reacción ligera de Max ante cualquier interacción real salvo las
+     * salidas (con o sin bloquear): cruzar un portal ya dispara su propia
+     * reacción en el destino, en interactWithExit(), y una salida
+     * bloqueada no representa ningún avance narrativo.
+     */
+    if (object.type !== "exit" && object.type !== "blocked-exit") {
+      this.maxCompanion.triggerReaction();
+    }
 
     if (object.id === "preparations-board") {
       this.interactWithPreparationsBoard();
@@ -439,16 +520,19 @@ export class WorldScene {
       object.targetPlayerState,
     );
     this.setupCurrentMap();
+    this.maxCompanion.triggerReaction();
     this.ui.showToast(this.map.name);
   }
 
   interactWithSilogio() {
     this.syncPlayerState();
+    this.pendingPuzzleSolvedSnapshot = this.getPuzzleSolvedSnapshot();
     this.scenes.change("library-catalogue");
   }
 
   interactWithArchiveCriteriaTable() {
     this.syncPlayerState();
+    this.pendingPuzzleSolvedSnapshot = this.getPuzzleSolvedSnapshot();
     this.scenes.change("archive-criteria");
   }
 
@@ -563,6 +647,7 @@ export class WorldScene {
       ],
       onComplete: () => {
         this.syncPlayerState();
+        this.pendingPuzzleSolvedSnapshot = this.getPuzzleSolvedSnapshot();
         this.scenes.change("p2-bridges", {
           returnScene: "world",
         });
@@ -717,9 +802,51 @@ export class WorldScene {
     renderSolidTiles(context, this.camera, map);
     renderForegroundDecorations(context, this.camera, map);
     renderObjects(context, this.camera, map.objects, this.state);
+    this.maxCompanion?.render(context, this.camera);
     this.player.render(context, this.camera);
     renderHud(context, map, this.state.objectiveId);
   }
+}
+
+/*
+ * Recolocación segura del spawn de Max (no pathfinding): prueba, en orden,
+ * cada candidato de computeMaxSpawnCandidates() -- una lista corta y fija,
+ * no una búsqueda de ruta -- contra el CollisionMap real del mapa actual,
+ * usando el tamaño real de Max (MAX_DIMENSIONS), y devuelve el primero que
+ * no colisione con un tile sólido (muro, o escenografía sólida como la
+ * fuente o las mesas, que ya se representan como región sólida en
+ * worldMaps.js). El último candidato de la lista es la posición exacta del
+ * jugador: es un fallback determinista, no una garantía matemática de
+ * ausencia de colisión -- la caja de Max (22x18) es mayor que la del
+ * jugador (10x14, Player.getCollisionBox()), así que un hueco justo del
+ * tamaño de Gonzalo (por ejemplo muy pegado a un muro o cerca del borde
+ * del mapa) puede seguir colisionando para Max. Se acepta como
+ * degradación conocida en vez de encadenar más candidatos o pathfinding:
+ * ver el comentario de computeMaxSpawnCandidates() en MaxCompanion.js y el
+ * test "el último recurso puede colisionar en casos extremos" más abajo.
+ *
+ * Exportada (a diferencia del resto de funciones auxiliares de este
+ * módulo) para poder probarla de forma aislada con un CollisionMap
+ * sintético en tests/scenes/WorldScene.test.js, sin depender de las
+ * coordenadas reales de ningún mapa de worldMaps.js.
+ */
+export function resolveMaxSpawnPosition(player, collisionMap) {
+  const candidates = computeMaxSpawnCandidates(player);
+  const safeCandidate = candidates.find(
+    (candidate) =>
+      !collisionMap.collides(getMaxCollisionBox(candidate)),
+  );
+
+  return safeCandidate ?? candidates[candidates.length - 1];
+}
+
+function getMaxCollisionBox(position) {
+  return {
+    x: position.x - MAX_DIMENSIONS.width / 2,
+    y: position.y - MAX_DIMENSIONS.height / 2,
+    width: MAX_DIMENSIONS.width,
+    height: MAX_DIMENSIONS.height,
+  };
 }
 
 function findNearbyObject(player, objects, state) {

@@ -860,6 +860,287 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
   expect(errors).toEqual([]);
 });
 
+test("cambia de mapa desde una salida ya desbloqueada sin errores de consola", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  // Jugador colocado en el centro exacto de la salida
+  // "plaza-to-seven-bridges" (x:720, y:224, width:16, height:64 -> centro
+  // 728,256), ya desbloqueada, para que un único "KeyE" cruce el portal sin
+  // ningún diálogo intermedio.
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 728, y: 256, facing: "right" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 728, y: 256, facing: "right" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await disableAudioPlayback(page);
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const toast = page.locator("#toast");
+
+  const initialFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(initialFrame);
+
+  const worldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  await expect(toast).toHaveText("Paseo de los Siete Puentes");
+
+  expect(errors).toEqual([]);
+});
+
+test("Max reacciona de forma autónoma, sin pulsar ninguna tecla, tras resolver el primer puzle de los Siete Puentes", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 348, y: 145, facing: "down" },
+    world: {
+      currentMapId: "seven-bridges-walk",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 348, y: 145, facing: "down" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await disableAudioPlayback(page);
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await canvas.evaluate((element) =>
+      element.toDataURL(),
+    );
+
+    await page.keyboard.press(key);
+
+    await expect
+      .poll(() => canvas.evaluate((element) => element.toDataURL()))
+      .not.toBe(previousFrame);
+  };
+
+  const initialFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("KeyL");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(initialFrame);
+
+  const worldFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "La novia ha marcado que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  const solutionKeys = [
+    "KeyE",
+    "Enter",
+    "KeyE",
+    "KeyE",
+    "KeyE",
+    "ArrowRight",
+    "KeyE",
+    "KeyE",
+    "KeyE",
+  ];
+
+  for (const key of solutionKeys) {
+    await pressAndWaitForFrameChange(key);
+  }
+
+  const toast = page.locator("#toast");
+
+  await expect(toast).not.toBeEmpty();
+  await expect(toast).toHaveText("Nueva observacion registrada");
+
+  const solvedSceneFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(solvedSceneFrame);
+
+  /*
+   * Único punto de este archivo donde se comprueba un cambio de frame sin
+   * ningún input del jugador: el mundo no tiene ninguna otra animación en
+   * reposo (fondo estático, marcador de orientación fijo, HUD estático),
+   * así que un cambio autónomo del canvas en esta ventana corta solo puede
+   * deberse al rebote de la reacción de Max, disparada al volver al mundo
+   * justo después de resolver el puzle -- sin exponer ningún estado de
+   * depuración de Max al navegador.
+   * La reacción dura MAX_REACTION_DURATION_SECONDS (0.4s), así que en vez
+   * de esperar una única desigualdad (que podría agotar su plazo si la
+   * animación ya hubiera terminado al capturar el primer frame), se
+   * muestrea el canvas repetidamente durante una ventana algo más amplia
+   * que la duración de la reacción, inmediatamente después de confirmar el
+   * regreso al mundo, y se comprueba que no todos los frames capturados
+   * son idénticos.
+   */
+  const sampledFrames = [];
+
+  for (let sample = 0; sample < 20; sample += 1) {
+    sampledFrames.push(
+      await canvas.evaluate((element) => element.toDataURL()),
+    );
+    await page.waitForTimeout(25);
+  }
+
+  expect(new Set(sampledFrames).size).toBeGreaterThan(1);
+
+  expect(errors).toEqual([]);
+});
+
 test("guarda y carga la partida en la Plaza del Axioma tras recargar la página", async ({
   page,
 }) => {
