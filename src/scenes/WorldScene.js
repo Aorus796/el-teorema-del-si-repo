@@ -3,11 +3,14 @@ import { OPENING_THEME_PATH } from "../content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../content/sfxAudioConfig.js";
 import { getWorldMap } from "../content/worldMaps.js";
 import {
+  BRIDE_FATHER_PALETTE,
   BRIDE_PALETTE,
   DEFAULT_NPC_PALETTE,
+  MAYOR_PALETTE,
   NAMED_NPC_PALETTES,
   NPC_HEAD,
   NPC_SILHOUETTE,
+  SILOGIO_PALETTE,
 } from "../content/characterPalettes.js";
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
 import { Camera } from "../world/Camera.js";
@@ -1017,6 +1020,21 @@ function renderNpc(context, x, y, object) {
     return;
   }
 
+  if (object.id === "mayor-corolaria") {
+    renderCorolaria(context, x, y);
+    return;
+  }
+
+  if (object.id === "bride-father") {
+    renderBrideFather(context, x, y);
+    return;
+  }
+
+  if (object.id === "library-silogio") {
+    renderSilogio(context, x, y);
+    return;
+  }
+
   const palette = NAMED_NPC_PALETTES[object.id] ?? DEFAULT_NPC_PALETTE;
 
   context.fillStyle = NPC_SILHOUETTE;
@@ -1056,6 +1074,79 @@ function renderElena(context, x, y) {
 
   context.fillStyle = BRIDE_PALETTE.bodyAccent;
   context.fillRect(x + 2, y + 16, 10, 4);
+}
+
+function renderCorolaria(context, x, y) {
+  context.fillStyle = MAYOR_PALETTE.silhouette;
+  context.fillRect(x + 3, y + 2, 7, 3);
+  context.fillRect(x + 1, y + 5, 11, 7);
+  context.fillRect(x + 0, y + 12, 13, 8);
+
+  context.fillStyle = MAYOR_PALETTE.hair;
+  context.fillRect(x + 3, y + 0, 7, 2);
+
+  context.fillStyle = MAYOR_PALETTE.head;
+  context.fillRect(x + 3, y + 2, 7, 5);
+
+  context.fillStyle = MAYOR_PALETTE.head;
+  context.fillRect(x + 0, y + 7, 2, 6);
+  context.fillRect(x + 11, y + 7, 2, 6);
+
+  context.fillStyle = MAYOR_PALETTE.body;
+  context.fillRect(x + 2, y + 7, 9, 5);
+
+  context.fillStyle = MAYOR_PALETTE.bodyAccent;
+  context.fillRect(x + 1, y + 13, 11, 6);
+  context.fillRect(x + 6, y + 7, 2, 2);
+}
+
+function renderBrideFather(context, x, y) {
+  context.fillStyle = BRIDE_FATHER_PALETTE.silhouette;
+  context.fillRect(x + 3, y + 0, 10, 3);
+  context.fillRect(x + 2, y + 3, 12, 7);
+  context.fillRect(x + 1, y + 10, 14, 6);
+  context.fillRect(x + 4, y + 16, 8, 6);
+
+  context.fillStyle = BRIDE_FATHER_PALETTE.hair;
+  context.fillRect(x + 4, y + 1, 8, 2);
+
+  context.fillStyle = BRIDE_FATHER_PALETTE.head;
+  context.fillRect(x + 4, y + 3, 8, 6);
+
+  context.fillStyle = BRIDE_FATHER_PALETTE.head;
+  context.fillRect(x + 1, y + 10, 2, 6);
+  context.fillRect(x + 13, y + 10, 2, 6);
+
+  context.fillStyle = BRIDE_FATHER_PALETTE.body;
+  context.fillRect(x + 3, y + 10, 10, 6);
+
+  context.fillStyle = BRIDE_FATHER_PALETTE.bodyAccent;
+  context.fillRect(x + 5, y + 17, 2, 5);
+  context.fillRect(x + 9, y + 17, 2, 5);
+}
+
+function renderSilogio(context, x, y) {
+  context.fillStyle = SILOGIO_PALETTE.silhouette;
+  context.fillRect(x + 4, y + 0, 5, 3);
+  context.fillRect(x + 2, y + 3, 9, 9);
+  context.fillRect(x + 0, y + 12, 12, 10);
+
+  context.fillStyle = SILOGIO_PALETTE.hair;
+  context.fillRect(x + 5, y + 0, 4, 2);
+
+  context.fillStyle = SILOGIO_PALETTE.head;
+  context.fillRect(x + 3, y + 2, 6, 5);
+
+  context.fillStyle = SILOGIO_PALETTE.head;
+  context.fillRect(x + 1, y + 7, 1, 7);
+  context.fillRect(x + 10, y + 7, 1, 7);
+
+  context.fillStyle = SILOGIO_PALETTE.body;
+  context.fillRect(x + 3, y + 7, 6, 6);
+
+  context.fillStyle = SILOGIO_PALETTE.bodyAccent;
+  context.fillRect(x + 3, y + 13, 6, 4);
+  context.fillRect(x + 5, y + 8, 2, 2);
 }
 
 function renderHud(context, map, objectiveId) {
