@@ -1496,19 +1496,50 @@ test("renderCorolaria dibuja entre 8 y 12 primitivas, todas de MAYOR_PALETTE, co
     screenY,
     palette: MAYOR_PALETTE,
     expectedOffsets: [
-      { x: 3, y: 2, width: 7, height: 3, color: "silhouette" },
-      { x: 1, y: 5, width: 11, height: 7, color: "silhouette" },
-      { x: 0, y: 12, width: 13, height: 8, color: "silhouette" },
+      { x: 2, y: 5, width: 9, height: 2, color: "silhouette" },
+      { x: 0, y: 6, width: 13, height: 7, color: "silhouette" },
+      { x: 1, y: 12, width: 11, height: 8, color: "silhouette" },
       { x: 3, y: 0, width: 7, height: 2, color: "hair" },
       { x: 3, y: 2, width: 7, height: 5, color: "head" },
       { x: 0, y: 7, width: 2, height: 6, color: "head" },
       { x: 11, y: 7, width: 2, height: 6, color: "head" },
-      { x: 2, y: 7, width: 9, height: 5, color: "body" },
-      { x: 1, y: 13, width: 11, height: 6, color: "bodyAccent" },
+      { x: 2, y: 7, width: 9, height: 6, color: "body" },
+      { x: 2, y: 13, width: 9, height: 6, color: "bodyAccent" },
       { x: 6, y: 7, width: 2, height: 2, color: "bodyAccent" },
     ],
     expectedBoundingBox: { width: 13, height: 20 },
   });
+});
+
+test("la base inferior de Corolaria es tan ancha como su torso, no una falda que se ensancha (a diferencia de Elena)", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "mayor-corolaria");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const torsoRect = context.fillRects.find(
+    (rect) =>
+      rect.fillStyle === MAYOR_PALETTE.body &&
+      rect.x === screenX + 2 &&
+      rect.y === screenY + 7,
+  );
+  const baseRect = context.fillRects.find(
+    (rect) =>
+      rect.fillStyle === MAYOR_PALETTE.bodyAccent &&
+      rect.x === screenX + 2 &&
+      rect.y === screenY + 13,
+  );
+
+  assert.ok(torsoRect, "no se encontró el torso de Corolaria");
+  assert.ok(baseRect, "no se encontró la base inferior de Corolaria");
+  assert.ok(
+    baseRect.width <= torsoRect.width,
+    "la base inferior de Corolaria no debe ensancharse más allá de su torso, a diferencia de la falda de Elena",
+  );
 });
 
 test("renderBrideFather dibuja entre 8 y 12 primitivas, todas de BRIDE_FATHER_PALETTE, con la silueta en piezas de varios anchos", () => {

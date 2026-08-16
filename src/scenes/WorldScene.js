@@ -1078,9 +1078,9 @@ function renderElena(context, x, y) {
 
 function renderCorolaria(context, x, y) {
   context.fillStyle = MAYOR_PALETTE.silhouette;
-  context.fillRect(x + 3, y + 2, 7, 3);
-  context.fillRect(x + 1, y + 5, 11, 7);
-  context.fillRect(x + 0, y + 12, 13, 8);
+  context.fillRect(x + 2, y + 5, 9, 2);
+  context.fillRect(x + 0, y + 6, 13, 7);
+  context.fillRect(x + 1, y + 12, 11, 8);
 
   context.fillStyle = MAYOR_PALETTE.hair;
   context.fillRect(x + 3, y + 0, 7, 2);
@@ -1093,10 +1093,10 @@ function renderCorolaria(context, x, y) {
   context.fillRect(x + 11, y + 7, 2, 6);
 
   context.fillStyle = MAYOR_PALETTE.body;
-  context.fillRect(x + 2, y + 7, 9, 5);
+  context.fillRect(x + 2, y + 7, 9, 6);
 
   context.fillStyle = MAYOR_PALETTE.bodyAccent;
-  context.fillRect(x + 1, y + 13, 11, 6);
+  context.fillRect(x + 2, y + 13, 9, 6);
   context.fillRect(x + 6, y + 7, 2, 2);
 }
 
