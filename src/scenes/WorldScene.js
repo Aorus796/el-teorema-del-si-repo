@@ -1103,7 +1103,7 @@ function renderCorolaria(context, x, y) {
 function renderBrideFather(context, x, y) {
   context.fillStyle = BRIDE_FATHER_PALETTE.silhouette;
   context.fillRect(x + 3, y + 0, 10, 3);
-  context.fillRect(x + 2, y + 3, 12, 7);
+  context.fillRect(x + 3, y + 3, 10, 7);
   context.fillRect(x + 1, y + 10, 14, 6);
   context.fillRect(x + 4, y + 16, 8, 6);
 
@@ -1111,7 +1111,7 @@ function renderBrideFather(context, x, y) {
   context.fillRect(x + 4, y + 1, 8, 2);
 
   context.fillStyle = BRIDE_FATHER_PALETTE.head;
-  context.fillRect(x + 4, y + 3, 8, 6);
+  context.fillRect(x + 4, y + 3, 8, 7);
 
   context.fillStyle = BRIDE_FATHER_PALETTE.head;
   context.fillRect(x + 1, y + 10, 2, 6);
