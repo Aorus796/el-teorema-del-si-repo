@@ -290,3 +290,56 @@ test("volver a llamar enter() no altera el comportamiento de update()", () => {
   assert.equal(setup.scenes.changes.length, 2);
   assert.equal(setup.audio.playMusicCalls.length, 2);
 });
+
+class FakeCanvasContext {
+  constructor() {
+    this.texts = [];
+  }
+
+  fillRect() {}
+
+  fillText(text) {
+    this.texts.push(String(text));
+  }
+}
+
+test("render() sin partida guardada no dibuja \"Gonzalo\", \"Elena\" ni el subtítulo heredado del vertical slice", () => {
+  const setup = createScene({ hasSave: false });
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  assert.ok(context.texts.length > 0);
+  assert.ok(
+    context.texts.every((text) => !text.includes("Gonzalo")),
+  );
+  assert.ok(context.texts.every((text) => !text.includes("Elena")));
+  assert.ok(
+    context.texts.every(
+      (text) => !text.includes("Vertical slice narrativo"),
+    ),
+  );
+});
+
+test("render() con partida guardada tampoco dibuja \"Gonzalo\", \"Elena\" ni el subtítulo heredado del vertical slice", () => {
+  const setup = createScene({
+    hasSave: true,
+    loadResult: {
+      flags: { brideNoteReceived: true, epilogueCompleted: false },
+    },
+  });
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  assert.ok(context.texts.length > 0);
+  assert.ok(
+    context.texts.every((text) => !text.includes("Gonzalo")),
+  );
+  assert.ok(context.texts.every((text) => !text.includes("Elena")));
+  assert.ok(
+    context.texts.every(
+      (text) => !text.includes("Vertical slice narrativo"),
+    ),
+  );
+});

@@ -104,6 +104,26 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   a Gonzalo y Elena en el plano de cierre de `CreditsScene`. Reutiliza el
   render procedural de Max ya aprobado en `src/render/MaxRenderer.js` sin
   modificarlo.
+- Pasada de personalización narrativa (cambios puramente textuales,
+  autorizada explícitamente en `docs/production/V1_1_PERSONALIZATION_SPEC.md`,
+  bloque "Human-approved narrative decision -- protagonist name reveals"):
+  Corolaria se dirige a Gonzalo por su nombre en su primer diálogo
+  (`WorldScene.interactWithCorolaria()`), y el nombre de Elena se revela
+  por primera vez en el punto narrativo exacto en que su padre confirma
+  su desaparición (`WorldScene.interactWithBrideFather()`, rama que arma
+  `brideNoteReceived = true`), reutilizándose después en el resto de
+  diálogos y objetivos que ya se referían a ella ("la novia" ->
+  "Elena") en `WorldScene.js` y `src/content/worldMaps.js` (label del NPC
+  `bride-epilogue`). El label estable `"Padre de la novia"` no cambia, ni
+  tampoco el diálogo cerrado del epílogo. Limpieza de textos de
+  diagnóstico ajenos a la narrativa: "Fin del vertical slice narrativo."
+  desaparece del diálogo de `blocked-library`, el subtítulo de
+  `TitleScene` deja de anunciar un "Vertical slice narrativo" y pasa a
+  "Un regalo de boda" (sin nombres propios, según lo exigido por el
+  spec), y la cabecera de `LibraryCatalogueScene` deja de mostrar el
+  valor crudo del enum de fase (por ejemplo "arranging") y lo traduce con
+  una función `phaseLabel()` análoga a la ya existente en
+  `ArchiveCriteriaScene.js`.
 
 ## [1.0.0] - 2026-08-11
 

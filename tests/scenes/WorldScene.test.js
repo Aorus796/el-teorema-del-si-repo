@@ -1780,7 +1780,7 @@ test("OBJECTIVE_LABELS reconoce epilogue-meet-bride en el HUD renderizado", () =
   assert.doesNotThrow(() => setup.scene.render(context));
   assert.equal(
     context.texts.some((text) =>
-      text.includes("Acércate a ella en la Plaza."),
+      text.includes("Acércate a Elena en la Plaza."),
     ),
     true,
   );
@@ -2726,6 +2726,76 @@ test("reentrar a un puzle ya resuelto y volver no reactiva a Max", () => {
   assert.equal(scenes.currentName, "world");
   assert.equal(triggerCalls, 0);
   assert.equal(world.maxCompanion.reactionTimer, 0);
+});
+
+test("el primer diálogo de Corolaria (antes de leer el tablón) se dirige a Gonzalo por su nombre", () => {
+  const setup = createWorldAt("axiom-plaza");
+
+  setup.scene.interactWithCorolaria();
+
+  assert.ok(
+    setup.ui.dialogue.lines.some((line) => line.includes("Gonzalo")),
+  );
+});
+
+test('"Elena" solo aparece por primera vez al recibir la nota del padre de la novia, nunca antes', () => {
+  const setup = createWorldAt("axiom-plaza");
+
+  setup.scene.interactWithCorolaria();
+  assert.ok(
+    setup.ui.dialogue.lines.every((line) => !line.includes("Elena")),
+    "Corolaria (antes de leer el tablón) no debe nombrar a Elena",
+  );
+
+  setup.state.flags.preparationsBoardRead = true;
+  setup.scene.interactWithCorolaria();
+  assert.ok(
+    setup.ui.dialogue.lines.every((line) => !line.includes("Elena")),
+    "Corolaria (tras leer el tablón) no debe nombrar a Elena",
+  );
+
+  setup.scene.interactWithPreparationsBoard();
+  assert.ok(
+    setup.ui.dialogue.lines.every((line) => !line.includes("Elena")),
+    "El tablón de preparativos no debe nombrar a Elena",
+  );
+
+  setup.state.objectiveId = "speak-to-bride-father";
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+  assert.ok(
+    context.texts.every((text) => !text.includes("Elena")),
+    'el objectiveId "speak-to-bride-father" no debe nombrar a Elena',
+  );
+
+  // Recién ahora, en la rama final de interactWithBrideFather() (la que
+  // arma brideNoteReceived = true), "Elena" aparece por primera vez.
+  setup.scene.interactWithBrideFather();
+  assert.ok(
+    setup.ui.dialogue.lines.some((line) => line.includes("Elena")),
+    "El padre de la novia debe revelar el nombre de Elena en esta rama",
+  );
+
+  assert.equal(setup.state.flags.brideNoteReceived, false);
+  setup.ui.dialogue.onComplete();
+  assert.equal(setup.state.flags.brideNoteReceived, true);
+});
+
+test("interactWithBlockedExit para blocked-library ya no menciona el vertical slice", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const blockedLibrary = findObject(
+    "axiom-plaza",
+    "blocked-library",
+  );
+  setup.state.flags.libraryObjectiveUnlocked = true;
+
+  setup.scene.interactWithBlockedExit(blockedLibrary);
+
+  assert.ok(
+    setup.ui.dialogue.lines.every(
+      (line) => !line.toLowerCase().includes("vertical slice"),
+    ),
+  );
 });
 
 /*

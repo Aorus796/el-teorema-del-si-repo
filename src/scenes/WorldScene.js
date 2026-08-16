@@ -82,7 +82,7 @@ const OBJECTIVE_LABELS = {
   "inspect-archive-criteria-table":
     "Entra en el Archivo y examina la mesa de criterios.",
   "start-epilogue": "Regresa al lugar donde comenzó la demostración.",
-  "epilogue-meet-bride": "Acércate a ella en la Plaza.",
+  "epilogue-meet-bride": "Acércate a Elena en la Plaza.",
   "epilogue-completed": "La demostración ha terminado.",
 };
 
@@ -409,7 +409,7 @@ export class WorldScene {
       this.ui.beginDialogue({
         speaker: "Alcaldesa Corolaria",
         lines: [
-          "Llegas justo a tiempo.",
+          "Llegas justo a tiempo, Gonzalo.",
           "Antes de que alguien mueva otra silla, revisa el tablón de preparativos.",
           "La última persona que improvisó una fila creó tres pasillos y ninguna entrada.",
         ],
@@ -458,7 +458,7 @@ export class WorldScene {
       this.ui.beginDialogue({
         speaker: "Padre de la novia",
         lines: [
-          "La nota era lo único extraño en su habitación.",
+          "La nota era lo único extraño en la habitación de Elena.",
           "No había señales de violencia ni de que hubiera preparado un viaje.",
           "Confío en ti. Encuentra el lugar del que habla.",
         ],
@@ -469,7 +469,7 @@ export class WorldScene {
     this.ui.beginDialogue({
       speaker: "Padre de la novia",
       lines: [
-        "Ella no está en su habitación y nadie la ha visto salir esta mañana.",
+        "Elena no está en su habitación y nadie la ha visto salir esta mañana.",
         "No hay señales de violencia. Solo encontré esta nota sobre la mesa.",
         "«Antes de mañana tengo que comprobar una cosa.»",
         "«Si no he vuelto al anochecer, sigue el camino de los siete puentes.»",
@@ -622,7 +622,6 @@ export class WorldScene {
         lines: [
           "El símbolo de la anotación coincide con el emblema de la Biblioteca del Margen.",
           "Ese será el siguiente lugar que investigar.",
-          "Fin del vertical slice narrativo.",
         ],
       });
       return;
@@ -659,7 +658,7 @@ export class WorldScene {
       speaker: "Mapa de los siete puentes",
       lines: [
         "Cinco lugares aparecen unidos por siete puentes.",
-        "La novia ha marcado que uno de ellos estaba cerrado.",
+        "Elena marcó que uno de ellos estaba cerrado.",
         "Encuentra un recorrido que cruce todos los demás una sola vez.",
       ],
       onComplete: () => {

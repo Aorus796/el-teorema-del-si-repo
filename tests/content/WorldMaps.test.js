@@ -150,7 +150,7 @@ test("axiom-plaza tiene exactamente un bride-epilogue como npc con requiresFlag 
 
   assert.equal(bride.type, "npc");
   assert.equal(bride.requiresFlag, "giftCodeSolved");
-  assert.equal(bride.label, "la novia");
+  assert.equal(bride.label, "Elena");
   assert.ok(bride.interactionRadius > 0);
 });
 

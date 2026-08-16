@@ -270,10 +270,21 @@ function drawHeader(context, state) {
   context.font = "8px monospace";
   context.textAlign = "right";
   context.fillText(
-    `Fase: ${state.phase} | Intentos: ${state.attemptCount}`,
+    `Fase: ${phaseLabel(state.phase)} | Intentos: ${state.attemptCount}`,
     468,
     18,
   );
+}
+
+function phaseLabel(phase) {
+  const labels = {
+    [LIBRARY_CATALOGUE_PHASE.READY]: "Pendiente",
+    [LIBRARY_CATALOGUE_PHASE.ARRANGING]: "Organizando",
+    [LIBRARY_CATALOGUE_PHASE.FAILED]: "Fallido",
+    [LIBRARY_CATALOGUE_PHASE.SOLVED]: "Registrado",
+  };
+
+  return labels[phase] ?? phase;
 }
 
 function drawRules(context) {

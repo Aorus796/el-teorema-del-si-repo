@@ -1488,3 +1488,87 @@ Implementation constraints:
 - This approval does not authorize environmental NPCs, map visual polish, additional gameplay mechanics or unrelated scope expansion.
 
 This authorization is explicitly provided by the human responsible for the product and is not inferred or created by an AI agent.
+
+## Human-approved narrative decision — protagonist name reveals
+
+**Approval date:** 2026-08-16
+**Approved by:** Product owner / human responsible for v1.1
+
+The previously open decisions about the first narrative use of Gonzalo's and Elena's names are explicitly resolved as follows.
+
+### Gonzalo
+
+Gonzalo's name is first revealed naturally by Alcaldesa Corolaria during her initial dialogue with the protagonist.
+
+Approved first use:
+
+`Llegas justo a tiempo, Gonzalo.`
+
+This is intended to establish the protagonist's name without introducing it artificially on the title screen or through self-exposition.
+
+The name may be used naturally in later dialogue when appropriate, but it should not be repeated excessively.
+
+### Elena
+
+Elena's name is first revealed during the initial dialogue with Padre de la novia, at the first personal/emotional moment where her disappearance is discussed.
+
+Approved first use:
+
+`Elena no está en su habitación...`
+
+This is the canonical narrative reveal of Elena's name during the playable adventure.
+
+Before this reveal, generic references such as `la novia` may remain where narratively appropriate.
+
+After this reveal, visible narrative text should prefer `Elena` where natural and where doing so improves clarity or personalization.
+
+### Padre de la novia
+
+The visible role label `Padre de la novia` remains approved and stable.
+
+It does not need to be globally renamed to `Padre de Elena`.
+
+Individual dialogue lines may refer to Elena by name after her reveal.
+
+No personal name for Elena's father is authorized.
+
+### Subsequent narrative consistency
+
+After Elena's reveal, it is explicitly authorized to update visible narrative references where appropriate, including:
+
+- later dialogue from Padre de la novia;
+- the Seven Bridges narrative/board text;
+- objectives or prompts referring to meeting the bride;
+- the final Elena NPC label;
+- other visible player-facing text where `la novia` would sound unnecessarily generic after the reveal.
+
+Internal identifiers such as `bride-*`, objective IDs, flags and code-facing names do not need to be renamed unless technically necessary.
+
+### Additional approved cleanup
+
+The same narrative-personalization task is authorized to:
+
+- remove residual player-facing `Vertical slice narrativo` wording;
+- translate any remaining visible `Fase: arranging` text into natural Spanish according to its actual context;
+- normalize visible references to `Biblioteca del Margen`;
+- improve the naturalness of Corolaria, Padre de la novia and Silogio dialogue without changing story logic or progression;
+- mention Max sparingly where it naturally adds personality.
+
+### Explicit constraints
+
+Do not:
+
+- add names to the title screen;
+- invent surnames;
+- invent names for relatives;
+- invent professions, ages or personal history;
+- invent new family relationships;
+- invent how Gonzalo and Elena met;
+- invent new dates or locations;
+- force the wedding date or Logroño into dialogue without an existing natural narrative reason;
+- change puzzles, flags, progression or save state;
+- alter the approved dedication.
+
+`SAVE_FORMAT_VERSION` remains 4.
+
+This authorization is explicitly provided by the human responsible for the product and is not inferred or created by an AI agent.
