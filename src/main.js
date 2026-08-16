@@ -43,22 +43,22 @@ scenes.register(
 
 scenes.register(
   "p2-bridges",
-  new P2BridgesScene({ scenes, input, state, ui }),
+  new P2BridgesScene({ scenes, input, state, ui, audio }),
 );
 
 scenes.register(
   "library-catalogue",
-  new LibraryCatalogueScene({ scenes, input, state, ui }),
+  new LibraryCatalogueScene({ scenes, input, state, ui, audio }),
 );
 
 scenes.register(
   "archive-criteria",
-  new ArchiveCriteriaScene({ scenes, input, state, ui }),
+  new ArchiveCriteriaScene({ scenes, input, state, ui, audio }),
 );
 
 scenes.register(
   "epilogue-gift-code",
-  new EpilogueGiftCodeScene({ scenes, input, state, ui }),
+  new EpilogueGiftCodeScene({ scenes, input, state, ui, audio }),
 );
 
 scenes.register(

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { EpilogueGiftCodeScene } from "../../src/scenes/EpilogueGiftCodeScene.js";
 import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
+import { ACTIVATE_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 
 const INCORRECT_MESSAGE =
@@ -53,6 +54,16 @@ class FakeUi {
 
   beginDialogue(dialogue) {
     this.dialogue = dialogue;
+  }
+}
+
+class FakeAudioService {
+  constructor() {
+    this.playSfxCalls = [];
+  }
+
+  playSfx(src) {
+    this.playSfxCalls.push(src);
   }
 }
 
@@ -649,6 +660,50 @@ test("el modo readOnly se mantiene igual con epilogueCompleted en true", () => {
   assert.ok(context.texts.includes(GIFT_CODE_DIGITS.join(" · ")));
 });
 
+test("confirmar la combinación correcta dispara playSfx(ACTIVATE_SFX_PATH) exactamente una vez", () => {
+  const { scene, input, audio } = createScene();
+  scene.enter();
+
+  enterCombination(scene, input, GIFT_CODE_DIGITS);
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, [ACTIVATE_SFX_PATH]);
+});
+
+test("confirmar una combinación incorrecta no dispara ningún SFX", () => {
+  const { scene, input, audio } = createScene();
+  scene.enter();
+  const wrongDigits = buildWrongCombination();
+  enterCombination(scene, input, wrongDigits);
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, []);
+});
+
+test("confirmar de nuevo tras haber acertado ya no dispara una segunda vez", () => {
+  const { scene, input, audio } = createScene();
+  scene.enter();
+  enterCombination(scene, input, GIFT_CODE_DIGITS);
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, [ACTIVATE_SFX_PATH]);
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, [ACTIVATE_SFX_PATH]);
+});
+
+test("entrar en modo readOnly (tras cargar con giftCodeSolved:true) y confirmar para salir no dispara ningún SFX", () => {
+  const { scene, input, state, audio } = createScene();
+  applyValidGiftCodeSolvedFlags(state);
+  scene.enter({ readOnly: true });
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, []);
+});
+
 function buildWrongCombination(offset = 0) {
   return GIFT_CODE_DIGITS.map((digit, index) =>
     index === offset % GIFT_CODE_DIGITS.length ? (digit + 1) % 10 : digit,
@@ -697,6 +752,7 @@ function createScene() {
   const scenes = new FakeScenes();
   const state = new GameState();
   const ui = new FakeUi();
+  const audio = new FakeAudioService();
 
   state.flags.investigationComplete = true;
   state.flags.epilogueUnlocked = true;
@@ -706,11 +762,13 @@ function createScene() {
     scenes,
     state,
     ui,
+    audio,
     scene: new EpilogueGiftCodeScene({
       scenes,
       input,
       state,
       ui,
+      audio,
     }),
   };
 }

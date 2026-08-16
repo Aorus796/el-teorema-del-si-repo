@@ -60,6 +60,29 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   negras y una figura melódica corta en corcheas, en registro grave y
   modo mayor/mixolidio, sin ninguna nota menor de color) — ver
   `src/assets/audio/README.md` para el detalle musical completo.
+- Tres efectos de sonido (SFX) cortos, generados por síntesis aditiva
+  local (`tools/generate-sfx-interact.mjs`,
+  `tools/generate-sfx-activate.mjs`,
+  `tools/generate-sfx-puzzle-success.mjs`, ver
+  `src/content/sfxAudioConfig.js` y `src/assets/audio/README.md`),
+  reproducidos con `AudioService.playSfx()` (independiente de la música
+  principal, sin sustituirla): `sfx-interact.wav` (un tono breve a 880 Hz)
+  suena en cada interacción válida dentro del mundo, disparado como
+  primera sentencia de `WorldScene.interact()` -- el único punto de
+  despacho de todas las interacciones del jugador, así que nunca se repite
+  al avanzar un diálogo ya abierto; `sfx-activate.wav` (dos tonos
+  secuenciales, raíz y quinta) suena una sola vez al confirmar la
+  combinación correcta del mecanismo del regalo del epílogo
+  (`EpilogueGiftCodeScene.confirmAttempt()`), nunca en un intento fallido
+  ni al reentrar o reconfirmar tras haberlo resuelto ya; y
+  `sfx-puzzle-success.wav` (arpegio ascendente C5-E5-G5) suena una sola
+  vez por cada resolución real de uno de los tres puzles principales
+  (`ArchiveCriteriaScene.applyResult()`,
+  `LibraryCatalogueScene.applyResult()`,
+  `P2BridgesScene.handleMoveResult()`), guardado por el código de
+  transición propio de cada escena y nunca desde las funciones de
+  progresión compartidas que también se invocan al restaurar una partida
+  guardada, así que cargar un puzle ya resuelto no lo repite.
 
 ## [1.0.0] - 2026-08-11
 

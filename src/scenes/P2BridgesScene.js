@@ -8,13 +8,15 @@ import {
 import { getP2Hint } from "../puzzles/p2-bridges/P2Hints.js";
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
 import { HINT_PROGRESS_CODE } from "../puzzles/core/HintProgress.js";
+import { PUZZLE_SUCCESS_SFX_PATH } from "../content/sfxAudioConfig.js";
 
 export class P2BridgesScene {
-  constructor({ scenes, input, state, ui }) {
+  constructor({ scenes, input, state, ui, audio }) {
     this.scenes = scenes;
     this.input = input;
     this.state = state;
     this.ui = ui;
+    this.audio = audio;
     this.puzzle = null;
     this.selectedBridgeIndex = 0;
     this.selectedMoveIndex = 0;
@@ -232,6 +234,8 @@ export class P2BridgesScene {
     }
 
     if (result.code === P2_MOVE_CODE.SOLVED) {
+      this.audio.playSfx(PUZZLE_SUCCESS_SFX_PATH);
+
       const wasAdded = this.state.registerP2Solution();
 
       this.statusMessage =

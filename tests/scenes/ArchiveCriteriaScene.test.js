@@ -24,6 +24,7 @@ import {
   EPILOGUE_COMBINATION_CLUE_ENTRY,
   START_EPILOGUE_OBJECTIVE_ID,
 } from "../../src/progression/ArchiveCriteriaProgression.js";
+import { PUZZLE_SUCCESS_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 
 class FakeInput {
@@ -81,6 +82,16 @@ class FakeCanvasContext {
 
   fillText(text) {
     this.texts.push(String(text));
+  }
+}
+
+class FakeAudioService {
+  constructor() {
+    this.playSfxCalls = [];
+  }
+
+  playSfx(src) {
+    this.playSfxCalls.push(src);
   }
 }
 
@@ -269,6 +280,78 @@ test("resolver el criterio aplica la progresión y muestra el toast una sola vez
 
   press(scene, input, "startPuzzleAttempt");
   assert.deepEqual(ui.toasts, ["La investigación ha terminado"]);
+});
+
+test("resolver el criterio dispara playSfx(PUZZLE_SUCCESS_SFX_PATH) exactamente una vez", () => {
+  const fixture = new ArchiveCriteriaState({
+    verdicts: { ...ARCHIVE_CRITERIA_SOLUTION },
+    phase: ARCHIVE_CRITERIA_PHASE.CLASSIFYING,
+  });
+  const { scene, input, audio } = createScene(fixture);
+  scene.enter();
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, [PUZZLE_SUCCESS_SFX_PATH]);
+});
+
+test("un intento incompleto o incorrecto no dispara ningún SFX", () => {
+  const incompleteFixture = new ArchiveCriteriaState({
+    verdicts: { ...ARCHIVE_CRITERIA_SOLUTION, "universal-future": null },
+    phase: ARCHIVE_CRITERIA_PHASE.CLASSIFYING,
+  });
+  const incomplete = createScene(incompleteFixture);
+  incomplete.scene.enter();
+  press(incomplete.scene, incomplete.input, "startPuzzleAttempt");
+  assert.deepEqual(incomplete.audio.playSfxCalls, []);
+
+  const wrong = {
+    ...ARCHIVE_CRITERIA_SOLUTION,
+    "universal-future": ARCHIVE_CRITERIA_VERDICT.CONFIRMED,
+  };
+  const incorrectFixture = new ArchiveCriteriaState({
+    verdicts: wrong,
+    phase: ARCHIVE_CRITERIA_PHASE.CLASSIFYING,
+  });
+  const incorrect = createScene(incorrectFixture);
+  incorrect.scene.enter();
+  press(incorrect.scene, incorrect.input, "startPuzzleAttempt");
+  assert.deepEqual(incorrect.audio.playSfxCalls, []);
+});
+
+test("confirmar un criterio ya resuelto no dispara el SFX una segunda vez", () => {
+  const { scene, input, audio } = createScene(solvedState());
+  scene.enter();
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, []);
+});
+
+test("construir el estado ya resuelto vía GameState.restore() y solo entrar en la escena no dispara ningún SFX", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.epilogueUnlocked = true;
+  saved.puzzles.archiveCriteria = solvedState().toSaveData();
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const audio = new FakeAudioService();
+  const scene = new ArchiveCriteriaScene({
+    scenes,
+    input,
+    state,
+    ui,
+    audio,
+  });
+
+  scene.enter();
+
+  assert.deepEqual(audio.playSfxCalls, []);
 });
 
 test("si epilogueUnlocked ya era true, repara el cuaderno sin tocar el objetivo ni mostrar toast", () => {
@@ -608,6 +691,7 @@ function createScene(archiveCriteriaState = new ArchiveCriteriaState()) {
   const scenes = new FakeScenes();
   const state = new GameState();
   const ui = new FakeUi();
+  const audio = new FakeAudioService();
   state.puzzles.archiveCriteria = archiveCriteriaState;
 
   return {
@@ -615,11 +699,13 @@ function createScene(archiveCriteriaState = new ArchiveCriteriaState()) {
     scenes,
     state,
     ui,
+    audio,
     scene: new ArchiveCriteriaScene({
       scenes,
       input,
       state,
       ui,
+      audio,
     }),
   };
 }

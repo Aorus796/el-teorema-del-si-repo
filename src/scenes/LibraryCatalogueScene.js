@@ -19,15 +19,17 @@ import {
 import {
   applyLibraryCatalogueProgression,
 } from "../progression/LibraryCatalogueProgression.js";
+import { PUZZLE_SUCCESS_SFX_PATH } from "../content/sfxAudioConfig.js";
 
 const DOCUMENT_COUNT = LIBRARY_CATALOGUE_DOCUMENTS.length;
 
 export class LibraryCatalogueScene {
-  constructor({ scenes, input, state, ui }) {
+  constructor({ scenes, input, state, ui, audio }) {
     this.scenes = scenes;
     this.input = input;
     this.state = state;
     this.ui = ui;
+    this.audio = audio;
 
     this.focusedIndex = 0;
     this.selectedIndex = null;
@@ -168,6 +170,8 @@ export class LibraryCatalogueScene {
     ) {
       return;
     }
+
+    this.audio.playSfx(PUZZLE_SUCCESS_SFX_PATH);
 
     const wasArchiveUnlocked = this.state.flags.archiveUnlocked;
     applyLibraryCatalogueProgression(this.state);

@@ -2,6 +2,11 @@ import { expect, test } from "@playwright/test";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { EPILOGUE_THEME_PATH } from "../../src/content/epilogueAudioConfig.js";
+import {
+  ACTIVATE_SFX_PATH,
+  INTERACT_SFX_PATH,
+  PUZZLE_SUCCESS_SFX_PATH,
+} from "../../src/content/sfxAudioConfig.js";
 import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
@@ -69,6 +74,24 @@ async function disableAudioPlayback(page, { resolvePlayback = false } = {}) {
       return nativePause.call(this);
     };
   }, resolvePlayback);
+}
+
+/*
+ * Cuenta, sobre window.__audioEvents (ya poblado por disableAudioPlayback()),
+ * cuántas veces se ha disparado un play() real para el SFX indicado --
+ * identificado por el nombre de archivo final de la ruta, ya que el
+ * navegador resuelve `src` a una URL absoluta.
+ */
+async function countSfxPlayEvents(page, sfxPath) {
+  const fileName = sfxPath.split("/").pop();
+
+  return page.evaluate(
+    (needle) =>
+      window.__audioEvents.filter(
+        (event) => event.type === "play" && event.src.includes(needle),
+      ).length,
+    fileName,
+  );
 }
 
 function buildGiftCodeKeystrokes(digits) {
@@ -382,6 +405,11 @@ test("resuelve el tercer puzle del Archivo con teclado y desbloquea el epílogo"
 
   await expect(toast).not.toBeEmpty();
   await expect(toast).toHaveText("La investigación ha terminado");
+
+  // Resolución real del tercer puzle por teclado: dispara el SFX de puzle
+  // resuelto exactamente una vez, comprobado en el navegador real vía
+  // window.__audioEvents (instrumentado por disableAudioPlayback()).
+  expect(await countSfxPlayEvents(page, PUZZLE_SUCCESS_SFX_PATH)).toBe(1);
 
   const solvedSceneFrame = await canvas.evaluate((element) =>
     element.toDataURL(),
@@ -2389,6 +2417,13 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     expect(editableDigits.length).toBeGreaterThan(0);
     expect(editableDigits.length % 4).toBe(0);
     expect(editableDigits.every((digit) => digit === "0")).toBe(true);
+
+    // Abrir el mecanismo del regalo pasa por WorldScene.interact(), que
+    // dispara el SFX de interacción como primera sentencia -- comprobado
+    // aquí en el navegador real vía window.__audioEvents, instrumentado por
+    // disableAudioPlayback().
+    expect(await countSfxPlayEvents(page, INTERACT_SFX_PATH)).toBe(1);
+    expect(await countSfxPlayEvents(page, ACTIVATE_SFX_PATH)).toBe(0);
   });
 
   await test.step("falla una combinación y comprueba el mensaje exacto", async () => {
@@ -2397,6 +2432,9 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     await waitForRenderedText(
       "Esta combinación no es la correcta. Repasa el cuaderno.",
     );
+
+    // Un intento fallido no debe disparar el SFX de activación.
+    expect(await countSfxPlayEvents(page, ACTIVATE_SFX_PATH)).toBe(0);
   });
 
   await test.step("introduce la combinación correcta y ve la pantalla del candado", async () => {
@@ -2425,6 +2463,11 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
 
     await waitForRenderedText("COMBINACIÓN DEL CANDADO REAL");
     await waitForRenderedText(GIFT_CODE_DIGITS.join(" · "));
+
+    // El último Enter de buildGiftCodeKeystrokes() confirma la combinación
+    // correcta -- activación real del mecanismo del regalo -- disparando el
+    // SFX de activación exactamente una vez.
+    expect(await countSfxPlayEvents(page, ACTIVATE_SFX_PATH)).toBe(1);
   });
 
   await test.step("confirma y vuelve a la Plaza en su presentación de amanecer", async () => {
@@ -2432,6 +2475,10 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     const solvedScreenFrame = await currentFrame();
     await page.keyboard.press("Enter");
     await waitForFrameChangeFrom(solvedScreenFrame);
+
+    // Confirmar de nuevo en modo de solo lectura (ya resuelto) no repite el
+    // SFX de activación.
+    expect(await countSfxPlayEvents(page, ACTIVATE_SFX_PATH)).toBe(1);
 
     /*
      * WorldScene.render() sustituye this.map.palette por
@@ -2466,6 +2513,12 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
 
     await page.keyboard.press("KeyE");
     await expect(dialoguePanel).toBeVisible();
+
+    // Segunda interacción real del recorrido (mecanismo del regalo +
+    // novia): el SFX de interacción vuelve a dispararse, sin acumular el de
+    // activación (que sigue en 1).
+    expect(await countSfxPlayEvents(page, INTERACT_SFX_PATH)).toBe(2);
+    expect(await countSfxPlayEvents(page, ACTIVATE_SFX_PATH)).toBe(1);
   });
 
   await test.step("recorre los cinco turnos exactos del diálogo final", async () => {
