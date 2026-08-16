@@ -160,13 +160,30 @@ export class WorldScene {
     /*
      * Reposiciona a Max en cada reconstrucción del mapa (carga inicial,
      * cambio de mapa, regreso desde cualquier sub-escena de puzzle o
-     * carga de partida en curso), sin necesidad de reconciliar la
-     * posición anterior: siempre parte del offset relativo a la posición
-     * ya normalizada del jugador para este mapa.
+     * carga de partida en curso). Le pasamos su posición actual (si ya
+     * existía una instancia previa, típicamente tras volver de un puzle en
+     * el mismo mapa) como último recurso adicional: resolveMaxSpawnPosition()
+     * la valida igual que cualquier otro candidato antes de usarla, así que
+     * nunca se reutiliza una posición que hoy colisiona en el mapa actual.
+     *
+     * resolveMaxSpawnPosition() puede devolver null en el caso extremo de
+     * que ningún candidato local ni la posición previa sean válidos -- en
+     * ese ciclo Max simplemente no se reconstruye (this.maxCompanion queda
+     * null) en vez de colocarlo visualmente dentro de geometría sólida;
+     * ver el resto de usos de this.maxCompanion, todos con `?.` por este
+     * motivo.
      */
-    this.maxCompanion = new MaxCompanion(
-      resolveMaxSpawnPosition(this.player, this.collisionMap),
+    const previousMaxPosition = this.maxCompanion
+      ? { x: this.maxCompanion.x, y: this.maxCompanion.y }
+      : null;
+    const maxSpawnPosition = resolveMaxSpawnPosition(
+      this.player,
+      this.collisionMap,
+      previousMaxPosition,
     );
+    this.maxCompanion = maxSpawnPosition
+      ? new MaxCompanion(maxSpawnPosition)
+      : null;
 
     /*
      * Si esta reconstrucción llega justo después de una resolución real
@@ -187,7 +204,7 @@ export class WorldScene {
       );
 
       if (hasNewlySolvedPuzzle) {
-        this.maxCompanion.triggerReaction();
+        this.maxCompanion?.triggerReaction();
       }
     }
 
@@ -255,7 +272,7 @@ export class WorldScene {
     const axis = this.input.getAxis();
     this.player.update(deltaSeconds, axis, this.collisionMap);
     this.camera.follow(this.player);
-    this.maxCompanion.follow(deltaSeconds, this.player.x, this.player.y);
+    this.maxCompanion?.follow(deltaSeconds, this.player.x, this.player.y);
 
     this.nearbyObject = findNearbyObject(
       this.player,
@@ -294,7 +311,7 @@ export class WorldScene {
      * bloqueada no representa ningún avance narrativo.
      */
     if (object.type !== "exit" && object.type !== "blocked-exit") {
-      this.maxCompanion.triggerReaction();
+      this.maxCompanion?.triggerReaction();
     }
 
     if (object.id === "preparations-board") {
@@ -520,7 +537,7 @@ export class WorldScene {
       object.targetPlayerState,
     );
     this.setupCurrentMap();
-    this.maxCompanion.triggerReaction();
+    this.maxCompanion?.triggerReaction();
     this.ui.showToast(this.map.name);
   }
 
@@ -809,35 +826,58 @@ export class WorldScene {
 }
 
 /*
- * Recolocación segura del spawn de Max (no pathfinding): prueba, en orden,
- * cada candidato de computeMaxSpawnCandidates() -- una lista corta y fija,
- * no una búsqueda de ruta -- contra el CollisionMap real del mapa actual,
- * usando el tamaño real de Max (MAX_DIMENSIONS), y devuelve el primero que
- * no colisione con un tile sólido (muro, o escenografía sólida como la
- * fuente o las mesas, que ya se representan como región sólida en
- * worldMaps.js). El último candidato de la lista es la posición exacta del
- * jugador: es un fallback determinista, no una garantía matemática de
- * ausencia de colisión -- la caja de Max (22x18) es mayor que la del
- * jugador (10x14, Player.getCollisionBox()), así que un hueco justo del
- * tamaño de Gonzalo (por ejemplo muy pegado a un muro o cerca del borde
- * del mapa) puede seguir colisionando para Max. Se acepta como
- * degradación conocida en vez de encadenar más candidatos o pathfinding:
- * ver el comentario de computeMaxSpawnCandidates() en MaxCompanion.js y el
- * test "el último recurso puede colisionar en casos extremos" más abajo.
+ * Recolocación segura del spawn de Max (no pathfinding, no búsqueda global):
+ * prueba, en orden, cada uno de los 13 candidatos locales de
+ * computeMaxSpawnCandidates() -- tres anillos fijos alrededor de Gonzalo más
+ * su posición exacta, ver el comentario de esa función en MaxCompanion.js --
+ * contra el CollisionMap real del mapa actual, usando el tamaño real de Max
+ * (MAX_DIMENSIONS), y devuelve el primero que no colisione con un tile
+ * sólido (muro, o escenografía sólida como la fuente o las mesas, que ya se
+ * representan como región sólida en worldMaps.js).
+ *
+ * Si ninguno de los 13 candidatos locales es válido, se intenta como último
+ * recurso `previousMaxPosition` -- la posición donde ya estaba Max antes de
+ * esta reconstrucción, si WorldScene.setupCurrentMap() la pasó porque ya
+ * existía una instancia previa (por ejemplo, al volver de un puzle sin
+ * cambiar de mapa) -- validándola exactamente igual contra el CollisionMap
+ * actual, nunca asumiéndola válida por haberlo sido antes ni por venir de
+ * otro mapa.
+ *
+ * Si tampoco eso funciona (o no hay `previousMaxPosition`), esta función
+ * devuelve `null` en vez de fabricar una posición que sabe que colisiona:
+ * WorldScene.setupCurrentMap() no reconstruye a Max ese ciclo en ese caso,
+ * así que nunca queda dibujado dentro de geometría sólida. En la práctica
+ * esto es una red de seguridad teórica -- los mapas reales del juego, ya
+ * verificados, siempre dejan al menos un candidato libre cerca del
+ * jugador -- y solo se ejercita en tests con un CollisionMap sintético
+ * diseñado a propósito para bloquear los 13 candidatos y la posición
+ * previa (ver "todos los anillos bloqueados" en
+ * tests/scenes/WorldScene.test.js).
  *
  * Exportada (a diferencia del resto de funciones auxiliares de este
  * módulo) para poder probarla de forma aislada con un CollisionMap
  * sintético en tests/scenes/WorldScene.test.js, sin depender de las
  * coordenadas reales de ningún mapa de worldMaps.js.
  */
-export function resolveMaxSpawnPosition(player, collisionMap) {
-  const candidates = computeMaxSpawnCandidates(player);
-  const safeCandidate = candidates.find(
-    (candidate) =>
-      !collisionMap.collides(getMaxCollisionBox(candidate)),
-  );
+export function resolveMaxSpawnPosition(
+  player,
+  collisionMap,
+  previousMaxPosition = null,
+) {
+  const isSafe = (position) =>
+    !collisionMap.collides(getMaxCollisionBox(position));
 
-  return safeCandidate ?? candidates[candidates.length - 1];
+  const safeCandidate = computeMaxSpawnCandidates(player).find(isSafe);
+
+  if (safeCandidate) {
+    return safeCandidate;
+  }
+
+  if (previousMaxPosition && isSafe(previousMaxPosition)) {
+    return previousMaxPosition;
+  }
+
+  return null;
 }
 
 function getMaxCollisionBox(position) {

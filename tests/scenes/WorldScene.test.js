@@ -2326,55 +2326,161 @@ function getMaxCollisionBoxForTest(position) {
   };
 }
 
-test("resolveMaxSpawnPosition() cae al último recurso (la posición exacta del jugador) de forma determinista, sin lanzar excepción, cuando los cuatro offsets colisionan", () => {
+const RING_2_DIAGONAL_OFFSET = Math.ceil(
+  MAX_FOLLOW_MIN_DISTANCE / Math.SQRT2,
+);
+const RING_3_DISTANCE = MAX_FOLLOW_MIN_DISTANCE * 2;
+
+/*
+ * Bloquea los cuatro candidatos del anillo 1 alrededor de player=(200,200)
+ * con un tile aislado dentro de cada footprint -- no con el rectángulo que
+ * los envuelve a todos, porque ese rectángulo también cubriría, de forma
+ * no intencionada, los footprints (más cercanos al jugador) de los cuatro
+ * candidatos diagonales del anillo 2. Mismos tiles que ya usaba el test
+ * "prueba los siguientes candidatos" de más arriba para (12,10)/(12,14);
+ * (14,12) y (10,12) aíslan del mismo modo los candidatos laterales.
+ */
+const RING_1_BLOCK = [
+  { xRange: [12, 12], yRange: [10, 10] },
+  { xRange: [12, 12], yRange: [14, 14] },
+  { xRange: [14, 14], yRange: [12, 12] },
+  { xRange: [10, 10], yRange: [12, 12] },
+];
+
+// Cubre, con cuatro rectángulos, los footprints de los cuatro candidatos
+// diagonales del anillo 2 alrededor de player=(200,200) -- ver el cálculo
+// en el comentario de computeMaxSpawnCandidates() en MaxCompanion.js.
+const RING_2_BLOCK = [
+  { xRange: [13, 14], yRange: [10, 11] },
+  { xRange: [10, 11], yRange: [10, 11] },
+  { xRange: [13, 14], yRange: [13, 14] },
+  { xRange: [10, 11], yRange: [13, 14] },
+];
+
+// Cubre los footprints de los cuatro candidatos cardinales lejanos del
+// anillo 3 alrededor de player=(200,200).
+const RING_3_BLOCK = [
+  { xRange: [11, 13], yRange: [8, 9] },
+  { xRange: [11, 13], yRange: [15, 16] },
+  { xRange: [7, 9], yRange: [11, 13] },
+  { xRange: [15, 17], yRange: [11, 13] },
+];
+
+// Cubre, además de los tres anillos, el footprint del último candidato
+// local (la posición exacta del jugador).
+const ALL_LOCAL_CANDIDATES_BLOCK = [
+  ...RING_1_BLOCK,
+  ...RING_2_BLOCK,
+  ...RING_3_BLOCK,
+  { xRange: [11, 13], yRange: [11, 13] },
+];
+
+test("resolveMaxSpawnPosition() cae al segundo anillo (diagonal) cuando los cuatro candidatos del primer anillo colisionan", () => {
   const player = { x: 200, y: 200, facing: "down" };
-  // Bloque sólido que cubre generosamente los cuatro offsets candidatos
-  // alrededor del jugador.
-  const allOffsetsBlocked = buildCollisionMap({
-    solidTileRanges: [{ xRange: [9, 15], yRange: [9, 15] }],
+  const ring1Blocked = buildCollisionMap({
+    solidTileRanges: RING_1_BLOCK,
   });
 
-  assert.doesNotThrow(() =>
-    resolveMaxSpawnPosition(player, allOffsetsBlocked),
-  );
+  assert.deepEqual(resolveMaxSpawnPosition(player, ring1Blocked), {
+    x: player.x + RING_2_DIAGONAL_OFFSET,
+    y: player.y - RING_2_DIAGONAL_OFFSET,
+  });
+});
 
-  assert.deepEqual(resolveMaxSpawnPosition(player, allOffsetsBlocked), {
+test("resolveMaxSpawnPosition() cae al tercer anillo (cardinales lejanos) cuando también el segundo anillo colisiona entero", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const ring1And2Blocked = buildCollisionMap({
+    solidTileRanges: [...RING_1_BLOCK, ...RING_2_BLOCK],
+  });
+
+  assert.deepEqual(resolveMaxSpawnPosition(player, ring1And2Blocked), {
     x: player.x,
-    y: player.y,
+    y: player.y - RING_3_DISTANCE,
   });
 });
 
 /*
- * El último recurso (posición exacta del jugador) es un fallback
- * determinista, no una garantía matemática de ausencia de colisión: la
- * caja de Max (22x18) es mayor que la del jugador (10x14), así que un
- * hueco justo del tamaño de Gonzalo puede seguir colisionando para Max.
- * Este test documenta esa degradación aceptada explícitamente (ver el
- * comentario de resolveMaxSpawnPosition() en WorldScene.js y el de
- * computeMaxSpawnCandidates() en MaxCompanion.js) en vez de afirmar, como
- * hacía la versión anterior de este archivo, una garantía más fuerte de
- * la que el código realmente cumple.
+ * Contrato reforzado: resolveMaxSpawnPosition() solo puede devolver una
+ * posición cuyo bounding box completo de Max (MAX_DIMENSIONS) haya sido
+ * validado como libre por el CollisionMap real -- nunca una posición que
+ * el propio CollisionMap marca como colisionante. Se verifica sobre varios
+ * mapas sintéticos distintos, incluido el caso patológico de los 13
+ * candidatos locales bloqueados a la vez, en vez de confiar en un único
+ * escenario feliz.
  */
-test("resolveMaxSpawnPosition() el último recurso puede colisionar en casos extremos (degradación aceptada, no pathfinding)", () => {
+test("resolveMaxSpawnPosition() nunca devuelve una posición que el CollisionMap marque como colisionante", () => {
   const player = { x: 200, y: 200, facing: "down" };
-  // El mismo bloque que cubre los cuatro offsets también cubre, en este
-  // caso, la caja (mayor) de Max centrada en la posición exacta del
-  // jugador -- candidato 5 también colisiona aquí.
-  const allCandidatesBlocked = buildCollisionMap({
-    solidTileRanges: [{ xRange: [9, 15], yRange: [9, 15] }],
+  const scenarios = [
+    buildCollisionMap(),
+    buildCollisionMap({ solidTileRanges: RING_1_BLOCK }),
+    buildCollisionMap({ solidTileRanges: [...RING_1_BLOCK, ...RING_2_BLOCK] }),
+    buildCollisionMap({ solidTileRanges: ALL_LOCAL_CANDIDATES_BLOCK }),
+  ];
+
+  for (const collisionMap of scenarios) {
+    const result = resolveMaxSpawnPosition(player, collisionMap);
+
+    if (result !== null) {
+      assert.equal(
+        collisionMap.collides(getMaxCollisionBoxForTest(result)),
+        false,
+        `resolveMaxSpawnPosition() devolvió una posición colisionante: ${JSON.stringify(result)}`,
+      );
+    }
+  }
+});
+
+/*
+ * Caso límite explícito: si los 13 candidatos locales colisionan y no hay
+ * ninguna posición previa de Max que probar (reconstrucción inicial, sin
+ * instancia previa), resolveMaxSpawnPosition() devuelve `null` en vez de
+ * fabricar una posición que sabe que colisiona. WorldScene.setupCurrentMap()
+ * no dibuja a Max ese ciclo en ese caso (ver this.maxCompanion = null y los
+ * usos con `?.`), en vez de colocarlo visualmente dentro de geometría
+ * sólida. No es una mentira sobre una garantía más fuerte de la real: es el
+ * comportamiento honesto documentado en el comentario de la función.
+ */
+test("resolveMaxSpawnPosition() devuelve null, sin lanzar excepción, cuando los 13 candidatos locales colisionan y no hay posición previa", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const allBlocked = buildCollisionMap({
+    solidTileRanges: ALL_LOCAL_CANDIDATES_BLOCK,
   });
 
-  const result = resolveMaxSpawnPosition(player, allCandidatesBlocked);
+  assert.doesNotThrow(() => resolveMaxSpawnPosition(player, allBlocked));
+  assert.equal(resolveMaxSpawnPosition(player, allBlocked), null);
+});
 
-  assert.deepEqual(result, { x: player.x, y: player.y });
-  assert.equal(
-    allCandidatesBlocked.collides(getMaxCollisionBoxForTest(result)),
-    true,
-    "este escenario debe demostrar que el último recurso también puede colisionar",
+test("resolveMaxSpawnPosition() usa la posición previa de Max como último recurso si sigue siendo válida, incluso con los 13 candidatos locales bloqueados", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const allBlocked = buildCollisionMap({
+    solidTileRanges: ALL_LOCAL_CANDIDATES_BLOCK,
+  });
+  // Bien lejos de player y de cualquier candidato local, en una zona libre
+  // y dentro de los límites del mapa por defecto de buildCollisionMap()
+  // (30 tiles * 16px = 480px de ancho/alto).
+  const previousMaxPosition = { x: 400, y: 400 };
+
+  assert.deepEqual(
+    resolveMaxSpawnPosition(player, allBlocked, previousMaxPosition),
+    previousMaxPosition,
   );
 });
 
-test("resolveMaxSpawnPosition() respeta los límites del mapa: cerca de cada esquina, devuelve un candidato dentro de los límites o el último recurso de forma determinista", () => {
+test("resolveMaxSpawnPosition() no reutiliza la posición previa de Max si también colisiona en el mapa actual", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const allBlocked = buildCollisionMap({
+    solidTileRanges: ALL_LOCAL_CANDIDATES_BLOCK,
+  });
+  // Dentro del propio bloque que cubre los 13 candidatos locales.
+  const collidingPreviousPosition = { x: 200, y: 200 };
+
+  assert.equal(
+    resolveMaxSpawnPosition(player, allBlocked, collidingPreviousPosition),
+    null,
+  );
+});
+
+test("resolveMaxSpawnPosition() respeta los límites del mapa cerca de cada esquina: nunca lanza excepción ni devuelve una posición colisionante", () => {
   const width = 30;
   const height = 30;
   const tileSize = 16;
@@ -2395,8 +2501,16 @@ test("resolveMaxSpawnPosition() respeta los límites del mapa: cerca de cada esq
 
     const result = resolveMaxSpawnPosition(player, collisionMap);
 
-    assert.equal(typeof result.x, "number");
-    assert.equal(typeof result.y, "number");
+    // Cerca de una esquina, algunos candidatos del anillo 3 caen fuera del
+    // mapa (CollisionMap trata fuera-de-límites como sólido) y se
+    // descartan; puede devolver null si eso ocurre con los 13, pero nunca
+    // una posición que el propio CollisionMap marque como colisionante.
+    if (result !== null) {
+      assert.equal(
+        collisionMap.collides(getMaxCollisionBoxForTest(result)),
+        false,
+      );
+    }
   }
 });
 

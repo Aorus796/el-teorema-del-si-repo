@@ -86,6 +86,28 @@ function offsetPosition(player, facing) {
   };
 }
 
+/*
+ * Segundo anillo (diagonales), a la misma distancia centro-a-centro que el
+ * primero: dos catetos iguales cuya hipotenusa sea MAX_FOLLOW_MIN_DISTANCE
+ * mantienen la misma garantía geométrica de no-solape con Gonzalo que
+ * cualquier candidato del anillo 1 (ver el comentario de
+ * MAX_FOLLOW_MIN_DISTANCE más arriba: esa garantía depende solo de la
+ * distancia euclídea al jugador, no del ángulo). Redondeado hacia arriba
+ * para no quedar nunca por debajo del mínimo por error de redondeo.
+ */
+const RING_2_DIAGONAL_OFFSET = Math.ceil(
+  MAX_FOLLOW_MIN_DISTANCE / Math.SQRT2,
+);
+
+// Tercer anillo (cardinales más alejados): el doble de la distancia del
+// anillo 1, para cubrir el caso -- ya infrecuente por sí solo -- de que
+// también los cuatro candidatos diagonales del anillo 2 colisionen.
+const RING_3_DISTANCE = MAX_FOLLOW_MIN_DISTANCE * 2;
+
+function offsetFromDelta(player, dx, dy) {
+  return { x: player.x + dx, y: player.y + dy };
+}
+
 export class MaxCompanion {
   constructor({ x, y }) {
     this.x = x;
@@ -169,43 +191,76 @@ export function computeMaxSpawnPosition(player) {
 }
 
 /*
- * Lista corta y fija de posiciones candidatas para el spawn de Max, en
- * orden de preferencia -- no es pathfinding, solo una secuencia fija de
- * alternativas ya conocidas. WorldScene.js prueba cada una, en este
- * mismo orden, contra el CollisionMap del mapa actual (con el tamaño real
- * de Max, MAX_DIMENSIONS) hasta encontrar la primera que no colisione:
- *   1. El offset normal, detrás de Gonzalo según su facing actual (el
- *      resultado de computeMaxSpawnPosition()).
- *   2. El offset opuesto al facing actual -- cubre el caso de un punto de
- *      entrada estrecho junto a un muro, donde el offset normal empuja a
- *      Max justo contra ese muro.
- *   3 y 4. Offsets laterales fijos (izquierda y derecha), independientes
- *      del facing, para el caso poco probable de que tanto el offset
- *      normal como el opuesto queden bloqueados.
- *   5. La posición exacta de Gonzalo, como último recurso determinista.
- *      OJO: esto NO garantiza ausencia de colisión para la caja de Max.
- *      El jugador cabe ahí porque su propia caja de colisión (10x14,
- *      Player.getCollisionBox()) es más pequeña que la de Max
- *      (MAX_DIMENSIONS, 22x18): un hueco justo del tamaño de Gonzalo (por
- *      ejemplo, muy pegado a una pared o cerca del borde del mapa) puede
- *      no tener sitio para la caja mayor de Max. Es un best-effort
- *      determinista, no una garantía matemática -- resolveMaxSpawnPosition()
- *      en WorldScene.js siempre devuelve este último candidato si los
- *      cuatro anteriores colisionan, incluso si también colisiona, en vez
- *      de seguir buscando (evita cualquier forma de pathfinding). Ver el
- *      test "el último recurso puede colisionar en casos extremos" en
- *      tests/scenes/WorldScene.test.js, que documenta este caso límite
- *      aceptado en vez de afirmar una garantía más fuerte de la real.
+ * Lista corta y fija de posiciones candidatas para el spawn/recolocación de
+ * Max, en orden de preferencia -- tres anillos alrededor de Gonzalo más su
+ * posición exacta, no pathfinding: no hay búsqueda de ruta, no se recorre
+ * el mapa, no hay estructura de nodos visitados. WorldScene.js
+ * (resolveMaxSpawnPosition()) prueba cada una, en este mismo orden, contra
+ * el CollisionMap del mapa actual, con el tamaño real de Max
+ * (MAX_DIMENSIONS), hasta encontrar la primera que no colisione:
+ *
+ *   Anillo 1 (cardinales, distancia MAX_FOLLOW_MIN_DISTANCE):
+ *     1. El offset normal, detrás de Gonzalo según su facing actual (el
+ *        resultado de computeMaxSpawnPosition()).
+ *     2. El offset opuesto al facing actual -- cubre el caso de un punto
+ *        de entrada estrecho junto a un muro, donde el offset normal
+ *        empuja a Max justo contra ese muro.
+ *     3 y 4. Offsets laterales fijos (izquierda y derecha), independientes
+ *        del facing.
+ *   Anillo 2 (diagonales, misma distancia centro-a-centro que el anillo 1):
+ *     5-8. Las cuatro diagonales fijas (arriba-derecha, arriba-izquierda,
+ *        abajo-derecha, abajo-izquierda), para el caso -- ya poco
+ *        probable -- de que los cuatro cardinales del anillo 1 colisionen.
+ *   Anillo 3 (cardinales más alejados, el doble de distancia):
+ *     9-12. Las mismas cuatro direcciones cardinales que el anillo 1, pero
+ *        a 2×MAX_FOLLOW_MIN_DISTANCE, para el caso -- ya extremadamente
+ *        improbable -- de que también el anillo 2 colisione entero.
+ *   Último candidato local:
+ *     13. La posición exacta de Gonzalo. El jugador cabe ahí porque su
+ *        propia caja de colisión (10x14, Player.getCollisionBox()) es más
+ *        pequeña que la de Max (MAX_DIMENSIONS, 22x18): un hueco justo del
+ *        tamaño de Gonzalo no garantiza sitio para la caja mayor de Max,
+ *        así que este candidato tampoco es una garantía por sí solo -- es
+ *        solo el último intento local antes de rendirse.
+ *
+ * Los tres anillos garantizan por construcción que Max nunca solapa el
+ * sprite de Gonzalo (todas las distancias son >= MAX_FOLLOW_MIN_DISTANCE,
+ * y esa constante ya está calculada para el peor caso angular posible -- ver
+ * su comentario). Lo que NINGÚN candidato garantiza por sí solo es libertad
+ * de colisión contra el CollisionMap del mapa: eso lo decide
+ * resolveMaxSpawnPosition() en WorldScene.js probándolos uno a uno. Si
+ * ninguno de estos 13 candidatos locales es válido (y tampoco lo es una
+ * posición previa de Max conocida, ver resolveMaxSpawnPosition()),
+ * resolveMaxSpawnPosition() devuelve null en vez de fabricar una posición
+ * que sabe que colisiona -- WorldScene.js no dibuja a Max ese ciclo en vez
+ * de colocarlo visualmente dentro de geometría sólida. Ver los tests de
+ * "todos los anillos bloqueados" en tests/scenes/WorldScene.test.js.
+ *
  * MaxCompanion.js no importa CollisionMap a propósito: ese acoplamiento
  * vive solo en WorldScene.js, que ya es quien construye el CollisionMap
  * del mapa actual.
  */
 export function computeMaxSpawnCandidates(player) {
+  const d = RING_2_DIAGONAL_OFFSET;
+  const far = RING_3_DISTANCE;
+
   return [
+    // Anillo 1: cardinales a MAX_FOLLOW_MIN_DISTANCE.
     offsetPosition(player, player.facing),
     offsetPosition(player, OPPOSITE_FACING[player.facing] ?? "up"),
     offsetPosition(player, "left"),
     offsetPosition(player, "right"),
+    // Anillo 2: diagonales a (aprox.) MAX_FOLLOW_MIN_DISTANCE.
+    offsetFromDelta(player, d, -d),
+    offsetFromDelta(player, -d, -d),
+    offsetFromDelta(player, d, d),
+    offsetFromDelta(player, -d, d),
+    // Anillo 3: cardinales a 2 * MAX_FOLLOW_MIN_DISTANCE.
+    offsetFromDelta(player, 0, -far),
+    offsetFromDelta(player, 0, far),
+    offsetFromDelta(player, -far, 0),
+    offsetFromDelta(player, far, 0),
+    // Último candidato local: la posición exacta de Gonzalo.
     { x: player.x, y: player.y },
   ];
 }

@@ -210,32 +210,71 @@ test("computeMaxSpawnPosition() coloca a Max exactamente en el límite de la zon
   assert.deepEqual({ x: max.x, y: max.y }, spawn);
 });
 
-test("computeMaxSpawnCandidates() devuelve, en orden, el offset normal, el opuesto, los dos laterales y la posición del jugador", () => {
+const RING_2_DIAGONAL_OFFSET = Math.ceil(
+  MAX_FOLLOW_MIN_DISTANCE / Math.SQRT2,
+);
+const RING_3_DISTANCE = MAX_FOLLOW_MIN_DISTANCE * 2;
+
+test("computeMaxSpawnCandidates() devuelve, en orden, los tres anillos (cardinales, diagonales, cardinales lejanos) y la posición del jugador", () => {
   const player = { x: 240, y: 192, facing: "right" };
+  const d = RING_2_DIAGONAL_OFFSET;
+  const far = RING_3_DISTANCE;
 
   const candidates = computeMaxSpawnCandidates(player);
 
   assert.deepEqual(candidates, [
+    // Anillo 1 (cardinales, MAX_FOLLOW_MIN_DISTANCE).
     { x: 240 - MAX_FOLLOW_MIN_DISTANCE, y: 192 }, // normal (right)
     { x: 240 + MAX_FOLLOW_MIN_DISTANCE, y: 192 }, // opuesto (left)
     { x: 240 + MAX_FOLLOW_MIN_DISTANCE, y: 192 }, // lateral izquierda
     { x: 240 - MAX_FOLLOW_MIN_DISTANCE, y: 192 }, // lateral derecha
-    { x: 240, y: 192 }, // último recurso: la posición del jugador
+    // Anillo 2 (diagonales).
+    { x: 240 + d, y: 192 - d },
+    { x: 240 - d, y: 192 - d },
+    { x: 240 + d, y: 192 + d },
+    { x: 240 - d, y: 192 + d },
+    // Anillo 3 (cardinales lejanos, 2 * MAX_FOLLOW_MIN_DISTANCE).
+    { x: 240, y: 192 - far },
+    { x: 240, y: 192 + far },
+    { x: 240 - far, y: 192 },
+    { x: 240 + far, y: 192 },
+    // Último candidato local: la posición exacta del jugador.
+    { x: 240, y: 192 },
   ]);
 });
 
-test("computeMaxSpawnCandidates() el primer candidato siempre coincide con computeMaxSpawnPosition() y el último con la posición exacta del jugador, para los cuatro valores de facing", () => {
+test("computeMaxSpawnCandidates() devuelve exactamente 13 candidatos, y todos salvo el último respetan MAX_FOLLOW_MIN_DISTANCE frente al jugador", () => {
   const facings = ["up", "down", "left", "right"];
 
   for (const facing of facings) {
     const player = { x: 100, y: 50, facing };
     const candidates = computeMaxSpawnCandidates(player);
 
-    assert.equal(candidates.length, 5);
+    assert.equal(candidates.length, 13);
     assert.deepEqual(candidates[0], computeMaxSpawnPosition(player));
     assert.deepEqual(candidates[candidates.length - 1], {
       x: player.x,
       y: player.y,
     });
+
+    /*
+     * Los 12 candidatos de anillo (todos salvo el último, la posición
+     * exacta del jugador) están, por construcción, a una distancia
+     * centro-a-centro >= MAX_FOLLOW_MIN_DISTANCE del jugador -- la misma
+     * garantía geométrica de no-solape con el sprite de Gonzalo que ya
+     * verifica el test dedicado más abajo para el caso general, aquí
+     * confirmada candidato a candidato.
+     */
+    for (const candidate of candidates.slice(0, -1)) {
+      const distance = Math.hypot(
+        candidate.x - player.x,
+        candidate.y - player.y,
+      );
+
+      assert.ok(
+        distance >= MAX_FOLLOW_MIN_DISTANCE - 1e-9,
+        `candidato a distancia ${distance}, por debajo de MAX_FOLLOW_MIN_DISTANCE`,
+      );
+    }
   }
 });
