@@ -1441,3 +1441,50 @@ A partir de esa fecha, el trabajo se limita exclusivamente a:
 
 La fecha límite externa sigue siendo, sin cambios, el **10 de
 septiembre de 2026** (§26).
+
+## Human-approved scope expansion — Max companion
+
+**Approval date:** 2026-08-16
+**Approved by:** Product owner / human responsible for v1.1
+
+The v1.1 scope is explicitly expanded to include Max as Gonzalo's active companion throughout the playable adventure.
+
+This is a deliberate human product decision and is authorized for implementation before the environmental NPC and map-polish work.
+
+Approved scope:
+
+- Max follows Gonzalo during normal World gameplay.
+- Max is present from the beginning of the playable adventure.
+- Max accompanies Gonzalo across all normal playable maps.
+- Max is repositioned safely near Gonzalo on map transitions and load.
+- Max maintains a natural following distance instead of remaining attached to the player.
+- Max may use simple runtime catch-up/reposition behaviour when too far away.
+- Max does not participate in gameplay collisions and must not block movement, exits, NPCs or interactions.
+- Max should have lightweight visible reactions to important moments, including conversations/interactions, puzzle success, map changes and the epilogue.
+- Max should be present in the narrative ending where technically appropriate.
+- The already approved Max visual design and MaxRenderer must be reused.
+
+Explicitly out of scope for this implementation:
+
+- pathfinding;
+- complex AI;
+- behaviour trees;
+- combat;
+- inventory;
+- stats;
+- dialogue spoken by Max;
+- petting/command mechanics;
+- barking or new Max-specific audio;
+- persistent Max position/state;
+- save-format migration;
+- new collision mechanics.
+
+Implementation constraints:
+
+- `SAVE_FORMAT_VERSION` remains 4.
+- Max runtime position, facing and reaction state are ephemeral and are not persisted.
+- Loading a save reconstructs Max safely near Gonzalo.
+- Existing Gonzalo, Elena, Corolaria, Padre de la novia, Silogio and Max visual designs remain approved and must not be redesigned as part of this work.
+- This approval does not authorize environmental NPCs, map visual polish, additional gameplay mechanics or unrelated scope expansion.
+
+This authorization is explicitly provided by the human responsible for the product and is not inferred or created by an AI agent.

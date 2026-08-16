@@ -83,6 +83,27 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   transición propio de cada escena y nunca desde las funciones de
   progresión compartidas que también se invocan al restaurar una partida
   guardada, así que cargar un puzle ya resuelto no lo repite.
+- Max como compañero visual de Gonzalo durante toda la partida
+  (`src/world/MaxCompanion.js`), con seguimiento simple por distancia --
+  sin pathfinding ni IA propia --, autorizado explícitamente por el
+  responsable humano del producto como ampliación del alcance congelado
+  (ver `docs/production/V1_1_PERSONALIZATION_SPEC.md`, bloque
+  "Human-approved scope expansion -- Max companion"). Zona muerta de 31px
+  (calculada, con margen, a partir de las cajas reales de Gonzalo y Max
+  para que sus sprites nunca se solapen durante el seguimiento normal) y
+  velocidad de alcance por encima de ese umbral cuando Max queda muy
+  atrás. `WorldScene` reconstruye a Max en cada `setupCurrentMap()`
+  (partida nueva, carga, cambio de mapa o regreso de un puzle), con una
+  recolocación de spawn consciente de colisiones
+  (`resolveMaxSpawnPosition()`/`computeMaxSpawnCandidates()`) que prueba
+  una lista corta y fija de posiciones candidatas contra el
+  `CollisionMap` real del mapa; no se persiste en el guardado
+  (`SAVE_FORMAT_VERSION` sigue en 4). Reacciona con un ligero rebote a
+  interacciones normales, cambios de mapa y a la resolución real (no
+  reentrada) de cada uno de los tres puzles principales, y aparece junto
+  a Gonzalo y Elena en el plano de cierre de `CreditsScene`. Reutiliza el
+  render procedural de Max ya aprobado en `src/render/MaxRenderer.js` sin
+  modificarlo.
 
 ## [1.0.0] - 2026-08-11
 

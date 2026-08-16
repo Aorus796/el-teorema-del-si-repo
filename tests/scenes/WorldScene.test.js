@@ -8,7 +8,14 @@ import {
   LibraryCatalogueState,
 } from "../../src/puzzles/library-catalogue/LibraryCatalogueState.js";
 import { LibraryCatalogueScene } from "../../src/scenes/LibraryCatalogueScene.js";
-import { WorldScene } from "../../src/scenes/WorldScene.js";
+import {
+  ARCHIVE_CRITERIA_PHASE,
+  ArchiveCriteriaState,
+} from "../../src/puzzles/archive-criteria/ArchiveCriteriaState.js";
+import { ArchiveCriteriaScene } from "../../src/scenes/ArchiveCriteriaScene.js";
+import { P2_PHASE } from "../../src/puzzles/p2-bridges/P2State.js";
+import { P2BridgesScene } from "../../src/scenes/P2BridgesScene.js";
+import { WorldScene, resolveMaxSpawnPosition } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
 import {
   BRIDE_FATHER_PALETTE,
@@ -19,6 +26,14 @@ import {
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
+import {
+  computeMaxSpawnPosition,
+  MAX_FOLLOW_MIN_DISTANCE,
+  MAX_REACTION_DURATION_SECONDS,
+  MaxCompanion,
+} from "../../src/world/MaxCompanion.js";
+import { CollisionMap } from "../../src/world/CollisionMap.js";
+import { MAX_DIMENSIONS } from "../../src/render/MaxRenderer.js";
 
 class FakeInput {
   constructor() {
@@ -2081,6 +2096,665 @@ test("moverse sin pulsar interactuar no dispara ningún SFX", () => {
 
   assert.deepEqual(setup.audio.playSfxCalls, []);
 });
+
+/*
+ * A partir de aquí: cobertura de MaxCompanion dentro de WorldScene --
+ * reposicionamiento en cambios de mapa y cargas, reacciones ligeras en los
+ * cuatro momentos aprobados (interacción normal, cambio de mapa, puzle
+ * recién resuelto) y ausencia de reacción retrospectiva o por reentrada.
+ */
+
+test("tras un cambio de mapa exitoso, maxCompanion queda en el offset correcto respecto al nuevo jugador y con una reacción activa", () => {
+  const setup = createWorldAt("seven-bridges-walk");
+  const exit = findObject(
+    "seven-bridges-walk",
+    "seven-bridges-to-library",
+  );
+  setup.state.flags.libraryObjectiveUnlocked = true;
+  setup.scene.player.x = 600;
+  setup.scene.player.y = 304;
+  setup.scene.player.facing = "right";
+
+  setup.scene.interactWithExit(exit);
+
+  assert.equal(setup.state.world.currentMapId, "library");
+  assert.ok(setup.scene.maxCompanion instanceof MaxCompanion);
+  assert.deepEqual(
+    { x: setup.scene.maxCompanion.x, y: setup.scene.maxCompanion.y },
+    computeMaxSpawnPosition(setup.scene.player),
+  );
+  assert.equal(
+    setup.scene.maxCompanion.reactionTimer,
+    MAX_REACTION_DURATION_SECONDS,
+  );
+});
+
+test("tras una salida bloqueada, maxCompanion no cambia", () => {
+  const setup = createWorldAt("seven-bridges-walk");
+  const exit = findObject(
+    "seven-bridges-walk",
+    "seven-bridges-to-library",
+  );
+  const maxBefore = setup.scene.maxCompanion;
+  const positionBefore = { x: maxBefore.x, y: maxBefore.y };
+  const reactionTimerBefore = maxBefore.reactionTimer;
+
+  setup.scene.interactWithExit(exit);
+
+  assert.equal(setup.scene.maxCompanion, maxBefore);
+  assert.deepEqual(
+    { x: setup.scene.maxCompanion.x, y: setup.scene.maxCompanion.y },
+    positionBefore,
+  );
+  assert.equal(setup.scene.maxCompanion.reactionTimer, reactionTimerBefore);
+});
+
+test("enter({restoreFromState: true}) deja maxCompanion definido en el offset correcto, sin NaN ni undefined", () => {
+  const seed = new GameState();
+  seed.changeMap("library", { x: 216, y: 176, facing: "left" });
+  const saved = seed.toSaveData();
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene } = createScene(storage);
+
+  scene.enter({ restoreFromState: true });
+
+  assert.ok(scene.maxCompanion instanceof MaxCompanion);
+  assert.equal(Number.isFinite(scene.maxCompanion.x), true);
+  assert.equal(Number.isFinite(scene.maxCompanion.y), true);
+  assert.deepEqual(
+    { x: scene.maxCompanion.x, y: scene.maxCompanion.y },
+    computeMaxSpawnPosition(scene.player),
+  );
+});
+
+test("cargar un guardado con un puzle ya resuelto deja reactionTimer en 0 inmediatamente, sin reacción retrospectiva", () => {
+  const seed = new GameState();
+  seed.puzzles.libraryCatalogue = new LibraryCatalogueState({
+    order: ["A", "D", "R", "C", "M"],
+    phase: LIBRARY_CATALOGUE_PHASE.SOLVED,
+    hintsRead: [1, 2, 3],
+    attemptCount: 3,
+  });
+  const saved = seed.toSaveData();
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene } = createScene(storage);
+
+  scene.enter({ restoreFromState: true });
+
+  assert.equal(scene.maxCompanion.reactionTimer, 0);
+});
+
+test("la tecla de cargar en pleno juego reposiciona a Max igual que un cambio de mapa", () => {
+  const seed = new GameState();
+  seed.changeMap("library", { x: 216, y: 176, facing: "down" });
+  const saved = seed.toSaveData();
+  const storage = new FakeStorage({ loadResult: saved });
+  const { scene, input } = createScene(storage);
+  scene.enter();
+
+  input.press("load");
+  scene.update(0);
+
+  assert.equal(scene.state.world.currentMapId, "library");
+  assert.deepEqual(
+    { x: scene.maxCompanion.x, y: scene.maxCompanion.y },
+    computeMaxSpawnPosition(scene.player),
+  );
+});
+
+test("interact() sobre un objeto normal activa reactionTimer; sobre una salida (incluso bloqueada) no", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const normalObject = findObject("axiom-plaza", "preparations-board");
+
+  assert.equal(setup.scene.maxCompanion.reactionTimer, 0);
+
+  setup.scene.interact(normalObject);
+
+  assert.equal(
+    setup.scene.maxCompanion.reactionTimer,
+    MAX_REACTION_DURATION_SECONDS,
+  );
+
+  const blockedSetup = createWorldAt("axiom-plaza");
+  const blockedExitObject = findObject(
+    "axiom-plaza",
+    "plaza-to-seven-bridges",
+  );
+
+  assert.equal(blockedSetup.state.flags.sevenBridgesUnlocked, false);
+  assert.equal(blockedSetup.scene.maxCompanion.reactionTimer, 0);
+
+  blockedSetup.scene.interact(blockedExitObject);
+
+  assert.equal(blockedSetup.scene.maxCompanion.reactionTimer, 0);
+});
+
+test("maxCompanion coincidente con la posición del jugador no lanza excepción ni se desplaza de forma anómala en update()", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.scene.maxCompanion.x = setup.scene.player.x;
+  setup.scene.maxCompanion.y = setup.scene.player.y;
+
+  assert.doesNotThrow(() => setup.scene.update(0.1));
+
+  assert.equal(Number.isFinite(setup.scene.maxCompanion.x), true);
+  assert.equal(Number.isFinite(setup.scene.maxCompanion.y), true);
+  assert.equal(setup.scene.maxCompanion.x, setup.scene.player.x);
+  assert.equal(setup.scene.maxCompanion.y, setup.scene.player.y);
+});
+
+/*
+ * Cobertura aislada de resolveMaxSpawnPosition() con un CollisionMap
+ * sintético (sin depender de las coordenadas reales de ningún mapa de
+ * worldMaps.js), verificando los tres casos descritos en su comentario:
+ * candidato principal libre se usa tal cual, candidato principal bloqueado
+ * prueba los siguientes en orden, y el último recurso nunca falla.
+ */
+function buildCollisionMap({
+  width = 30,
+  height = 30,
+  tileSize = 16,
+  solidTileRanges = [],
+} = {}) {
+  const solidTiles = [];
+
+  for (const { xRange, yRange } of solidTileRanges) {
+    for (let tileY = yRange[0]; tileY <= yRange[1]; tileY += 1) {
+      for (let tileX = xRange[0]; tileX <= xRange[1]; tileX += 1) {
+        solidTiles.push(tileY * width + tileX);
+      }
+    }
+  }
+
+  return new CollisionMap({ width, height, tileSize, solidTiles });
+}
+
+test("resolveMaxSpawnPosition() usa el candidato principal tal cual cuando no colisiona", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const collisionMap = buildCollisionMap();
+
+  const result = resolveMaxSpawnPosition(player, collisionMap);
+
+  assert.deepEqual(result, computeMaxSpawnPosition(player));
+});
+
+test("resolveMaxSpawnPosition() prueba los siguientes candidatos, en orden, cuando los anteriores colisionan", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+
+  /*
+   * Con player en (200, 200), facing "down", y MAX_FOLLOW_MIN_DISTANCE
+   * (31), los tiles (tileSize 16) ocupados por cada candidato son:
+   *   1. normal (norte, y-31=169):     x[11,13] y[10,11]
+   *   2. opuesto (sur, y+31=231):      x[11,13] y[13,14]
+   *   3. lateral izquierda (x+31=231): x[13,15] y[11,13]
+   *   4. lateral derecha (x-31=169):   x[9,11]  y[11,13]
+   * (12,10) solo pertenece al footprint del candidato 1; (12,14) solo al
+   * del candidato 2 -- ninguno de los dos se solapa con el footprint del
+   * candidato 3, así que sirven para bloquear un candidato sin afectar al
+   * siguiente que debería elegirse.
+   */
+
+  // Solo el candidato principal (1) bloqueado -- el resto del mapa libre.
+  const primaryBlocked = buildCollisionMap({
+    solidTileRanges: [{ xRange: [12, 12], yRange: [10, 10] }],
+  });
+
+  assert.deepEqual(
+    resolveMaxSpawnPosition(player, primaryBlocked),
+    { x: player.x, y: player.y + MAX_FOLLOW_MIN_DISTANCE }, // opuesto (up)
+  );
+
+  // Candidatos 1 y 2 bloqueados: debe caer al primer lateral (candidato 3).
+  const primaryAndOppositeBlocked = buildCollisionMap({
+    solidTileRanges: [
+      { xRange: [12, 12], yRange: [10, 10] },
+      { xRange: [12, 12], yRange: [14, 14] },
+    ],
+  });
+
+  assert.deepEqual(
+    resolveMaxSpawnPosition(player, primaryAndOppositeBlocked),
+    { x: player.x + MAX_FOLLOW_MIN_DISTANCE, y: player.y }, // lateral izquierda
+  );
+});
+
+function getMaxCollisionBoxForTest(position) {
+  return {
+    x: position.x - MAX_DIMENSIONS.width / 2,
+    y: position.y - MAX_DIMENSIONS.height / 2,
+    width: MAX_DIMENSIONS.width,
+    height: MAX_DIMENSIONS.height,
+  };
+}
+
+const RING_2_DIAGONAL_OFFSET = Math.ceil(
+  MAX_FOLLOW_MIN_DISTANCE / Math.SQRT2,
+);
+const RING_3_DISTANCE = MAX_FOLLOW_MIN_DISTANCE * 2;
+
+/*
+ * Bloquea los cuatro candidatos del anillo 1 alrededor de player=(200,200)
+ * con un tile aislado dentro de cada footprint -- no con el rectángulo que
+ * los envuelve a todos, porque ese rectángulo también cubriría, de forma
+ * no intencionada, los footprints (más cercanos al jugador) de los cuatro
+ * candidatos diagonales del anillo 2. Mismos tiles que ya usaba el test
+ * "prueba los siguientes candidatos" de más arriba para (12,10)/(12,14);
+ * (14,12) y (10,12) aíslan del mismo modo los candidatos laterales.
+ */
+const RING_1_BLOCK = [
+  { xRange: [12, 12], yRange: [10, 10] },
+  { xRange: [12, 12], yRange: [14, 14] },
+  { xRange: [14, 14], yRange: [12, 12] },
+  { xRange: [10, 10], yRange: [12, 12] },
+];
+
+// Cubre, con cuatro rectángulos, los footprints de los cuatro candidatos
+// diagonales del anillo 2 alrededor de player=(200,200) -- ver el cálculo
+// en el comentario de computeMaxSpawnCandidates() en MaxCompanion.js.
+const RING_2_BLOCK = [
+  { xRange: [13, 14], yRange: [10, 11] },
+  { xRange: [10, 11], yRange: [10, 11] },
+  { xRange: [13, 14], yRange: [13, 14] },
+  { xRange: [10, 11], yRange: [13, 14] },
+];
+
+// Cubre los footprints de los cuatro candidatos cardinales lejanos del
+// anillo 3 alrededor de player=(200,200).
+const RING_3_BLOCK = [
+  { xRange: [11, 13], yRange: [8, 9] },
+  { xRange: [11, 13], yRange: [15, 16] },
+  { xRange: [7, 9], yRange: [11, 13] },
+  { xRange: [15, 17], yRange: [11, 13] },
+];
+
+// Cubre, además de los tres anillos, el footprint del último candidato
+// local (la posición exacta del jugador).
+const ALL_LOCAL_CANDIDATES_BLOCK = [
+  ...RING_1_BLOCK,
+  ...RING_2_BLOCK,
+  ...RING_3_BLOCK,
+  { xRange: [11, 13], yRange: [11, 13] },
+];
+
+test("resolveMaxSpawnPosition() cae al segundo anillo (diagonal) cuando los cuatro candidatos del primer anillo colisionan", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const ring1Blocked = buildCollisionMap({
+    solidTileRanges: RING_1_BLOCK,
+  });
+
+  assert.deepEqual(resolveMaxSpawnPosition(player, ring1Blocked), {
+    x: player.x + RING_2_DIAGONAL_OFFSET,
+    y: player.y - RING_2_DIAGONAL_OFFSET,
+  });
+});
+
+test("resolveMaxSpawnPosition() cae al tercer anillo (cardinales lejanos) cuando también el segundo anillo colisiona entero", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const ring1And2Blocked = buildCollisionMap({
+    solidTileRanges: [...RING_1_BLOCK, ...RING_2_BLOCK],
+  });
+
+  assert.deepEqual(resolveMaxSpawnPosition(player, ring1And2Blocked), {
+    x: player.x,
+    y: player.y - RING_3_DISTANCE,
+  });
+});
+
+/*
+ * Contrato reforzado: resolveMaxSpawnPosition() solo puede devolver una
+ * posición cuyo bounding box completo de Max (MAX_DIMENSIONS) haya sido
+ * validado como libre por el CollisionMap real -- nunca una posición que
+ * el propio CollisionMap marca como colisionante. Se verifica sobre varios
+ * mapas sintéticos distintos, incluido el caso patológico de los 13
+ * candidatos locales bloqueados a la vez, en vez de confiar en un único
+ * escenario feliz.
+ */
+test("resolveMaxSpawnPosition() nunca devuelve una posición que el CollisionMap marque como colisionante", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const scenarios = [
+    buildCollisionMap(),
+    buildCollisionMap({ solidTileRanges: RING_1_BLOCK }),
+    buildCollisionMap({ solidTileRanges: [...RING_1_BLOCK, ...RING_2_BLOCK] }),
+    buildCollisionMap({ solidTileRanges: ALL_LOCAL_CANDIDATES_BLOCK }),
+  ];
+
+  for (const collisionMap of scenarios) {
+    const result = resolveMaxSpawnPosition(player, collisionMap);
+
+    if (result !== null) {
+      assert.equal(
+        collisionMap.collides(getMaxCollisionBoxForTest(result)),
+        false,
+        `resolveMaxSpawnPosition() devolvió una posición colisionante: ${JSON.stringify(result)}`,
+      );
+    }
+  }
+});
+
+/*
+ * Caso límite explícito: si los 13 candidatos locales colisionan y no hay
+ * ninguna posición previa de Max que probar (reconstrucción inicial, sin
+ * instancia previa), resolveMaxSpawnPosition() devuelve `null` en vez de
+ * fabricar una posición que sabe que colisiona. WorldScene.setupCurrentMap()
+ * no dibuja a Max ese ciclo en ese caso (ver this.maxCompanion = null y los
+ * usos con `?.`), en vez de colocarlo visualmente dentro de geometría
+ * sólida. No es una mentira sobre una garantía más fuerte de la real: es el
+ * comportamiento honesto documentado en el comentario de la función.
+ */
+test("resolveMaxSpawnPosition() devuelve null, sin lanzar excepción, cuando los 13 candidatos locales colisionan y no hay posición previa", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const allBlocked = buildCollisionMap({
+    solidTileRanges: ALL_LOCAL_CANDIDATES_BLOCK,
+  });
+
+  assert.doesNotThrow(() => resolveMaxSpawnPosition(player, allBlocked));
+  assert.equal(resolveMaxSpawnPosition(player, allBlocked), null);
+});
+
+test("resolveMaxSpawnPosition() usa la posición previa de Max como último recurso si sigue siendo válida, incluso con los 13 candidatos locales bloqueados", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const allBlocked = buildCollisionMap({
+    solidTileRanges: ALL_LOCAL_CANDIDATES_BLOCK,
+  });
+  // Bien lejos de player y de cualquier candidato local, en una zona libre
+  // y dentro de los límites del mapa por defecto de buildCollisionMap()
+  // (30 tiles * 16px = 480px de ancho/alto).
+  const previousMaxPosition = { x: 400, y: 400 };
+
+  assert.deepEqual(
+    resolveMaxSpawnPosition(player, allBlocked, previousMaxPosition),
+    previousMaxPosition,
+  );
+});
+
+test("resolveMaxSpawnPosition() no reutiliza la posición previa de Max si también colisiona en el mapa actual", () => {
+  const player = { x: 200, y: 200, facing: "down" };
+  const allBlocked = buildCollisionMap({
+    solidTileRanges: ALL_LOCAL_CANDIDATES_BLOCK,
+  });
+  // Dentro del propio bloque que cubre los 13 candidatos locales.
+  const collidingPreviousPosition = { x: 200, y: 200 };
+
+  assert.equal(
+    resolveMaxSpawnPosition(player, allBlocked, collidingPreviousPosition),
+    null,
+  );
+});
+
+test("resolveMaxSpawnPosition() respeta los límites del mapa cerca de cada esquina: nunca lanza excepción ni devuelve una posición colisionante", () => {
+  const width = 30;
+  const height = 30;
+  const tileSize = 16;
+  const collisionMap = buildCollisionMap({ width, height, tileSize });
+  const corners = [
+    { x: tileSize * 1, y: tileSize * 1, facing: "up" }, // esquina superior izquierda
+    { x: tileSize * (width - 2), y: tileSize * 1, facing: "up" }, // esquina superior derecha
+    { x: tileSize * 1, y: tileSize * (height - 2), facing: "down" }, // esquina inferior izquierda
+    {
+      x: tileSize * (width - 2),
+      y: tileSize * (height - 2),
+      facing: "down",
+    }, // esquina inferior derecha
+  ];
+
+  for (const player of corners) {
+    assert.doesNotThrow(() => resolveMaxSpawnPosition(player, collisionMap));
+
+    const result = resolveMaxSpawnPosition(player, collisionMap);
+
+    // Cerca de una esquina, algunos candidatos del anillo 3 caen fuera del
+    // mapa (CollisionMap trata fuera-de-límites como sólido) y se
+    // descartan; puede devolver null si eso ocurre con los 13, pero nunca
+    // una posición que el propio CollisionMap marque como colisionante.
+    if (result !== null) {
+      assert.equal(
+        collisionMap.collides(getMaxCollisionBoxForTest(result)),
+        false,
+      );
+    }
+  }
+});
+
+test("resolveMaxSpawnPosition() con el jugador pegado a un obstáculo en su offset normal, elige el siguiente candidato libre", () => {
+  const player = { x: 200, y: 200, facing: "up" };
+  // Bloquea únicamente el candidato normal (offset "up", detrás de
+  // Gonzalo según su facing), dejando el resto del mapa libre -- simula
+  // a Gonzalo parado justo contra un obstáculo por el lado por el que
+  // Max intentaría colocarse.
+  const normalOffsetBlocked = buildCollisionMap({
+    solidTileRanges: [{ xRange: [12, 12], yRange: [14, 14] }],
+  });
+
+  assert.deepEqual(
+    resolveMaxSpawnPosition(player, normalOffsetBlocked),
+    { x: player.x, y: player.y - MAX_FOLLOW_MIN_DISTANCE }, // opuesto (down)
+  );
+});
+
+test("resolver P2 y volver al mundo dispara la reacción de Max exactamente una vez", () => {
+  const input = new FakeInput();
+  const scenes = new SceneManager();
+  const state = new GameState();
+  const ui = new FakeUi();
+  const storage = new FakeStorage();
+  state.changeMap("seven-bridges-walk");
+  const world = new WorldScene({
+    scenes,
+    input,
+    storage,
+    state,
+    ui,
+    audio: new FakeAudioService(),
+  });
+  const p2Scene = new P2BridgesScene({
+    scenes,
+    input,
+    state,
+    ui,
+    audio: new FakeAudioService(),
+  });
+  scenes.register("world", world);
+  scenes.register("p2-bridges", p2Scene);
+  scenes.change("world");
+
+  world.interact(findObject("seven-bridges-walk", "p2-bridge-board"));
+  ui.dialogue.onComplete();
+
+  assert.equal(scenes.currentName, "p2-bridges");
+  assert.notEqual(state.puzzles.p2.phase, P2_PHASE.SOLVED);
+
+  state.puzzles.p2.selectClosedBridge("B1");
+  state.puzzles.p2.startTraversal();
+  state.puzzles.p2.markSolved();
+
+  const triggerCalls = withPatchedTriggerReaction(() => {
+    input.press("cancel");
+    scenes.update(0);
+  });
+
+  assert.equal(scenes.currentName, "world");
+  assert.equal(triggerCalls, 1);
+  assert.ok(world.maxCompanion.reactionTimer > 0);
+});
+
+test("resolver el catálogo de la Biblioteca y volver al mundo dispara la reacción de Max exactamente una vez", () => {
+  const input = new FakeInput();
+  const scenes = new SceneManager();
+  const state = new GameState();
+  const ui = new FakeUi();
+  const storage = new FakeStorage();
+  state.changeMap("library", { x: 216, y: 176, facing: "up" });
+  state.puzzles.libraryCatalogue = new LibraryCatalogueState({
+    order: ["M", "C", "A", "R", "D"],
+    phase: LIBRARY_CATALOGUE_PHASE.ARRANGING,
+    hintsRead: [1],
+    attemptCount: 1,
+  });
+  const world = new WorldScene({
+    scenes,
+    input,
+    storage,
+    state,
+    ui,
+    audio: new FakeAudioService(),
+  });
+  const catalogueScene = new LibraryCatalogueScene({
+    scenes,
+    input,
+    state,
+    ui,
+  });
+  scenes.register("world", world);
+  scenes.register("library-catalogue", catalogueScene);
+  scenes.change("world");
+
+  world.interact(findObject("library", "library-silogio"));
+
+  assert.equal(scenes.currentName, "library-catalogue");
+
+  state.puzzles.libraryCatalogue = new LibraryCatalogueState({
+    order: ["A", "D", "R", "C", "M"],
+    phase: LIBRARY_CATALOGUE_PHASE.SOLVED,
+    hintsRead: [1, 2, 3],
+    attemptCount: 2,
+  });
+
+  const triggerCalls = withPatchedTriggerReaction(() => {
+    input.press("cancel");
+    scenes.update(0);
+  });
+
+  assert.equal(scenes.currentName, "world");
+  assert.equal(triggerCalls, 1);
+  assert.ok(world.maxCompanion.reactionTimer > 0);
+});
+
+test("resolver el criterio del Archivo y volver al mundo dispara la reacción de Max exactamente una vez", () => {
+  const input = new FakeInput();
+  const scenes = new SceneManager();
+  const state = new GameState();
+  const ui = new FakeUi();
+  const storage = new FakeStorage();
+  state.changeMap("archive", { x: 300, y: 250, facing: "up" });
+  const world = new WorldScene({
+    scenes,
+    input,
+    storage,
+    state,
+    ui,
+    audio: new FakeAudioService(),
+  });
+  const archiveCriteriaScene = new ArchiveCriteriaScene({
+    scenes,
+    input,
+    state,
+    ui,
+    audio: new FakeAudioService(),
+  });
+  scenes.register("world", world);
+  scenes.register("archive-criteria", archiveCriteriaScene);
+  scenes.change("world");
+
+  world.interact(findObject("archive", "archive-criteria-table"));
+
+  assert.equal(scenes.currentName, "archive-criteria");
+  assert.notEqual(state.puzzles.archiveCriteria.phase, ARCHIVE_CRITERIA_PHASE.SOLVED);
+
+  state.puzzles.archiveCriteria = new ArchiveCriteriaState({
+    verdicts: {
+      "voluntary-entry": "confirmed",
+      "followed-trail": "confirmed",
+      "never-disagreed": "contradicted",
+      "someone-refuses-now": "contradicted",
+      "present-choice": "confirmed",
+      "universal-future": "undecidable",
+    },
+    phase: ARCHIVE_CRITERIA_PHASE.SOLVED,
+    hintsRead: [],
+    attemptCount: 1,
+  });
+
+  const triggerCalls = withPatchedTriggerReaction(() => {
+    input.press("cancel");
+    scenes.update(0);
+  });
+
+  assert.equal(scenes.currentName, "world");
+  assert.equal(triggerCalls, 1);
+  assert.ok(world.maxCompanion.reactionTimer > 0);
+});
+
+test("reentrar a un puzle ya resuelto y volver no reactiva a Max", () => {
+  const input = new FakeInput();
+  const scenes = new SceneManager();
+  const state = new GameState();
+  const ui = new FakeUi();
+  const storage = new FakeStorage();
+  state.changeMap("library", { x: 216, y: 176, facing: "up" });
+  state.puzzles.libraryCatalogue = new LibraryCatalogueState({
+    order: ["A", "D", "R", "C", "M"],
+    phase: LIBRARY_CATALOGUE_PHASE.SOLVED,
+    hintsRead: [1, 2, 3],
+    attemptCount: 3,
+  });
+  const world = new WorldScene({
+    scenes,
+    input,
+    storage,
+    state,
+    ui,
+    audio: new FakeAudioService(),
+  });
+  const catalogueScene = new LibraryCatalogueScene({
+    scenes,
+    input,
+    state,
+    ui,
+  });
+  scenes.register("world", world);
+  scenes.register("library-catalogue", catalogueScene);
+  scenes.change("world");
+
+  world.interact(findObject("library", "library-silogio"));
+
+  assert.equal(scenes.currentName, "library-catalogue");
+
+  const triggerCalls = withPatchedTriggerReaction(() => {
+    input.press("cancel");
+    scenes.update(0);
+  });
+
+  assert.equal(scenes.currentName, "world");
+  assert.equal(triggerCalls, 0);
+  assert.equal(world.maxCompanion.reactionTimer, 0);
+});
+
+/*
+ * Ejecuta `run` con MaxCompanion.prototype.triggerReaction instrumentado
+ * para contar exactamente cuántas veces se invoca durante `run`, sin
+ * afectar a ningún trigger anterior o posterior a esa ventana (por
+ * ejemplo, el que dispara interact() al abrir el puzle, que no debe
+ * confundirse con el trigger específico de la resolución al volver).
+ * Restaura siempre el método original, incluso si `run` lanza.
+ */
+function withPatchedTriggerReaction(run) {
+  let calls = 0;
+  const originalTriggerReaction = MaxCompanion.prototype.triggerReaction;
+
+  MaxCompanion.prototype.triggerReaction = function patchedTriggerReaction(
+    ...args
+  ) {
+    calls += 1;
+    return originalTriggerReaction.apply(this, args);
+  };
+
+  try {
+    run();
+  } finally {
+    MaxCompanion.prototype.triggerReaction = originalTriggerReaction;
+  }
+
+  return calls;
+}
 
 function createScene(storage) {
   const input = new FakeInput();
