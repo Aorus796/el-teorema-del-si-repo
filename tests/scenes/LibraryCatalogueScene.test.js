@@ -12,6 +12,7 @@ import {
   LIBRARY_CATALOGUE_PHASE,
   LibraryCatalogueState,
 } from "../../src/puzzles/library-catalogue/LibraryCatalogueState.js";
+import { PUZZLE_SUCCESS_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 
 class FakeInput {
@@ -69,6 +70,16 @@ class FakeCanvasContext {
 
   fillText(text) {
     this.texts.push(String(text));
+  }
+}
+
+class FakeAudioService {
+  constructor() {
+    this.playSfxCalls = [];
+  }
+
+  playSfx(src) {
+    this.playSfxCalls.push(src);
   }
 }
 
@@ -250,6 +261,66 @@ test("confirmar respeta selección, fallo, solución y terminalidad", () => {
     "El catálogo ya está registrado.",
   );
   assert.equal(second.ui.toasts.length, 1);
+});
+
+test("resolver el catálogo dispara playSfx(PUZZLE_SUCCESS_SFX_PATH) exactamente una vez", () => {
+  const valid = new LibraryCatalogueState({
+    order: LIBRARY_CATALOGUE_SOLUTION,
+    phase: LIBRARY_CATALOGUE_PHASE.ARRANGING,
+  });
+  const { scene, input, audio } = createScene(valid);
+  scene.enter();
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, [PUZZLE_SUCCESS_SFX_PATH]);
+});
+
+test("un intento fallido o incompleto no dispara ningún SFX", () => {
+  const incomplete = createScene();
+  incomplete.scene.enter();
+  press(incomplete.scene, incomplete.input, "selectPuzzleOption");
+  press(incomplete.scene, incomplete.input, "startPuzzleAttempt");
+  assert.deepEqual(incomplete.audio.playSfxCalls, []);
+
+  const failed = createScene();
+  failed.scene.enter();
+  press(failed.scene, failed.input, "startPuzzleAttempt");
+  assert.deepEqual(failed.audio.playSfxCalls, []);
+});
+
+test("confirmar un catálogo ya resuelto no dispara el SFX una segunda vez", () => {
+  const { scene, input, audio } = createScene(solvedCatalogue());
+  scene.enter();
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.deepEqual(audio.playSfxCalls, []);
+});
+
+test("construir el estado ya resuelto vía GameState.restore() y solo entrar en la escena no dispara ningún SFX", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.archiveUnlocked = true;
+  saved.puzzles.libraryCatalogue = solvedCatalogue().toSaveData();
+
+  const state = new GameState();
+  state.restore(saved);
+
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const ui = new FakeUi();
+  const audio = new FakeAudioService();
+  const scene = new LibraryCatalogueScene({
+    scenes,
+    input,
+    state,
+    ui,
+    audio,
+  });
+
+  scene.enter();
+
+  assert.deepEqual(audio.playSfxCalls, []);
 });
 
 test("repara el cuaderno sin anunciar un Archivo ya desbloqueado", () => {
@@ -528,6 +599,7 @@ function createScene(catalogueState = new LibraryCatalogueState()) {
   const scenes = new FakeScenes();
   const state = new GameState();
   const ui = new FakeUi();
+  const audio = new FakeAudioService();
   state.puzzles.libraryCatalogue = catalogueState;
 
   return {
@@ -535,11 +607,13 @@ function createScene(catalogueState = new LibraryCatalogueState()) {
     scenes,
     state,
     ui,
+    audio,
     scene: new LibraryCatalogueScene({
       scenes,
       input,
       state,
       ui,
+      audio,
     }),
   };
 }

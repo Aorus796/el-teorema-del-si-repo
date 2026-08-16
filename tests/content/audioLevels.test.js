@@ -5,6 +5,11 @@ import { resolve } from "node:path";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { EPILOGUE_THEME_PATH } from "../../src/content/epilogueAudioConfig.js";
+import {
+  ACTIVATE_SFX_PATH,
+  INTERACT_SFX_PATH,
+  PUZZLE_SUCCESS_SFX_PATH,
+} from "../../src/content/sfxAudioConfig.js";
 
 /*
  * Verifica, sobre las muestras PCM reales de las tres pistas, propiedades
@@ -108,6 +113,69 @@ test("ninguna de las tres pistas tiene clipping sostenido", async () => {
   }
 });
 
+/*
+ * Los tres tests siguientes cubren los tres SFX (interact, activate,
+ * puzzle-success, ver src/content/sfxAudioConfig.js y
+ * tools/generate-sfx-*.mjs): ausencia de clipping sostenido, igual que las
+ * tres pistas musicales, y el orden relativo de pico real esperado
+ * (interact < activate < puzzle-success < epílogo). El pico REAL medido
+ * sobre las muestras, no el PEAK_FRACTION nominal de cada generador, es lo
+ * que importa aquí: un pad aditivo sostenido como el del epílogo (nominal
+ * 0.85) rara vez alcanza su propio PEAK_FRACTION por cancelación de fase
+ * entre voces, así que los tres SFX usan un PEAK_FRACTION nominal mucho
+ * más bajo para garantizar, con margen real, que ninguno iguala ni supera
+ * el pico real del epílogo.
+ */
+test("ninguno de los tres SFX tiene clipping sostenido", async () => {
+  for (const path of [
+    INTERACT_SFX_PATH,
+    ACTIVATE_SFX_PATH,
+    PUZZLE_SUCCESS_SFX_PATH,
+  ]) {
+    const wav = await readThemeWav(path);
+    const run = longestClippingRun(wav.samples);
+
+    assert.ok(
+      run <= MAX_SUSTAINED_CLIPPING_SAMPLES,
+      `${path} tiene una tirada de ${run} muestras consecutivas al límite de escala, indicio de recorte sostenido`,
+    );
+  }
+});
+
+test("el pico real de los tres SFX sigue el orden interact < activate < puzzle-success", async () => {
+  const interactPeak = peak((await readThemeWav(INTERACT_SFX_PATH)).samples);
+  const activatePeak = peak((await readThemeWav(ACTIVATE_SFX_PATH)).samples);
+  const puzzleSuccessPeak = peak(
+    (await readThemeWav(PUZZLE_SUCCESS_SFX_PATH)).samples,
+  );
+
+  assert.ok(
+    interactPeak < activatePeak,
+    `interact (${interactPeak}) debe tener un pico menor que activate (${activatePeak})`,
+  );
+  assert.ok(
+    activatePeak < puzzleSuccessPeak,
+    `activate (${activatePeak}) debe tener un pico menor que puzzle-success (${puzzleSuccessPeak})`,
+  );
+});
+
+test("ninguno de los tres SFX iguala ni supera el pico real del tema del epílogo", async () => {
+  const epiloguePeak = peak((await readThemeWav(EPILOGUE_THEME_PATH)).samples);
+
+  for (const path of [
+    INTERACT_SFX_PATH,
+    ACTIVATE_SFX_PATH,
+    PUZZLE_SUCCESS_SFX_PATH,
+  ]) {
+    const sfxPeak = peak((await readThemeWav(path)).samples);
+
+    assert.ok(
+      sfxPeak < epiloguePeak,
+      `${path} (pico ${sfxPeak}) no debe igualar ni superar el pico real del epílogo (${epiloguePeak})`,
+    );
+  }
+});
+
 test("el opening tiene un pulso regular: coeficiente de variación bajo entre onsets y ningún hueco mayor de 1.2s", async () => {
   const opening = await readThemeWav(OPENING_THEME_PATH);
   const analysis = analyzeOnsets(opening.samples, opening.sampleRate);
@@ -173,6 +241,16 @@ function rms(samples) {
   }
 
   return Math.sqrt(sumSquares / samples.length);
+}
+
+function peak(samples) {
+  let peakAmplitude = 0;
+
+  for (const sample of samples) {
+    peakAmplitude = Math.max(peakAmplitude, Math.abs(sample));
+  }
+
+  return peakAmplitude;
 }
 
 function longestClippingRun(samples) {

@@ -1,5 +1,6 @@
 import { AMBIENT_THEME_PATH } from "../content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../content/introAudioConfig.js";
+import { INTERACT_SFX_PATH } from "../content/sfxAudioConfig.js";
 import { getWorldMap } from "../content/worldMaps.js";
 import {
   BRIDE_PALETTE,
@@ -199,7 +200,17 @@ export class WorldScene {
     }
   }
 
+  /*
+   * Único punto de despacho de todas las interacciones válidas del mundo
+   * (guardado por nearbyObject + wasPressed("interact") en update()), así
+   * que dispara el SFX de interacción exactamente una vez por cada
+   * interacción real, sin importar el tipo de objeto. El avance de
+   * diálogo no pasa por aquí (update() hace return antes si
+   * ui.isDialogueOpen()), así que reproducir el SFX aquí nunca se repite
+   * al avanzar un diálogo ya abierto.
+   */
   interact(object) {
+    this.audio.playSfx(INTERACT_SFX_PATH);
     this.ui.hidePrompt();
 
     if (object.id === "preparations-board") {

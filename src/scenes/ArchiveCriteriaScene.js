@@ -22,6 +22,7 @@ import {
 import {
   applyArchiveCriteriaProgression,
 } from "../progression/ArchiveCriteriaProgression.js";
+import { PUZZLE_SUCCESS_SFX_PATH } from "../content/sfxAudioConfig.js";
 
 const CLAIM_COUNT = ARCHIVE_CRITERIA_CLAIMS.length;
 
@@ -34,11 +35,12 @@ const SOLVED_MESSAGE = "Criterio aceptado.";
 const EPILOGUE_TOAST = "La investigación ha terminado";
 
 export class ArchiveCriteriaScene {
-  constructor({ scenes, input, state, ui }) {
+  constructor({ scenes, input, state, ui, audio }) {
     this.scenes = scenes;
     this.input = input;
     this.state = state;
     this.ui = ui;
+    this.audio = audio;
 
     this.focusedClaimIndex = 0;
     this.statusMessage = "";
@@ -170,6 +172,8 @@ export class ArchiveCriteriaScene {
     if (result.code !== ARCHIVE_CRITERIA_ACTION_CODE.PUZZLE_SOLVED) {
       return;
     }
+
+    this.audio.playSfx(PUZZLE_SUCCESS_SFX_PATH);
 
     const wasEpilogueUnlocked = this.state.flags.epilogueUnlocked;
     applyArchiveCriteriaProgression(this.state);

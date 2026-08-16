@@ -1,4 +1,5 @@
 import { GIFT_CODE_DIGITS } from "../content/epilogueConfig.js";
+import { ACTIVATE_SFX_PATH } from "../content/sfxAudioConfig.js";
 
 const DIGIT_COUNT = 4;
 
@@ -7,11 +8,12 @@ const INCORRECT_MESSAGE =
   "Esta combinación no es la correcta. Repasa el cuaderno.";
 
 export class EpilogueGiftCodeScene {
-  constructor({ scenes, input, state, ui }) {
+  constructor({ scenes, input, state, ui, audio }) {
     this.scenes = scenes;
     this.input = input;
     this.state = state;
     this.ui = ui;
+    this.audio = audio;
 
     this.focusedDigitIndex = 0;
     this.digits = [0, 0, 0, 0];
@@ -90,6 +92,7 @@ export class EpilogueGiftCodeScene {
     }
 
     this.lastAttemptFailed = false;
+    this.audio.playSfx(ACTIVATE_SFX_PATH);
     this.state.flags.giftCodeSolved = true;
     this.state.objectiveId = "epilogue-meet-bride";
     this.readOnly = true;

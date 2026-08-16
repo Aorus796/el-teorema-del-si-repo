@@ -13,6 +13,7 @@ import { GameState } from "../../src/state/GameState.js";
 import { BRIDE_PALETTE } from "../../src/content/characterPalettes.js";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
+import { INTERACT_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
 
 class FakeInput {
   constructor() {
@@ -98,6 +99,7 @@ class FakeAudioService {
     this.playEpilogueThemeCalls = 0;
     this.playMusicCalls = [];
     this.stopMusicCalls = 0;
+    this.playSfxCalls = [];
   }
 
   playEpilogueTheme() {
@@ -110,6 +112,10 @@ class FakeAudioService {
 
   stopMusic() {
     this.stopMusicCalls += 1;
+  }
+
+  playSfx(src) {
+    this.playSfxCalls.push(src);
   }
 }
 
@@ -1887,6 +1893,58 @@ test("enter({ restoreFromState: true }) con load() fallido no lanza y deja el mu
     assert.equal(ui.toasts.length, 1);
     assert.notEqual(ui.toasts[0], "Partida cargada");
   });
+});
+
+test("interactuar con un objeto válido cercano dispara playSfx(INTERACT_SFX_PATH) exactamente una vez", () => {
+  const setup = createWorldAt("library");
+  const silogio = findObject("library", "library-silogio");
+  setup.scene.player.x = silogio.x + silogio.width / 2;
+  setup.scene.player.y = silogio.y + silogio.height / 2;
+  setup.input.press("interact");
+
+  setup.scene.update(0);
+
+  assert.deepEqual(setup.audio.playSfxCalls, [INTERACT_SFX_PATH]);
+});
+
+test("pulsar interactuar sin ningún objeto cercano no dispara nada", () => {
+  const setup = createWorldAt("axiom-plaza");
+  setup.scene.player.x = -400;
+  setup.scene.player.y = -400;
+  setup.input.press("interact");
+
+  setup.scene.update(0);
+
+  assert.equal(setup.scene.nearbyObject, null);
+  assert.deepEqual(setup.audio.playSfxCalls, []);
+});
+
+test("abrir un diálogo de varias líneas y avanzarlo varias veces con interactuar dispara el SFX exactamente una vez en total (solo al abrir)", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const worker = findObject("axiom-plaza", "plaza-worker");
+  setup.scene.player.x = worker.x + worker.width / 2;
+  setup.scene.player.y = worker.y + worker.height / 2;
+  setup.input.press("interact");
+
+  setup.scene.update(0);
+
+  assert.deepEqual(setup.audio.playSfxCalls, [INTERACT_SFX_PATH]);
+  assert.ok(setup.ui.dialogue !== null);
+
+  for (let i = 0; i < 3; i += 1) {
+    setup.input.press("interact");
+    setup.scene.update(0);
+  }
+
+  assert.deepEqual(setup.audio.playSfxCalls, [INTERACT_SFX_PATH]);
+});
+
+test("moverse sin pulsar interactuar no dispara ningún SFX", () => {
+  const setup = createWorldAt("axiom-plaza");
+
+  setup.scene.update(16);
+
+  assert.deepEqual(setup.audio.playSfxCalls, []);
 });
 
 function createScene(storage) {

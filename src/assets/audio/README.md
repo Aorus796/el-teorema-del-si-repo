@@ -1,12 +1,15 @@
 # Audio del juego
 
-Los tres archivos de esta carpeta son recursos **originales**, generados
+Los seis archivos de esta carpeta son recursos **originales**, generados
 localmente por síntesis aditiva expresamente para este repositorio — no
 contienen muestras, samples ni ningún material de terceros, y no imitan
 directamente ninguna banda sonora comercial existente. Comparten el mismo
 enfoque técnico (síntesis de tonos senoidales + un filtro paso-bajo de un
 polo) para sonar coherentes entre sí como parte de una misma identidad
-musical mínima.
+musical mínima. Las tres primeras pistas son música principal
+(`AudioService.playMusic()`/`playEpilogueTheme()`); los tres últimos
+archivos son efectos de sonido (SFX) cortos e independientes de la música
+(`AudioService.playSfx()`, ver más abajo).
 
 ## `intro-theme.wav` — opening musical (loop)
 
@@ -88,3 +91,64 @@ Tema instrumental **provisional y sustituible**
   (`src/content/introAudioConfig.js`) y `AMBIENT_THEME_PATH`
   (`src/content/ambientAudioConfig.js`) si se sustituyen más adelante.
 - **Formato**: WAV PCM de 16 bits, mono, 44100 Hz, ~24 segundos.
+
+## Efectos de sonido (SFX)
+
+Los tres efectos siguientes son cortos, independientes de la música
+principal (se reproducen con `AudioService.playSfx()`, pueden solaparse con
+ella, y no se guarda ninguna referencia tras dispararse). Comparten el
+mismo origen técnico que las tres pistas musicales (síntesis de tonos
+senoidales + filtro paso-bajo de un polo), pero cada script vive en su
+propio archivo bajo `tools/`, sin utilidades compartidas, siguiendo el
+mismo patrón ya usado por los tres generadores musicales. Los tres tienen
+una envolvente de ataque corto y caída lineal a silencio real dentro de su
+propia duración (sin cola sostenida ni fade), y ninguno iguala ni supera el
+pico real (medido sobre las muestras, no el `PEAK_FRACTION` nominal) del
+tema del epílogo (ver `tests/content/audioLevels.test.js`).
+
+### `sfx-interact.wav` — interacción
+
+- **Origen**: generado con `tools/generate-sfx-interact.mjs`. Un único tono
+  senoidal puro a 880 Hz (A5), con ataque de 5ms y caída a silencio real en
+  el resto de los 90ms totales — un "clic" breve y neutro, no una nota
+  musical. Es el SFX menos protagonista de los tres, porque se dispara en
+  cualquier interacción válida dentro del mundo
+  (`WorldScene.interact()`), el punto de despacho único de todas las
+  interacciones del jugador.
+- **Regenerar**: `node tools/generate-sfx-interact.mjs` (o su equivalente
+  Docker) vuelve a escribir el mismo archivo de forma determinista.
+- **Formato**: WAV PCM de 16 bits, mono, 44100 Hz, 0.090 segundos.
+
+### `sfx-activate.wav` — activación de un mecanismo
+
+- **Origen**: generado con `tools/generate-sfx-activate.mjs`. Dos tonos
+  senoidales secuenciales y sin solape, simulando un "clic-encaje" de
+  mecanismo: 440 Hz (A4, raíz) seguido de 660 Hz (E5, quinta), cada uno con
+  ataque de 8ms y caída a silencio real en ~100ms, separados por un hueco
+  corto de silencio real. Se dispara una sola vez, al confirmar la
+  combinación correcta del mecanismo del regalo del epílogo
+  (`EpilogueGiftCodeScene.confirmAttempt()`) — nunca en un intento
+  fallido, ni al reentrar o volver a confirmar tras haberlo resuelto ya.
+- **Regenerar**: `node tools/generate-sfx-activate.mjs` (o su equivalente
+  Docker) vuelve a escribir el mismo archivo de forma determinista.
+- **Formato**: WAV PCM de 16 bits, mono, 44100 Hz, 0.220 segundos.
+
+### `sfx-puzzle-success.wav` — puzle resuelto
+
+- **Origen**: generado con `tools/generate-sfx-puzzle-success.mjs`. Arpegio
+  ascendente de tres notas en tríada mayor de Do (C5-E5-G5), el mismo
+  lenguaje diatónico que el opening ya aprobado, cada nota con ataque de
+  10ms y caída a silencio real, con la última nota sostenida un poco más
+  (~200ms) para dar sensación de "aterrizaje". Es el SFX más protagonista
+  de los tres. Se dispara una sola vez por cada resolución real de uno de
+  los tres puzles principales, guardado por el código de transición
+  propio de cada escena (`ArchiveCriteriaScene.applyResult()`,
+  `LibraryCatalogueScene.applyResult()`,
+  `P2BridgesScene.handleMoveResult()`) — nunca desde dentro de las
+  funciones de progresión compartidas que también se invocan al restaurar
+  una partida guardada (`GameState.restore()`), así que cargar un puzle ya
+  resuelto no lo repite.
+- **Regenerar**: `node tools/generate-sfx-puzzle-success.mjs` (o su
+  equivalente Docker) vuelve a escribir el mismo archivo de forma
+  determinista.
+- **Formato**: WAV PCM de 16 bits, mono, 44100 Hz, 0.600 segundos.
