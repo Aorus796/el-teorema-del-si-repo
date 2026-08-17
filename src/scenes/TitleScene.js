@@ -67,7 +67,7 @@ export class TitleScene {
 
     context.fillStyle = "#71d5c6";
     context.font = "11px monospace";
-    context.fillText("Vertical slice narrativo", 240, 94);
+    context.fillText("Un regalo de boda", 240, 94);
 
     context.fillStyle = "#fff7df";
     context.font = "12px monospace";

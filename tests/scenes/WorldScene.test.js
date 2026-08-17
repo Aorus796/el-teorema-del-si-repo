@@ -3,6 +3,10 @@ import test from "node:test";
 import { SceneManager } from "../../src/core/SceneManager.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
 import {
+  PARTNER_NAME,
+  PROTAGONIST_NAME,
+} from "../../src/content/personalizationConfig.js";
+import {
   LIBRARY_CATALOGUE_FAILURE_CODE,
   LIBRARY_CATALOGUE_PHASE,
   LibraryCatalogueState,
@@ -1780,7 +1784,7 @@ test("OBJECTIVE_LABELS reconoce epilogue-meet-bride en el HUD renderizado", () =
   assert.doesNotThrow(() => setup.scene.render(context));
   assert.equal(
     context.texts.some((text) =>
-      text.includes("Acércate a ella en la Plaza."),
+      text.includes(`Acércate a ${PARTNER_NAME} en la Plaza.`),
     ),
     true,
   );
@@ -2726,6 +2730,77 @@ test("reentrar a un puzle ya resuelto y volver no reactiva a Max", () => {
   assert.equal(scenes.currentName, "world");
   assert.equal(triggerCalls, 0);
   assert.equal(world.maxCompanion.reactionTimer, 0);
+});
+
+test("el primer diálogo de Corolaria (antes de leer el tablón) se dirige al protagonista por su nombre, consumiendo PROTAGONIST_NAME", () => {
+  const setup = createWorldAt("axiom-plaza");
+
+  setup.scene.interactWithCorolaria();
+
+  assert.ok(
+    setup.ui.dialogue.lines.some((line) => line.includes(PROTAGONIST_NAME)),
+  );
+});
+
+test('el nombre de PARTNER_NAME solo aparece por primera vez al recibir la nota del padre de la novia, nunca antes -- consumiendo PARTNER_NAME, no un literal', () => {
+  const setup = createWorldAt("axiom-plaza");
+
+  setup.scene.interactWithCorolaria();
+  assert.ok(
+    setup.ui.dialogue.lines.every((line) => !line.includes(PARTNER_NAME)),
+    "Corolaria (antes de leer el tablón) no debe nombrar a la pareja",
+  );
+
+  setup.state.flags.preparationsBoardRead = true;
+  setup.scene.interactWithCorolaria();
+  assert.ok(
+    setup.ui.dialogue.lines.every((line) => !line.includes(PARTNER_NAME)),
+    "Corolaria (tras leer el tablón) no debe nombrar a la pareja",
+  );
+
+  setup.scene.interactWithPreparationsBoard();
+  assert.ok(
+    setup.ui.dialogue.lines.every((line) => !line.includes(PARTNER_NAME)),
+    "El tablón de preparativos no debe nombrar a la pareja",
+  );
+
+  setup.state.objectiveId = "speak-to-bride-father";
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+  assert.ok(
+    context.texts.every((text) => !text.includes(PARTNER_NAME)),
+    'el objectiveId "speak-to-bride-father" no debe nombrar a la pareja',
+  );
+
+  // Recién ahora, en la rama final de interactWithBrideFather() (la que
+  // arma brideNoteReceived = true), el nombre de la pareja aparece por
+  // primera vez.
+  setup.scene.interactWithBrideFather();
+  assert.ok(
+    setup.ui.dialogue.lines.some((line) => line.includes(PARTNER_NAME)),
+    "El padre de la novia debe revelar el nombre de la pareja en esta rama",
+  );
+
+  assert.equal(setup.state.flags.brideNoteReceived, false);
+  setup.ui.dialogue.onComplete();
+  assert.equal(setup.state.flags.brideNoteReceived, true);
+});
+
+test("interactWithBlockedExit para blocked-library ya no menciona el vertical slice", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const blockedLibrary = findObject(
+    "axiom-plaza",
+    "blocked-library",
+  );
+  setup.state.flags.libraryObjectiveUnlocked = true;
+
+  setup.scene.interactWithBlockedExit(blockedLibrary);
+
+  assert.ok(
+    setup.ui.dialogue.lines.every(
+      (line) => !line.toLowerCase().includes("vertical slice"),
+    ),
+  );
 });
 
 /*

@@ -4,6 +4,7 @@ import {
   WORLD_MAPS,
   getWorldMap,
 } from "../../src/content/worldMaps.js";
+import { PARTNER_NAME } from "../../src/content/personalizationConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 import { CollisionMap } from "../../src/world/CollisionMap.js";
 import { Player } from "../../src/world/Player.js";
@@ -150,7 +151,7 @@ test("axiom-plaza tiene exactamente un bride-epilogue como npc con requiresFlag 
 
   assert.equal(bride.type, "npc");
   assert.equal(bride.requiresFlag, "giftCodeSolved");
-  assert.equal(bride.label, "la novia");
+  assert.equal(bride.label, PARTNER_NAME);
   assert.ok(bride.interactionRadius > 0);
 });
 

@@ -758,7 +758,7 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
   await page.keyboard.press("KeyE");
 
   await expect(dialogueText).toHaveText(
-    "La novia ha marcado que uno de ellos estaba cerrado.",
+    "Elena marcó que uno de ellos estaba cerrado.",
   );
 
   await page.keyboard.press("KeyE");
@@ -1065,7 +1065,7 @@ test("Max reacciona de forma autónoma, sin pulsar ninguna tecla, tras resolver 
   await page.keyboard.press("KeyE");
 
   await expect(dialogueText).toHaveText(
-    "La novia ha marcado que uno de ellos estaba cerrado.",
+    "Elena marcó que uno de ellos estaba cerrado.",
   );
 
   await page.keyboard.press("KeyE");
@@ -1654,7 +1654,7 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
   await page.keyboard.press("KeyE");
 
   await expect(dialogueText).toHaveText(
-    "La novia ha marcado que uno de ellos estaba cerrado.",
+    "Elena marcó que uno de ellos estaba cerrado.",
   );
 
   await page.keyboard.press("KeyE");
@@ -1727,7 +1727,7 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
   await page.keyboard.press("KeyE");
 
   await expect(dialogueText).toHaveText(
-    "La novia ha marcado que uno de ellos estaba cerrado.",
+    "Elena marcó que uno de ellos estaba cerrado.",
   );
 
   await page.keyboard.press("KeyE");
@@ -2316,7 +2316,7 @@ test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado"
   await page.keyboard.press("KeyE");
 
   await expect(dialogueText).toHaveText(
-    "La novia ha marcado que uno de ellos estaba cerrado.",
+    "Elena marcó que uno de ellos estaba cerrado.",
   );
 
   await page.keyboard.press("KeyE");
@@ -2785,7 +2785,7 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     await page.keyboard.down("KeyW");
 
     await expect(interactionPrompt).toHaveText(
-      "[E] Hablar con la novia",
+      "[E] Hablar con Elena",
       { timeout: 10_000 },
     );
 
@@ -2927,7 +2927,7 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     await expect(dialoguePanel).toBeHidden();
 
     await expect(interactionPrompt).toHaveText(
-      "[E] Hablar con la novia",
+      "[E] Hablar con Elena",
     );
 
     // Interactuar con la novia ya completada la partida es un no-op: no
@@ -3641,7 +3641,7 @@ test("cargar desde el título una partida con el epílogo ya completado no deja 
     await page.keyboard.press("KeyL");
     await expect.poll(currentFrame).not.toBe(titleFrame);
 
-    await expect(interactionPrompt).toHaveText("[E] Hablar con la novia");
+    await expect(interactionPrompt).toHaveText("[E] Hablar con Elena");
 
     // brideNoteReceived:true dispara el ambiental de inmediato al
     // restaurar (WorldScene.enter() -> syncMusicToFlags()) -- confirma

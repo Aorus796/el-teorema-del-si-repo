@@ -594,6 +594,60 @@ test("render muestra datos, reglas, controles y estado terminal", () => {
   );
 });
 
+test("la cabecera traduce las cuatro fases y no expone el valor interno", () => {
+  const cases = [
+    {
+      fixture: new LibraryCatalogueState(),
+      label: "Pendiente",
+      internal: LIBRARY_CATALOGUE_PHASE.READY,
+    },
+    {
+      fixture: new LibraryCatalogueState({
+        phase: LIBRARY_CATALOGUE_PHASE.ARRANGING,
+      }),
+      label: "Organizando",
+      internal: LIBRARY_CATALOGUE_PHASE.ARRANGING,
+    },
+    {
+      fixture: new LibraryCatalogueState({
+        phase: LIBRARY_CATALOGUE_PHASE.FAILED,
+        attemptCount: 1,
+        failureCode:
+          LIBRARY_CATALOGUE_FAILURE_CODE.CONSTRAINTS_NOT_SATISFIED,
+      }),
+      label: "Fallido",
+      internal: LIBRARY_CATALOGUE_PHASE.FAILED,
+    },
+    {
+      fixture: solvedCatalogue(),
+      label: "Registrado",
+      internal: LIBRARY_CATALOGUE_PHASE.SOLVED,
+    },
+  ];
+
+  for (const { fixture, label, internal } of cases) {
+    const { scene } = createScene(fixture);
+    scene.enter();
+    const context = renderScene(scene);
+
+    assert.equal(
+      context.texts.some((text) => text.includes(`Fase: ${label}`)),
+      true,
+      `debería mostrar la etiqueta "${label}"`,
+    );
+    assert.equal(
+      context.texts.some((text) => text.includes(`Fase: ${internal}`)),
+      false,
+      `no debería mostrar "Fase: ${internal}"`,
+    );
+    assert.equal(
+      context.texts.some((text) => text === internal),
+      false,
+      `no debería exponer el valor interno "${internal}" como texto exacto`,
+    );
+  }
+});
+
 function createScene(catalogueState = new LibraryCatalogueState()) {
   const input = new FakeInput();
   const scenes = new FakeScenes();

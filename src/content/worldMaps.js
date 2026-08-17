@@ -1,3 +1,5 @@
+import { PARTNER_NAME } from "./personalizationConfig.js";
+
 const TILE_SIZE = 16;
 
 const AXIOM_PLAZA = createMap({
@@ -140,7 +142,7 @@ const AXIOM_PLAZA = createMap({
       width: 14,
       height: 18,
       interactionRadius: 28,
-      label: "la novia",
+      label: PARTNER_NAME,
       requiresFlag: "giftCodeSolved",
     },
   ],
