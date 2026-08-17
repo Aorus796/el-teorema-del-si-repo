@@ -217,6 +217,112 @@ test("library, archive y seven-bridges-walk no tienen dawnPalette", () => {
   }
 });
 
+/*
+ * Cobertura de "Plaza Visual Polish" (v1.1, solo axiom-plaza): la
+ * decoración nueva es puramente visual -- decorations nunca alimenta
+ * solidTiles (ver createMap() más abajo) -- así que estos tests protegen
+ * justo lo que un cambio meramente visual podría romper por accidente:
+ * geometría de colisión, objetos/NPCs existentes, y solapes nuevos.
+ */
+test("axiom-plaza conserva exactamente los mismos solidTiles, objetos y NPCs que antes de la decoración", () => {
+  const map = getWorldMap("axiom-plaza");
+
+  assert.equal(map.solidTiles.length, 238);
+  assert.equal(map.objects.length, 11);
+  assert.equal(
+    map.objects.filter((object) => object.type === "npc").length,
+    4,
+    "esta tarea no añade NPCs ambientales nuevos (ver informe: decisión explícita)",
+  );
+});
+
+test("axiom-plaza tiene entre 3 y 5 mesas de boda redondas ('wedding-table')", () => {
+  const map = getWorldMap("axiom-plaza");
+  const weddingTables = map.decorations.filter(
+    (decoration) => decoration.type === "wedding-table",
+  );
+
+  assert.ok(
+    weddingTables.length >= 3 && weddingTables.length <= 5,
+    `se esperaban entre 3 y 5 mesas, hay ${weddingTables.length}`,
+  );
+});
+
+test("library y archive conservan su decoración 'tables' original (rama compartida, no tocada por Plaza Visual Polish)", () => {
+  for (const mapId of ["library", "archive"]) {
+    const map = getWorldMap(mapId);
+    const tables = map.decorations.filter(
+      (decoration) => decoration.type === "tables",
+    );
+
+    assert.ok(
+      tables.length > 0,
+      `${mapId} debería seguir teniendo decoraciones "tables"`,
+    );
+  }
+});
+
+test("ninguna decoración nueva de axiom-plaza solapa ningún objeto interactuable, con o sin giftCodeSolved", () => {
+  const map = getWorldMap("axiom-plaza");
+  const decorationTypesFromThisTask = [
+    "wedding-table",
+    "planter",
+    "bench",
+    "lamp-post",
+    "garland",
+    "market-stall",
+  ];
+  const newDecorations = map.decorations.filter((decoration) =>
+    decorationTypesFromThisTask.includes(decoration.type),
+  );
+
+  assert.ok(
+    newDecorations.length > 0,
+    "se esperaba al menos una decoración nueva de Plaza Visual Polish",
+  );
+
+  for (const decoration of newDecorations) {
+    for (const object of map.objects) {
+      assert.equal(
+        rectanglesOverlap(decoration, object),
+        false,
+        `la decoración nueva ${decoration.id} solapa el objeto ${object.id}`,
+      );
+    }
+  }
+});
+
+test("ninguna decoración nueva de axiom-plaza solapa el rectángulo de aparición del jugador", () => {
+  const map = getWorldMap("axiom-plaza");
+  const playerState = new GameState().getPlayerState("axiom-plaza");
+  const spawnBounds = {
+    x: playerState.x - 5,
+    y: playerState.y - 7,
+    width: 10,
+    height: 14,
+  };
+
+  for (const decoration of map.decorations) {
+    assert.equal(
+      rectanglesOverlap(spawnBounds, decoration),
+      false,
+      `la decoración ${decoration.id} solapa la aparición del jugador`,
+    );
+  }
+});
+
+test("bride-epilogue sigue siendo alcanzable a pie desde el punto de entrada real del recorrido del epílogo, no solo desde el spawn por defecto", () => {
+  // (576, 325): punto de entrada real usado por tests/e2e/game.spec.js tras
+  // resolver el mecanismo del regalo, cerca de epilogue-gift-mechanism
+  // (560,296) -- no el spawn por defecto (240,192). La zona de faroles/
+  // mesas nuevas de la derecha queda deliberadamente lejos de este
+  // corredor (ver el comentario de las decorations en worldMaps.js).
+  assertObjectIsReachable("axiom-plaza", "bride-epilogue", {
+    x: 576,
+    y: 325,
+  });
+});
+
 function assertSpawnIsClear(mapId) {
   const map = getWorldMap(mapId);
   const playerState = new GameState().getPlayerState(mapId);
@@ -295,7 +401,7 @@ function assertObjectIsClear(mapId, objectId) {
  * radio de interacción real del objeto — no basta con que el objeto esté
  * libre de solapes: el camino hasta él debe existir de verdad.
  */
-function assertObjectIsReachable(mapId, objectId) {
+function assertObjectIsReachable(mapId, objectId, fromPosition = null) {
   const map = getWorldMap(mapId);
   const object = map.objects.find((entry) => entry.id === objectId);
 
@@ -308,7 +414,11 @@ function assertObjectIsReachable(mapId, objectId) {
     solidTiles: map.solidTiles,
   });
 
-  const spawn = new GameState().getPlayerState(mapId);
+  // Por defecto, desde el punto de aparición del jugador; opcionalmente
+  // desde cualquier otro punto real de entrada al mapa (por ejemplo, el
+  // punto donde el jugador entra a axiom-plaza tras resolver el mecanismo
+  // del regalo, distinto del spawn por defecto).
+  const spawn = fromPosition ?? new GameState().getPlayerState(mapId);
   const player = new Player(spawn);
   const step = map.tileSize / 2;
 
@@ -321,7 +431,7 @@ function assertObjectIsReachable(mapId, objectId) {
   assert.equal(
     isFree(spawn.x, spawn.y),
     true,
-    `El punto de aparición de ${mapId} no es transitable`,
+    `El punto de partida (${spawn.x},${spawn.y}) en ${mapId} no es transitable`,
   );
 
   const objectCenterX = object.x + object.width / 2;

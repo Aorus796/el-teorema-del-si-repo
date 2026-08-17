@@ -124,6 +124,34 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   valor crudo del enum de fase (por ejemplo "arranging") y lo traduce con
   una función `phaseLabel()` análoga a la ya existente en
   `ArchiveCriteriaScene.js`.
+- Plaza Visual Polish -- Wedding Preparation Style Lock (solo la Plaza del
+  Axioma, `src/content/worldMaps.js`/`src/scenes/WorldScene.js`): la Plaza
+  gana lectura visual de boda en preparación sin tocar geometría de
+  colisión, progresión, guardado, audio ni diseño de personajes. El altar
+  y la fuente conservan exactamente su posición/tamaño (y por tanto su
+  `solidRegion` ya alineado) pero se redibujan con más detalle
+  (`drawWeddingArch()`, `drawFountain()`: tela drapeada, flores, alfombra
+  corta; boquilla y chorro de agua visibles en la fuente). Las dos mesas
+  de banquete rectangulares se sustituyen por 4 mesas redondas de boda
+  (`drawWeddingTable()`, tipo `wedding-table`, exclusivo de esta Plaza --
+  la rama `tables` compartida con la Biblioteca y el Archivo no se toca).
+  Se añaden 7 jardineras/macetas, 2 bancos, 4 faroles, una guirnalda entre
+  los faroles que flanquean el arco, y un puesto/mostrador de preparativos
+  sobre la zona superior antes vacía, todo mediante nuevas funciones de
+  dibujo puras (`drawFlowerPlanter()`, `drawBench()`, `drawLampPost()`,
+  `drawGarland()`, `drawMarketStall()`). El tablón de preparativos gana un
+  marco de madera para leerse mejor como cartel, separando su rama de
+  render de la que comparte con el tablero de P2 (que queda intacta).
+  `renderGround()` gana una variación tonal adicional exclusiva de
+  `axiom-plaza`, derivada del propio `palette`/`dawnPalette` del mapa (sin
+  clave nueva de paleta). Ninguna decoración nueva alimenta `solidTiles`
+  (son puramente visuales, como todo `decoration` en `createMap()`): cero
+  NPCs ambientales nuevos en esta tarea (decisión explícita, documentada,
+  para no confundir con la "frase corta" ya prevista para los NPCs
+  ambientales de un ciclo posterior), cero cambios a `solidRegions`,
+  `objects`, o al recorrido/alcanzabilidad real de cualquier interactuable
+  existente, incluido `bride-epilogue` desde su punto de entrada real
+  post-epílogo.
 
 ## [1.0.0] - 2026-08-11
 

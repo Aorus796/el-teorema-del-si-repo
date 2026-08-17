@@ -926,16 +926,26 @@ function getInteractionPrompt(object) {
   return `[E] Examinar ${object.label}`;
 }
 
+/*
+ * Tercer tono de suelo, exclusivo de axiom-plaza (§4.A del encargo de
+ * "Plaza Visual Polish"): derivado del propio palette del mapa (mezcla de
+ * groundA y wallTop) en vez de un color fijo, para que se adapte solo al
+ * palette normal y al dawnPalette sin necesidad de una tercera clave nueva
+ * en ninguno de los dos (evita romper el test que exige exactamente cinco
+ * claves iguales entre palette y dawnPalette). Ningún otro mapa cambia:
+ * accentColor es null salvo que map.id === "axiom-plaza".
+ */
 function renderGround(context, camera, map) {
   context.fillStyle = map.palette.groundA;
   context.fillRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 
+  const accentColor =
+    map.id === "axiom-plaza"
+      ? mixHexColors(map.palette.groundA, map.palette.wallTop, 0.35)
+      : null;
+
   for (let tileY = 0; tileY < map.height; tileY += 1) {
     for (let tileX = 0; tileX < map.width; tileX += 1) {
-      if ((tileX + tileY) % 2 !== 0) {
-        continue;
-      }
-
       const screenX = Math.floor(
         tileX * map.tileSize - camera.x,
       );
@@ -947,15 +957,47 @@ function renderGround(context, camera, map) {
         continue;
       }
 
-      context.fillStyle = map.palette.groundB;
-      context.fillRect(
-        screenX,
-        screenY,
-        map.tileSize,
-        map.tileSize,
-      );
+      if ((tileX + tileY) % 2 === 0) {
+        context.fillStyle = map.palette.groundB;
+        context.fillRect(
+          screenX,
+          screenY,
+          map.tileSize,
+          map.tileSize,
+        );
+        continue;
+      }
+
+      if (accentColor && (tileX * 5 + tileY * 3) % 9 === 0) {
+        context.fillStyle = accentColor;
+        context.fillRect(
+          screenX,
+          screenY,
+          map.tileSize,
+          map.tileSize,
+        );
+      }
     }
   }
+}
+
+function mixHexColors(colorA, colorB, ratio) {
+  const a = parseHexColor(colorA);
+  const b = parseHexColor(colorB);
+  const mix = (channelA, channelB) =>
+    Math.round(channelA + (channelB - channelA) * ratio);
+
+  return `rgb(${mix(a.r, b.r)} ${mix(a.g, b.g)} ${mix(a.b, b.b)})`;
+}
+
+function parseHexColor(hex) {
+  const value = hex.replace("#", "");
+
+  return {
+    r: parseInt(value.slice(0, 2), 16),
+    g: parseInt(value.slice(2, 4), 16),
+    b: parseInt(value.slice(4, 6), 16),
+  };
 }
 
 function renderSolidTiles(context, camera, map) {
@@ -1030,46 +1072,31 @@ function renderForegroundDecorations(context, camera, map) {
     }
 
     if (decoration.type === "altar") {
-      context.fillStyle = "#efe2bf";
-      context.fillRect(x, y + 18, decoration.width, 30);
-      context.fillStyle = "#d6b65f";
-      context.fillRect(x + 12, y, decoration.width - 24, 22);
-      context.fillStyle = "#e8b7c8";
-      context.fillRect(x + 24, y + 6, 12, 12);
-      context.fillRect(
-        x + decoration.width - 36,
-        y + 6,
-        12,
-        12,
+      drawWeddingArch(
+        context,
+        x,
+        y,
+        decoration.width,
+        decoration.height,
       );
       continue;
     }
 
     if (decoration.type === "fountain") {
-      context.fillStyle = "#d8c8a4";
-      context.fillRect(
+      drawFountain(
+        context,
         x,
-        y + 24,
-        decoration.width,
-        decoration.height - 24,
-      );
-      context.fillStyle = map.palette.water;
-      context.fillRect(
-        x + 10,
-        y + 34,
-        decoration.width - 20,
-        decoration.height - 44,
-      );
-      context.fillStyle = "#efe2bf";
-      context.fillRect(
-        x + decoration.width / 2 - 7,
         y,
-        14,
-        42,
+        decoration.width,
+        decoration.height,
+        map.palette.water,
       );
       continue;
     }
 
+    // "tables" (mesas rectangulares de banquete): sigue usándose tal cual
+    // en library/archive -- NO tocar esta rama para no afectar esos dos
+    // mapas, fuera de alcance de esta tarea (solo axiom-plaza).
     if (decoration.type === "tables") {
       context.fillStyle = "#7c5134";
 
@@ -1083,6 +1110,51 @@ function renderForegroundDecorations(context, camera, map) {
         context.fillRect(tableX + 3, y + 5, 32, 8);
         context.fillStyle = "#7c5134";
       }
+      continue;
+    }
+
+    // "wedding-table" (mesas redondas con manteles, centro floral y
+    // sillas): tipo exclusivo de axiom-plaza, no comparte rama con
+    // "tables" a propósito -- ver el comentario de arriba.
+    if (decoration.type === "wedding-table") {
+      drawWeddingTable(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "planter") {
+      drawFlowerPlanter(
+        context,
+        x,
+        y,
+        decoration.width,
+        decoration.height,
+      );
+      continue;
+    }
+
+    if (decoration.type === "bench") {
+      drawBench(context, x, y, decoration.width);
+      continue;
+    }
+
+    if (decoration.type === "lamp-post") {
+      drawLampPost(context, x, y, decoration.height);
+      continue;
+    }
+
+    if (decoration.type === "garland") {
+      drawGarland(context, x, y, decoration.width);
+      continue;
+    }
+
+    if (decoration.type === "market-stall") {
+      drawMarketStall(
+        context,
+        x,
+        y,
+        decoration.width,
+        decoration.height,
+      );
       continue;
     }
 
@@ -1103,6 +1175,151 @@ function renderForegroundDecorations(context, camera, map) {
       }
     }
   }
+}
+
+/*
+ * Helpers de dibujo visual para la decoración de axiom-plaza (Plaza Visual
+ * Polish -- boda en preparación). Todas reciben ya la posición absoluta en
+ * pantalla (post-cámara) y dibujan con primitivas de canvas puras, mismo
+ * lenguaje visual que el resto del renderer (sin sprites externos, sin
+ * dependencias nuevas). Ninguna toca colisión: decoration nunca alimenta
+ * solidTiles (ver createMap() en worldMaps.js), así que son puramente
+ * cosméticas por construcción.
+ */
+function drawWeddingArch(context, x, y, width, height) {
+  context.fillStyle = "#7c5134";
+  context.fillRect(x + 6, y + 4, 10, height - 4);
+  context.fillRect(x + width - 16, y + 4, 10, height - 4);
+
+  context.fillStyle = "#d6b65f";
+  context.fillRect(x + 12, y, width - 24, 10);
+
+  context.fillStyle = "#efe2bf";
+  context.fillRect(x + width / 2 - 14, y + 8, 28, 22);
+
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x + 16, y + 2, 10, 10);
+  context.fillRect(x + width - 26, y + 2, 10, 10);
+  context.fillStyle = "#f5ece0";
+  context.fillRect(x + 21, y + 5, 4, 4);
+  context.fillRect(x + width - 31, y + 5, 4, 4);
+
+  // alfombra corta / pasillo, con pétalos, en la franja transitable frente
+  // al arco (fuera del solidRegion, que solo cubre la mitad superior).
+  context.fillStyle = "#d6b65f";
+  context.fillRect(x + width / 2 - 10, y + height - 10, 20, 10);
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x + width / 2 - 16, y + height - 5, 3, 3);
+  context.fillRect(x + width / 2 + 13, y + height - 5, 3, 3);
+}
+
+function drawFountain(context, x, y, width, height, waterColor) {
+  context.fillStyle = "#d8c8a4";
+  context.fillRect(x, y + 24, width, height - 24);
+  context.fillStyle = waterColor;
+  context.fillRect(x + 10, y + 34, width - 20, height - 44);
+  context.fillStyle = "#efe2bf";
+  context.fillRect(x + width / 2 - 7, y, 14, 42);
+
+  // salida de agua: boquilla de piedra oscura y un breve chorro visible
+  // cayendo hacia la taza. Un tono deliberadamente distinto del
+  // palette.wall/dawnPalette.wall de cualquier mapa, para no interferir
+  // con los tests que comprueban qué paleta está activa por los colores
+  // exactos que aparecen en pantalla.
+  context.fillStyle = "#4d4238";
+  context.fillRect(x + width / 2 - 3, y + 38, 6, 8);
+  context.fillStyle = waterColor;
+  context.fillRect(x + width / 2 - 2, y + 44, 4, 6);
+
+  // rizos de superficie, mismo tono translúcido que ya usa el río.
+  context.fillStyle = "rgb(255 255 255 / 22%)";
+  context.fillRect(x + 16, y + height / 2, width - 32, 2);
+}
+
+function drawWeddingTable(context, x, y) {
+  context.fillStyle = "#7c5134";
+  context.fillRect(x + 18, y, 12, 8);
+  context.fillRect(x + 18, y + 38, 12, 8);
+  context.fillRect(x, y + 18, 8, 12);
+  context.fillRect(x + 40, y + 18, 8, 12);
+
+  context.fillStyle = "#efe2bf";
+  context.fillRect(x + 12, y + 10, 24, 4);
+  context.fillRect(x + 8, y + 14, 32, 20);
+  context.fillRect(x + 12, y + 34, 24, 4);
+
+  context.fillStyle = "#d8c8a4";
+  context.fillRect(x + 8, y + 14, 32, 2);
+  context.fillRect(x + 8, y + 32, 32, 2);
+
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x + 20, y + 20, 6, 6);
+  context.fillStyle = "#7fa860";
+  context.fillRect(x + 18, y + 22, 2, 2);
+  context.fillRect(x + 26, y + 22, 2, 2);
+}
+
+function drawFlowerPlanter(context, x, y, width, height) {
+  context.fillStyle = "#6d4b37";
+  context.fillRect(x, y + height - 10, width, 10);
+  context.fillStyle = "#5a7d45";
+  context.fillRect(x + 2, y, width - 4, height - 10);
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x + 3, y + 2, 3, 3);
+  context.fillRect(x + width - 6, y + 2, 3, 3);
+  context.fillStyle = "#f5ece0";
+  context.fillRect(x + width / 2 - 1, y + 1, 3, 3);
+}
+
+function drawBench(context, x, y, width) {
+  context.fillStyle = "#5a3d2b";
+  context.fillRect(x, y, width, 5);
+  context.fillStyle = "#7c5134";
+  context.fillRect(x, y + 6, width, 5);
+  context.fillRect(x + 2, y + 11, 3, 6);
+  context.fillRect(x + width - 5, y + 11, 3, 6);
+}
+
+function drawLampPost(context, x, y, height) {
+  context.fillStyle = "#4d3628";
+  context.fillRect(x + 3, y + 10, 3, height - 10);
+  context.fillStyle = "#d6b65f";
+  context.fillRect(x, y, 9, 10);
+  context.fillStyle = "#f7e6a8";
+  context.fillRect(x + 2, y + 2, 5, 6);
+}
+
+function drawGarland(context, x, y, width) {
+  context.fillStyle = "#7c5134";
+  context.fillRect(x, y - 1, width, 1);
+
+  const flagColors = ["#e8b7c8", "#d6b65f", "#f5ece0"];
+  let flagIndex = 0;
+
+  for (let flagX = x; flagX < x + width; flagX += 10) {
+    context.fillStyle = flagColors[flagIndex % flagColors.length];
+    context.fillRect(flagX, y, 6, 5);
+    flagIndex += 1;
+  }
+}
+
+function drawMarketStall(context, x, y, width, height) {
+  context.fillStyle = "#7c5134";
+  context.fillRect(x, y + height - 16, width, 16);
+  context.fillStyle = "#efe2bf";
+  context.fillRect(x + 4, y + height - 13, width - 8, 4);
+
+  context.fillStyle = "#d6b65f";
+  context.fillRect(x - 4, y, width + 8, 10);
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x - 4, y, 10, 10);
+  context.fillRect(x + width - 6, y, 10, 10);
+
+  context.fillStyle = "#7fa860";
+  context.fillRect(x + width / 2 - 6, y + height - 22, 12, 6);
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x + width / 2 - 3, y + height - 24, 3, 3);
+  context.fillRect(x + width / 2 + 1, y + height - 24, 3, 3);
 }
 
 function renderObjects(context, camera, objects, state) {
@@ -1128,17 +1345,32 @@ function renderObjects(context, camera, objects, state) {
       continue;
     }
 
-    if (object.type === "sign" || object.type === "puzzle") {
+    if (object.type === "puzzle") {
       context.fillStyle = "#4d3628";
       context.fillRect(x + 8, y + 10, 4, object.height);
-
-      context.fillStyle =
-        object.type === "puzzle" ? "#71d5c6" : "#d6b65f";
+      context.fillStyle = "#71d5c6";
       context.fillRect(x, y, object.width, 12);
-
       context.fillStyle = "#332c36";
       context.fillRect(x + 3, y + 3, object.width - 6, 2);
       context.fillRect(x + 3, y + 7, object.width - 9, 2);
+      continue;
+    }
+
+    // "sign" hoy solo es el tablón de preparativos (único objeto de este
+    // tipo en todo el juego): marco de madera y una esquina prendida, para
+    // que se lea como un tablón/cartel real -- misma interacción exacta.
+    if (object.type === "sign") {
+      context.fillStyle = "#4d3628";
+      context.fillRect(x + 8, y + 10, 4, object.height);
+      context.fillStyle = "#7c5134";
+      context.fillRect(x - 2, y - 2, object.width + 4, 16);
+      context.fillStyle = "#d6b65f";
+      context.fillRect(x, y, object.width, 12);
+      context.fillStyle = "#332c36";
+      context.fillRect(x + 3, y + 3, object.width - 6, 2);
+      context.fillRect(x + 3, y + 7, object.width - 9, 2);
+      context.fillStyle = "#e8b7c8";
+      context.fillRect(x + object.width - 6, y - 1, 4, 4);
       continue;
     }
 
