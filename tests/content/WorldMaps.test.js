@@ -262,23 +262,16 @@ test("library y archive conservan su decoración 'tables' original (rama compart
   }
 });
 
-test("ninguna decoración nueva de axiom-plaza solapa ningún objeto interactuable, con o sin giftCodeSolved", () => {
+test("ninguna decoración de axiom-plaza solapa ningún objeto interactuable, con o sin giftCodeSolved", () => {
   const map = getWorldMap("axiom-plaza");
-  const decorationTypesFromThisTask = [
-    "wedding-table",
-    "planter",
-    "bench",
-    "lamp-post",
-    "garland",
-    "market-stall",
-  ];
-  const newDecorations = map.decorations.filter((decoration) =>
-    decorationTypesFromThisTask.includes(decoration.type),
-  );
+  // Se comprueban TODAS las decoraciones del mapa (no solo las de esta
+  // tarea): más robusto frente a futuras rondas de densidad visual, que no
+  // tendrán que acordarse de ampliar una lista de tipos aquí.
+  const newDecorations = map.decorations;
 
   assert.ok(
-    newDecorations.length > 0,
-    "se esperaba al menos una decoración nueva de Plaza Visual Polish",
+    newDecorations.length > 20,
+    "se esperaba una Plaza con densidad visual (más de 20 decoraciones)",
   );
 
   for (const decoration of newDecorations) {
@@ -287,6 +280,39 @@ test("ninguna decoración nueva de axiom-plaza solapa ningún objeto interactuab
         rectanglesOverlap(decoration, object),
         false,
         `la decoración nueva ${decoration.id} solapa el objeto ${object.id}`,
+      );
+    }
+  }
+});
+
+/*
+ * Ninguno de los tests anteriores compara decoraciones ENTRE SÍ (solo
+ * decoración-contra-objeto y decoración-contra-spawn) -- este test cierra
+ * ese hueco, encontrado en la segunda ronda de densidad visual (una
+ * guirnalda nueva solapaba una jardinera ya existente sin que ningún test
+ * lo detectara). Única excepción intencional: una guirnalda ("garland")
+ * puede solapar un farol ("lamp-post") -- están diseñados para tocarse,
+ * la bunting se cuelga literalmente del farol.
+ */
+test("ninguna decoración de axiom-plaza solapa otra decoración, salvo guirnaldas apoyadas en faroles", () => {
+  const map = getWorldMap("axiom-plaza");
+  const isAllowedPair = (a, b) =>
+    (a.type === "garland" && b.type === "lamp-post") ||
+    (a.type === "lamp-post" && b.type === "garland");
+
+  for (let i = 0; i < map.decorations.length; i += 1) {
+    for (let j = i + 1; j < map.decorations.length; j += 1) {
+      const first = map.decorations[i];
+      const second = map.decorations[j];
+
+      if (isAllowedPair(first, second)) {
+        continue;
+      }
+
+      assert.equal(
+        rectanglesOverlap(first, second),
+        false,
+        `la decoración ${first.id} solapa la decoración ${second.id}`,
       );
     }
   }

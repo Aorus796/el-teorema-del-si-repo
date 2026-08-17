@@ -151,7 +151,27 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   ambientales de un ciclo posterior), cero cambios a `solidRegions`,
   `objects`, o al recorrido/alcanzabilidad real de cualquier interactuable
   existente, incluido `bride-epilogue` desde su punto de entrada real
-  post-epílogo.
+  post-epílogo. Segunda pasada de densidad y riqueza visual, tras
+  rechazo de la primera revisión visual humana por sentirse "demasiado
+  vacía, geométrica y esquemática": los ocho helpers anteriores ganan más
+  capas, sombras y detalle (bouquets en la base del arco, plataforma
+  ceremonial más ancha, mesas con lazo y sillas diferenciadas, fuente con
+  dos tonos de agua y reflejos, faroles con base y marco propios, puesto
+  con toldo en dos paños y objetos sobre el mostrador); se añaden cuatro
+  helpers pequeños nuevos (`drawFlowerPot()`, `drawDecorativeBush()`,
+  `drawPetals()`, `drawWeddingCrate()`) y 19 decoraciones nuevas
+  alrededor de la fuente, el altar, el puesto, los bancos, las mesas y
+  las cuatro esquinas, sin mover ni una sola decoración, objeto o
+  `solidRegion` ya existente. `renderGround()` corrige su lógica de
+  variación tonal para formar parejas de baldosas contiguas reales (el
+  primer intento nunca lo lograba: tiles adyacentes tienen siempre
+  paridad opuesta en `tileX+tileY`, así que la comprobación de acento
+  quedaba atrapada detrás del `continue` del propio patrón de tablero de
+  ajedrez -- corregido evaluando el acento antes y sustituyendo el
+  patrón normal cuando aplica). Un test nuevo compara todas las
+  decoraciones de la Plaza entre sí (no solo contra objetos), cerrando
+  el hueco que permitió que una guirnalda nueva solapara brevemente una
+  jardinera ya existente durante esta misma ronda.
 
 ## [1.0.0] - 2026-08-11
 
