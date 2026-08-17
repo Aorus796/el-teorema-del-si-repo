@@ -3,6 +3,13 @@ import { OPENING_THEME_PATH } from "../content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../content/sfxAudioConfig.js";
 import { getWorldMap } from "../content/worldMaps.js";
 import {
+  WEDDING_TABLE_PALETTE,
+  WEDDING_TABLE_PIXEL_HEIGHT,
+  WEDDING_TABLE_PIXEL_WIDTH,
+  WEDDING_TABLE_PIXELS,
+  WEDDING_TABLE_TRANSPARENT,
+} from "../content/weddingTablePixelArt.js";
+import {
   PARTNER_NAME,
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
@@ -1288,6 +1295,52 @@ function drawCachedProp(context, key, x, y, width, height, draw) {
 
   draw(context, x, y);
 }
+
+/*
+ * Spike de estrategia de representación (Plaza Visual Polish -- pixel-art
+ * indexado, autorizado explícitamente por el responsable de producto):
+ * en vez de componer un prop a partir de decenas de fillRect geométricos,
+ * este helper rasteriza pixel a pixel una matriz de caracteres ya
+ * diseñada a mano (ver src/content/weddingTablePixelArt.js), donde cada
+ * carácter indexa un color de una paleta compacta. Devuelve una función
+ * `draw(context, x, y)` con la misma forma que espera `drawCachedProp()`,
+ * así que reutiliza tal cual toda la infraestructura de cache ya
+ * existente (propSpriteCache/getCachedPropSprite): se rasteriza una única
+ * vez por combinación tipo+tamaño, nunca por frame.
+ */
+function createIndexedPixelSprite({
+  width,
+  height,
+  palette,
+  pixels,
+  transparent = ".",
+}) {
+  return (context, x, y) => {
+    for (let row = 0; row < height; row += 1) {
+      const line = pixels[row];
+
+      for (let col = 0; col < width; col += 1) {
+        const symbol = line[col];
+
+        if (symbol === transparent) {
+          continue;
+        }
+
+        context.fillStyle = palette[symbol];
+        context.fillRect(x + col, y + row, 1, 1);
+      }
+    }
+  };
+}
+
+const drawWeddingTableIndexedSprite = createIndexedPixelSprite({
+  width: WEDDING_TABLE_PIXEL_WIDTH,
+  height: WEDDING_TABLE_PIXEL_HEIGHT,
+  palette: WEDDING_TABLE_PALETTE,
+  pixels: WEDDING_TABLE_PIXELS,
+  transparent: WEDDING_TABLE_TRANSPARENT,
+});
+
 function drawWeddingArch(context, x, y, width, height) {
   // El dibujo real se sale del bounding box (x, y, width, height): 1px por
   // encima (follaje superior en "y - 1") y 4px por debajo (sombra de la
@@ -1495,105 +1548,27 @@ function drawFountainSprite(context, x, y, width, height, waterColor) {
 }
 
 function drawWeddingTable(context, x, y) {
-  // El dibujo real ocupa [x-2, x+44) x [y-2, y+45) -- sillas sobresaliendo
-  // 2px por encima/izquierda de la mesa, y la sombra de contacto llegando
-  // 1px más abajo que la silla inferior (fila y+44). El sprite cacheado se
-  // ancla ahí, no en (x, y), para no recortar ninguno de los dos contra el
-  // borde del canvas.
+  /*
+   * Spike de pixel-art indexado (Plaza Visual Polish): la mesa ya no se
+   * compone con decenas de fillRect geométricos por llamada -- se
+   * rasteriza, una única vez por cache, desde una matriz de pixel-art
+   * diseñada a mano (src/content/weddingTablePixelArt.js, 40x40). El
+   * diseño ya contiene todo su contenido real dentro de [0, 40) en ambos
+   * ejes (silueta, sillas, sombra de contacto), así que se ancla
+   * directamente en (x, y) sin margen adicional -- a diferencia del resto
+   * de props geométricos de esta misma sección, que sí necesitan
+   * desplazar el ancla porque sus fillRect se salen del bounding box
+   * nominal.
+   */
   drawCachedProp(
     context,
-    "wedding-table",
-    x - 2,
-    y - 2,
-    46,
-    47,
-    (spriteContext, sx, sy) =>
-      drawWeddingTableSprite(spriteContext, sx + 2, sy + 2),
+    "wedding-table-indexed",
+    x,
+    y,
+    WEDDING_TABLE_PIXEL_WIDTH,
+    WEDDING_TABLE_PIXEL_HEIGHT,
+    drawWeddingTableIndexedSprite,
   );
-}
-
-function drawWeddingTableSprite(context, x, y) {
-  // sombra bajo la mesa.
-  context.fillStyle = "rgb(0 0 0 / 16%)";
-  context.fillRect(x + 8, y + 40, 32, 5);
-
-  // 4 sillas: asiento y respaldo diferenciados en tres tonos de madera,
-  // con una veta clara para dar volumen.
-  context.fillStyle = "#3f2a1e";
-  context.fillRect(x + 16, y - 2, 16, 4);
-  context.fillRect(x + 16, y + 40, 16, 4);
-  context.fillRect(x - 2, y + 16, 4, 16);
-  context.fillRect(x + 40, y + 16, 4, 16);
-  context.fillStyle = "#5a3d2b";
-  context.fillRect(x + 17, y - 1, 14, 2);
-  context.fillRect(x + 17, y + 41, 14, 2);
-  context.fillRect(x - 1, y + 17, 2, 14);
-  context.fillRect(x + 41, y + 17, 2, 14);
-  context.fillStyle = "#7c5134";
-  context.fillRect(x + 17, y + 1, 14, 6);
-  context.fillRect(x + 17, y + 35, 14, 6);
-  context.fillRect(x + 1, y + 17, 6, 14);
-  context.fillRect(x + 35, y + 17, 6, 14);
-  context.fillStyle = "#8f6142";
-  context.fillRect(x + 18, y + 2, 12, 2);
-  context.fillRect(x + 18, y + 36, 12, 2);
-  context.fillRect(x + 2, y + 18, 2, 12);
-  context.fillRect(x + 36, y + 18, 2, 12);
-
-  // mesa redonda: silueta octogonal con esquinas escalonadas para leerse
-  // como círculo, en tres tonos de mantel.
-  context.fillStyle = "#d8c8a4";
-  context.fillRect(x + 14, y + 9, 20, 3);
-  context.fillRect(x + 9, y + 12, 30, 3);
-  context.fillRect(x + 7, y + 15, 34, 18);
-  context.fillRect(x + 9, y + 33, 30, 3);
-  context.fillRect(x + 14, y + 36, 20, 3);
-  context.fillStyle = "#efe2bf";
-  context.fillRect(x + 14, y + 8, 20, 2);
-  context.fillRect(x + 10, y + 10, 28, 4);
-  context.fillRect(x + 8, y + 14, 32, 18);
-  context.fillRect(x + 10, y + 32, 28, 4);
-  context.fillRect(x + 14, y + 36, 20, 2);
-  context.fillStyle = "#ffffff";
-  context.fillRect(x + 14, y + 14, 12, 3);
-
-  // caída del mantel, visible bajo el filo, en dos tonos.
-  context.fillStyle = "#c9b78e";
-  context.fillRect(x + 9, y + 32, 30, 2);
-  context.fillStyle = "#d8c8a4";
-  context.fillRect(x + 9, y + 34, 30, 2);
-
-  // lazo rosa a un lado, con un nudo central más oscuro.
-  context.fillStyle = "#a83c52";
-  context.fillRect(x + 7, y + 16, 4, 10);
-  context.fillStyle = "#c9536a";
-  context.fillRect(x + 8, y + 17, 3, 8);
-  context.fillStyle = "#e8b7c8";
-  context.fillRect(x + 6, y + 18, 3, 2);
-  context.fillRect(x + 6, y + 23, 3, 2);
-
-  // centro floral, con follaje de dos verdes y varios pétalos
-  // individuales en vez de dos bloques sólidos.
-  context.fillStyle = "#4d6b3a";
-  context.fillRect(x + 18, y + 18, 12, 9);
-  context.fillStyle = "#7fa860";
-  context.fillRect(x + 19, y + 19, 10, 8);
-  context.fillStyle = "#e8b7c8";
-  context.fillRect(x + 20, y + 20, 3, 3);
-  context.fillRect(x + 24, y + 25, 2, 2);
-  context.fillStyle = "#f5ece0";
-  context.fillRect(x + 25, y + 21, 3, 3);
-  context.fillRect(x + 20, y + 25, 2, 2);
-  context.fillStyle = "#d6b65f";
-  context.fillRect(x + 22, y + 24, 3, 3);
-
-  // pequeña vela junto al centro floral.
-  context.fillStyle = "#e2d3ac";
-  context.fillRect(x + 31, y + 20, 3, 6);
-  context.fillStyle = "#f5ece0";
-  context.fillRect(x + 32, y + 20, 1, 6);
-  context.fillStyle = "#f7e6a8";
-  context.fillRect(x + 32, y + 19, 1, 2);
 }
 
 function drawFlowerPlanter(context, x, y, width, height) {

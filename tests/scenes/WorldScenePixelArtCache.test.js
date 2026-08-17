@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { GameState } from "../../src/state/GameState.js";
+import {
+  WEDDING_TABLE_PIXEL_HEIGHT,
+  WEDDING_TABLE_PIXEL_WIDTH,
+  WEDDING_TABLE_PIXELS,
+  WEDDING_TABLE_TRANSPARENT,
+} from "../../src/content/weddingTablePixelArt.js";
 
 /*
  * Cubre la capa de cache de sprites pixel-art introducida en
@@ -125,9 +131,9 @@ globalThis.document = fakeDocument;
 
 const { WorldScene } = await import("../../src/scenes/WorldScene.js");
 
-function createAxiomPlazaScene() {
+function createAxiomPlazaScene(playerPosition = null) {
   const state = new GameState();
-  state.changeMap("axiom-plaza");
+  state.changeMap("axiom-plaza", playerPosition);
 
   const scene = new WorldScene({
     scenes: new FakeScenes(),
@@ -262,5 +268,74 @@ test("los props del mismo tipo pero distinto tamaño no comparten sprite cachead
   assert.ok(
     bushCanvasHeights.includes(27),
     "se esperaba un sprite cacheado de bush 20x24 (canvas 20x27) distinto del de 20x20",
+  );
+});
+
+/*
+ * Spike de pixel-art indexado (mesa de boda, src/content/
+ * weddingTablePixelArt.js): estas pruebas cubren específicamente
+ * createIndexedPixelSprite() a través de la cache real -- dimensiones del
+ * canvas cacheado y que los pixeles transparentes de la matriz NO generan
+ * ninguna llamada a fillRect (si se rellenaran, el sprite dejaría de tener
+ * silueta recortada y se vería como un cuadrado sólido). Ningún otro prop
+ * cacheado actual usa 40x40, así que filtrar por ese tamaño identifica sin
+ * ambigüedad el canvas de la mesa.
+ */
+test("el sprite indexado de la mesa de boda se cachea con las dimensiones declaradas por sus datos", () => {
+  // No se resetea createdCanvases: propSpriteCache puede llegar ya
+  // caliente desde un test anterior de este mismo archivo (mismo motivo
+  // que los tests de arriba) -- lo que importa es que el canvas exista en
+  // el historial acumulado, no en qué render concreto se creó.
+  //
+  // Las mesas de boda están en (130-620, 340-394), fuera del viewport de
+  // 480x270 que la cámara encuadra alrededor del spawn por defecto
+  // (240,192) -- sin reposicionar al jugador cerca de una mesa antes de
+  // renderizar, drawWeddingTable() nunca se llega a invocar y este test
+  // fallaría con un falso negativo, no porque el sprite esté mal sino
+  // porque nunca se dibujó nada que verificar.
+  const scene = createAxiomPlazaScene({ x: 210, y: 348, facing: "down" });
+  const context = new FakeGameContext();
+
+  scene.render(context);
+
+  const tableCanvas = createdCanvases.find(
+    (canvas) =>
+      canvas.width === WEDDING_TABLE_PIXEL_WIDTH &&
+      canvas.height === WEDDING_TABLE_PIXEL_HEIGHT,
+  );
+
+  assert.ok(
+    tableCanvas,
+    `se esperaba un canvas cacheado de ${WEDDING_TABLE_PIXEL_WIDTH}x${WEDDING_TABLE_PIXEL_HEIGHT} para la mesa indexada`,
+  );
+});
+
+test("createIndexedPixelSprite no dibuja los pixeles transparentes de la matriz", () => {
+  // Tampoco se resetea aquí, por la misma razón: el canvas de la mesa
+  // pudo crearse (y rasterizarse) en un test anterior, y sigue siendo la
+  // misma instancia con el mismo fillRectCalls acumulado. Igual que
+  // arriba, hay que situar al jugador cerca de una mesa para que
+  // drawWeddingTable() llegue a ejecutarse al menos una vez en la suite.
+  const scene = createAxiomPlazaScene({ x: 210, y: 348, facing: "down" });
+  const context = new FakeGameContext();
+
+  scene.render(context);
+
+  const tableCanvas = createdCanvases.find(
+    (canvas) =>
+      canvas.width === WEDDING_TABLE_PIXEL_WIDTH &&
+      canvas.height === WEDDING_TABLE_PIXEL_HEIGHT,
+  );
+
+  assert.ok(tableCanvas);
+
+  const opaquePixelCount = WEDDING_TABLE_PIXELS.join("")
+    .split("")
+    .filter((symbol) => symbol !== WEDDING_TABLE_TRANSPARENT).length;
+
+  assert.equal(
+    tableCanvas.context.fillRectCalls,
+    opaquePixelCount,
+    "el número de fillRect del sprite cacheado debe coincidir exactamente con el número de pixeles no transparentes de la matriz -- ni más (pixeles transparentes rellenados) ni menos (pixeles opacos perdidos)",
   );
 });
