@@ -3,6 +3,89 @@ import { OPENING_THEME_PATH } from "../content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../content/sfxAudioConfig.js";
 import { getWorldMap } from "../content/worldMaps.js";
 import {
+  WEDDING_TABLE_PALETTE,
+  WEDDING_TABLE_PIXEL_HEIGHT,
+  WEDDING_TABLE_PIXEL_WIDTH,
+  WEDDING_TABLE_PIXELS,
+  WEDDING_TABLE_TRANSPARENT,
+} from "../content/weddingTablePixelArt.js";
+import {
+  WEDDING_ARCH_PALETTE,
+  WEDDING_ARCH_PIXEL_HEIGHT,
+  WEDDING_ARCH_PIXEL_WIDTH,
+  WEDDING_ARCH_PIXELS,
+  WEDDING_ARCH_TRANSPARENT,
+} from "../content/weddingArchPixelArt.js";
+import {
+  buildFountainPalette,
+  FOUNTAIN_PIXEL_HEIGHT,
+  FOUNTAIN_PIXEL_WIDTH,
+  FOUNTAIN_PIXELS,
+  FOUNTAIN_TRANSPARENT,
+} from "../content/fountainPixelArt.js";
+import {
+  FLOWER_PLANTER_PALETTE,
+  FLOWER_PLANTER_PIXEL_HEIGHT,
+  FLOWER_PLANTER_PIXEL_WIDTH,
+  FLOWER_PLANTER_PIXELS,
+  FLOWER_PLANTER_TRANSPARENT,
+} from "../content/flowerPlanterPixelArt.js";
+import {
+  FLOWER_POT_PALETTE,
+  FLOWER_POT_PIXEL_HEIGHT,
+  FLOWER_POT_PIXEL_WIDTH,
+  FLOWER_POT_PIXELS,
+  FLOWER_POT_TRANSPARENT,
+} from "../content/flowerPotPixelArt.js";
+import {
+  BUSH_PALETTE,
+  BUSH_ROUND_CORNER_PIXEL_HEIGHT,
+  BUSH_ROUND_CORNER_PIXEL_WIDTH,
+  BUSH_ROUND_CORNER_PIXELS,
+  BUSH_ROUND_FOUNTAIN_PIXEL_HEIGHT,
+  BUSH_ROUND_FOUNTAIN_PIXEL_WIDTH,
+  BUSH_ROUND_FOUNTAIN_PIXELS,
+  BUSH_TRANSPARENT,
+  CYPRESS_PIXEL_HEIGHT,
+  CYPRESS_PIXEL_WIDTH,
+  CYPRESS_PIXELS,
+} from "../content/bushPixelArt.js";
+import {
+  BENCH_PALETTE,
+  BENCH_PIXEL_HEIGHT,
+  BENCH_PIXEL_WIDTH,
+  BENCH_PIXELS,
+  BENCH_TRANSPARENT,
+} from "../content/benchPixelArt.js";
+import {
+  LAMP_POST_PALETTE,
+  LAMP_POST_PIXEL_HEIGHT,
+  LAMP_POST_PIXEL_WIDTH,
+  LAMP_POST_PIXELS,
+  LAMP_POST_TRANSPARENT,
+} from "../content/lampPostPixelArt.js";
+import {
+  MARKET_STALL_PALETTE,
+  MARKET_STALL_PIXEL_HEIGHT,
+  MARKET_STALL_PIXEL_WIDTH,
+  MARKET_STALL_PIXELS,
+  MARKET_STALL_TRANSPARENT,
+} from "../content/marketStallPixelArt.js";
+import {
+  WEDDING_CRATE_PALETTE,
+  WEDDING_CRATE_PIXEL_HEIGHT,
+  WEDDING_CRATE_PIXEL_WIDTH,
+  WEDDING_CRATE_PIXELS,
+  WEDDING_CRATE_TRANSPARENT,
+} from "../content/weddingCratePixelArt.js";
+import {
+  FABRIC_ROLL_PALETTE,
+  FABRIC_ROLL_PIXEL_HEIGHT,
+  FABRIC_ROLL_PIXEL_WIDTH,
+  FABRIC_ROLL_PIXELS,
+  FABRIC_ROLL_TRANSPARENT,
+} from "../content/fabricRollPixelArt.js";
+import {
   PARTNER_NAME,
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
@@ -926,16 +1009,26 @@ function getInteractionPrompt(object) {
   return `[E] Examinar ${object.label}`;
 }
 
+/*
+ * Tercer tono de suelo, exclusivo de axiom-plaza (§4.A del encargo de
+ * "Plaza Visual Polish"): derivado del propio palette del mapa (mezcla de
+ * groundA y wallTop) en vez de un color fijo, para que se adapte solo al
+ * palette normal y al dawnPalette sin necesidad de una tercera clave nueva
+ * en ninguno de los dos (evita romper el test que exige exactamente cinco
+ * claves iguales entre palette y dawnPalette). Ningún otro mapa cambia:
+ * accentColor es null salvo que map.id === "axiom-plaza".
+ */
 function renderGround(context, camera, map) {
   context.fillStyle = map.palette.groundA;
   context.fillRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 
+  const accentColor =
+    map.id === "axiom-plaza"
+      ? mixHexColors(map.palette.groundA, map.palette.wallTop, 0.35)
+      : null;
+
   for (let tileY = 0; tileY < map.height; tileY += 1) {
     for (let tileX = 0; tileX < map.width; tileX += 1) {
-      if ((tileX + tileY) % 2 !== 0) {
-        continue;
-      }
-
       const screenX = Math.floor(
         tileX * map.tileSize - camera.x,
       );
@@ -947,15 +1040,63 @@ function renderGround(context, camera, map) {
         continue;
       }
 
-      context.fillStyle = map.palette.groundB;
-      context.fillRect(
-        screenX,
-        screenY,
-        map.tileSize,
-        map.tileSize,
-      );
+      /*
+       * Pequeñas agrupaciones de 2 baldosas contiguas (no puntos sueltos):
+       * un tile se acenta si ÉL MISMO es una "semilla" determinista, o si
+       * su vecino inmediato a la izquierda lo es -- así cada semilla pinta
+       * un par horizontal real (semilla + vecino), en vez de un punto
+       * aislado. Se comprueba ANTES que el patrón de tablero de ajedrez
+       * (groundA/groundB) y, cuando aplica, lo sustituye por completo --
+       * de lo contrario dos tiles contiguos nunca podrían compartir color,
+       * porque siempre tienen paridad opuesta en (tileX+tileY). Sigue
+       * siendo determinista, nunca aleatorio en tiempo real.
+       */
+      const isAccentSeed = (tx, ty) => (tx * 5 + ty * 3) % 9 === 0;
+
+      if (
+        accentColor &&
+        (isAccentSeed(tileX, tileY) || isAccentSeed(tileX - 1, tileY))
+      ) {
+        context.fillStyle = accentColor;
+        context.fillRect(
+          screenX,
+          screenY,
+          map.tileSize,
+          map.tileSize,
+        );
+        continue;
+      }
+
+      if ((tileX + tileY) % 2 === 0) {
+        context.fillStyle = map.palette.groundB;
+        context.fillRect(
+          screenX,
+          screenY,
+          map.tileSize,
+          map.tileSize,
+        );
+      }
     }
   }
+}
+
+function mixHexColors(colorA, colorB, ratio) {
+  const a = parseHexColor(colorA);
+  const b = parseHexColor(colorB);
+  const mix = (channelA, channelB) =>
+    Math.round(channelA + (channelB - channelA) * ratio);
+
+  return `rgb(${mix(a.r, b.r)} ${mix(a.g, b.g)} ${mix(a.b, b.b)})`;
+}
+
+function parseHexColor(hex) {
+  const value = hex.replace("#", "");
+
+  return {
+    r: parseInt(value.slice(0, 2), 16),
+    g: parseInt(value.slice(2, 4), 16),
+    b: parseInt(value.slice(4, 6), 16),
+  };
 }
 
 function renderSolidTiles(context, camera, map) {
@@ -1030,46 +1171,18 @@ function renderForegroundDecorations(context, camera, map) {
     }
 
     if (decoration.type === "altar") {
-      context.fillStyle = "#efe2bf";
-      context.fillRect(x, y + 18, decoration.width, 30);
-      context.fillStyle = "#d6b65f";
-      context.fillRect(x + 12, y, decoration.width - 24, 22);
-      context.fillStyle = "#e8b7c8";
-      context.fillRect(x + 24, y + 6, 12, 12);
-      context.fillRect(
-        x + decoration.width - 36,
-        y + 6,
-        12,
-        12,
-      );
+      drawWeddingArch(context, x, y);
       continue;
     }
 
     if (decoration.type === "fountain") {
-      context.fillStyle = "#d8c8a4";
-      context.fillRect(
-        x,
-        y + 24,
-        decoration.width,
-        decoration.height - 24,
-      );
-      context.fillStyle = map.palette.water;
-      context.fillRect(
-        x + 10,
-        y + 34,
-        decoration.width - 20,
-        decoration.height - 44,
-      );
-      context.fillStyle = "#efe2bf";
-      context.fillRect(
-        x + decoration.width / 2 - 7,
-        y,
-        14,
-        42,
-      );
+      drawFountain(context, x, y, map.palette.water);
       continue;
     }
 
+    // "tables" (mesas rectangulares de banquete): sigue usándose tal cual
+    // en library/archive -- NO tocar esta rama para no afectar esos dos
+    // mapas, fuera de alcance de esta tarea (solo axiom-plaza).
     if (decoration.type === "tables") {
       context.fillStyle = "#7c5134";
 
@@ -1083,6 +1196,70 @@ function renderForegroundDecorations(context, camera, map) {
         context.fillRect(tableX + 3, y + 5, 32, 8);
         context.fillStyle = "#7c5134";
       }
+      continue;
+    }
+
+    // "wedding-table" (mesas redondas con manteles, centro floral y
+    // sillas): tipo exclusivo de axiom-plaza, no comparte rama con
+    // "tables" a propósito -- ver el comentario de arriba.
+    if (decoration.type === "wedding-table") {
+      drawWeddingTable(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "planter") {
+      drawFlowerPlanter(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "bench") {
+      drawBench(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "lamp-post") {
+      drawLampPost(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "garland") {
+      drawGarland(context, x, y, decoration.width);
+      continue;
+    }
+
+    if (decoration.type === "market-stall") {
+      drawMarketStall(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "flower-pot") {
+      drawFlowerPot(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "bush") {
+      drawDecorativeBush(
+        context,
+        x,
+        y,
+        decoration.width,
+        decoration.height,
+      );
+      continue;
+    }
+
+    if (decoration.type === "petals") {
+      drawPetals(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "crate") {
+      drawWeddingCrate(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "fabric-roll") {
+      drawFabricRoll(context, x, y);
       continue;
     }
 
@@ -1103,6 +1280,505 @@ function renderForegroundDecorations(context, camera, map) {
       }
     }
   }
+}
+
+/*
+ * Helpers de dibujo visual para la decoración de axiom-plaza (Plaza Visual
+ * Polish -- boda en preparación). Todas reciben ya la posición absoluta en
+ * pantalla (post-cámara) y dibujan con primitivas de canvas puras, mismo
+ * lenguaje visual que el resto del renderer (sin sprites externos, sin
+ * dependencias nuevas). Ninguna toca colisión: decoration nunca alimenta
+ * solidTiles (ver createMap() en worldMaps.js), así que son puramente
+ * cosméticas por construcción.
+ *
+ * Pasada de fidelidad pixel-art (ronda 4 de Plaza Visual Polish,
+ * autorizada explícitamente por el responsable del producto): cada prop
+ * se rasteriza UNA sola vez en un <canvas> pequeño y descartable, nunca el
+ * canvas principal del juego, y se reutiliza con drawImage() en cada
+ * frame posterior -- sin PNG externos, sin asset de terceros, sin sistema
+ * de tiles genérico ni asset manager: es literalmente un Map de
+ * `"tipo:ancho:alto"` a un `HTMLCanvasElement` ya dibujado.
+ *
+ * getCachedPropSprite() devuelve `null` si `document` no existe (el caso
+ * del entorno de test, `node --test`, que no tiene DOM) -- en ese caso el
+ * llamador dibuja directamente sobre el `context` real recibido, con
+ * exactamente la misma función `drawXSprite()` que se usa para rasterizar
+ * el sprite cacheado en el navegador real. La lógica de dibujo nunca se
+ * duplica entre ambos caminos: solo cambia si el resultado se guarda en
+ * un canvas aparte o se pinta directamente.
+ */
+const propSpriteCache = new Map();
+
+function getCachedPropSprite(key, width, height, draw) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const cached = propSpriteCache.get(key);
+
+  if (cached) {
+    return cached;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const spriteContext = canvas.getContext("2d");
+  spriteContext.imageSmoothingEnabled = false;
+  draw(spriteContext, 0, 0);
+
+  propSpriteCache.set(key, canvas);
+  return canvas;
+}
+
+// Dibuja un prop cacheable: si hay DOM disponible, rasteriza (una única
+// vez por combinación tipo+tamaño) en un canvas aparte y lo reutiliza con
+// drawImage(); si no (tests), llama a `draw` directamente sobre `context`.
+function drawCachedProp(context, key, x, y, width, height, draw) {
+  const sprite = getCachedPropSprite(key, width, height, draw);
+
+  if (sprite) {
+    context.imageSmoothingEnabled = false;
+    context.drawImage(sprite, Math.round(x), Math.round(y));
+    return;
+  }
+
+  draw(context, x, y);
+}
+
+/*
+ * Spike de estrategia de representación (Plaza Visual Polish -- pixel-art
+ * indexado, autorizado explícitamente por el responsable de producto):
+ * en vez de componer un prop a partir de decenas de fillRect geométricos,
+ * este helper rasteriza pixel a pixel una matriz de caracteres ya
+ * diseñada a mano (ver src/content/weddingTablePixelArt.js), donde cada
+ * carácter indexa un color de una paleta compacta. Devuelve una función
+ * `draw(context, x, y)` con la misma forma que espera `drawCachedProp()`,
+ * así que reutiliza tal cual toda la infraestructura de cache ya
+ * existente (propSpriteCache/getCachedPropSprite): se rasteriza una única
+ * vez por combinación tipo+tamaño, nunca por frame.
+ */
+function createIndexedPixelSprite({
+  width,
+  height,
+  palette,
+  pixels,
+  transparent = ".",
+}) {
+  return (context, x, y) => {
+    for (let row = 0; row < height; row += 1) {
+      const line = pixels[row];
+
+      for (let col = 0; col < width; col += 1) {
+        const symbol = line[col];
+
+        if (symbol === transparent) {
+          continue;
+        }
+
+        context.fillStyle = palette[symbol];
+        context.fillRect(x + col, y + row, 1, 1);
+      }
+    }
+  };
+}
+
+const drawWeddingTableIndexedSprite = createIndexedPixelSprite({
+  width: WEDDING_TABLE_PIXEL_WIDTH,
+  height: WEDDING_TABLE_PIXEL_HEIGHT,
+  palette: WEDDING_TABLE_PALETTE,
+  pixels: WEDDING_TABLE_PIXELS,
+  transparent: WEDDING_TABLE_TRANSPARENT,
+});
+
+const drawWeddingArchIndexedSprite = createIndexedPixelSprite({
+  width: WEDDING_ARCH_PIXEL_WIDTH,
+  height: WEDDING_ARCH_PIXEL_HEIGHT,
+  palette: WEDDING_ARCH_PALETTE,
+  pixels: WEDDING_ARCH_PIXELS,
+  transparent: WEDDING_ARCH_TRANSPARENT,
+});
+
+function drawWeddingArch(context, x, y) {
+  // Prop migrado a pixel-art indexado (mismo patrón que wedding-table,
+  // aprobado por el responsable de producto): único tamaño real en
+  // axiom-plaza (160x48 nominal), así que el sprite ya incluye su propio
+  // margen y se ancla directamente en (x, y).
+  drawCachedProp(
+    context,
+    "wedding-arch-indexed",
+    x,
+    y,
+    WEDDING_ARCH_PIXEL_WIDTH,
+    WEDDING_ARCH_PIXEL_HEIGHT,
+    drawWeddingArchIndexedSprite,
+  );
+}
+
+// El agua no tiene un color fijo (cada mapa define su propio
+// palette.water/dawnPalette.water, ver fountainPixelArt.js), así que a
+// diferencia de los demás props migrados no basta con un único
+// createIndexedPixelSprite() construido una vez a nivel de módulo.
+// Memoizado por waterColor: sin este Map, drawFountain() construiría un
+// objeto de paleta + closure nuevos en CADA frame en que la fuente esté
+// visible, aunque drawCachedProp() ya evite volver a rasterizar el
+// canvas -- trabajo de asignación innecesario en régimen estable que el
+// resto de props migrados no tiene.
+const fountainDrawByWaterColor = new Map();
+
+function getFountainIndexedDraw(waterColor) {
+  const cached = fountainDrawByWaterColor.get(waterColor);
+
+  if (cached) {
+    return cached;
+  }
+
+  const draw = createIndexedPixelSprite({
+    width: FOUNTAIN_PIXEL_WIDTH,
+    height: FOUNTAIN_PIXEL_HEIGHT,
+    palette: buildFountainPalette(waterColor),
+    pixels: FOUNTAIN_PIXELS,
+    transparent: FOUNTAIN_TRANSPARENT,
+  });
+
+  fountainDrawByWaterColor.set(waterColor, draw);
+  return draw;
+}
+
+function drawFountain(context, x, y, waterColor) {
+  // Prop migrado a pixel-art indexado: único tamaño real en axiom-plaza
+  // (96x80 nominal), el sprite ya incluye su propio margen. La clave de
+  // cache de drawCachedProp() también incluye waterColor, para no
+  // compartir el canvas rasterizado entre mapas con tonos de agua
+  // distintos.
+  drawCachedProp(
+    context,
+    `fountain-indexed:${waterColor}`,
+    x,
+    y,
+    FOUNTAIN_PIXEL_WIDTH,
+    FOUNTAIN_PIXEL_HEIGHT,
+    getFountainIndexedDraw(waterColor),
+  );
+}
+
+function drawWeddingTable(context, x, y) {
+  /*
+   * Spike de pixel-art indexado (Plaza Visual Polish): la mesa ya no se
+   * compone con decenas de fillRect geométricos por llamada -- se
+   * rasteriza, una única vez por cache, desde una matriz de pixel-art
+   * diseñada a mano (src/content/weddingTablePixelArt.js, 40x40). El
+   * diseño ya contiene todo su contenido real dentro de [0, 40) en ambos
+   * ejes (silueta, sillas, sombra de contacto), así que se ancla
+   * directamente en (x, y) sin margen adicional -- a diferencia del resto
+   * de props geométricos de esta misma sección, que sí necesitan
+   * desplazar el ancla porque sus fillRect se salen del bounding box
+   * nominal.
+   */
+  drawCachedProp(
+    context,
+    "wedding-table-indexed",
+    x,
+    y,
+    WEDDING_TABLE_PIXEL_WIDTH,
+    WEDDING_TABLE_PIXEL_HEIGHT,
+    drawWeddingTableIndexedSprite,
+  );
+}
+
+const drawFlowerPlanterIndexedSprite = createIndexedPixelSprite({
+  width: FLOWER_PLANTER_PIXEL_WIDTH,
+  height: FLOWER_PLANTER_PIXEL_HEIGHT,
+  palette: FLOWER_PLANTER_PALETTE,
+  pixels: FLOWER_PLANTER_PIXELS,
+  transparent: FLOWER_PLANTER_TRANSPARENT,
+});
+
+function drawFlowerPlanter(context, x, y) {
+  // Prop migrado a pixel-art indexado: único tamaño real en axiom-plaza
+  // (24x24 nominal), el sprite ya incluye su propio margen de sombra.
+  drawCachedProp(
+    context,
+    "flower-planter-indexed",
+    x,
+    y,
+    FLOWER_PLANTER_PIXEL_WIDTH,
+    FLOWER_PLANTER_PIXEL_HEIGHT,
+    drawFlowerPlanterIndexedSprite,
+  );
+}
+
+const drawFlowerPotIndexedSprite = createIndexedPixelSprite({
+  width: FLOWER_POT_PIXEL_WIDTH,
+  height: FLOWER_POT_PIXEL_HEIGHT,
+  palette: FLOWER_POT_PALETTE,
+  pixels: FLOWER_POT_PIXELS,
+  transparent: FLOWER_POT_TRANSPARENT,
+});
+
+function drawFlowerPot(context, x, y) {
+  drawCachedProp(
+    context,
+    "flower-pot-indexed",
+    x,
+    y,
+    FLOWER_POT_PIXEL_WIDTH,
+    FLOWER_POT_PIXEL_HEIGHT,
+    drawFlowerPotIndexedSprite,
+  );
+}
+
+const drawBushRoundFountainIndexedSprite = createIndexedPixelSprite({
+  width: BUSH_ROUND_FOUNTAIN_PIXEL_WIDTH,
+  height: BUSH_ROUND_FOUNTAIN_PIXEL_HEIGHT,
+  palette: BUSH_PALETTE,
+  pixels: BUSH_ROUND_FOUNTAIN_PIXELS,
+  transparent: BUSH_TRANSPARENT,
+});
+
+const drawBushRoundCornerIndexedSprite = createIndexedPixelSprite({
+  width: BUSH_ROUND_CORNER_PIXEL_WIDTH,
+  height: BUSH_ROUND_CORNER_PIXEL_HEIGHT,
+  palette: BUSH_PALETTE,
+  pixels: BUSH_ROUND_CORNER_PIXELS,
+  transparent: BUSH_TRANSPARENT,
+});
+
+const drawCypressIndexedSprite = createIndexedPixelSprite({
+  width: CYPRESS_PIXEL_WIDTH,
+  height: CYPRESS_PIXEL_HEIGHT,
+  palette: BUSH_PALETTE,
+  pixels: CYPRESS_PIXELS,
+  transparent: BUSH_TRANSPARENT,
+});
+
+// axiom-plaza usa el tipo "bush" en tres tamaños reales fijos (ver
+// worldMaps.js): 20x24 junto a la fuente, 20x20 en las cuatro esquinas, y
+// 14x34 para los "cipreses" (misma decoración, proporciones altas y
+// estrechas). Cada uno migra a su propia matriz de pixel-art ya
+// diseñada (bushPixelArt.js) en vez de generarse proporcionalmente.
+//
+// Riesgo conocido, no aplicable a los datos actuales: a diferencia de la
+// versión geométrica anterior (que generaba el arbusto proporcionalmente
+// a cualquier width/height reales), esta función solo reconoce estas 3
+// combinaciones exactas -- cualquier otra cae en silencio en la rama por
+// defecto (esquina) con la forma/proporción incorrecta, sin ningún aviso.
+// Si se añade en el futuro una decoración "bush" con un tamaño nuevo,
+// hace falta diseñar y añadir su propia matriz en bushPixelArt.js y su
+// propia rama aquí -- no asumir que el tamaño por defecto sirve para
+// cualquier caso.
+function drawDecorativeBush(context, x, y, width, height) {
+  if (width === BUSH_ROUND_FOUNTAIN_PIXEL_WIDTH && height === BUSH_ROUND_FOUNTAIN_PIXEL_HEIGHT - 3) {
+    drawCachedProp(
+      context,
+      "bush-round-fountain-indexed",
+      x,
+      y,
+      BUSH_ROUND_FOUNTAIN_PIXEL_WIDTH,
+      BUSH_ROUND_FOUNTAIN_PIXEL_HEIGHT,
+      drawBushRoundFountainIndexedSprite,
+    );
+    return;
+  }
+
+  if (width === CYPRESS_PIXEL_WIDTH && height === CYPRESS_PIXEL_HEIGHT - 3) {
+    drawCachedProp(
+      context,
+      "cypress-indexed",
+      x,
+      y,
+      CYPRESS_PIXEL_WIDTH,
+      CYPRESS_PIXEL_HEIGHT,
+      drawCypressIndexedSprite,
+    );
+    return;
+  }
+
+  // 20x20 (esquinas): variante por defecto.
+  drawCachedProp(
+    context,
+    "bush-round-corner-indexed",
+    x,
+    y,
+    BUSH_ROUND_CORNER_PIXEL_WIDTH,
+    BUSH_ROUND_CORNER_PIXEL_HEIGHT,
+    drawBushRoundCornerIndexedSprite,
+  );
+}
+
+// Pétalos sueltos sobre el suelo: prop pequeño (10x9, 3 fillRect) cuya
+// representación actual ya es simple/plana y legible -- no se migra a
+// pixel-art indexado en esta ronda (ver CLAUDE.md/tarea: garland/petals
+// pueden mantenerse como primitivas si no aportan mejora visual real).
+function drawPetals(context, x, y) {
+  drawCachedProp(context, "petals", x, y, 10, 9, drawPetalsSprite);
+}
+
+function drawPetalsSprite(context, x, y) {
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x, y, 3, 3);
+  context.fillRect(x + 7, y + 4, 3, 3);
+  context.fillStyle = "#d99cb2";
+  context.fillRect(x + 1, y + 1, 1, 1);
+  context.fillStyle = "#f5ece0";
+  context.fillRect(x + 3, y + 6, 3, 3);
+}
+
+const drawWeddingCrateIndexedSprite = createIndexedPixelSprite({
+  width: WEDDING_CRATE_PIXEL_WIDTH,
+  height: WEDDING_CRATE_PIXEL_HEIGHT,
+  palette: WEDDING_CRATE_PALETTE,
+  pixels: WEDDING_CRATE_PIXELS,
+  transparent: WEDDING_CRATE_TRANSPARENT,
+});
+
+function drawWeddingCrate(context, x, y) {
+  // Prop migrado a pixel-art indexado: único tamaño real en axiom-plaza
+  // (14x15 nominal), el sprite ya incluye su propio margen (flores 1px
+  // por encima, sombra de contacto por debajo).
+  drawCachedProp(
+    context,
+    "crate-indexed",
+    x,
+    y - 1,
+    WEDDING_CRATE_PIXEL_WIDTH,
+    WEDDING_CRATE_PIXEL_HEIGHT,
+    drawWeddingCrateIndexedSprite,
+  );
+}
+
+const drawBenchIndexedSprite = createIndexedPixelSprite({
+  width: BENCH_PIXEL_WIDTH,
+  height: BENCH_PIXEL_HEIGHT,
+  palette: BENCH_PALETTE,
+  pixels: BENCH_PIXELS,
+  transparent: BENCH_TRANSPARENT,
+});
+
+function drawBench(context, x, y) {
+  // Prop migrado a pixel-art indexado: único tamaño real en axiom-plaza
+  // (40x16 nominal), el sprite ya incluye su propio margen de sombra.
+  drawCachedProp(
+    context,
+    "bench-indexed",
+    x,
+    y,
+    BENCH_PIXEL_WIDTH,
+    BENCH_PIXEL_HEIGHT,
+    drawBenchIndexedSprite,
+  );
+}
+
+const drawLampPostIndexedSprite = createIndexedPixelSprite({
+  width: LAMP_POST_PIXEL_WIDTH,
+  height: LAMP_POST_PIXEL_HEIGHT,
+  palette: LAMP_POST_PALETTE,
+  pixels: LAMP_POST_PIXELS,
+  transparent: LAMP_POST_TRANSPARENT,
+});
+
+function drawLampPost(context, x, y) {
+  // Prop migrado a pixel-art indexado: único tamaño real en axiom-plaza
+  // (9x40 nominal), el sprite ya incluye su propio margen (halo 2px a la
+  // izquierda, remate superior y sombra de contacto).
+  drawCachedProp(
+    context,
+    "lamp-post-indexed",
+    x - 2,
+    y - 1,
+    LAMP_POST_PIXEL_WIDTH,
+    LAMP_POST_PIXEL_HEIGHT,
+    drawLampPostIndexedSprite,
+  );
+}
+
+function drawGarland(context, x, y, width) {
+  // El bucle de banderines avanza en pasos de 10px (banderín de 6px) y
+  // puede sobresalir hasta 5px más allá de "x + width" en la última
+  // iteración cuando `width` no es múltiplo de 10 (por ejemplo el garland
+  // de 74px del puesto): el sprite cacheado gana margen extra para no
+  // recortar el último banderín contra el borde del canvas.
+  drawCachedProp(
+    context,
+    `garland:${width}`,
+    x,
+    y - 1,
+    width + 10,
+    6,
+    (spriteContext, sx, sy) =>
+      drawGarlandSprite(spriteContext, sx, sy + 1, width),
+  );
+}
+
+function drawGarlandSprite(context, x, y, width) {
+  context.fillStyle = "#7c5134";
+  context.fillRect(x, y - 1, width, 1);
+
+  const flagColors = ["#e8b7c8", "#d6b65f", "#f5ece0"];
+  let flagIndex = 0;
+
+  for (let flagX = x; flagX < x + width; flagX += 10) {
+    context.fillStyle = flagColors[flagIndex % flagColors.length];
+    context.fillRect(flagX, y, 6, 5);
+    context.fillStyle = "rgb(0 0 0 / 12%)";
+    context.fillRect(flagX, y + 4, 6, 1);
+    context.fillStyle = "rgb(255 255 255 / 35%)";
+    context.fillRect(flagX + 2, y + 1, 2, 2);
+    flagIndex += 1;
+  }
+}
+
+const drawMarketStallIndexedSprite = createIndexedPixelSprite({
+  width: MARKET_STALL_PIXEL_WIDTH,
+  height: MARKET_STALL_PIXEL_HEIGHT,
+  palette: MARKET_STALL_PALETTE,
+  pixels: MARKET_STALL_PIXELS,
+  transparent: MARKET_STALL_TRANSPARENT,
+});
+
+function drawMarketStall(context, x, y) {
+  // Prop migrado a pixel-art indexado: único tamaño real en axiom-plaza
+  // (100x40 nominal), el sprite ya incluye su propio margen (toldo
+  // sobresaliendo a los lados, sombra de contacto). El offset horizontal
+  // es -4, NO -9 (la mitad simétrica de 18 = 118 - 100): a propósito,
+  // porque el margen real de la matriz es asimétrico -- el borde
+  // izquierdo del mostrador está a 4px del borde de la matriz, mientras
+  // que el toldo y el arreglo floral de la derecha se extienden más lejos
+  // hacia ese lado por diseño. No "corregir" esto a -9 pensando que es un
+  // valor huérfano: descentraría el mostrador respecto al `x` nominal.
+  drawCachedProp(
+    context,
+    "market-stall-indexed",
+    x - 4,
+    y,
+    MARKET_STALL_PIXEL_WIDTH,
+    MARKET_STALL_PIXEL_HEIGHT,
+    drawMarketStallIndexedSprite,
+  );
+}
+
+const drawFabricRollIndexedSprite = createIndexedPixelSprite({
+  width: FABRIC_ROLL_PIXEL_WIDTH,
+  height: FABRIC_ROLL_PIXEL_HEIGHT,
+  palette: FABRIC_ROLL_PALETTE,
+  pixels: FABRIC_ROLL_PIXELS,
+  transparent: FABRIC_ROLL_TRANSPARENT,
+});
+
+// Rollo de tela decorativo -- prop de preparativos todavía sin usar, para
+// reforzar que el montaje sigue en marcha. Migrado a pixel-art indexado:
+// único tamaño real en axiom-plaza (16x13 nominal).
+function drawFabricRoll(context, x, y) {
+  drawCachedProp(
+    context,
+    "fabric-roll-indexed",
+    x,
+    y,
+    FABRIC_ROLL_PIXEL_WIDTH,
+    FABRIC_ROLL_PIXEL_HEIGHT,
+    drawFabricRollIndexedSprite,
+  );
 }
 
 function renderObjects(context, camera, objects, state) {
@@ -1128,17 +1804,32 @@ function renderObjects(context, camera, objects, state) {
       continue;
     }
 
-    if (object.type === "sign" || object.type === "puzzle") {
+    if (object.type === "puzzle") {
       context.fillStyle = "#4d3628";
       context.fillRect(x + 8, y + 10, 4, object.height);
-
-      context.fillStyle =
-        object.type === "puzzle" ? "#71d5c6" : "#d6b65f";
+      context.fillStyle = "#71d5c6";
       context.fillRect(x, y, object.width, 12);
-
       context.fillStyle = "#332c36";
       context.fillRect(x + 3, y + 3, object.width - 6, 2);
       context.fillRect(x + 3, y + 7, object.width - 9, 2);
+      continue;
+    }
+
+    // "sign" hoy solo es el tablón de preparativos (único objeto de este
+    // tipo en todo el juego): marco de madera y una esquina prendida, para
+    // que se lea como un tablón/cartel real -- misma interacción exacta.
+    if (object.type === "sign") {
+      context.fillStyle = "#4d3628";
+      context.fillRect(x + 8, y + 10, 4, object.height);
+      context.fillStyle = "#7c5134";
+      context.fillRect(x - 2, y - 2, object.width + 4, 16);
+      context.fillStyle = "#d6b65f";
+      context.fillRect(x, y, object.width, 12);
+      context.fillStyle = "#332c36";
+      context.fillRect(x + 3, y + 3, object.width - 6, 2);
+      context.fillRect(x + 3, y + 7, object.width - 9, 2);
+      context.fillStyle = "#e8b7c8";
+      context.fillRect(x + object.width - 6, y - 1, 4, 4);
       continue;
     }
 

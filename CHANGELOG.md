@@ -124,6 +124,184 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   valor crudo del enum de fase (por ejemplo "arranging") y lo traduce con
   una función `phaseLabel()` análoga a la ya existente en
   `ArchiveCriteriaScene.js`.
+- Plaza Visual Polish -- Wedding Preparation Style Lock (solo la Plaza del
+  Axioma, `src/content/worldMaps.js`/`src/scenes/WorldScene.js`): la Plaza
+  gana lectura visual de boda en preparación sin tocar geometría de
+  colisión, progresión, guardado, audio ni diseño de personajes. El altar
+  y la fuente conservan exactamente su posición/tamaño (y por tanto su
+  `solidRegion` ya alineado) pero se redibujan con más detalle
+  (`drawWeddingArch()`, `drawFountain()`: tela drapeada, flores, alfombra
+  corta; boquilla y chorro de agua visibles en la fuente). Las dos mesas
+  de banquete rectangulares se sustituyen por 4 mesas redondas de boda
+  (`drawWeddingTable()`, tipo `wedding-table`, exclusivo de esta Plaza --
+  la rama `tables` compartida con la Biblioteca y el Archivo no se toca).
+  Se añaden 7 jardineras/macetas, 2 bancos, 4 faroles, una guirnalda entre
+  los faroles que flanquean el arco, y un puesto/mostrador de preparativos
+  sobre la zona superior antes vacía, todo mediante nuevas funciones de
+  dibujo puras (`drawFlowerPlanter()`, `drawBench()`, `drawLampPost()`,
+  `drawGarland()`, `drawMarketStall()`). El tablón de preparativos gana un
+  marco de madera para leerse mejor como cartel, separando su rama de
+  render de la que comparte con el tablero de P2 (que queda intacta).
+  `renderGround()` gana una variación tonal adicional exclusiva de
+  `axiom-plaza`, derivada del propio `palette`/`dawnPalette` del mapa (sin
+  clave nueva de paleta). Ninguna decoración nueva alimenta `solidTiles`
+  (son puramente visuales, como todo `decoration` en `createMap()`): cero
+  NPCs ambientales nuevos en esta tarea (decisión explícita, documentada,
+  para no confundir con la "frase corta" ya prevista para los NPCs
+  ambientales de un ciclo posterior), cero cambios a `solidRegions`,
+  `objects`, o al recorrido/alcanzabilidad real de cualquier interactuable
+  existente, incluido `bride-epilogue` desde su punto de entrada real
+  post-epílogo. Segunda pasada de densidad y riqueza visual, tras
+  rechazo de la primera revisión visual humana por sentirse "demasiado
+  vacía, geométrica y esquemática": los ocho helpers anteriores ganan más
+  capas, sombras y detalle (bouquets en la base del arco, plataforma
+  ceremonial más ancha, mesas con lazo y sillas diferenciadas, fuente con
+  dos tonos de agua y reflejos, faroles con base y marco propios, puesto
+  con toldo en dos paños y objetos sobre el mostrador); se añaden cuatro
+  helpers pequeños nuevos (`drawFlowerPot()`, `drawDecorativeBush()`,
+  `drawPetals()`, `drawWeddingCrate()`) y 19 decoraciones nuevas
+  alrededor de la fuente, el altar, el puesto, los bancos, las mesas y
+  las cuatro esquinas, sin mover ni una sola decoración, objeto o
+  `solidRegion` ya existente. `renderGround()` corrige su lógica de
+  variación tonal para formar parejas de baldosas contiguas reales (el
+  primer intento nunca lo lograba: tiles adyacentes tienen siempre
+  paridad opuesta en `tileX+tileY`, así que la comprobación de acento
+  quedaba atrapada detrás del `continue` del propio patrón de tablero de
+  ajedrez -- corregido evaluando el acento antes y sustituyendo el
+  patrón normal cuando aplica). Un test nuevo compara todas las
+  decoraciones de la Plaza entre sí (no solo contra objetos), cerrando
+  el hueco que permitió que una guirnalda nueva solapara brevemente una
+  jardinera ya existente durante esta misma ronda. Tercera y última
+  pasada de polish tras una segunda ronda de rechazo en revisión visual
+  humana ("al 70-75% del objetivo"): el arco gana sombra de plataforma,
+  borde de piedra más marcado y flores laterales a media altura de cada
+  poste (además de las ya existentes arriba); la fuente gana un anillo
+  de piedra intermedio y sombra de contacto con el suelo; las mesas
+  ganan una pequeña vela junto al centro floral; el puesto gana un
+  ribete de lazo en el toldo. Nuevo helper `drawFabricRoll()` (rollo de
+  tela) y 14 decoraciones nuevas -- dos "cipreses" de borde
+  (reutilizando el tipo `bush` con proporciones altas y estrechas, sin
+  tipo nuevo), macetas emparejadas junto a los arbustos de las cuatro
+  esquinas y junto al puesto (para formar composiciones de 2-4
+  elementos en vez de plantas sueltas), dos rollos de tela, y cuatro
+  grupos de pétalos adicionales en zonas abiertas alejadas del centro
+  jugable exacto. Cuarta pasada, de fidelidad pixel-art, tras una tercera
+  ronda de rechazo en revisión visual humana ("el problema ya no es
+  densidad, es fidelidad gráfica": los props se seguían leyendo como
+  bloques grandes de `fillRect`): los 13 helpers de dibujo se dividen en
+  una función `drawXSprite()` de pixel-art (más tonos por material,
+  siluetas escalonadas/irregulares en vez de rectángulos puros, vetas de
+  madera, pliegues de tela, pétalos y hojas individuales, sombreado de
+  volumen en postes y columnas) y un wrapper fino `drawX()` que la invoca
+  a través de un cache pequeño y acotado (`propSpriteCache`,
+  `getCachedPropSprite()`, `drawCachedProp()`): cada combinación
+  tipo+tamaño se rasteriza una única vez en un `<canvas>` descartable
+  (nunca el canvas principal del juego) con `imageSmoothingEnabled =
+  false`, y se reutiliza con `drawImage()` en cada frame posterior --
+  cero sistema de tiles genérico, asset manager o motor de sprites,
+  cero PNG/asset externo, todo el pixel-art sigue siendo código puro del
+  proyecto. `getCachedPropSprite()` devuelve `null` cuando `document` no
+  existe (el caso de `node --test`, sin DOM), así que en el entorno de
+  test cada helper cae exactamente en la misma lógica de dibujo directa
+  ya cubierta por la suite existente -- ningún test unitario tuvo que
+  cambiar por este motivo. Verificado por cálculo explícito del área real
+  dibujada por cada `drawXSprite()` contra el tamaño de canvas reservado:
+  cinco props (`wedding-table`, `wedding-arch`, `fountain`, `crate`,
+  `lamp-post`) sobresalían por uno o varios lados de su bounding box
+  nominal (sillas, follaje, remates y sombras de contacto quedaban 1-4px
+  fuera) y se recortaban silenciosamente contra el borde del sprite
+  cacheado sin que ningún test lo detectara (el entorno de test nunca
+  ejercita la rama de cache); corregido anclando cada sprite al bounding
+  box real y desplazando el dibujo en el wrapper correspondiente. Dos
+  bucles de banderines/franjas (`market-stall`, `garland`) podían
+  sobresalir hasta 10px de su ancho nominal en la última iteración
+  cuando el ancho no es múltiplo del paso del bucle; el sprite cacheado
+  gana ese margen extra para no perder esa franja. El agente `qa`
+  encontró de forma independiente un séptimo caso del mismo patrón, más
+  sutil (1px, 16% de opacidad): la sombra de contacto de
+  `drawWeddingTableSprite()` llegaba una fila más abajo que la silla
+  inferior, y el canvas cacheado de la mesa medía 46px de alto cuando
+  necesitaba 47; corregido antes de pasar a `reviewer`. Nuevo archivo de test
+  dedicado, `tests/scenes/WorldScenePixelArtCache.test.js` (en un
+  archivo aparte porque `propSpriteCache` es un `Map` a nivel de módulo
+  compartido entre los `test()` de un mismo archivo bajo `node --test`,
+  y no debe contaminar la suite existente, que depende de que `document`
+  sea `undefined`), que simula un `document` mínimo para cubrir: que los
+  sprites se rasterizan con `imageSmoothingEnabled = false`; que un
+  segundo render no crea ningún canvas de sprite adicional (misma
+  instancia reutilizada vía `drawImage()`); y que props del mismo tipo
+  con distinto tamaño no comparten sprite cacheado. El agente `reviewer`
+  señaló que esta última prueba solo contaba "más de un canvas distinto"
+  en todo el render de axiom-plaza, lo que no aislaba de verdad la
+  variante de tamaño que decía cubrir (los dos tamaños de `bush`, 20x20
+  en las esquinas y 20x24 junto a la fuente); corregida para comprobar
+  explícitamente que existen canvases de sprite de ancho 20 con ambas
+  alturas cacheadas (23 y 27) antes de comitear. Ningún cambio a
+  `worldMaps.js`, a la composición, a personajes o a gameplay: la
+  densidad y posición de las 54 decoraciones existentes se mantiene
+  intacta, solo cambia cómo se rasteriza cada una. Quinta pasada, un
+  spike de estrategia de representación tras un cuarto rechazo en
+  revisión visual humana ("la técnica es correcta pero los props siguen
+  leyéndose geométricos"): en vez de seguir componiendo cada prop con
+  fillRect en tiempo de ejecución, `wedding-table` migra a pixel-art
+  indexado -- una matriz de caracteres de 40x40 (`src/content/
+  weddingTablePixelArt.js`) más una paleta compacta, diseñada a mano y
+  rasterizada pixel a pixel una única vez mediante el nuevo helper
+  genérico `createIndexedPixelSprite()`, reutilizando sin cambios la
+  cache existente (`propSpriteCache`/`drawCachedProp`). `drawWeddingTableSprite()`
+  (la implementación geométrica anterior) se elimina por completo, no
+  solo se desconecta. Durante la implementación y dos rondas de
+  verificación independiente (`qa` y `reviewer`) se encuentran y corrigen
+  7 casos del mismo patrón de recorte silencioso contra el borde del
+  sprite cacheado que motivó las correcciones de la ronda anterior --
+  incluida una asimetría real entre la silla oeste y este de la mesa (un
+  error de mapeo en el reflejo horizontal, corregido con coordenadas
+  explícitas en vez de una fórmula parametrizada) y una asimetría más
+  sutil por el redondeo del círculo del mantel contra una rejilla de 40
+  sin eje de simetría entero, resuelta redibujando las sillas oeste/este
+  encima del mantel ya pintado sin tocar el mantel ni el comportamiento
+  norte/sur ya aceptado. El lazo rosa de un solo lado, heredado de la
+  versión geométrica anterior, se documenta explícitamente en el propio
+  archivo de datos para no confundirlo con un bug de simetría en
+  revisiones futuras. Nuevos tests: `tests/content/
+  WeddingTablePixelArt.test.js` (datos puros, sin DOM) y dos tests
+  añadidos a `WorldScenePixelArtCache.test.js` (dimensiones del canvas
+  cacheado; que los pixeles transparentes de la matriz no generan
+  `fillRect`). Sexta pasada, la migración del resto de props principales
+  de la Plaza a la misma estrategia (pixel-art indexado) tras la
+  aprobación humana explícita de esa técnica validada en `wedding-table`:
+  `wedding-arch` (decoración tipo `altar`), `fountain`, `flower-planter`,
+  `flower-pot`, `bush` (sus tres tamaños reales -- 20x24 junto a la
+  fuente, 20x20 en las cuatro esquinas, y los "cipreses" de 14x34 --
+  migran cada uno a su propia matriz, compartiendo una única paleta en
+  `src/content/bushPixelArt.js`), `bench`, `lamp-post`, `market-stall`,
+  `crate` y `fabric-roll`. Los 9 pares `drawX`/`drawXSprite` geométricos
+  correspondientes se eliminan por completo. `garland` y `petals` se
+  dejan deliberadamente sin migrar: siguen siendo composición geométrica
+  simple (pocos `fillRect`) y ya legible, tal como autorizaba
+  explícitamente esta tarea si migrarlos no aportaba mejora visual real.
+  La fuente necesita una paleta dinámica -- el agua no tiene un color
+  fijo, cada mapa define su propio `palette.water`/`dawnPalette.water` --
+  así que `buildFountainPalette(waterColor)` construye la parte variable
+  y la clave de cache de `drawFountain()` incluye el color de agua exacto
+  para no compartir el sprite rasterizado entre mapas con tonos
+  distintos; memoizada por color para evitar asignar un objeto de paleta
+  y un closure nuevos en cada frame en que la fuente esté visible
+  (hallazgo del agente `reviewer`, corregido antes de comitear).
+  `drawDecorativeBush()` selecciona entre las tres variantes comparando
+  `width`/`height` reales contra las dimensiones de cada matriz -- una
+  decisión de diseño más frágil que la versión geométrica anterior (que
+  generaba el arbusto proporcionalmente a cualquier tamaño): documentado
+  explícitamente en el código que cualquier tamaño de decoración `bush`
+  futuro que no sea una de estas tres combinaciones exactas necesitará su
+  propia matriz y su propia rama, no un tamaño por defecto. Nuevos tests:
+  `tests/content/PropPixelArt.test.js` (datos puros de los 10 módulos
+  nuevos, dimensiones y cobertura bidireccional de paleta) y dos tests
+  más en `WorldScenePixelArtCache.test.js` (dimensiones del canvas del
+  altar; que la fuente cachea sprites distintos para `palette.water`
+  normal frente a `dawnPalette.water`). Ningún cambio a `worldMaps.js`,
+  composición, personajes, colisión, guardado ni audio en ninguna de las
+  dos rondas.
 
 ## [1.0.0] - 2026-08-11
 
