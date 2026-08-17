@@ -185,7 +185,61 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   esquinas y junto al puesto (para formar composiciones de 2-4
   elementos en vez de plantas sueltas), dos rollos de tela, y cuatro
   grupos de pétalos adicionales en zonas abiertas alejadas del centro
-  jugable exacto.
+  jugable exacto. Cuarta pasada, de fidelidad pixel-art, tras una tercera
+  ronda de rechazo en revisión visual humana ("el problema ya no es
+  densidad, es fidelidad gráfica": los props se seguían leyendo como
+  bloques grandes de `fillRect`): los 13 helpers de dibujo se dividen en
+  una función `drawXSprite()` de pixel-art (más tonos por material,
+  siluetas escalonadas/irregulares en vez de rectángulos puros, vetas de
+  madera, pliegues de tela, pétalos y hojas individuales, sombreado de
+  volumen en postes y columnas) y un wrapper fino `drawX()` que la invoca
+  a través de un cache pequeño y acotado (`propSpriteCache`,
+  `getCachedPropSprite()`, `drawCachedProp()`): cada combinación
+  tipo+tamaño se rasteriza una única vez en un `<canvas>` descartable
+  (nunca el canvas principal del juego) con `imageSmoothingEnabled =
+  false`, y se reutiliza con `drawImage()` en cada frame posterior --
+  cero sistema de tiles genérico, asset manager o motor de sprites,
+  cero PNG/asset externo, todo el pixel-art sigue siendo código puro del
+  proyecto. `getCachedPropSprite()` devuelve `null` cuando `document` no
+  existe (el caso de `node --test`, sin DOM), así que en el entorno de
+  test cada helper cae exactamente en la misma lógica de dibujo directa
+  ya cubierta por la suite existente -- ningún test unitario tuvo que
+  cambiar por este motivo. Verificado por cálculo explícito del área real
+  dibujada por cada `drawXSprite()` contra el tamaño de canvas reservado:
+  cinco props (`wedding-table`, `wedding-arch`, `fountain`, `crate`,
+  `lamp-post`) sobresalían por uno o varios lados de su bounding box
+  nominal (sillas, follaje, remates y sombras de contacto quedaban 1-4px
+  fuera) y se recortaban silenciosamente contra el borde del sprite
+  cacheado sin que ningún test lo detectara (el entorno de test nunca
+  ejercita la rama de cache); corregido anclando cada sprite al bounding
+  box real y desplazando el dibujo en el wrapper correspondiente. Dos
+  bucles de banderines/franjas (`market-stall`, `garland`) podían
+  sobresalir hasta 10px de su ancho nominal en la última iteración
+  cuando el ancho no es múltiplo del paso del bucle; el sprite cacheado
+  gana ese margen extra para no perder esa franja. El agente `qa`
+  encontró de forma independiente un séptimo caso del mismo patrón, más
+  sutil (1px, 16% de opacidad): la sombra de contacto de
+  `drawWeddingTableSprite()` llegaba una fila más abajo que la silla
+  inferior, y el canvas cacheado de la mesa medía 46px de alto cuando
+  necesitaba 47; corregido antes de pasar a `reviewer`. Nuevo archivo de test
+  dedicado, `tests/scenes/WorldScenePixelArtCache.test.js` (en un
+  archivo aparte porque `propSpriteCache` es un `Map` a nivel de módulo
+  compartido entre los `test()` de un mismo archivo bajo `node --test`,
+  y no debe contaminar la suite existente, que depende de que `document`
+  sea `undefined`), que simula un `document` mínimo para cubrir: que los
+  sprites se rasterizan con `imageSmoothingEnabled = false`; que un
+  segundo render no crea ningún canvas de sprite adicional (misma
+  instancia reutilizada vía `drawImage()`); y que props del mismo tipo
+  con distinto tamaño no comparten sprite cacheado. El agente `reviewer`
+  señaló que esta última prueba solo contaba "más de un canvas distinto"
+  en todo el render de axiom-plaza, lo que no aislaba de verdad la
+  variante de tamaño que decía cubrir (los dos tamaños de `bush`, 20x20
+  en las esquinas y 20x24 junto a la fuente); corregida para comprobar
+  explícitamente que existen canvases de sprite de ancho 20 con ambas
+  alturas cacheadas (23 y 27) antes de comitear. Ningún cambio a
+  `worldMaps.js`, a la composición, a personajes o a gameplay: la
+  densidad y posición de las 54 decoraciones existentes se mantiene
+  intacta, solo cambia cómo se rasteriza cada una.
 
 ## [1.0.0] - 2026-08-11
 
