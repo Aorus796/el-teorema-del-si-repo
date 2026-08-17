@@ -7,6 +7,14 @@ import {
   WEDDING_TABLE_PIXELS,
   WEDDING_TABLE_TRANSPARENT,
 } from "../../src/content/weddingTablePixelArt.js";
+import {
+  WEDDING_ARCH_PIXEL_HEIGHT,
+  WEDDING_ARCH_PIXEL_WIDTH,
+} from "../../src/content/weddingArchPixelArt.js";
+import {
+  FOUNTAIN_PIXEL_HEIGHT,
+  FOUNTAIN_PIXEL_WIDTH,
+} from "../../src/content/fountainPixelArt.js";
 
 /*
  * Cubre la capa de cache de sprites pixel-art introducida en
@@ -241,16 +249,19 @@ test("los props del mismo tipo pero distinto tamaño no comparten sprite cachead
    * axiom-plaza tiene decoraciones "bush" en dos tamaños distintos que
    * comparten el mismo ancho (20px): 20x20 en las esquinas
    * (bush-corner-*) y 20x24 junto a la fuente (bush-fountain-*) -- ver
-   * src/content/worldMaps.js. drawDecorativeBush() las cachea con clave
-   * `bush:${width}:${height}` en un canvas de tamaño (width, height + 3),
-   * así que deben producir DOS canvases de ancho 20 con alturas distintas
-   * (23 y 27), no un único canvas reutilizado incorrectamente entre
-   * ambas variantes de tamaño (lo que recortaría o deformaría una de las
-   * dos). Comprobar esto contra el ancho/alto real de cada
-   * FakeSpriteCanvas creado -- en vez de solo contar "más de un canvas
-   * distinto" en todo el render -- es lo que aísla específicamente esta
-   * variante, ya que axiom-plaza tiene de sobra otros tipos de prop que
-   * por sí solos ya producirían más de un canvas.
+   * src/content/worldMaps.js. drawDecorativeBush() elige entre tres
+   * claves de cache fijas ("bush-round-fountain-indexed",
+   * "bush-round-corner-indexed", "cypress-indexed", ver
+   * src/content/bushPixelArt.js) comparando width/height contra las
+   * dimensiones de cada matriz, así que las variantes de 20x20 y 20x24
+   * deben producir DOS canvases de ancho 20 con alturas distintas (23 y
+   * 27, cada matriz con 3px de margen de sombra), no un único canvas
+   * reutilizado incorrectamente entre ambas (lo que recortaría o
+   * deformaría una de las dos). Comprobar esto contra el ancho/alto real
+   * de cada FakeSpriteCanvas creado -- en vez de solo contar "más de un
+   * canvas distinto" en todo el render -- es lo que aísla específicamente
+   * esta variante, ya que axiom-plaza tiene de sobra otros tipos de prop
+   * que por sí solos ya producirían más de un canvas.
    */
   const scene = createAxiomPlazaScene();
   const context = new FakeGameContext();
@@ -337,5 +348,87 @@ test("createIndexedPixelSprite no dibuja los pixeles transparentes de la matriz"
     tableCanvas.context.fillRectCalls,
     opaquePixelCount,
     "el número de fillRect del sprite cacheado debe coincidir exactamente con el número de pixeles no transparentes de la matriz -- ni más (pixeles transparentes rellenados) ni menos (pixeles opacos perdidos)",
+  );
+});
+
+/*
+ * Migración de props (Plaza Visual Polish): altar y fuente están dentro
+ * del viewport de la cámara en el spawn por defecto de axiom-plaza
+ * (240,192), a diferencia de las mesas -- no hace falta reposicionar al
+ * jugador para estos dos.
+ */
+test("el sprite indexado del altar se cachea con las dimensiones declaradas por sus datos", () => {
+  const scene = createAxiomPlazaScene();
+  const context = new FakeGameContext();
+
+  scene.render(context);
+
+  const archCanvas = createdCanvases.find(
+    (canvas) =>
+      canvas.width === WEDDING_ARCH_PIXEL_WIDTH &&
+      canvas.height === WEDDING_ARCH_PIXEL_HEIGHT,
+  );
+
+  assert.ok(
+    archCanvas,
+    `se esperaba un canvas cacheado de ${WEDDING_ARCH_PIXEL_WIDTH}x${WEDDING_ARCH_PIXEL_HEIGHT} para el altar indexado`,
+  );
+});
+
+test("la fuente cachea sprites DISTINTOS para mapas con palette.water distinto (mismo mapa, día vs amanecer)", () => {
+  // axiom-plaza cambia a dawnPalette (con su propio water) cuando
+  // state.flags.giftCodeSolved es true -- ver WorldScene.js, el bloque
+  // que construye `map` a partir de `this.map.dawnPalette`. La clave de
+  // cache de la fuente incluye waterColor precisamente para no compartir
+  // el sprite rasterizado entre ambos casos.
+  const dayScene = createAxiomPlazaScene();
+  const dayContext = new FakeGameContext();
+  dayScene.render(dayContext);
+
+  const dawnScene = createAxiomPlazaScene();
+  dawnScene.state.flags.giftCodeSolved = true;
+  const dawnContext = new FakeGameContext();
+  dawnScene.render(dawnContext);
+
+  const fountainCanvases = createdCanvases.filter(
+    (canvas) =>
+      canvas.width === FOUNTAIN_PIXEL_WIDTH &&
+      canvas.height === FOUNTAIN_PIXEL_HEIGHT,
+  );
+
+  assert.ok(
+    fountainCanvases.length >= 2,
+    "se esperaban al menos dos canvases cacheados de fuente (uno por color de agua distinto)",
+  );
+
+  const dayFountainImages = new Set(
+    dayContext.drawImageCalls
+      .filter(
+        (call) =>
+          call.image.width === FOUNTAIN_PIXEL_WIDTH &&
+          call.image.height === FOUNTAIN_PIXEL_HEIGHT,
+      )
+      .map((call) => call.image),
+  );
+  const dawnFountainImages = new Set(
+    dawnContext.drawImageCalls
+      .filter(
+        (call) =>
+          call.image.width === FOUNTAIN_PIXEL_WIDTH &&
+          call.image.height === FOUNTAIN_PIXEL_HEIGHT,
+      )
+      .map((call) => call.image),
+  );
+
+  assert.equal(dayFountainImages.size, 1);
+  assert.equal(dawnFountainImages.size, 1);
+
+  const [dayImage] = dayFountainImages;
+  const [dawnImage] = dawnFountainImages;
+
+  assert.notEqual(
+    dayImage,
+    dawnImage,
+    "el sprite de fuente del mapa normal y el del mapa con dawnPalette deben ser canvases distintos, no el mismo reutilizado con el color de agua incorrecto",
   );
 });

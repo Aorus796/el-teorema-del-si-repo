@@ -239,7 +239,69 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   alturas cacheadas (23 y 27) antes de comitear. Ningún cambio a
   `worldMaps.js`, a la composición, a personajes o a gameplay: la
   densidad y posición de las 54 decoraciones existentes se mantiene
-  intacta, solo cambia cómo se rasteriza cada una.
+  intacta, solo cambia cómo se rasteriza cada una. Quinta pasada, un
+  spike de estrategia de representación tras un cuarto rechazo en
+  revisión visual humana ("la técnica es correcta pero los props siguen
+  leyéndose geométricos"): en vez de seguir componiendo cada prop con
+  fillRect en tiempo de ejecución, `wedding-table` migra a pixel-art
+  indexado -- una matriz de caracteres de 40x40 (`src/content/
+  weddingTablePixelArt.js`) más una paleta compacta, diseñada a mano y
+  rasterizada pixel a pixel una única vez mediante el nuevo helper
+  genérico `createIndexedPixelSprite()`, reutilizando sin cambios la
+  cache existente (`propSpriteCache`/`drawCachedProp`). `drawWeddingTableSprite()`
+  (la implementación geométrica anterior) se elimina por completo, no
+  solo se desconecta. Durante la implementación y dos rondas de
+  verificación independiente (`qa` y `reviewer`) se encuentran y corrigen
+  7 casos del mismo patrón de recorte silencioso contra el borde del
+  sprite cacheado que motivó las correcciones de la ronda anterior --
+  incluida una asimetría real entre la silla oeste y este de la mesa (un
+  error de mapeo en el reflejo horizontal, corregido con coordenadas
+  explícitas en vez de una fórmula parametrizada) y una asimetría más
+  sutil por el redondeo del círculo del mantel contra una rejilla de 40
+  sin eje de simetría entero, resuelta redibujando las sillas oeste/este
+  encima del mantel ya pintado sin tocar el mantel ni el comportamiento
+  norte/sur ya aceptado. El lazo rosa de un solo lado, heredado de la
+  versión geométrica anterior, se documenta explícitamente en el propio
+  archivo de datos para no confundirlo con un bug de simetría en
+  revisiones futuras. Nuevos tests: `tests/content/
+  WeddingTablePixelArt.test.js` (datos puros, sin DOM) y dos tests
+  añadidos a `WorldScenePixelArtCache.test.js` (dimensiones del canvas
+  cacheado; que los pixeles transparentes de la matriz no generan
+  `fillRect`). Sexta pasada, la migración del resto de props principales
+  de la Plaza a la misma estrategia (pixel-art indexado) tras la
+  aprobación humana explícita de esa técnica validada en `wedding-table`:
+  `wedding-arch` (decoración tipo `altar`), `fountain`, `flower-planter`,
+  `flower-pot`, `bush` (sus tres tamaños reales -- 20x24 junto a la
+  fuente, 20x20 en las cuatro esquinas, y los "cipreses" de 14x34 --
+  migran cada uno a su propia matriz, compartiendo una única paleta en
+  `src/content/bushPixelArt.js`), `bench`, `lamp-post`, `market-stall`,
+  `crate` y `fabric-roll`. Los 9 pares `drawX`/`drawXSprite` geométricos
+  correspondientes se eliminan por completo. `garland` y `petals` se
+  dejan deliberadamente sin migrar: siguen siendo composición geométrica
+  simple (pocos `fillRect`) y ya legible, tal como autorizaba
+  explícitamente esta tarea si migrarlos no aportaba mejora visual real.
+  La fuente necesita una paleta dinámica -- el agua no tiene un color
+  fijo, cada mapa define su propio `palette.water`/`dawnPalette.water` --
+  así que `buildFountainPalette(waterColor)` construye la parte variable
+  y la clave de cache de `drawFountain()` incluye el color de agua exacto
+  para no compartir el sprite rasterizado entre mapas con tonos
+  distintos; memoizada por color para evitar asignar un objeto de paleta
+  y un closure nuevos en cada frame en que la fuente esté visible
+  (hallazgo del agente `reviewer`, corregido antes de comitear).
+  `drawDecorativeBush()` selecciona entre las tres variantes comparando
+  `width`/`height` reales contra las dimensiones de cada matriz -- una
+  decisión de diseño más frágil que la versión geométrica anterior (que
+  generaba el arbusto proporcionalmente a cualquier tamaño): documentado
+  explícitamente en el código que cualquier tamaño de decoración `bush`
+  futuro que no sea una de estas tres combinaciones exactas necesitará su
+  propia matriz y su propia rama, no un tamaño por defecto. Nuevos tests:
+  `tests/content/PropPixelArt.test.js` (datos puros de los 10 módulos
+  nuevos, dimensiones y cobertura bidireccional de paleta) y dos tests
+  más en `WorldScenePixelArtCache.test.js` (dimensiones del canvas del
+  altar; que la fuente cachea sprites distintos para `palette.water`
+  normal frente a `dawnPalette.water`). Ningún cambio a `worldMaps.js`,
+  composición, personajes, colisión, guardado ni audio en ninguna de las
+  dos rondas.
 
 ## [1.0.0] - 2026-08-11
 
