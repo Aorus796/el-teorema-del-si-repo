@@ -1200,6 +1200,11 @@ function renderForegroundDecorations(context, camera, map) {
       continue;
     }
 
+    if (decoration.type === "fabric-roll") {
+      drawFabricRoll(context, x, y);
+      continue;
+    }
+
     if (decoration.type === "dock") {
       context.fillStyle = "#765038";
 
@@ -1229,10 +1234,16 @@ function renderForegroundDecorations(context, camera, map) {
  * cosméticas por construcción.
  */
 function drawWeddingArch(context, x, y, width, height) {
+  // sombra bajo la plataforma, para que se lea con más profundidad.
+  context.fillStyle = "rgb(0 0 0 / 15%)";
+  context.fillRect(x + 5, y + height, width - 10, 4);
+
   // plataforma/escalón visual, más ancho que la alfombra central, para
   // que se lea como el sitio exacto donde se celebrará la ceremonia.
   context.fillStyle = "#d8c8a4";
   context.fillRect(x + 6, y + height - 14, width - 12, 14);
+  context.fillStyle = "#c9b78e";
+  context.fillRect(x + 6, y + height - 14, width - 12, 3);
 
   context.fillStyle = "#7c5134";
   context.fillRect(x + 6, y + 4, 10, height - 8);
@@ -1244,7 +1255,8 @@ function drawWeddingArch(context, x, y, width, height) {
   context.fillStyle = "#efe2bf";
   context.fillRect(x + width / 2 - 14, y + 8, 28, 22);
 
-  // flores superiores, con follaje verde detrás de las flores rosas.
+  // flores densas en la parte superior, con follaje verde detrás de las
+  // flores rosas y un acento blanco.
   context.fillStyle = "#7fa860";
   context.fillRect(x + 12, y, 8, 6);
   context.fillRect(x + width - 20, y, 8, 6);
@@ -1254,6 +1266,19 @@ function drawWeddingArch(context, x, y, width, height) {
   context.fillStyle = "#f5ece0";
   context.fillRect(x + 21, y + 5, 4, 4);
   context.fillRect(x + width - 31, y + 5, 4, 4);
+
+  // flores laterales a media altura de cada poste, además de las
+  // superiores -- el arco debe leerse florido de arriba abajo, no solo en
+  // la cresta.
+  context.fillStyle = "#7fa860";
+  context.fillRect(x + 4, y + height / 2 - 6, 7, 12);
+  context.fillRect(x + width - 11, y + height / 2 - 6, 7, 12);
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x + 5, y + height / 2 - 4, 5, 5);
+  context.fillRect(x + width - 10, y + height / 2 - 4, 5, 5);
+  context.fillStyle = "#f5ece0";
+  context.fillRect(x + 5, y + height / 2 + 3, 5, 4);
+  context.fillRect(x + width - 10, y + height / 2 + 3, 5, 4);
 
   // pequeños bouquets atados a la base de cada poste.
   context.fillStyle = "#7fa860";
@@ -1279,9 +1304,16 @@ function drawWeddingArch(context, x, y, width, height) {
 }
 
 function drawFountain(context, x, y, width, height, waterColor) {
-  // borde exterior de piedra y reborde interior más claro.
-  context.fillStyle = "#c9b78e";
+  // sombra de contacto con el suelo, para más profundidad del borde.
+  context.fillStyle = "rgb(0 0 0 / 12%)";
+  context.fillRect(x + 2, y + height + 1, width - 4, 3);
+
+  // borde exterior de piedra (más oscuro en el filo, para dar contraste
+  // de piedra real) y reborde interior más claro.
+  context.fillStyle = "#b3a07a";
   context.fillRect(x, y + 22, width, height - 22);
+  context.fillStyle = "#c9b78e";
+  context.fillRect(x + 2, y + 24, width - 4, height - 26);
   context.fillStyle = "#d8c8a4";
   context.fillRect(x + 4, y + 27, width - 8, height - 31);
 
@@ -1364,6 +1396,13 @@ function drawWeddingTable(context, x, y) {
   context.fillRect(x + 25, y + 21, 3, 3);
   context.fillStyle = "#d6b65f";
   context.fillRect(x + 22, y + 24, 3, 3);
+
+  // pequeña vela junto al centro floral -- pequeño elemento decorativo
+  // adicional pedido para dar más volumen a la mesa.
+  context.fillStyle = "#f5ece0";
+  context.fillRect(x + 31, y + 20, 3, 6);
+  context.fillStyle = "#f7e6a8";
+  context.fillRect(x + 32, y + 19, 1, 2);
 }
 
 function drawFlowerPlanter(context, x, y, width, height) {
@@ -1496,13 +1535,18 @@ function drawMarketStall(context, x, y, width, height) {
   context.fillRect(x + 4, y + height - 12, width - 8, 4);
 
   // toldo en dos paños de color, para que se lea como tienda/carpa en vez
-  // de una barra dorada plana.
+  // de una barra dorada plana, con un ribete de lazo en el borde inferior
+  // para integrarlo mejor con el resto de la decoración de boda.
   context.fillStyle = "#d6b65f";
   context.fillRect(x - 4, y, width + 8, 4);
   context.fillStyle = "#c9536a";
   context.fillRect(x - 4, y + 4, (width + 8) / 2, 4);
   context.fillStyle = "#e8b7c8";
   context.fillRect(x - 4 + (width + 8) / 2, y + 4, (width + 8) / 2, 4);
+  context.fillStyle = "#f5ece0";
+  for (let flagX = x - 4; flagX < x + width + 4; flagX += 8) {
+    context.fillRect(flagX, y + 8, 4, 2);
+  }
 
   // objetos sobre el mostrador: cesta con flores a un lado, ramo al otro.
   context.fillStyle = "#8a5a3c";
@@ -1515,6 +1559,20 @@ function drawMarketStall(context, x, y, width, height) {
   context.fillRect(x + width - 24, y + height - 25, 4, 4);
   context.fillStyle = "#f5ece0";
   context.fillRect(x + width - 16, y + height - 25, 4, 4);
+}
+
+// Rollo de tela decorativo -- prop de preparativos todavía sin usar, para
+// reforzar que el montaje sigue en marcha.
+function drawFabricRoll(context, x, y) {
+  context.fillStyle = "rgb(0 0 0 / 15%)";
+  context.fillRect(x, y + 11, 16, 2);
+  context.fillStyle = "#e8b7c8";
+  context.fillRect(x, y + 2, 16, 9);
+  context.fillStyle = "#f5ece0";
+  context.fillRect(x, y + 2, 3, 9);
+  context.fillRect(x + 13, y + 2, 3, 9);
+  context.fillStyle = "#c9536a";
+  context.fillRect(x + 6, y, 4, 4);
 }
 
 function renderObjects(context, camera, objects, state) {

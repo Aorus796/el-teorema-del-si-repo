@@ -487,6 +487,127 @@ const AXIOM_PLAZA = createMap({
       width: 74,
       height: 4,
     },
+    /*
+     * Tercera y última pasada de densidad visual (Plaza Visual Polish,
+     * ronda 3): composiciones de 2-4 elementos junto a estructuras ya
+     * existentes (nunca plantas aisladas sueltas), cipreses de borde, y
+     * más pétalos flotantes de suelo lejos del centro jugable. Sigue sin
+     * tocar ningún object ni solidRegion; posiciones verificadas contra
+     * todos los objects y contra el resto de decorations (test dedicado
+     * en tests/content/WorldMaps.test.js).
+     */
+    {
+      id: "cypress-north-left",
+      type: "bush",
+      x: 150,
+      y: 20,
+      width: 14,
+      height: 34,
+    },
+    {
+      id: "cypress-north-right",
+      type: "bush",
+      x: 660,
+      y: 20,
+      width: 14,
+      height: 34,
+    },
+    {
+      id: "pot-corner-northwest",
+      type: "flower-pot",
+      x: 35,
+      y: 85,
+      width: 12,
+      height: 16,
+    },
+    {
+      id: "pot-corner-northeast",
+      type: "flower-pot",
+      x: 735,
+      y: 85,
+      width: 12,
+      height: 16,
+    },
+    {
+      id: "pot-corner-southwest",
+      type: "flower-pot",
+      x: 35,
+      y: 445,
+      width: 12,
+      height: 16,
+    },
+    {
+      id: "pot-corner-southeast",
+      type: "flower-pot",
+      x: 745,
+      y: 445,
+      width: 12,
+      height: 16,
+    },
+    {
+      id: "pot-stall-left",
+      type: "flower-pot",
+      x: 486,
+      y: 33,
+      width: 12,
+      height: 16,
+    },
+    {
+      id: "pot-stall-right",
+      type: "flower-pot",
+      x: 601,
+      y: 33,
+      width: 12,
+      height: 16,
+    },
+    {
+      id: "fabric-roll-arch",
+      type: "fabric-roll",
+      x: 450,
+      y: 40,
+      width: 16,
+      height: 13,
+    },
+    {
+      id: "fabric-roll-stall",
+      type: "fabric-roll",
+      x: 640,
+      y: 40,
+      width: 16,
+      height: 13,
+    },
+    {
+      id: "petals-open-northwest",
+      type: "petals",
+      x: 270,
+      y: 220,
+      width: 10,
+      height: 9,
+    },
+    {
+      id: "petals-open-northeast",
+      type: "petals",
+      x: 450,
+      y: 180,
+      width: 10,
+      height: 9,
+    },
+    {
+      id: "petals-open-southwest",
+      type: "petals",
+      x: 300,
+      y: 300,
+      width: 10,
+      height: 9,
+    },
+    {
+      id: "petals-open-southeast",
+      type: "petals",
+      x: 480,
+      y: 300,
+      width: 10,
+      height: 9,
+    },
   ],
 });
 

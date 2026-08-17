@@ -171,7 +171,21 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   patrón normal cuando aplica). Un test nuevo compara todas las
   decoraciones de la Plaza entre sí (no solo contra objetos), cerrando
   el hueco que permitió que una guirnalda nueva solapara brevemente una
-  jardinera ya existente durante esta misma ronda.
+  jardinera ya existente durante esta misma ronda. Tercera y última
+  pasada de polish tras una segunda ronda de rechazo en revisión visual
+  humana ("al 70-75% del objetivo"): el arco gana sombra de plataforma,
+  borde de piedra más marcado y flores laterales a media altura de cada
+  poste (además de las ya existentes arriba); la fuente gana un anillo
+  de piedra intermedio y sombra de contacto con el suelo; las mesas
+  ganan una pequeña vela junto al centro floral; el puesto gana un
+  ribete de lazo en el toldo. Nuevo helper `drawFabricRoll()` (rollo de
+  tela) y 14 decoraciones nuevas -- dos "cipreses" de borde
+  (reutilizando el tipo `bush` con proporciones altas y estrechas, sin
+  tipo nuevo), macetas emparejadas junto a los arbustos de las cuatro
+  esquinas y junto al puesto (para formar composiciones de 2-4
+  elementos en vez de plantas sueltas), dos rollos de tela, y cuatro
+  grupos de pétalos adicionales en zonas abiertas alejadas del centro
+  jugable exacto.
 
 ## [1.0.0] - 2026-08-11
 
