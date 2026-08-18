@@ -302,6 +302,56 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   normal frente a `dawnPalette.water`). Ningún cambio a `worldMaps.js`,
   composición, personajes, colisión, guardado ni audio en ninguna de las
   dos rondas.
+- Seven Bridges Visual Polish -- aplica al Paseo de los Siete Puentes
+  (`seven-bridges-walk`) el mismo lenguaje de pixel-art indexado aprobado
+  en Plaza Visual Polish (sprites indexados como matriz de caracteres,
+  rasterización única, `propSpriteCache`), sin copiar la decoración de
+  boda de la Plaza y sin tocar puzzles, colisión, personajes, NPCs, audio
+  ni ningún otro mapa. Tres datasets nuevos: `pierPixelArt.js` (pilar de
+  piedra, dos variantes de tamaño que restylan visualmente -- sin alterar
+  su footprint ni su colisión -- los 5 `solidRegions` ya existentes del
+  mapa), `bridgePixelArt.js` (tablero de puente de madera con barandilla,
+  un único dataset reutilizado en los dos cruces reales del paseo) y
+  `pathSignPixelArt.js` (cartel de señalética junto al tablero del puzle
+  P2 y junto al embarcadero, sin tocar su interacción/id). La decoración
+  de fondo `river` gana variación tonal de agua, reflejos y un borde de
+  piedra con sombra de contacto (`renderBackgroundDecorations`, exclusivo
+  de este mapa). Se añaden 17 decoraciones nuevas a `worldMaps.js` (5
+  `pier`, 2 `bridge`, 2 `path-sign`, y banco/farol/arbustos reutilizados
+  de Plaza en ambas orillas), sin ningún cambio a `solidRegions`, `objects`
+  ni composición de ningún otro mapa. Nuevos tests: `tests/content/
+  SevenBridgesPropPixelArt.test.js` (datos puros de los 3 datasets),
+  `tests/scenes/SevenBridgesPixelArtCache.test.js` (cache de sprites) y
+  una sección nueva en `tests/content/WorldMaps.test.js` que protege
+  `solidTiles`/`objects` intactos, ausencia de solapes entre la
+  decoración nueva y los interactuables/entre sí, y que ambos puntos de
+  entrada reales del mapa siguen transitables. Tras dos hallazgos reales
+  de una primera revisión independiente (`reviewer`) -- los `bridge` no
+  cubrían el canal de agua real entre columnas de pilares (quedaban
+  desplazados, uno con un borde sobre tierra firme) y una banda de agua
+  oscura desbordaba 4px, de forma opaca, sobre césped transitable al sur
+  del río -- se recolocan `bridge-west`/`bridge-east` exactamente borde
+  con borde entre sus dos columnas de pilares y se acota la altura de la
+  última banda/línea de agua a los límites reales de la decoración
+  (`renderBackgroundDecorations`). Dos tests de regresión nuevos cubren
+  ambos hallazgos sin comparar contra una imagen de referencia: uno en
+  `WorldMaps.test.js` que verifica que cada `bridge` encaja exactamente
+  entre sus dos pilares (no solo "no se solapan"), y otro en
+  `tests/scenes/WorldScene.test.js` que verifica que ninguna banda/línea
+  de agua se dibuja fuera de los límites verticales reales de `river`.
+  Una segunda ronda de revisión independiente encuentra un tercer defecto
+  real: `pier` es una decoración totalmente opaca, y `embarcadero` (que ya
+  se apoyaba intencionadamente sobre el solidRegion de `pier-right-bottom`
+  antes de esta tarea) quedaba dibujada ANTES que los `pier` en el array
+  de `decorations` -- como `renderForegroundDecorations()` pinta cada
+  decoración en el orden del array, el pilar tapaba el 67% del muelle de
+  madera. Se reordena `embarcadero` para que se dibuje después de los 5
+  `pier` (el muelle queda apoyado visualmente sobre el pilar, no al
+  revés), y se añade un tercer test de regresión en `WorldMaps.test.js`
+  que protege el ORDEN de capas entre `pier` y cualquier decoración con la
+  que solape a propósito, no solo la ausencia de solape. Requiere
+  aprobación visual humana del acabado final
+  (`HUMAN MAP STYLE APPROVAL REQUIRED`), igual que Plaza Visual Polish.
 
 ## [1.0.0] - 2026-08-11
 

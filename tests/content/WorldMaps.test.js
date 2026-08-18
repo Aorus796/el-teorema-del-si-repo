@@ -349,6 +349,305 @@ test("bride-epilogue sigue siendo alcanzable a pie desde el punto de entrada rea
   });
 });
 
+/*
+ * Cobertura de "Seven Bridges Visual Polish" (v1.1, solo
+ * seven-bridges-walk): igual que en Plaza Visual Polish, toda la
+ * decoración nueva ("pier", "bridge", "path-sign" y los tipos reutilizados
+ * "lamp-post"/"bench"/"bush") es puramente visual -- decorations nunca
+ * alimenta solidTiles -- así que estos tests protegen justo lo que un
+ * cambio meramente visual podría romper por accidente: geometría de
+ * colisión, objetos existentes, solapes nuevos y accesibilidad real desde
+ * los dos puntos de entrada reales del mapa (desde Plaza y desde
+ * Biblioteca, ver GameState.js y el exit de library hacia este mapa).
+ */
+test("seven-bridges-walk conserva exactamente los mismos solidTiles y objetos que antes de la decoración", () => {
+  const map = getWorldMap("seven-bridges-walk");
+
+  assert.equal(map.solidTiles.length, 360);
+  assert.deepEqual(
+    map.objects.map((object) => ({ id: object.id, type: object.type })),
+    [
+      { id: "seven-bridges-to-plaza", type: "exit" },
+      { id: "p2-bridge-board", type: "puzzle" },
+      { id: "p2-evidence", type: "evidence" },
+      { id: "seven-bridges-to-library", type: "exit" },
+      { id: "blocked-mill-path", type: "blocked-exit" },
+    ],
+  );
+});
+
+test("cada decoración 'pier' de seven-bridges-walk cubre únicamente tiles ya sólidos (restyle visual, no inventa colisión ni la deja hueca)", () => {
+  const map = getWorldMap("seven-bridges-walk");
+  const solidTileSet = new Set(map.solidTiles);
+  const piers = map.decorations.filter(
+    (decoration) => decoration.type === "pier",
+  );
+
+  assert.equal(piers.length, 5, "seven-bridges-walk debe tener 5 pilares (uno por solidRegion real)");
+
+  for (const pier of piers) {
+    const tileX0 = pier.x / map.tileSize;
+    const tileY0 = pier.y / map.tileSize;
+    const tileX1 = (pier.x + pier.width) / map.tileSize - 1;
+    const tileY1 = (pier.y + pier.height) / map.tileSize - 1;
+
+    for (let tileY = tileY0; tileY <= tileY1; tileY += 1) {
+      for (let tileX = tileX0; tileX <= tileX1; tileX += 1) {
+        const index = tileY * map.width + tileX;
+
+        assert.ok(
+          solidTileSet.has(index),
+          `${pier.id}: el tile (${tileX},${tileY}) no es sólido -- el pilar dibujado no coincide con ningún solidRegion real`,
+        );
+      }
+    }
+  }
+});
+
+/*
+ * Regresión de un hallazgo real de `reviewer` (segunda ronda): `pier` es
+ * una decoración totalmente opaca (ningún símbolo transparente en sus
+ * matrices, ver pierPixelArt.js) y `renderForegroundDecorations()` pinta
+ * `map.decorations` secuencialmente EN EL ORDEN DEL ARRAY sobre el mismo
+ * canvas -- así que si un `pier` aparece DESPUÉS de una decoración con la
+ * que solapa a propósito (como "embarcadero", que ya se apoyaba sobre
+ * pier-right-bottom antes de que "pier" existiera como decoración), el
+ * pilar la tapa por completo en la zona de solape. Esto pasó de verdad:
+ * "embarcadero" tapaba el 67% de su propia área bajo pier-right-bottom
+ * hasta que se reordenó el array. No basta con permitir el solape (es
+ * intencionado: el muelle SÍ debe tocar el pilar) -- hay que proteger el
+ * ORDEN de capas, que ningún test de solape (AABB) puede detectar por sí
+ * solo.
+ */
+test("ninguna decoración 'pier' se dibuja después de (y por tanto encima de) otra decoración con la que solapa a propósito", () => {
+  const map = getWorldMap("seven-bridges-walk");
+  const indexById = new Map(
+    map.decorations.map((decoration, index) => [decoration.id, index]),
+  );
+  const piers = map.decorations.filter(
+    (decoration) => decoration.type === "pier",
+  );
+  const intentionallyOverlapping = map.decorations.filter(
+    (decoration) => decoration.type === "dock",
+  );
+
+  for (const pier of piers) {
+    for (const other of intentionallyOverlapping) {
+      if (!rectanglesOverlap(pier, other)) {
+        continue;
+      }
+
+      assert.ok(
+        indexById.get(pier.id) < indexById.get(other.id),
+        `${pier.id} solapa a ${other.id} pero se dibuja DESPUÉS en el array de decorations -- su sprite opaco taparía a ${other.id}`,
+      );
+    }
+  }
+});
+
+/*
+ * Regresión de un hallazgo real de `reviewer`: los dos "bridge" no cubrían
+ * el canal de agua real entre columnas de pilares (bridge-west empezaba
+ * 16px dentro de la orilla oeste, bridge-east dejaba el 83% del canal real
+ * sin decorar) -- un defecto puramente aritmético que ningún test de
+ * solape (AABB) detectaba, porque las muescas verticales entre pilares no
+ * son sólidas y por tanto no hay overlap con nada. Este test no comprueba
+ * "no solapa" (insuficiente, ver arriba): comprueba que cada "bridge"
+ * encaja borde con borde, exactamente, entre las dos columnas de pilares
+ * que dice conectar -- ni corto (dejando agua sin cubrir) ni desplazado
+ * (invadiendo tierra o el pilar).
+ */
+test("cada 'bridge' de seven-bridges-walk cubre EXACTAMENTE el canal de agua real entre sus dos columnas de pilares, borde con borde", () => {
+  const map = getWorldMap("seven-bridges-walk");
+  const pierById = Object.fromEntries(
+    map.decorations
+      .filter((decoration) => decoration.type === "pier")
+      .map((pier) => [pier.id, pier]),
+  );
+  const bridgeById = Object.fromEntries(
+    map.decorations
+      .filter((decoration) => decoration.type === "bridge")
+      .map((bridge) => [bridge.id, bridge]),
+  );
+
+  assert.equal(Object.keys(bridgeById).length, 2);
+
+  const pierLeft = pierById["pier-left-top"];
+  const pierCenter = pierById["pier-center"];
+  const pierRight = pierById["pier-right-top"];
+  const bridgeWest = bridgeById["bridge-west"];
+  const bridgeEast = bridgeById["bridge-east"];
+
+  assert.ok(pierLeft && pierCenter && pierRight && bridgeWest && bridgeEast);
+
+  assert.equal(
+    bridgeWest.x,
+    pierLeft.x + pierLeft.width,
+    "bridge-west debe empezar exactamente donde termina la columna de pilares izquierda",
+  );
+  assert.equal(
+    bridgeWest.x + bridgeWest.width,
+    pierCenter.x,
+    "bridge-west debe terminar exactamente donde empieza el pilar central",
+  );
+
+  assert.equal(
+    bridgeEast.x,
+    pierCenter.x + pierCenter.width,
+    "bridge-east debe empezar exactamente donde termina el pilar central",
+  );
+  assert.equal(
+    bridgeEast.x + bridgeEast.width,
+    pierRight.x,
+    "bridge-east debe terminar exactamente donde empieza la columna de pilares derecha",
+  );
+});
+
+/*
+ * "river" y "dock" son las dos decoraciones originales del mapa (previas a
+ * esta tarea), con solapes intencionados que ya existían antes de Seven
+ * Bridges Visual Polish y no son un solape real de primer plano:
+ *  - "river" es la capa de fondo (renderBackgroundDecorations, se pinta
+ *    antes que solidTiles/objetos/decoración de primer plano, ver
+ *    WorldScene.js) y cubre a propósito casi todo el interior navegable,
+ *    así que todo lo demás "flota" sobre ella por diseño (p2-bridge-board
+ *    y embarcadero ya la solapaban en el mapa original).
+ *  - "dock" (embarcadero) es un muelle de madera que ya se apoyaba, en el
+ *    mapa original, sobre el pilar derecho-inferior (ahora decoración
+ *    "pier-right-bottom", mismo solidRegion real de siempre) y bajo el
+ *    cual está la nota "p2-evidence" ("junto al embarcadero"), a propósito.
+ * Ninguno de los dos solapes lo introduce esta tarea.
+ */
+const EXCLUDED_FROM_OVERLAP_CHECKS = new Set(["river", "dock"]);
+
+/*
+ * "pier" se excluye ADEMÁS solo de la comprobación contra objetos (no de la
+ * comprobación entre decoraciones, más abajo, que sí lo sigue cubriendo):
+ * cada "pier" ocupa el footprint EXACTO en px de un solidRegion que ya
+ * existía antes de esta tarea (ver worldMaps.js), y algunos objetos
+ * originales (p2-bridge-board, p2-evidence) ya tenían un borde a pocos
+ * pixeles -- incluso ligeramente dentro -- de esos solidRegions en el mapa
+ * real de partida. Restylar visualmente un bloque sólido que ya estaba ahí
+ * no mueve ni el objeto ni el solidRegion, así que no es un solape nuevo de
+ * primer plano; solo se hace visible ahora porque "pier" no existía como
+ * decoración antes de esta tarea. Sí importa seguir comprobando pier contra
+ * el resto de decoraciones nuevas (puentes, cartel, mobiliario): esos
+ * solapes SÍ serían un error de colocación de esta tarea.
+ */
+const EXCLUDED_FROM_OBJECT_OVERLAP_CHECK = new Set([
+  ...EXCLUDED_FROM_OVERLAP_CHECKS,
+  "pier",
+]);
+
+test("ninguna decoración de primer plano de seven-bridges-walk solapa ningún objeto interactuable", () => {
+  const map = getWorldMap("seven-bridges-walk");
+  const foregroundDecorations = map.decorations.filter(
+    (decoration) => !EXCLUDED_FROM_OBJECT_OVERLAP_CHECK.has(decoration.type),
+  );
+
+  assert.equal(
+    map.decorations.length,
+    19,
+    "2 decoraciones originales (river, embarcadero) + 17 nuevas (5 pier + 2 bridge + 2 path-sign + 2 lamp-post + 2 bench + 4 bush)",
+  );
+
+  for (const decoration of foregroundDecorations) {
+    for (const object of map.objects) {
+      assert.equal(
+        rectanglesOverlap(decoration, object),
+        false,
+        `la decoración ${decoration.id} solapa el objeto ${object.id}`,
+      );
+    }
+  }
+});
+
+test("ninguna decoración de primer plano de seven-bridges-walk solapa otra decoración de primer plano", () => {
+  const map = getWorldMap("seven-bridges-walk");
+  const foregroundDecorations = map.decorations.filter(
+    (decoration) => !EXCLUDED_FROM_OVERLAP_CHECKS.has(decoration.type),
+  );
+
+  for (let i = 0; i < foregroundDecorations.length; i += 1) {
+    for (let j = i + 1; j < foregroundDecorations.length; j += 1) {
+      const first = foregroundDecorations[i];
+      const second = foregroundDecorations[j];
+
+      assert.equal(
+        rectanglesOverlap(first, second),
+        false,
+        `la decoración ${first.id} solapa la decoración ${second.id}`,
+      );
+    }
+  }
+});
+
+test("la aparición por defecto de seven-bridges-walk (llegando desde Plaza) es transitable y no solapa objetos ni decoración nueva", () => {
+  assertSpawnIsClear("seven-bridges-walk");
+
+  const map = getWorldMap("seven-bridges-walk");
+  const playerState = new GameState().getPlayerState("seven-bridges-walk");
+  const spawnBounds = {
+    x: playerState.x - 5,
+    y: playerState.y - 7,
+    width: 10,
+    height: 14,
+  };
+
+  for (const decoration of map.decorations) {
+    assert.equal(
+      rectanglesOverlap(spawnBounds, decoration),
+      false,
+      `la decoración ${decoration.id} solapa la aparición por defecto`,
+    );
+  }
+});
+
+test("el punto de entrada real llegando desde Biblioteca (624,304) es transitable y no solapa objetos ni decoración nueva", () => {
+  // Ver el exit de library hacia seven-bridges-walk en worldMaps.js
+  // (targetPlayerState: {x:624,y:304}) -- punto de entrada real distinto
+  // del spawn por defecto (48,192, llegando desde Plaza).
+  const map = getWorldMap("seven-bridges-walk");
+  const collisionMap = new CollisionMap({
+    width: map.width,
+    height: map.height,
+    tileSize: map.tileSize,
+    solidTiles: map.solidTiles,
+  });
+  const entryBounds = { x: 624 - 5, y: 304 - 7, width: 10, height: 14 };
+
+  assert.equal(collisionMap.collides(entryBounds), false);
+
+  for (const object of map.objects) {
+    assert.equal(rectanglesOverlap(entryBounds, object), false);
+  }
+
+  for (const decoration of map.decorations) {
+    assert.equal(
+      rectanglesOverlap(entryBounds, decoration),
+      false,
+      `la decoración ${decoration.id} solapa la entrada real desde Biblioteca`,
+    );
+  }
+});
+
+test("el tablero del puzle P2 sigue siendo alcanzable a pie desde el spawn por defecto de seven-bridges-walk", () => {
+  assertObjectIsReachable("seven-bridges-walk", "p2-bridge-board");
+});
+
+/*
+ * p2-evidence NO se cubre con assertObjectIsReachable(): su interactionRadius
+ * (30) ya rozaba, antes de esta tarea, el borde del solidRegion del pilar
+ * derecho-inferior (ver worldMaps.js) -- el punto libre más cercano que el
+ * BFS de paso fijo (8px) encuentra desde cualquier entrada real queda a
+ * ~30.07px del centro del objeto, un margen de menos de un pixel por debajo
+ * del radio real. Es una limitación de la discretización en rejilla del
+ * propio test (el movimiento real del jugador no está anclado a esa
+ * rejilla), no una regresión de esta tarea: ni la posición de p2-evidence
+ * ni el solidRegion del pilar se han tocado. Se cubre igual por la
+ * comprobación general de "punto de entrada transitable" de arriba.
+ */
+
 function assertSpawnIsClear(mapId) {
   const map = getWorldMap(mapId);
   const playerState = new GameState().getPlayerState(mapId);

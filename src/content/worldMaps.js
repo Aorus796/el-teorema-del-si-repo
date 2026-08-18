@@ -703,6 +703,65 @@ const SEVEN_BRIDGES_WALK = createMap({
       width: 448,
       height: 384,
     },
+    /*
+     * "pier" restyle visual de los 5 solidRegions ya existentes (mismas
+     * coordenadas y tamaño en px exactos que su solidRegion, ver arriba):
+     * decoración pura, no altera solidTiles/colisión, solo sustituye el
+     * relleno gris genérico de renderSolidTiles() por piedra indexada.
+     */
+    {
+      id: "pier-left-top",
+      type: "pier",
+      x: 144,
+      y: 48,
+      width: 80,
+      height: 128,
+    },
+    {
+      id: "pier-left-bottom",
+      type: "pier",
+      x: 144,
+      y: 272,
+      width: 80,
+      height: 128,
+    },
+    {
+      id: "pier-center",
+      type: "pier",
+      x: 320,
+      y: 128,
+      width: 80,
+      height: 192,
+    },
+    {
+      id: "pier-right-top",
+      type: "pier",
+      x: 496,
+      y: 48,
+      width: 80,
+      height: 128,
+    },
+    {
+      id: "pier-right-bottom",
+      type: "pier",
+      x: 496,
+      y: 272,
+      width: 80,
+      height: 128,
+    },
+    /*
+     * "embarcadero" (dock) se dibuja DESPUÉS de los 5 "pier" a propósito
+     * (renderForegroundDecorations pinta cada decoración en el orden de
+     * este array, y el sprite de "pier" es totalmente opaco): el muelle
+     * de madera se apoya sobre "pier-right-bottom" (mismo solape que ya
+     * tenían embarcadero y el solidRegion original, ver más arriba -- el
+     * pilar y el muelle SÍ deben tocarse), así que el muelle tiene que
+     * quedar pintado por encima para no desaparecer bajo la piedra. Antes
+     * de que "pier" existiera como decoración esto no importaba (la capa
+     * de solidTiles siempre se pinta antes que cualquier decoración de
+     * primer plano); ahora sí. Ver el test de orden de capas en
+     * WorldMaps.test.js.
+     */
     {
       id: "embarcadero",
       type: "dock",
@@ -710,6 +769,117 @@ const SEVEN_BRIDGES_WALK = createMap({
       y: 288,
       width: 96,
       height: 48,
+    },
+    // "bridge": tablero de madera nuevo sobre tramos de río ya transitables
+    // (las decoraciones nunca alimentan solidTiles), en los huecos reales
+    // entre columnas de pilares -- da lectura de cruce donde antes solo
+    // había agua. bridge-west cubre exactamente el canal entre
+    // pier-left-* (termina en x=224) y pier-center (empieza en x=320);
+    // bridge-east cubre exactamente el canal entre pier-center (termina
+    // en x=400) y pier-right-* (empieza en x=496) -- ambos canales miden
+    // 96px, igual que BRIDGE_PIXEL_WIDTH, así que el tablero encaja borde
+    // con borde sin solapar ningún pilar ni dejar agua sin cubrir.
+    {
+      id: "bridge-west",
+      type: "bridge",
+      x: 224,
+      y: 200,
+      width: 96,
+      height: 48,
+    },
+    {
+      id: "bridge-east",
+      type: "bridge",
+      x: 400,
+      y: 200,
+      width: 96,
+      height: 48,
+    },
+    // "path-sign": señalética ambiental junto al tablero del puzle P2 y
+    // junto al embarcadero/nota -- no solapa ningún interactuable ni
+    // cambia su id/posición/radio de interacción.
+    {
+      id: "sign-p2-board",
+      type: "path-sign",
+      x: 366,
+      y: 90,
+      width: 16,
+      height: 30,
+    },
+    {
+      id: "sign-embarcadero",
+      type: "path-sign",
+      x: 612,
+      y: 250,
+      width: 16,
+      height: 30,
+    },
+    // Mobiliario y vegetación reutilizados de axiom-plaza (tipos ya
+    // soportados por WorldScene.js): puntos de descanso en las orillas
+    // este/oeste, fuera de cualquier exit/objeto y de los dos spawn reales.
+    {
+      id: "lamp-post-west",
+      type: "lamp-post",
+      x: 50,
+      y: 60,
+      width: 13,
+      height: 42,
+    },
+    {
+      id: "lamp-post-east",
+      type: "lamp-post",
+      x: 600,
+      y: 60,
+      width: 13,
+      height: 42,
+    },
+    {
+      id: "bench-west",
+      type: "bench",
+      x: 40,
+      y: 300,
+      width: 40,
+      height: 20,
+    },
+    {
+      id: "bench-east",
+      type: "bench",
+      x: 636,
+      y: 340,
+      width: 40,
+      height: 20,
+    },
+    {
+      id: "bush-west-north",
+      type: "bush",
+      x: 16,
+      y: 40,
+      width: 20,
+      height: 20,
+    },
+    {
+      id: "bush-west-south",
+      type: "bush",
+      x: 16,
+      y: 380,
+      width: 20,
+      height: 20,
+    },
+    {
+      id: "bush-east-north",
+      type: "bush",
+      x: 660,
+      y: 40,
+      width: 20,
+      height: 20,
+    },
+    {
+      id: "bush-east-south",
+      type: "bush",
+      x: 660,
+      y: 380,
+      width: 20,
+      height: 20,
     },
   ],
 });
