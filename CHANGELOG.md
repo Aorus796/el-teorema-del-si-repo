@@ -302,6 +302,49 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   normal frente a `dawnPalette.water`). Ningún cambio a `worldMaps.js`,
   composición, personajes, colisión, guardado ni audio en ninguna de las
   dos rondas.
+- Gonzalo Character Pixel-Art Spike -- prueba si el style lock de pixel-art
+  indexado ya aprobado para props (Plaza Visual Polish) generaliza también
+  a personajes. Migra el render de Gonzalo (`src/world/Player.js`) del
+  renderer procedural anterior (rectángulos geométricos grandes, sin
+  variación por dirección salvo un pequeño marcador de orientación
+  separado) a tres sprites indexados nuevos -- `GONZALO_FRONT_PIXELS`,
+  `GONZALO_BACK_PIXELS` y `GONZALO_SIDE_PIXELS` (`src/content/
+  gonzaloPixelArt.js`, 14x22, mismo bounding box visual que el render
+  anterior) -- rasterizados y cacheados por `src/render/
+  GonzaloRenderer.js`, un módulo de render independiente (mismo patrón
+  que `src/render/MaxRenderer.js`) con su propia cache mínima local (no
+  reutiliza `propSpriteCache` de `WorldScene.js` a propósito, para no
+  crear una dependencia circular entre `src/world/` y `src/scenes/`).
+  Ojos simples añadidos con autorización humana explícita: 1 pixel lógico
+  por ojo, color oscuro, sin blanco ni pupila, sin sistema facial ni
+  animación -- 2 ojos de frente, 1 en lateral, ninguno de espalda. Las
+  tres variantes comparten exactamente el mismo cuerpo (silueta, pelo en
+  dos tonos, ropa con sombra/highlight, calzado diferenciado del
+  pantalón) y solo difieren en esa fila de ojos -- no se inventan cuatro
+  poses distintas donde el contrato de facing anterior no las necesitaba.
+  El lateral ("side") se reutiliza también para el facing "left",
+  reflejado horizontalmente con una transformación de canvas en tiempo de
+  dibujo (`context.scale(-1,1)`), no con un cuarto dataset. Preserva
+  exactamente los cuatro colores ya existentes de `PROTAGONIST_PALETTE`
+  (silueta, pelo, cuerpo, acento) y añade cinco tonos derivados para el
+  sombreado. Cambio puramente visual: hitbox (10x14), velocidad,
+  colisión, input, lógica de facing, cámara, GameState, save, audio y el
+  resto de personajes (Elena, Corolaria, Padre de la novia, Silogio, Max)
+  quedan completamente intactos. Nuevos tests: `tests/content/
+  GonzaloPixelArt.test.js` (datos puros: dimensiones, paleta, ausencia de
+  boca, que las tres variantes solo difieren en la fila de ojos con el
+  recuento exacto de ojos esperado por variante) y `tests/render/
+  GonzaloRenderer.test.js` (cache: un canvas por variante, reutilización
+  sin reconstrucción entre frames, mismo canvas cacheado compartido entre
+  "left" y "right"). `tests/world/Player.test.js` se reescribe para
+  comparar contra los datos reales del sprite en vez de coordenadas de
+  rectángulos grandes hardcodeadas de la versión geométrica anterior.
+  Requiere aprobación visual humana del acabado final
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`), igual que las rondas de
+  Plaza Visual Polish: la diferencia visual es sutil al zoom de juego por
+  defecto (el sprite mide 14x22 dentro de un canvas mostrado a 960x540),
+  así que se recomienda inspeccionar las capturas comparativas ampliadas
+  para valorar el acabado final.
 
 ## [1.0.0] - 2026-08-11
 
