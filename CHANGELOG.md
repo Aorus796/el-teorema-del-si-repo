@@ -302,6 +302,89 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   normal frente a `dawnPalette.water`). Ningún cambio a `worldMaps.js`,
   composición, personajes, colisión, guardado ni audio en ninguna de las
   dos rondas.
+- Gonzalo Character Pixel-Art Spike -- prueba si el style lock de pixel-art
+  indexado ya aprobado para props (Plaza Visual Polish) generaliza también
+  a personajes. Migra el render de Gonzalo (`src/world/Player.js`) del
+  renderer procedural anterior (rectángulos geométricos grandes, sin
+  variación por dirección salvo un pequeño marcador de orientación
+  separado) a tres sprites indexados nuevos -- `GONZALO_FRONT_PIXELS`,
+  `GONZALO_BACK_PIXELS` y `GONZALO_SIDE_PIXELS` (`src/content/
+  gonzaloPixelArt.js`, 14x22, mismo bounding box visual que el render
+  anterior) -- rasterizados y cacheados por `src/render/
+  GonzaloRenderer.js`, un módulo de render independiente (mismo patrón
+  que `src/render/MaxRenderer.js`) con su propia cache mínima local (no
+  reutiliza `propSpriteCache` de `WorldScene.js` a propósito, para no
+  crear una dependencia circular entre `src/world/` y `src/scenes/`).
+  Ojos simples añadidos con autorización humana explícita: 1 pixel lógico
+  por ojo, color oscuro, sin blanco ni pupila, sin sistema facial ni
+  animación -- 2 ojos de frente, 1 en lateral, ninguno de espalda. Las
+  tres variantes comparten el mismo cuerpo base (silueta, pelo en dos
+  tonos, ropa con sombra/highlight, calzado diferenciado del pantalón) --
+  no se inventan cuatro poses distintas donde el contrato de facing
+  anterior no las necesitaba. (En el pixel-art original las tres solo
+  diferían en la fila de ojos; dos microiteraciones posteriores, más
+  abajo en esta misma entrada, hacen que `back` también diverja en la
+  coronilla -- compartida -- y en la nuca -- exclusiva de `back` --, ver
+  `gonzaloPixelArt.js` para el contrato exacto vigente.)
+  El lateral ("side") se reutiliza también para el facing "left",
+  reflejado horizontalmente con una transformación de canvas en tiempo de
+  dibujo (`context.scale(-1,1)`), no con un cuarto dataset. Preserva
+  exactamente los cuatro colores ya existentes de `PROTAGONIST_PALETTE`
+  (silueta, pelo, cuerpo, acento) y añade cinco tonos derivados para el
+  sombreado. Cambio puramente visual: hitbox (10x14), velocidad,
+  colisión, input, lógica de facing, cámara, GameState, save, audio y el
+  resto de personajes (Elena, Corolaria, Padre de la novia, Silogio, Max)
+  quedan completamente intactos. Nuevos tests: `tests/content/
+  GonzaloPixelArt.test.js` (datos puros: dimensiones, paleta, ausencia de
+  boca, que front/side solo difieren en la fila de ojos con el recuento
+  exacto de ojos esperado por variante) y `tests/render/
+  GonzaloRenderer.test.js` (cache: un canvas por variante, reutilización
+  sin reconstrucción entre frames, mismo canvas cacheado compartido entre
+  "left" y "right"). `tests/world/Player.test.js` se reescribe para
+  comparar contra los datos reales del sprite en vez de coordenadas de
+  rectángulos grandes hardcodeadas de la versión geométrica anterior.
+  Requiere aprobación visual humana del acabado final
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`), igual que las rondas de
+  Plaza Visual Polish: la diferencia visual es sutil al zoom de juego por
+  defecto (el sprite mide 14x22 dentro de un canvas mostrado a 960x540),
+  así que se recomienda inspeccionar las capturas comparativas ampliadas
+  para valorar el acabado final. Microiteración tras revisión visual
+  humana (PR #59 "NOT APPROVED YET": Gonzalo se percibía calvo o con la
+  línea de pelo demasiado retrasada, no por los ojos sino por poca masa
+  de pelo en la coronilla): se ajustan únicamente las filas 2 y 3 de las
+  tres matrices (`GONZALO_FRONT/BACK/SIDE_PIXELS`, idénticas entre sí en
+  esas filas) para bajar la línea de pelo y dar cobertura real sobre la
+  coronilla, con un borde ligeramente irregular en vez de un corte recto
+  -- ningún otro pixel (ojos, piel del resto de la cara, ropa, piernas,
+  calzado) ni `Player.js`/`GonzaloRenderer.js` se tocan. Dos tests nuevos
+  por variante en `GonzaloPixelArt.test.js` protegen que la fila de la
+  coronilla sea pelo puro y que el pelo domine sobre la piel visible en
+  la mitad superior de la cabeza -- ambos habrían fallado contra el
+  pixel-art anterior, confirmando que detectan el defecto real señalado
+  en la revisión humana. Tercera microiteración tras una nueva revisión
+  visual humana (el frontal ya se leía bien, pero "la variante BACK
+  todavía hace que Gonzalo parezca calvo en la nuca"): a diferencia del
+  ajuste de la coronilla, este es exclusivo de `GONZALO_BACK_PIXELS` --
+  las filas 7-8 (mandíbula/nuca) pasan de sombra de piel a pelo, dejando
+  a propósito la fila 9 (cuello) como la pequeña zona de piel que la
+  propia revisión permitía. `GONZALO_FRONT_PIXELS`/`GONZALO_SIDE_PIXELS`
+  no se tocan. El test que antes afirmaba que las tres variantes eran
+  idénticas salvo la fila de ojos se divide en dos: uno que seguimos
+  exigiendo estricto para front/side, y uno nuevo que acota exactamente
+  qué filas puede divergir `back` (`BACK_ONLY_HAIR_ROWS`), más dos tests
+  que protegen la cobertura real de la nuca y que la fila del cuello
+  conserva su pequeña zona de piel. Cuarta microiteración: la corrección
+  anterior dejaba una banda de piel gruesa (filas 4-6) justo debajo de la
+  coronilla, efecto "tonsura" -- la propia revisión humana daba el
+  contrato exacto esperado ("PELO/PELO/PELO/PELO/NUCA de 1 fila/
+  CAMISETA"). Se extiende el pelo de `GONZALO_BACK_PIXELS` a las filas
+  3-8 (antes solo 7-8), dejando la fila 9 como única fila de piel de
+  cabeza (cuello), y se actualiza `BACK_ONLY_HAIR_ROWS` y la detección de
+  la fila de ojos (que dejó de poder localizarse comparando front contra
+  back, al diferir ahora en más de una fila por motivos ajenos a los
+  ojos; se localiza comparando front contra side, que nunca se toca) en
+  consecuencia. Nuevo test que exige que la piel de la cabeza de `back`
+  quede reducida a exactamente esa única fila.
 
 ## [1.0.0] - 2026-08-11
 
