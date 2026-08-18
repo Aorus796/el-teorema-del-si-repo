@@ -373,7 +373,18 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   exigiendo estricto para front/side, y uno nuevo que acota exactamente
   qué filas puede divergir `back` (`BACK_ONLY_HAIR_ROWS`), más dos tests
   que protegen la cobertura real de la nuca y que la fila del cuello
-  conserva su pequeña zona de piel.
+  conserva su pequeña zona de piel. Cuarta microiteración: la corrección
+  anterior dejaba una banda de piel gruesa (filas 4-6) justo debajo de la
+  coronilla, efecto "tonsura" -- la propia revisión humana daba el
+  contrato exacto esperado ("PELO/PELO/PELO/PELO/NUCA de 1 fila/
+  CAMISETA"). Se extiende el pelo de `GONZALO_BACK_PIXELS` a las filas
+  3-8 (antes solo 7-8), dejando la fila 9 como única fila de piel de
+  cabeza (cuello), y se actualiza `BACK_ONLY_HAIR_ROWS` y la detección de
+  la fila de ojos (que dejó de poder localizarse comparando front contra
+  back, al diferir ahora en más de una fila por motivos ajenos a los
+  ojos; se localiza comparando front contra side, que nunca se toca) en
+  consecuencia. Nuevo test que exige que la piel de la cabeza de `back`
+  quede reducida a exactamente esa única fila.
 
 ## [1.0.0] - 2026-08-11
 
