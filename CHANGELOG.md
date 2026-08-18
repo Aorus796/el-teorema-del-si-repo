@@ -385,6 +385,41 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   ojos; se localiza comparando front contra side, que nunca se toca) en
   consecuencia. Nuevo test que exige que la piel de la cabeza de `back`
   quede reducida a exactamente esa única fila.
+- Elena Character Pixel-Art -- aplica a Elena (la novia, NPC
+  `bride-epilogue` en `axiom-plaza`, solo visible con `giftCodeSolved`)
+  el mismo lenguaje visual ya aprobado con Gonzalo. Migra
+  `WorldScene.renderElena()` del render geométrico anterior a tres
+  sprites indexados nuevos -- `ELENA_FRONT_PIXELS`, `ELENA_BACK_PIXELS` y
+  `ELENA_SIDE_PIXELS` (`src/content/elenaPixelArt.js`, 14x22, misma
+  escala que Gonzalo) -- rasterizados y cacheados por un nuevo
+  `src/render/ElenaRenderer.js` (mismo patrón exacto que
+  `GonzaloRenderer.js`: cache local propia, `renderElena(context,x,y,
+  facing)`, "left" reutiliza el sprite de "side" reflejado en tiempo de
+  dibujo). Mismo criterio de ojos ya aprobado (2 de frente, 1 en lateral,
+  ninguno de espalda) y, aprendiendo directamente de las cuatro
+  microiteraciones que hicieron falta en Gonzalo, el contrato final de
+  pelo trasero completo (BACK sin ninguna banda de piel bajo el pelo) se
+  aplica desde el primer diseño, no como corrección posterior.
+  Identidad propia de Elena, deliberadamente distinta de Gonzalo pese a
+  compartir escala/técnica/outline/criterio de ojos: pelo largo que baja
+  por los laterales del torso (en vez de mangas cortas) y falda/vestido
+  de una sola pieza sin dividir en dos perneras (en vez de pantalón) --
+  preserva la silueta y paleta ya aprobadas de `BRIDE_PALETTE`
+  (`characterPalettes.js`), con la piel compartida con Gonzalo
+  (`SKIN_TONE`) y el resto de tonos propios. `gonzaloPixelArt.js` y
+  `GonzaloRenderer.js` no se tocan en absoluto. Cambio puramente visual:
+  hitbox, colisión, movimiento, `GameState`, save y audio quedan
+  intactos; ningún otro personaje (Corolaria, Padre de la novia, Silogio,
+  Max) se toca. Nuevos tests: `tests/content/ElenaPixelArt.test.js` y
+  `tests/render/ElenaRenderer.test.js` (mismo patrón que los de Gonzalo,
+  más dos pruebas específicas de la identidad propia de Elena: pelo largo
+  visible en los laterales del torso, y falda de una sola pieza sin hueco
+  central). Cinco tests de `WorldScene.test.js` que asumían el render
+  geométrico anterior de `bride-epilogue` se reescriben para comparar
+  contra los datos reales del nuevo sprite, mismo patrón que se usó para
+  los tests de `Player.test.js` cuando Gonzalo migró. Requiere aprobación
+  visual humana del acabado final
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

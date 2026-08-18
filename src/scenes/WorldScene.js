@@ -91,7 +91,6 @@ import {
 } from "../content/personalizationConfig.js";
 import {
   BRIDE_FATHER_PALETTE,
-  BRIDE_PALETTE,
   DEFAULT_NPC_PALETTE,
   MAYOR_PALETTE,
   NAMED_NPC_PALETTES,
@@ -107,6 +106,7 @@ import {
   ARCHIVE_CRITERIA_PHASE,
 } from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
 import { MAX_DIMENSIONS } from "../render/MaxRenderer.js";
+import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
 import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
 import {
@@ -1911,30 +1911,14 @@ function renderNpc(context, x, y, object) {
   context.fillRect(x + 5, y + 8, 4, 4);
 }
 
+// Elena Character Pixel-Art: migra del render geométrico anterior (arriba
+// en el historial de este archivo) al sprite indexado cacheado de
+// ElenaRenderer.js -- mismo (x,y) de anclaje (esquina superior izquierda)
+// que el render geométrico anterior usaba, así que no hace falta ningún
+// ajuste de posición. "bride-epilogue" es un NPC estático sin lógica de
+// movimiento/dirección propia, así que siempre se pide el frontal.
 function renderElena(context, x, y) {
-  context.fillStyle = BRIDE_PALETTE.silhouette;
-  context.fillRect(x + 2, y, 10, 3);
-  context.fillRect(x + 1, y + 3, 12, 17);
-
-  context.fillStyle = BRIDE_PALETTE.hair;
-  context.fillRect(x + 3, y + 1, 8, 2);
-
-  context.fillStyle = BRIDE_PALETTE.head;
-  context.fillRect(x + 3, y + 3, 8, 6);
-
-  context.fillStyle = BRIDE_PALETTE.hair;
-  context.fillRect(x + 1, y + 3, 2, 14);
-  context.fillRect(x + 11, y + 3, 2, 14);
-
-  context.fillStyle = BRIDE_PALETTE.head;
-  context.fillRect(x + 1, y + 10, 2, 6);
-  context.fillRect(x + 11, y + 10, 2, 6);
-
-  context.fillStyle = BRIDE_PALETTE.body;
-  context.fillRect(x + 3, y + 10, 8, 6);
-
-  context.fillStyle = BRIDE_PALETTE.bodyAccent;
-  context.fillRect(x + 2, y + 16, 10, 4);
+  renderElenaSprite(context, x, y, "down");
 }
 
 function renderCorolaria(context, x, y) {
