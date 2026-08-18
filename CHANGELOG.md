@@ -344,7 +344,20 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   Plaza Visual Polish: la diferencia visual es sutil al zoom de juego por
   defecto (el sprite mide 14x22 dentro de un canvas mostrado a 960x540),
   así que se recomienda inspeccionar las capturas comparativas ampliadas
-  para valorar el acabado final.
+  para valorar el acabado final. Microiteración tras revisión visual
+  humana (PR #59 "NOT APPROVED YET": Gonzalo se percibía calvo o con la
+  línea de pelo demasiado retrasada, no por los ojos sino por poca masa
+  de pelo en la coronilla): se ajustan únicamente las filas 2 y 3 de las
+  tres matrices (`GONZALO_FRONT/BACK/SIDE_PIXELS`, idénticas entre sí en
+  esas filas) para bajar la línea de pelo y dar cobertura real sobre la
+  coronilla, con un borde ligeramente irregular en vez de un corte recto
+  -- ningún otro pixel (ojos, piel del resto de la cara, ropa, piernas,
+  calzado) ni `Player.js`/`GonzaloRenderer.js` se tocan. Dos tests nuevos
+  por variante en `GonzaloPixelArt.test.js` protegen que la fila de la
+  coronilla sea pelo puro y que el pelo domine sobre la piel visible en
+  la mitad superior de la cabeza -- ambos habrían fallado contra el
+  pixel-art anterior, confirmando que detectan el defecto real señalado
+  en la revisión humana.
 
 ## [1.0.0] - 2026-08-11
 

@@ -161,3 +161,51 @@ test("no hay boca: ningún color de la paleta se usa exclusivamente para represe
   // (x3), pelo (x2), ropa (x3) y calzado.
   assert.equal(Object.keys(GONZALO_PALETTE).length, 10);
 });
+
+/*
+ * Regresión de la microiteración visual de la PR #59 (revisión humana:
+ * Gonzalo se percibía "calvo o con línea de pelo demasiado retrasada").
+ * No son golden pixel tests completos -- solo protegen la propiedad
+ * concreta que motivó el ajuste: masa de pelo real en la parte superior
+ * de la cabeza, no solo un contorno oscuro fino. "d"/"m" son los dos
+ * únicos símbolos de pelo (ver GONZALO_PALETTE); "k"/"h"/"s" son piel.
+ */
+const HAIR_SYMBOLS = new Set(["d", "m"]);
+const SKIN_SYMBOLS = new Set(["k", "h", "s"]);
+
+function countSymbolsInRow(row, symbolSet) {
+  return [...row].filter((symbol) => symbolSet.has(symbol)).length;
+}
+
+for (const [name, pixels] of Object.entries(VARIANTS)) {
+  test(`${name}: la fila justo debajo del gorro superior (fila 2) es pelo, no piel -- la coronilla tiene masa real`, () => {
+    const crownRow = pixels[2];
+
+    assert.ok(
+      countSymbolsInRow(crownRow, HAIR_SYMBOLS) > 0,
+      `fila 2 de ${name} no tiene ningún pixel de pelo`,
+    );
+    assert.equal(
+      countSymbolsInRow(crownRow, SKIN_SYMBOLS),
+      0,
+      `fila 2 de ${name} todavía muestra piel -- la línea de pelo no bajó`,
+    );
+  });
+
+  test(`${name}: el pelo cubre más filas de la cabeza que la piel visible en la mitad superior (filas 0-4)`, () => {
+    const upperHeadRows = pixels.slice(0, 5);
+    const hairPixels = upperHeadRows.reduce(
+      (total, row) => total + countSymbolsInRow(row, HAIR_SYMBOLS),
+      0,
+    );
+    const skinPixels = upperHeadRows.reduce(
+      (total, row) => total + countSymbolsInRow(row, SKIN_SYMBOLS),
+      0,
+    );
+
+    assert.ok(
+      hairPixels > skinPixels,
+      `${name}: piel (${skinPixels}) domina sobre pelo (${hairPixels}) en la mitad superior de la cabeza`,
+    );
+  });
+}

@@ -48,8 +48,8 @@ export const GONZALO_PALETTE = {
 export const GONZALO_FRONT_PIXELS = [
   "...OOOOOOOO...",
   "...OddddddO...",
-  "..OdkkkkkkdO..",
-  "..OdhhhhhhdO..",
+  "..OddddddddO..",
+  "..OdmhhhhmdO..",
   "..OdkkkkkkmO..",
   "..OdkOkkOkmO..",
   "..OdkkkkkkmO..",
@@ -73,8 +73,8 @@ export const GONZALO_FRONT_PIXELS = [
 export const GONZALO_BACK_PIXELS = [
   "...OOOOOOOO...",
   "...OddddddO...",
-  "..OdkkkkkkdO..",
-  "..OdhhhhhhdO..",
+  "..OddddddddO..",
+  "..OdmhhhhmdO..",
   "..OdkkkkkkmO..",
   "..OdkkkkkkmO..",
   "..OdkkkkkkmO..",
@@ -98,8 +98,8 @@ export const GONZALO_BACK_PIXELS = [
 export const GONZALO_SIDE_PIXELS = [
   "...OOOOOOOO...",
   "...OddddddO...",
-  "..OdkkkkkkdO..",
-  "..OdhhhhhhdO..",
+  "..OddddddddO..",
+  "..OdmhhhhmdO..",
   "..OdkkkkkkmO..",
   "..OdkkkkOkmO..",
   "..OdkkkkkkmO..",
