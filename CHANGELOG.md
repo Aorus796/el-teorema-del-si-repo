@@ -419,7 +419,22 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   contra los datos reales del nuevo sprite, mismo patrón que se usó para
   los tests de `Player.test.js` cuando Gonzalo migró. Requiere aprobación
   visual humana del acabado final
-  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Una corrección focalizada
+  posterior, ya con Elena aprobada visualmente, alcanza también a
+  `CreditsScene.js`: su función interna `drawElena()` seguía dibujando a
+  Elena con el renderer geométrico antiguo (`BRIDE_PALETTE` en bloques),
+  produciendo una inconsistencia visual frente al epílogo (que ya usaba
+  `ElenaRenderer`). `drawElena()` pasa a delegar en
+  `renderElena(context, x, y, "down")` de `ElenaRenderer.js`, sin ningún
+  ajuste de posición o escala (mismo anclaje esquina-superior-izquierda
+  que ya usaba el render geométrico anterior). `Gonzalo` (`drawGonzalo()`,
+  en el mismo archivo) y `Max` no se tocan. `tests/scenes/CreditsScene.test.js`
+  se actualiza con el mismo patrón de conteo derivado de los datos ya
+  usado para `Player.test.js`/`WorldScene.test.js`, más una prueba nueva
+  que exige explícitamente que el contorno de Elena se dibuje píxel a
+  píxel (1x1) con la cantidad exacta de símbolos "O" de
+  `ELENA_FRONT_PIXELS`, como prueba de que el renderer geométrico antiguo
+  ya no se usa para ella.
 
 ## [1.0.0] - 2026-08-11
 
