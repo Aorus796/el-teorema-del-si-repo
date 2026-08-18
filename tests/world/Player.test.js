@@ -280,7 +280,7 @@ test("facing 'left' también usa el sprite lateral (mismo número de ojos que 'r
   );
 });
 
-test("las tres variantes de Gonzalo (frontal/espalda/lateral) comparten exactamente el mismo cuerpo, solo difieren en la fila de ojos", () => {
+test("cada facing (frontal/espalda/lateral) dibuja exactamente los pixeles no transparentes de su propia matriz de datos", () => {
   const facingsToPixels = [
     ["down", GONZALO_FRONT_PIXELS],
     ["up", GONZALO_BACK_PIXELS],

@@ -318,10 +318,14 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   Ojos simples añadidos con autorización humana explícita: 1 pixel lógico
   por ojo, color oscuro, sin blanco ni pupila, sin sistema facial ni
   animación -- 2 ojos de frente, 1 en lateral, ninguno de espalda. Las
-  tres variantes comparten exactamente el mismo cuerpo (silueta, pelo en
-  dos tonos, ropa con sombra/highlight, calzado diferenciado del
-  pantalón) y solo difieren en esa fila de ojos -- no se inventan cuatro
-  poses distintas donde el contrato de facing anterior no las necesitaba.
+  tres variantes comparten el mismo cuerpo base (silueta, pelo en dos
+  tonos, ropa con sombra/highlight, calzado diferenciado del pantalón) --
+  no se inventan cuatro poses distintas donde el contrato de facing
+  anterior no las necesitaba. (En el pixel-art original las tres solo
+  diferían en la fila de ojos; dos microiteraciones posteriores, más
+  abajo en esta misma entrada, hacen que `back` también diverja en la
+  coronilla -- compartida -- y en la nuca -- exclusiva de `back` --, ver
+  `gonzaloPixelArt.js` para el contrato exacto vigente.)
   El lateral ("side") se reutiliza también para el facing "left",
   reflejado horizontalmente con una transformación de canvas en tiempo de
   dibujo (`context.scale(-1,1)`), no con un cuarto dataset. Preserva
@@ -332,8 +336,8 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   resto de personajes (Elena, Corolaria, Padre de la novia, Silogio, Max)
   quedan completamente intactos. Nuevos tests: `tests/content/
   GonzaloPixelArt.test.js` (datos puros: dimensiones, paleta, ausencia de
-  boca, que las tres variantes solo difieren en la fila de ojos con el
-  recuento exacto de ojos esperado por variante) y `tests/render/
+  boca, que front/side solo difieren en la fila de ojos con el recuento
+  exacto de ojos esperado por variante) y `tests/render/
   GonzaloRenderer.test.js` (cache: un canvas por variante, reutilización
   sin reconstrucción entre frames, mismo canvas cacheado compartido entre
   "left" y "right"). `tests/world/Player.test.js` se reescribe para
@@ -357,7 +361,19 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   coronilla sea pelo puro y que el pelo domine sobre la piel visible en
   la mitad superior de la cabeza -- ambos habrían fallado contra el
   pixel-art anterior, confirmando que detectan el defecto real señalado
-  en la revisión humana.
+  en la revisión humana. Tercera microiteración tras una nueva revisión
+  visual humana (el frontal ya se leía bien, pero "la variante BACK
+  todavía hace que Gonzalo parezca calvo en la nuca"): a diferencia del
+  ajuste de la coronilla, este es exclusivo de `GONZALO_BACK_PIXELS` --
+  las filas 7-8 (mandíbula/nuca) pasan de sombra de piel a pelo, dejando
+  a propósito la fila 9 (cuello) como la pequeña zona de piel que la
+  propia revisión permitía. `GONZALO_FRONT_PIXELS`/`GONZALO_SIDE_PIXELS`
+  no se tocan. El test que antes afirmaba que las tres variantes eran
+  idénticas salvo la fila de ojos se divide en dos: uno que seguimos
+  exigiendo estricto para front/side, y uno nuevo que acota exactamente
+  qué filas puede divergir `back` (`BACK_ONLY_HAIR_ROWS`), más dos tests
+  que protegen la cobertura real de la nuca y que la fila del cuello
+  conserva su pequeña zona de piel.
 
 ## [1.0.0] - 2026-08-11
 

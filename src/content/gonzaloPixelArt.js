@@ -9,13 +9,23 @@
  * para evitar una dependencia circular entre la capa de mundo/juego y la
  * capa de escena).
  *
- * Tres variantes ("front"/"back"/"side") comparten EXACTAMENTE el mismo
- * cuerpo (silueta, pelo, ropa, calzado) -- solo difieren en la fila de
- * ojos (fila 5): "front" tiene los dos ojos (aprobados explícitamente por
- * el responsable humano, ver informe de la tarea), "side" tiene solo el
- * ojo del lado visible, "back" no tiene ninguno. "side" se usa también
- * para el facing "left", reflejado horizontalmente en tiempo de dibujo
- * (ver GonzaloRenderer.js) -- un único dataset lateral, no dos.
+ * "front" y "side" comparten EXACTAMENTE el mismo cuerpo (silueta, pelo,
+ * ropa, calzado) salvo la fila de ojos (fila 5): "front" tiene los dos
+ * ojos (aprobados explícitamente por el responsable humano, ver informe
+ * de la tarea), "side" tiene solo el ojo del lado visible. "side" se usa
+ * también para el facing "left", reflejado horizontalmente en tiempo de
+ * dibujo (ver GonzaloRenderer.js) -- un único dataset lateral, no dos.
+ *
+ * "back" diverge de front/side en DOS puntos, no solo uno: la fila de
+ * ojos (fila 5, sin ninguno) y las filas 7-8 (nuca), que muestran pelo en
+ * vez de la sombra de piel que front/side tienen ahí para la mandíbula --
+ * ajuste de una microiteración de revisión visual humana posterior al
+ * pixel-art original ("Gonzalo parecía calvo en la nuca"), ver
+ * CHANGELOG.md. La fila 9 (cuello) sigue mostrando una pequeña zona de
+ * piel a propósito, tal como pedía esa revisión. No asumir en ningún
+ * cambio futuro que back es idéntico a front/side fuera de la fila de
+ * ojos -- comparar contra tests/content/GonzaloPixelArt.test.js
+ * (BACK_ONLY_HAIR_ROWS), no contra este comentario.
  *
  * Bounding box idéntico al render geométrico anterior de Player.js
  * (14 de ancho x 22 de alto, anclado en (screenX-7, screenY-14)): mismo
@@ -78,8 +88,8 @@ export const GONZALO_BACK_PIXELS = [
   "..OdkkkkkkmO..",
   "..OdkkkkkkmO..",
   "..OdkkkkkkmO..",
-  "..OdssssssdO..",
-  "..OdssssssdO..",
+  "..OddddddddO..",
+  "..OddddddddO..",
   "..OdssssssdO..",
   ".ObbbbLLbbbbO.",
   ".ObbbbbbbbbbO.",

@@ -115,29 +115,21 @@ test("side tiene exactamente 1 pixel de ojo más que back en la fila de ojos", (
   assert.equal(sideEyeCount - backEyeCount, 1);
 });
 
-test("front, back y side son idénticos salvo en la fila de ojos", () => {
+test("front y side son idénticos salvo en la fila de ojos", () => {
+  // Ninguno de los dos se tocó en la microiteración de la nuca -- deben
+  // seguir siendo exactamente el mismo cuerpo salvo el ojo visible.
   for (let row = 0; row < GONZALO_PIXEL_HEIGHT; row += 1) {
     const front = GONZALO_FRONT_PIXELS[row];
-    const back = GONZALO_BACK_PIXELS[row];
     const side = GONZALO_SIDE_PIXELS[row];
 
-    if (front === back && back === side) {
+    if (front === side) {
       continue;
     }
 
-    // Solo debe haber una fila distinta entre las tres: la de los ojos.
-    // Fuera de esa fila, el cuerpo (silueta, pelo, ropa, calzado) debe
-    // ser exactamente el mismo en las tres variantes -- ver Sección 9 de
-    // la tarea: no inventar más datasets ni variación de pose de los
-    // estrictamente necesarios para los ojos. Solo se comprueban las
-    // columnas donde las tres variantes realmente difieren entre sí (la
-    // inmensa mayoría de columnas de la fila de ojos son idénticas
-    // también, incluidas las transparentes fuera de la silueta).
     for (let col = 0; col < GONZALO_PIXEL_WIDTH; col += 1) {
-      const symbols = [front[col], back[col], side[col]];
-      const allEqual = symbols.every((symbol) => symbol === symbols[0]);
+      const symbols = [front[col], side[col]];
 
-      if (allEqual) {
+      if (symbols[0] === symbols[1]) {
         continue;
       }
 
@@ -151,6 +143,65 @@ test("front, back y side son idénticos salvo en la fila de ojos", () => {
       );
     }
   }
+});
+
+/*
+ * Regresión de la SEGUNDA microiteración visual de la PR #59 (revisión
+ * humana: "la variante BACK todavía hace que Gonzalo parezca calvo en la
+ * nuca"): a diferencia del primer ajuste (coronilla, compartido por las
+ * tres variantes), este es exclusivo de BACK -- las filas 7 y 8 ganan
+ * cobertura de pelo sobre la nuca que front/side deliberadamente no
+ * tienen (front/side muestran la mandíbula en esas filas, back muestra la
+ * base del cráneo). Fuera de la fila de ojos (donde back nunca tiene
+ * ojos, eso no cambia) y de estas dos filas nuevas, back debe seguir
+ * siendo idéntico a front -- si cambiara cualquier otra fila, sería una
+ * señal de que el ajuste se salió del alcance pedido (solo la nuca).
+ */
+const BACK_ONLY_HAIR_ROWS = new Set([7, 8]);
+
+test("back es idéntico a front salvo en la fila de ojos y en las dos filas nuevas de la nuca", () => {
+  const eyeRowIndex = GONZALO_FRONT_PIXELS.findIndex(
+    (row, index) => row !== GONZALO_BACK_PIXELS[index],
+  );
+
+  for (let row = 0; row < GONZALO_PIXEL_HEIGHT; row += 1) {
+    const front = GONZALO_FRONT_PIXELS[row];
+    const back = GONZALO_BACK_PIXELS[row];
+
+    if (front === back) {
+      continue;
+    }
+
+    assert.ok(
+      row === eyeRowIndex || BACK_ONLY_HAIR_ROWS.has(row),
+      `fila ${row}: back difiere de front fuera de la fila de ojos y de las filas de la nuca (${BACK_ONLY_HAIR_ROWS.size ? [...BACK_ONLY_HAIR_ROWS].join(",") : "ninguna"})`,
+    );
+  }
+});
+
+test("la nuca de BACK (filas 7-8) ahora es pelo puro, no la sombra de piel que tenía antes", () => {
+  for (const row of BACK_ONLY_HAIR_ROWS) {
+    const backRow = GONZALO_BACK_PIXELS[row];
+    const frontRow = GONZALO_FRONT_PIXELS[row];
+
+    assert.equal(
+      countSymbolsInRow(backRow, SKIN_SYMBOLS),
+      0,
+      `fila ${row} de BACK todavía muestra piel en la nuca`,
+    );
+    assert.ok(
+      countSymbolsInRow(backRow, HAIR_SYMBOLS) >
+        countSymbolsInRow(frontRow, HAIR_SYMBOLS),
+      `fila ${row} de BACK no tiene más pelo que la misma fila de FRONT (mandíbula)`,
+    );
+  }
+});
+
+test("BACK conserva una pequeña zona de piel en el cuello justo debajo de la nuca (fila 9), no cobertura total", () => {
+  // La propia tarea permite explícitamente una pequeña zona de piel en el
+  // cuello -- esta prueba documenta que el ajuste no se extralimitó hasta
+  // cubrir esa fila también.
+  assert.ok(countSymbolsInRow(GONZALO_BACK_PIXELS[9], SKIN_SYMBOLS) > 0);
 });
 
 test("no hay boca: ningún color de la paleta se usa exclusivamente para representar una boca (por defecto, sin boca)", () => {
