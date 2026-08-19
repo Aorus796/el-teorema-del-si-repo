@@ -27,6 +27,11 @@ import {
   MAYOR_PALETTE,
   SILOGIO_PALETTE,
 } from "../../src/content/characterPalettes.js";
+import {
+  ELENA_FRONT_PIXELS,
+  ELENA_PALETTE,
+  ELENA_TRANSPARENT,
+} from "../../src/content/elenaPixelArt.js";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
@@ -178,6 +183,19 @@ class FakeCanvasContext {
   fillText(text) {
     this.texts.push(String(text));
   }
+}
+
+// Elena Character Pixel-Art: los tests de bride-epilogue de más abajo
+// comparan contra el recuento real de símbolos en ELENA_FRONT_PIXELS en
+// vez de contra números hardcodeados, igual que se hizo para Gonzalo en
+// tests/world/Player.test.js -- el render ya no compone el cuerpo con
+// unos pocos fillRect grandes, sino con un fillRect de 1x1 por pixel no
+// transparente del sprite indexado.
+function countSymbolInPixels(pixels, symbol) {
+  return pixels
+    .join("")
+    .split("")
+    .filter((char) => char === symbol).length;
 }
 
 test("el acceso bloqueado no cambia progreso ni mapa", () => {
@@ -1247,12 +1265,16 @@ test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // 1 NPC genérico (plaza-worker; mayor-corolaria y bride-father ya tienen
-  // renderers dedicados con su propia silueta) + bride-epilogue, cuya
-  // silueta está partida en dos piezas (torso/brazos y piernas) desde la
-  // corrección de contorno fino -- ver WorldScene.renderElena. BRIDE_PALETTE
-  // .silhouette reutiliza el mismo valor "#302637" que NPC_SILHOUETTE.
-  assert.equal(silhouettes.length, 3);
+  // 1 rect de silueta del NPC genérico restante (plaza-worker; mayor-
+  // corolaria y bride-father ya tienen renderers dedicados con su propia
+  // silueta) + un fillRect de 1x1 por cada pixel de contorno/ojo ("O") del
+  // sprite indexado de Elena -- ELENA_PALETTE.O reutiliza el mismo valor
+  // "#302637" que BRIDE_PALETTE.silhouette/NPC_SILHOUETTE, así que ambos
+  // se cuentan juntos al filtrar por ese color.
+  const genericNpcSilhouetteRects = 1;
+  const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
+
+  assert.equal(silhouettes.length, genericNpcSilhouetteRects + elenaOutlinePixels);
 });
 
 test("render() en axiom-plaza sin giftCodeSolved usa la paleta normal", () => {
@@ -1459,12 +1481,15 @@ test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bri
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // Ver nota equivalente más arriba: 1 rect de plaza-worker + 2 rects de
-  // silueta de bride-epilogue (torso/brazos + piernas).
-  assert.equal(silhouettes.length, 3);
+  // Ver nota equivalente más arriba: 1 rect de plaza-worker + un fillRect
+  // de 1x1 por cada pixel de contorno/ojo del sprite indexado de Elena.
+  const genericNpcSilhouetteRects = 1;
+  const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
+
+  assert.equal(silhouettes.length, genericNpcSilhouetteRects + elenaOutlinePixels);
 });
 
-test("render() con giftCodeSolved añade tres rectángulos con el color de pelo de bride-epilogue", () => {
+test("render() con giftCodeSolved dibuja el color de pelo oscuro de Elena tantas veces como pixeles de ese tono tiene su propio sprite", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.investigationComplete = true;
   setup.state.flags.epilogueUnlocked = true;
@@ -1483,7 +1508,11 @@ test("render() con giftCodeSolved añade tres rectángulos con el color de pelo 
     (rect) => rect.fillStyle === BRIDE_PALETTE.hair,
   );
 
-  assert.equal(hairRects.length, 3);
+  // ELENA_PALETTE.d (pelo oscuro) reutiliza el mismo valor hexadecimal
+  // que BRIDE_PALETTE.hair a propósito (ver elenaPixelArt.js), así que
+  // este filtro sigue capturando los pixeles de pelo oscuro del sprite
+  // indexado -- ahora uno por pixel en vez de en 3 rects grandes.
+  assert.equal(hairRects.length, countSymbolInPixels(ELENA_FRONT_PIXELS, "d"));
 });
 
 test("render() sin giftCodeSolved (mayor-corolaria, bride-father, plaza-worker) no dibuja el color de pelo de bride-epilogue", () => {
@@ -1624,7 +1653,7 @@ test("renderSilogio dibuja entre 8 y 12 primitivas, todas de SILOGIO_PALETTE, co
   });
 });
 
-test("la silueta de bride-epilogue es un contorno de varias piezas estrechas, no un bloque de fondo grande", () => {
+test("Elena (bride-epilogue) usa varios tonos distintos (pelo, piel, vestido, calzado, contorno), no un único color de bloque", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.investigationComplete = true;
   setup.state.flags.epilogueUnlocked = true;
@@ -1639,28 +1668,20 @@ test("la silueta de bride-epilogue es un contorno de varias piezas estrechas, no
   const context = new FakeCanvasContext();
   setup.scene.render(context);
 
-  const silhouetteRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === BRIDE_PALETTE.silhouette,
+  // El sprite indexado de Elena se rasteriza pixel a pixel (un fillRect
+  // de 1x1 por símbolo no transparente, ver ELENA_FRONT_PIXELS), así que
+  // ya no tiene sentido comprobar "varios rects de silueta con ancho
+  // variable" (ese contrato era del render geométrico anterior). En su
+  // lugar se comprueba que el conjunto de colores realmente usados
+  // cubre toda la paleta declarada -- prueba de que es un sprite con
+  // detalle real, no un bloque plano de 1-2 colores.
+  const elenaColors = new Set(
+    context.fillRects
+      .filter((rect) => Object.values(ELENA_PALETTE).includes(rect.fillStyle))
+      .map((rect) => rect.fillStyle),
   );
 
-  // Incluye 1 rect del NPC genérico restante (plaza-worker) más las piezas
-  // propias de bride-epilogue; por eso se filtran las que le pertenecen
-  // buscando las que no coinciden con el tamaño fijo (12x14) del render
-  // genérico de NPC.
-  const brideSilhouetteRects = silhouetteRects.filter(
-    (rect) => !(rect.width === 12 && rect.height === 14),
-  );
-
-  assert.ok(
-    brideSilhouetteRects.length >= 2,
-    `la silueta de bride-epilogue debe construirse con varias piezas de borde, no un único rectángulo de fondo (encontradas: ${brideSilhouetteRects.length})`,
-  );
-
-  const widths = brideSilhouetteRects.map((rect) => rect.width);
-  assert.ok(
-    Math.min(...widths) < Math.max(...widths),
-    "las piezas de silueta de bride-epilogue deben variar de ancho (más estrechas donde el cuerpo es más estrecho), no ser todas iguales a un único ancho de fondo",
-  );
+  assert.equal(elenaColors.size, Object.keys(ELENA_PALETTE).length);
 });
 
 test("render() repetido con giftCodeSolved sigue mostrando bride-epilogue de forma idéntica", () => {
@@ -1743,23 +1764,27 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved mu
   // quedar dentro del radio de interacción de bride-epilogue), así que la
   // cámara satura contra ese borde y dos NPC lejanos (mayor-corolaria y
   // plaza-worker) quedan fuera del viewport. Se comprueba, en su lugar,
-  // que bride-epilogue se dibuja de verdad en su posición real de
+  // que bride-epilogue (Elena) se dibuja de verdad en su posición real de
   // pantalla, calculada a partir del estado real de la cámara. Se ancla a
-  // la cabeza (BRIDE_PALETTE.head) en vez de a la silueta de fondo,
+  // un pixel de piel concreto del sprite indexado (fila 4, columna 4 de
+  // ELENA_FRONT_PIXELS = "k") en vez de a un rect de silueta de fondo,
   // porque la geometría exacta del contorno es una decisión cosmética que
-  // puede ajustarse en 1px sin que este test deba cambiar.
+  // puede ajustarse sin que este test deba cambiar -- mismo patrón que
+  // los tests de anclaje de Gonzalo en tests/world/Player.test.js.
+  assert.equal(ELENA_FRONT_PIXELS[4][4], "k");
+
   const brideScreenX = Math.round(bride.x - scene.camera.x);
   const brideScreenY = Math.round(bride.y - scene.camera.y);
-  const brideHeadVisible = context.fillRects.some(
+  const brideSkinVisible = context.fillRects.some(
     (rect) =>
-      rect.fillStyle === BRIDE_PALETTE.head &&
-      rect.x === brideScreenX + 3 &&
-      rect.y === brideScreenY + 3 &&
-      rect.width === 8 &&
-      rect.height === 6,
+      rect.fillStyle === ELENA_PALETTE.k &&
+      rect.x === brideScreenX + 4 &&
+      rect.y === brideScreenY + 4 &&
+      rect.width === 1 &&
+      rect.height === 1,
   );
 
-  assert.equal(brideHeadVisible, true);
+  assert.equal(brideSkinVisible, true);
 });
 
 test("OBJECTIVE_LABELS reconoce start-epilogue en el HUD renderizado", () => {
