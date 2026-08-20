@@ -474,6 +474,55 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   comparar contra los datos reales del nuevo sprite, mismo patrón que se
   usó para Elena. Requiere aprobación visual humana del acabado final
   (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+- Bride Father Character Pixel-Art -- aplica al Padre de la novia (NPC
+  `bride-father` en `axiom-plaza`) el mismo lenguaje visual ya aprobado
+  para Gonzalo, Elena y Corolaria. Migra `WorldScene.renderBrideFather()`
+  del render geométrico anterior a tres sprites indexados nuevos --
+  `BRIDE_FATHER_FRONT_PIXELS`, `BRIDE_FATHER_BACK_PIXELS` y
+  `BRIDE_FATHER_SIDE_PIXELS` (`src/content/brideFatherPixelArt.js`, 14x22,
+  misma escala que Gonzalo/Elena/Corolaria -- el bounding box geométrico
+  anterior ya era 14x22, así que no cambia) -- rasterizados y cacheados
+  por un nuevo `src/render/BrideFatherRenderer.js` (mismo patrón exacto
+  que `CorolariaRenderer.js`/`ElenaRenderer.js`/`GonzaloRenderer.js`:
+  cache local propia, `renderBrideFather(context, x, y, facing)`, "left"
+  reutiliza el sprite de "side" reflejado en tiempo de dibujo). Mismo
+  criterio de ojos ya aprobado (2 de frente, 1 en lateral, ninguno de
+  espalda) y, aplicando desde el primer diseño la lección de las
+  microiteraciones de Gonzalo, la cabeza de BACK es pelo/canas puro salvo
+  una única fila de nuca/cuello que conserva piel incluso de espaldas.
+  Identidad propia del Padre, deliberadamente distinta de Gonzalo pese a
+  compartir escala/técnica/outline/criterio de ojos: pelo canoso en dos
+  tonos de gris (en vez del pelo castaño de Gonzalo) con canas visibles
+  en las sienes, y sobre todo un torso mucho más ancho -- ocupa las 14
+  columnas completas del sprite sin margen transparente a los lados,
+  frente a las 12 columnas del torso de Gonzalo/Corolaria -- que se
+  estrecha de forma marcada hacia dos piernas separadas por un hueco
+  central visible, leyéndose como una presencia adulta más sólida y
+  madura. Preserva los cinco colores ya aprobados de
+  `BRIDE_FATHER_PALETTE` (`characterPalettes.js`) -- azul, crema y la
+  piel compartida con Gonzalo/Elena/Corolaria (`SKIN_TONE`) -- con cinco
+  tonos derivados propios para volumen y sombreado.
+  `gonzaloPixelArt.js`, `GonzaloRenderer.js`, `elenaPixelArt.js`,
+  `ElenaRenderer.js`, `corolariaPixelArt.js` y `CorolariaRenderer.js` no
+  se tocan en absoluto. Cambio puramente visual: hitbox, radio de
+  interacción, colisión, diálogos, flags, `brideNoteReceived`,
+  `GameState`, save y audio quedan intactos; Silogio y Max no se tocan.
+  Nuevos tests: `tests/content/BrideFatherPixelArt.test.js` y
+  `tests/render/BrideFatherRenderer.test.js` (mismo patrón que los de
+  Gonzalo/Elena/Corolaria, más pruebas específicas de la identidad propia
+  del Padre: torso más ancho que la cabeza y que las piernas, torso a
+  ancho completo del sprite frente al de Gonzalo, piernas separadas por
+  un hueco central, y presencia de azul/crema). Los tests de
+  `WorldScene.test.js` que asumían el render geométrico anterior de
+  `bride-father` se reescriben para comparar contra los datos reales del
+  nuevo sprite, mismo patrón que se usó para Elena/Corolaria -- ajuste
+  incluido en el propio test equivalente de Corolaria, que filtraba por
+  color e Y sin acotar por X: al compartir el Padre algunos tonos de piel
+  y calzado con Corolaria y ambos NPC estar a la misma altura en
+  `axiom-plaza`, el filtro podía capturar píxeles ajenos en la misma fila
+  absoluta de pantalla; ahora ambos tests acotan también por el rango de
+  X propio de cada personaje. Requiere aprobación visual humana del
+  acabado final (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

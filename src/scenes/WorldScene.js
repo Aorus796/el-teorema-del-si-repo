@@ -90,7 +90,6 @@ import {
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
 import {
-  BRIDE_FATHER_PALETTE,
   DEFAULT_NPC_PALETTE,
   NAMED_NPC_PALETTES,
   NPC_HEAD,
@@ -107,6 +106,7 @@ import {
 import { MAX_DIMENSIONS } from "../render/MaxRenderer.js";
 import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
 import { renderCorolaria as renderCorolariaSprite } from "../render/CorolariaRenderer.js";
+import { renderBrideFather as renderBrideFatherSprite } from "../render/BrideFatherRenderer.js";
 import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
 import {
@@ -1932,29 +1932,16 @@ function renderCorolaria(context, x, y) {
   renderCorolariaSprite(context, x, y, "down");
 }
 
+// Bride Father Character Pixel-Art: migra del render geométrico anterior
+// (arriba en el historial de este archivo) al mismo sprite indexado
+// cacheado de BrideFatherRenderer.js -- mismo (x,y) de anclaje (esquina
+// superior izquierda) que el render geométrico anterior usaba, así que
+// no hace falta ningún ajuste de posición. "bride-father" es un NPC
+// estático sin lógica de movimiento/dirección propia, así que siempre se
+// pide el frontal (mismo patrón que renderElena()/renderCorolaria() justo
+// arriba).
 function renderBrideFather(context, x, y) {
-  context.fillStyle = BRIDE_FATHER_PALETTE.silhouette;
-  context.fillRect(x + 3, y + 0, 10, 3);
-  context.fillRect(x + 3, y + 3, 10, 7);
-  context.fillRect(x + 1, y + 10, 14, 6);
-  context.fillRect(x + 4, y + 16, 8, 6);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.hair;
-  context.fillRect(x + 4, y + 1, 8, 2);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.head;
-  context.fillRect(x + 4, y + 3, 8, 7);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.head;
-  context.fillRect(x + 1, y + 10, 2, 6);
-  context.fillRect(x + 13, y + 10, 2, 6);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.body;
-  context.fillRect(x + 3, y + 10, 10, 6);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.bodyAccent;
-  context.fillRect(x + 5, y + 17, 2, 5);
-  context.fillRect(x + 9, y + 17, 2, 5);
+  renderBrideFatherSprite(context, x, y, "down");
 }
 
 function renderSilogio(context, x, y) {

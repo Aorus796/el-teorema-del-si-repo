@@ -22,7 +22,6 @@ import { P2BridgesScene } from "../../src/scenes/P2BridgesScene.js";
 import { WorldScene, resolveMaxSpawnPosition } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
 import {
-  BRIDE_FATHER_PALETTE,
   BRIDE_PALETTE,
   SILOGIO_PALETTE,
 } from "../../src/content/characterPalettes.js";
@@ -35,6 +34,10 @@ import {
   COROLARIA_FRONT_PIXELS,
   COROLARIA_PALETTE,
 } from "../../src/content/corolariaPixelArt.js";
+import {
+  BRIDE_FATHER_FRONT_PIXELS,
+  BRIDE_FATHER_PIXEL_PALETTE,
+} from "../../src/content/brideFatherPixelArt.js";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
@@ -1596,10 +1599,19 @@ test("la base inferior de Corolaria (mayor-corolaria) es tan ancha como su líne
   const corolariaColors = new Set(Object.values(COROLARIA_PALETTE));
 
   const rowSpanAt = (row) => {
+    // Filtra también por rango de X propio de Corolaria (su sprite mide
+    // 14 columnas): algunos símbolos de COROLARIA_PALETTE (piel, calzado)
+    // reutilizan a propósito el mismo hex que otros personajes cercanos
+    // en axiom-plaza (p.ej. el Padre de la novia), así que filtrar solo
+    // por color e Y podría capturar pixeles ajenos que caen en la misma
+    // fila absoluta de pantalla.
     const xs = context.fillRects
       .filter(
         (rect) =>
-          rect.y === screenY + row && corolariaColors.has(rect.fillStyle),
+          rect.y === screenY + row &&
+          corolariaColors.has(rect.fillStyle) &&
+          rect.x >= screenX &&
+          rect.x < screenX + 14,
       )
       .map((rect) => rect.x - screenX);
 
@@ -1612,7 +1624,64 @@ test("la base inferior de Corolaria (mayor-corolaria) es tan ancha como su líne
   assert.equal(rowSpanAt(17), rowSpanAt(9));
 });
 
-test("renderBrideFather dibuja entre 8 y 12 primitivas, todas de BRIDE_FATHER_PALETTE, con la silueta en piezas de varios anchos", () => {
+test("bride-father (Padre de la novia) usa varios tonos distintos de BRIDE_FATHER_PIXEL_PALETTE, no un único color de bloque", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  // Bride Father Character Pixel-Art: mismo razonamiento que los tests
+  // equivalentes de Elena/Corolaria justo más abajo -- el sprite indexado
+  // se rasteriza pixel a pixel (un fillRect de 1x1 por símbolo no
+  // transparente), así que "varios rects de silueta con ancho variable"
+  // ya no aplica (ese contrato era del render geométrico anterior). Se
+  // comprueba en su lugar que el conjunto de colores realmente usados
+  // cubre toda la paleta declarada.
+  const brideFatherColors = new Set(
+    context.fillRects
+      .filter((rect) =>
+        Object.values(BRIDE_FATHER_PIXEL_PALETTE).includes(rect.fillStyle),
+      )
+      .map((rect) => rect.fillStyle),
+  );
+
+  assert.equal(
+    brideFatherColors.size,
+    Object.keys(BRIDE_FATHER_PIXEL_PALETTE).length,
+  );
+});
+
+test("bride-father se dibuja con BrideFatherRenderer, anclado en su posición real de pantalla", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "bride-father");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  // Se ancla a un pixel de piel concreto del sprite indexado (fila 4,
+  // columna 4 de BRIDE_FATHER_FRONT_PIXELS = "k") en vez de a un rect de
+  // silueta de fondo, porque la geometría exacta del contorno es una
+  // decisión cosmética que puede ajustarse sin que este test deba
+  // cambiar -- mismo patrón que los tests de anclaje de Elena/Corolaria/
+  // Gonzalo.
+  assert.equal(BRIDE_FATHER_FRONT_PIXELS[4][4], "k");
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const skinVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === BRIDE_FATHER_PIXEL_PALETTE.k &&
+      rect.x === screenX + 4 &&
+      rect.y === screenY + 4 &&
+      rect.width === 1 &&
+      rect.height === 1,
+  );
+
+  assert.equal(skinVisible, true);
+});
+
+test("el torso de bride-father (fila 10) ocupa las 14 columnas del sprite, sin margen transparente -- presencia robusta, más ancho que el de Gonzalo", () => {
   const setup = createWorldAt("axiom-plaza");
   const object = findObject("axiom-plaza", "bride-father");
   const context = new FakeCanvasContext();
@@ -1621,27 +1690,26 @@ test("renderBrideFather dibuja entre 8 y 12 primitivas, todas de BRIDE_FATHER_PA
 
   const screenX = Math.round(object.x - setup.scene.camera.x);
   const screenY = Math.round(object.y - setup.scene.camera.y);
+  const brideFatherColors = new Set(Object.values(BRIDE_FATHER_PIXEL_PALETTE));
 
-  assertDedicatedNpcRender({
-    fillRects: context.fillRects,
-    screenX,
-    screenY,
-    palette: BRIDE_FATHER_PALETTE,
-    expectedOffsets: [
-      { x: 3, y: 0, width: 10, height: 3, color: "silhouette" },
-      { x: 3, y: 3, width: 10, height: 7, color: "silhouette" },
-      { x: 1, y: 10, width: 14, height: 6, color: "silhouette" },
-      { x: 4, y: 16, width: 8, height: 6, color: "silhouette" },
-      { x: 4, y: 1, width: 8, height: 2, color: "hair" },
-      { x: 4, y: 3, width: 8, height: 7, color: "head" },
-      { x: 1, y: 10, width: 2, height: 6, color: "head" },
-      { x: 13, y: 10, width: 2, height: 6, color: "head" },
-      { x: 3, y: 10, width: 10, height: 6, color: "body" },
-      { x: 5, y: 17, width: 2, height: 5, color: "bodyAccent" },
-      { x: 9, y: 17, width: 2, height: 5, color: "bodyAccent" },
-    ],
-    expectedBoundingBox: { width: 14, height: 22 },
-  });
+  // Filtra también por rango de X propio del Padre (su sprite mide 14
+  // columnas): algunos símbolos de BRIDE_FATHER_PIXEL_PALETTE (piel,
+  // calzado) reutilizan a propósito el mismo hex que otros personajes
+  // cercanos en axiom-plaza, así que filtrar solo por color e Y podría
+  // capturar pixeles ajenos que caen en la misma fila absoluta de
+  // pantalla -- ver el mismo ajuste en el test equivalente de Corolaria.
+  const shoulderRowXs = context.fillRects
+    .filter(
+      (rect) =>
+        rect.y === screenY + 10 &&
+        brideFatherColors.has(rect.fillStyle) &&
+        rect.x >= screenX &&
+        rect.x < screenX + 14,
+    )
+    .map((rect) => rect.x - screenX);
+
+  assert.ok(shoulderRowXs.length > 0, "no se dibujó ningún pixel en la fila 10");
+  assert.equal(Math.max(...shoulderRowXs) - Math.min(...shoulderRowXs) + 1, 14);
 });
 
 test("renderSilogio dibuja entre 8 y 12 primitivas, todas de SILOGIO_PALETTE, con la silueta en piezas de varios anchos", () => {
@@ -2946,8 +3014,9 @@ function findObject(mapId, objectId) {
 /*
  * Reproduce el listado exacto de fillRect esperado (posición relativa,
  * tamaño y color de paleta) para un render de NPC dedicado con render
- * geométrico -- ver WorldScene.renderBrideFather/renderSilogio (Corolaria
- * ya no lo usa: migró a CorolariaRenderer.js, pixel-art indexado) -- y
+ * geométrico -- ver WorldScene.renderSilogio (Corolaria y el Padre de la
+ * novia ya no lo usan: migraron a CorolariaRenderer.js/
+ * BrideFatherRenderer.js, pixel-art indexado) -- y
  * verifica que: (a) el conteo de primitivas cae en el rango 8-12; (b) todas esas
  * primitivas se dibujan exactamente en la posición y color esperados
  * (cualquier color ajeno o hardcodeado haría que la primitiva esperada no
