@@ -435,6 +435,45 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   píxel (1x1) con la cantidad exacta de símbolos "O" de
   `ELENA_FRONT_PIXELS`, como prueba de que el renderer geométrico antiguo
   ya no se usa para ella.
+- Corolaria Character Pixel-Art -- aplica a la Alcaldesa Corolaria (NPC
+  `mayor-corolaria` en `axiom-plaza`) el mismo lenguaje visual ya aprobado
+  para Gonzalo y Elena. Migra `WorldScene.renderCorolaria()` del render
+  geométrico anterior a tres sprites indexados nuevos --
+  `COROLARIA_FRONT_PIXELS`, `COROLARIA_BACK_PIXELS` y
+  `COROLARIA_SIDE_PIXELS` (`src/content/corolariaPixelArt.js`, 14x22,
+  misma escala que Gonzalo y Elena) -- rasterizados y cacheados por un
+  nuevo `src/render/CorolariaRenderer.js` (mismo patrón exacto que
+  `ElenaRenderer.js`/`GonzaloRenderer.js`: cache local propia,
+  `renderCorolaria(context, x, y, facing)`, "left" reutiliza el sprite de
+  "side" reflejado en tiempo de dibujo). Mismo criterio de ojos ya
+  aprobado (2 de frente, 1 en lateral, ninguno de espalda) y, aplicando
+  desde el primer diseño la lección de las microiteraciones de Gonzalo,
+  la cabeza de BACK es pelo puro salvo una única fila de nuca/cuello que
+  conserva piel incluso de espaldas. Identidad propia de Corolaria,
+  deliberadamente distinta de Elena pese a compartir escala/técnica/
+  outline/criterio de ojos: peinado recogido sin mechones largos cayendo
+  por los laterales del torso, y parte inferior recta de ancho constante
+  desde los hombros hasta el bajo (sin la silueta de falda que se
+  ensancha de Elena), con acento dorado en tres puntos estructurales
+  (hombros, cinturón, bajo) para reforzar la lectura de autoridad formal.
+  Preserva los cinco colores ya aprobados de `MAYOR_PALETTE`
+  (`characterPalettes.js`) -- burdeos, dorado y la piel compartida con
+  Gonzalo/Elena (`SKIN_TONE`) -- con cinco tonos derivados propios para
+  volumen y sombreado. `gonzaloPixelArt.js`, `GonzaloRenderer.js`,
+  `elenaPixelArt.js` y `ElenaRenderer.js` no se tocan en absoluto.
+  Cambio puramente visual: hitbox, radio de interacción, colisión,
+  diálogos, flags, `GameState`, save y audio quedan intactos; el Padre de
+  la novia, Silogio y Max no se tocan. Nuevos tests:
+  `tests/content/CorolariaPixelArt.test.js` y
+  `tests/render/CorolariaRenderer.test.js` (mismo patrón que los de
+  Gonzalo/Elena, más pruebas específicas de la identidad propia de
+  Corolaria: ausencia de pelo por debajo de la cabeza, base tan ancha
+  como los hombros, y acento dorado presente en varias filas
+  estructurales). Los dos tests de `WorldScene.test.js` que asumían el
+  render geométrico anterior de `mayor-corolaria` se reescriben para
+  comparar contra los datos reales del nuevo sprite, mismo patrón que se
+  usó para Elena. Requiere aprobación visual humana del acabado final
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

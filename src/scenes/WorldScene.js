@@ -92,7 +92,6 @@ import {
 import {
   BRIDE_FATHER_PALETTE,
   DEFAULT_NPC_PALETTE,
-  MAYOR_PALETTE,
   NAMED_NPC_PALETTES,
   NPC_HEAD,
   NPC_SILHOUETTE,
@@ -107,6 +106,7 @@ import {
 } from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
 import { MAX_DIMENSIONS } from "../render/MaxRenderer.js";
 import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
+import { renderCorolaria as renderCorolariaSprite } from "../render/CorolariaRenderer.js";
 import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
 import {
@@ -1921,28 +1921,15 @@ function renderElena(context, x, y) {
   renderElenaSprite(context, x, y, "down");
 }
 
+// Corolaria Character Pixel-Art: migra del render geométrico anterior
+// (arriba en el historial de este archivo) al mismo sprite indexado
+// cacheado de CorolariaRenderer.js -- mismo (x,y) de anclaje (esquina
+// superior izquierda) que el render geométrico anterior usaba, así que
+// no hace falta ningún ajuste de posición. "mayor-corolaria" es un NPC
+// estático sin lógica de movimiento/dirección propia, así que siempre se
+// pide el frontal (mismo patrón que renderElena() justo arriba).
 function renderCorolaria(context, x, y) {
-  context.fillStyle = MAYOR_PALETTE.silhouette;
-  context.fillRect(x + 2, y + 5, 9, 2);
-  context.fillRect(x + 0, y + 6, 13, 7);
-  context.fillRect(x + 1, y + 12, 11, 8);
-
-  context.fillStyle = MAYOR_PALETTE.hair;
-  context.fillRect(x + 3, y + 0, 7, 2);
-
-  context.fillStyle = MAYOR_PALETTE.head;
-  context.fillRect(x + 3, y + 2, 7, 5);
-
-  context.fillStyle = MAYOR_PALETTE.head;
-  context.fillRect(x + 0, y + 7, 2, 6);
-  context.fillRect(x + 11, y + 7, 2, 6);
-
-  context.fillStyle = MAYOR_PALETTE.body;
-  context.fillRect(x + 2, y + 7, 9, 6);
-
-  context.fillStyle = MAYOR_PALETTE.bodyAccent;
-  context.fillRect(x + 2, y + 13, 9, 6);
-  context.fillRect(x + 6, y + 7, 2, 2);
+  renderCorolariaSprite(context, x, y, "down");
 }
 
 function renderBrideFather(context, x, y) {
