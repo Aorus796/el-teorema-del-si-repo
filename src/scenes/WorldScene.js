@@ -94,7 +94,6 @@ import {
   NAMED_NPC_PALETTES,
   NPC_HEAD,
   NPC_SILHOUETTE,
-  SILOGIO_PALETTE,
 } from "../content/characterPalettes.js";
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
 import {
@@ -107,6 +106,7 @@ import { MAX_DIMENSIONS } from "../render/MaxRenderer.js";
 import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
 import { renderCorolaria as renderCorolariaSprite } from "../render/CorolariaRenderer.js";
 import { renderBrideFather as renderBrideFatherSprite } from "../render/BrideFatherRenderer.js";
+import { renderSilogio as renderSilogioSprite } from "../render/SilogioRenderer.js";
 import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
 import {
@@ -1944,28 +1944,16 @@ function renderBrideFather(context, x, y) {
   renderBrideFatherSprite(context, x, y, "down");
 }
 
+// Silogio Character Pixel-Art: migra del render geométrico anterior
+// (arriba en el historial de este archivo) al mismo sprite indexado
+// cacheado de SilogioRenderer.js -- mismo (x,y) de anclaje (esquina
+// superior izquierda) que el render geométrico anterior usaba, así que
+// no hace falta ningún ajuste de posición. "library-silogio" es un NPC
+// estático sin lógica de movimiento/dirección propia, así que siempre se
+// pide el frontal (mismo patrón que renderElena()/renderCorolaria()/
+// renderBrideFather() justo arriba).
 function renderSilogio(context, x, y) {
-  context.fillStyle = SILOGIO_PALETTE.silhouette;
-  context.fillRect(x + 4, y + 0, 5, 3);
-  context.fillRect(x + 2, y + 3, 9, 9);
-  context.fillRect(x + 0, y + 12, 12, 10);
-
-  context.fillStyle = SILOGIO_PALETTE.hair;
-  context.fillRect(x + 5, y + 0, 4, 2);
-
-  context.fillStyle = SILOGIO_PALETTE.head;
-  context.fillRect(x + 3, y + 2, 6, 5);
-
-  context.fillStyle = SILOGIO_PALETTE.head;
-  context.fillRect(x + 1, y + 7, 1, 7);
-  context.fillRect(x + 10, y + 7, 1, 7);
-
-  context.fillStyle = SILOGIO_PALETTE.body;
-  context.fillRect(x + 3, y + 7, 6, 6);
-
-  context.fillStyle = SILOGIO_PALETTE.bodyAccent;
-  context.fillRect(x + 3, y + 13, 6, 4);
-  context.fillRect(x + 5, y + 8, 2, 2);
+  renderSilogioSprite(context, x, y, "down");
 }
 
 function renderHud(context, map, objectiveId) {

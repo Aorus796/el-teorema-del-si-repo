@@ -21,10 +21,7 @@ import { P2_PHASE } from "../../src/puzzles/p2-bridges/P2State.js";
 import { P2BridgesScene } from "../../src/scenes/P2BridgesScene.js";
 import { WorldScene, resolveMaxSpawnPosition } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
-import {
-  BRIDE_PALETTE,
-  SILOGIO_PALETTE,
-} from "../../src/content/characterPalettes.js";
+import { BRIDE_PALETTE } from "../../src/content/characterPalettes.js";
 import {
   ELENA_FRONT_PIXELS,
   ELENA_PALETTE,
@@ -38,6 +35,10 @@ import {
   BRIDE_FATHER_FRONT_PIXELS,
   BRIDE_FATHER_PIXEL_PALETTE,
 } from "../../src/content/brideFatherPixelArt.js";
+import {
+  SILOGIO_FRONT_PIXELS,
+  SILOGIO_PIXEL_PALETTE,
+} from "../../src/content/silogioPixelArt.js";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
@@ -1712,7 +1713,64 @@ test("el torso de bride-father (fila 10) ocupa las 14 columnas del sprite, sin m
   assert.equal(Math.max(...shoulderRowXs) - Math.min(...shoulderRowXs) + 1, 14);
 });
 
-test("renderSilogio dibuja entre 8 y 12 primitivas, todas de SILOGIO_PALETTE, con la silueta en piezas de varios anchos", () => {
+test("library-silogio (Silogio) usa varios tonos distintos de SILOGIO_PIXEL_PALETTE, no un único color de bloque", () => {
+  const setup = createWorldAt("library");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  // Silogio Character Pixel-Art: mismo razonamiento que los tests
+  // equivalentes de Elena/Corolaria/Padre más abajo -- el sprite indexado
+  // se rasteriza pixel a pixel (un fillRect de 1x1 por símbolo no
+  // transparente), así que "varios rects de silueta con ancho variable"
+  // ya no aplica (ese contrato era del render geométrico anterior). Se
+  // comprueba en su lugar que el conjunto de colores realmente usados
+  // cubre toda la paleta declarada.
+  const silogioColors = new Set(
+    context.fillRects
+      .filter((rect) =>
+        Object.values(SILOGIO_PIXEL_PALETTE).includes(rect.fillStyle),
+      )
+      .map((rect) => rect.fillStyle),
+  );
+
+  assert.equal(
+    silogioColors.size,
+    Object.keys(SILOGIO_PIXEL_PALETTE).length,
+  );
+});
+
+test("library-silogio se dibuja con SilogioRenderer, anclado en su posición real de pantalla", () => {
+  const setup = createWorldAt("library");
+  const object = findObject("library", "library-silogio");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  // Se ancla a un pixel de piel concreto del sprite indexado (fila 3,
+  // columna 5 de SILOGIO_FRONT_PIXELS = "h", frente resaltada) en vez de
+  // a un rect de silueta de fondo, porque la geometría exacta del
+  // contorno es una decisión cosmética que puede ajustarse sin que este
+  // test deba cambiar -- mismo patrón que los tests de anclaje de
+  // Elena/Corolaria/Padre/Gonzalo.
+  assert.equal(SILOGIO_FRONT_PIXELS[3][5], "h");
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const highlightVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === SILOGIO_PIXEL_PALETTE.h &&
+      rect.x === screenX + 5 &&
+      rect.y === screenY + 3 &&
+      rect.width === 1 &&
+      rect.height === 1,
+  );
+
+  assert.equal(highlightVisible, true);
+});
+
+test("el abrigo de Silogio (filas 10-19, hombros hasta dobladillo) nunca es más ancho que su cabeza (fila 3) en el render real -- silueta estrecha y vertical", () => {
   const setup = createWorldAt("library");
   const object = findObject("library", "library-silogio");
   const context = new FakeCanvasContext();
@@ -1721,26 +1779,38 @@ test("renderSilogio dibuja entre 8 y 12 primitivas, todas de SILOGIO_PALETTE, co
 
   const screenX = Math.round(object.x - setup.scene.camera.x);
   const screenY = Math.round(object.y - setup.scene.camera.y);
+  const silogioColors = new Set(Object.values(SILOGIO_PIXEL_PALETTE));
 
-  assertDedicatedNpcRender({
-    fillRects: context.fillRects,
-    screenX,
-    screenY,
-    palette: SILOGIO_PALETTE,
-    expectedOffsets: [
-      { x: 4, y: 0, width: 5, height: 3, color: "silhouette" },
-      { x: 2, y: 3, width: 9, height: 9, color: "silhouette" },
-      { x: 0, y: 12, width: 12, height: 10, color: "silhouette" },
-      { x: 5, y: 0, width: 4, height: 2, color: "hair" },
-      { x: 3, y: 2, width: 6, height: 5, color: "head" },
-      { x: 1, y: 7, width: 1, height: 7, color: "head" },
-      { x: 10, y: 7, width: 1, height: 7, color: "head" },
-      { x: 3, y: 7, width: 6, height: 6, color: "body" },
-      { x: 3, y: 13, width: 6, height: 4, color: "bodyAccent" },
-      { x: 5, y: 8, width: 2, height: 2, color: "bodyAccent" },
-    ],
-    expectedBoundingBox: { width: 12, height: 22 },
-  });
+  const rowSpanAt = (row) => {
+    // Acota también por rango de X propio de Silogio (su sprite mide 14
+    // columnas): algunos símbolos de SILOGIO_PIXEL_PALETTE (piel,
+    // calzado) reutilizan a propósito el mismo hex que otros personajes,
+    // así que filtrar solo por color e Y podría capturar pixeles ajenos
+    // si en el futuro otro NPC coincidiera en la misma fila absoluta de
+    // pantalla -- misma cautela aplicada a los tests de Corolaria/Padre.
+    const xs = context.fillRects
+      .filter(
+        (rect) =>
+          rect.y === screenY + row &&
+          silogioColors.has(rect.fillStyle) &&
+          rect.x >= screenX &&
+          rect.x < screenX + 14,
+      )
+      .map((rect) => rect.x - screenX);
+
+    assert.ok(xs.length > 0, `no se dibujó ningún pixel de Silogio en la fila ${row}`);
+    return Math.max(...xs) - Math.min(...xs) + 1;
+  };
+
+  const headSpan = rowSpanAt(3);
+
+  for (let row = 10; row <= 19; row += 1) {
+    assert.equal(
+      rowSpanAt(row),
+      headSpan,
+      `fila ${row}: el abrigo no debe ser más ancho que la cabeza`,
+    );
+  }
 });
 
 test("Elena (bride-epilogue) usa varios tonos distintos (pelo, piel, vestido, calzado, contorno), no un único color de bloque", () => {
@@ -3009,82 +3079,6 @@ function findObject(mapId, objectId) {
 
   assert.ok(object, `No existe ${mapId}:${objectId}`);
   return object;
-}
-
-/*
- * Reproduce el listado exacto de fillRect esperado (posición relativa,
- * tamaño y color de paleta) para un render de NPC dedicado con render
- * geométrico -- ver WorldScene.renderSilogio (Corolaria y el Padre de la
- * novia ya no lo usan: migraron a CorolariaRenderer.js/
- * BrideFatherRenderer.js, pixel-art indexado) -- y
- * verifica que: (a) el conteo de primitivas cae en el rango 8-12; (b) todas esas
- * primitivas se dibujan exactamente en la posición y color esperados
- * (cualquier color ajeno o hardcodeado haría que la primitiva esperada no
- * aparezca); (c) la silueta tiene al menos 3 piezas con al menos dos
- * anchos distintos; (d) el bounding box real coincide con el objetivo.
- */
-function assertDedicatedNpcRender({
-  fillRects,
-  screenX,
-  screenY,
-  palette,
-  expectedOffsets,
-  expectedBoundingBox,
-}) {
-  assert.ok(
-    expectedOffsets.length >= 8 && expectedOffsets.length <= 12,
-    `se esperaban entre 8 y 12 primitivas, se transcribieron ${expectedOffsets.length}`,
-  );
-
-  const expectedRects = expectedOffsets.map((entry) => ({
-    x: screenX + entry.x,
-    y: screenY + entry.y,
-    width: entry.width,
-    height: entry.height,
-    fillStyle: palette[entry.color],
-  }));
-
-  const ownRects = fillRects.filter((rect) =>
-    expectedRects.some(
-      (expected) =>
-        expected.x === rect.x &&
-        expected.y === rect.y &&
-        expected.width === rect.width &&
-        expected.height === rect.height &&
-        expected.fillStyle === rect.fillStyle,
-    ),
-  );
-
-  assert.equal(
-    ownRects.length,
-    expectedRects.length,
-    "todas las primitivas esperadas deben dibujarse exactamente en su posición y color de paleta",
-  );
-
-  const silhouetteOffsets = expectedOffsets.filter(
-    (entry) => entry.color === "silhouette",
-  );
-  assert.ok(
-    silhouetteOffsets.length >= 3,
-    "la silueta debe construirse con al menos 3 piezas, no un único bloque de fondo",
-  );
-  const silhouetteWidths = silhouetteOffsets.map((entry) => entry.width);
-  assert.ok(
-    Math.min(...silhouetteWidths) < Math.max(...silhouetteWidths),
-    "las piezas de silueta deben variar de ancho",
-  );
-
-  const minX = Math.min(...expectedOffsets.map((entry) => entry.x));
-  const maxX = Math.max(
-    ...expectedOffsets.map((entry) => entry.x + entry.width),
-  );
-  const minY = Math.min(...expectedOffsets.map((entry) => entry.y));
-  const maxY = Math.max(
-    ...expectedOffsets.map((entry) => entry.y + entry.height),
-  );
-
-  assert.equal(maxX - minX, expectedBoundingBox.width);
-  assert.equal(maxY - minY, expectedBoundingBox.height);
 }
 
 function assertOutsideInteractionRadius(playerState, object) {
