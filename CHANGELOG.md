@@ -687,7 +687,76 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   triangulares separadas -- aunque, como en la ronda anterior, sigue
   requiriendo aprobación visual humana explícita del acabado final
   (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`): esta ronda no declara
-  aprobación artística por sí misma.
+  aprobación artística por sí misma. Tercera revisión humana: rechazada
+  de nuevo, esta vez por "camello" -- patas demasiado largas, cuerpo
+  demasiado alto sobre las patas, cabeza demasiado pequeña para el
+  conjunto. Un primer intento de corrección (cabeza de 5 a 7 filas y más
+  ancha, torso con una fila extra de pecho, patas de 8 a 5 filas) cumplía
+  los tres ajustes pedidos por separado, pero la revisión independiente
+  del agente `qa` señaló que el conjunto seguía leyéndose como camello:
+  la cabeza se elevaba 7 filas por encima de la línea del lomo, sobre un
+  lomo de 11 filas hasta el suelo -- un 64% de la altura del propio
+  lomo, el patrón exacto de "dos extremos alzados sobre un lomo plano"
+  que define a un camélido, con independencia del tamaño de cabeza y
+  patas por separado. Se corrige comprimiendo el cráneo de 2 filas a 1
+  (sin tocar el resto de la cabeza) y cediendo esa fila al torso: la
+  cabeza final ocupa 6 filas (filas 0-5, span de hasta 11 columnas y 52
+  píxeles de relleno en cols 0-10, frente a 39 en la versión rechazada
+  por "cabeza pequeña"); el torso pasa a 7 filas (filas 6-12, tres filas
+  de pecho sólido); las patas se mantienen en 5 filas (filas 13-17). La
+  elevación de la cabeza sobre el lomo baja a 6 filas sobre un lomo de
+  12 -- 50%, frente al 64% del intento anterior. Ojo en fila 2 columna 4;
+  nariz en fila 5 columna 0. La cola se mantiene corta: su píxel de
+  contorno más alto queda en la fila 2 (columna 20) y la punta clara en
+  la fila 3, sin alcanzar las filas 0-1 donde están las orejas. Solo se
+  modifica `src/content/maxPixelArt.js`; `MaxRenderer.js`,
+  `MaxCompanion.js`, `WorldScene.js`, `characterPalettes.js` y los cinco
+  personajes humanos no se tocan. La revisión independiente del agente
+  `reviewer` sobre el primer intento encontró varias imprecisiones
+  cuantitativas en el comentario de cabecera y el CHANGELOG (una fila
+  citada incorrectamente para la franja de contorno recoloreada, una
+  posición previa de la nariz que no coincidía con los datos reales de
+  `e63dc1f`, una justificación de diseño sobre la columna de
+  mejilla/nuca que no se sostenía al verificar la conectividad sin ella,
+  y la altura de la cola descrita de forma inexacta) -- se corrigen
+  todas en esta versión final, verificando cada cifra directamente
+  contra `MAX_SIDE_PIXELS` antes de escribirla. Tests actualizados en
+  `tests/content/MaxPixelArt.test.js` (nueva posición de ojo/nariz;
+  rangos de fila de cabeza/torso/patas recalculados; la comparación de
+  ancho cabeza-vs-torso se restringe a columnas 4-21 en el torso para no
+  incluir un resto de contorno del hocico que la inflaba trivialmente,
+  hallazgo también de `reviewer`; dos comparaciones contra un snapshot
+  literal de la versión rechazada por "cabeza pequeña" -- más píxeles de
+  superficie, menos filas de pata -- en vez de límites arbitrarios) y en
+  el test de anclaje de `tests/scenes/CreditsScene.test.js` (nueva
+  posición de la nariz). Evidencia visual generada y revisada en cada
+  iteración (aislado y junto a Gonzalo, comparada paso a paso contra la
+  iteración anterior) confirma que la brecha visual entre cabeza y lomo
+  se reduce notablemente frente al intento anterior. Una segunda revisión
+  de `reviewer` sobre esta corrección encontró dos imprecisiones más en
+  el mismo comentario/CHANGELOG (el ojo se describía como reposicionado
+  desde la fila 3 cuando en realidad nunca se movió respecto a
+  `e63dc1f` -- siempre estuvo en fila 2 columna 4 -- y el torso se
+  describía con dos filas de pecho sólido cuando los datos reales tienen
+  tres filas idénticas consecutivas); corregidas ambas. El propio
+  `reviewer` señaló, como observación de diseño no bloqueante, que esas
+  tres filas idénticas reintroducen parcialmente el "bloque rectangular"
+  que la ronda anterior decía evitar mediante variación de tono. En la
+  misma línea, el agente `qa` -- tras confirmar que el defecto técnico
+  concreto de esta ronda (la columna de mejilla/nuca leída como cuello
+  vertical) queda resuelto -- reporta que la silueta general, evaluada
+  de forma aislada, sigue sin leerse de forma inequívoca como Belgian
+  Malinois: ahora se acerca más a una lectura de llama/alpaca que de
+  camello, por la combinación de cabeza todavía perceptiblemente elevada
+  sobre el lomo, orejas pequeñas en proporción al conjunto, y el lomo de
+  techo plano ya mencionado. Estas son observaciones de diseño/estilo,
+  no defectos técnicos -- se documentan aquí en vez de seguir iterando
+  el pixel-art dentro de esta misma ronda, tal como pide la propia tarea
+  ("no declarar aprobación artística"; la decisión de si esta lectura es
+  aceptable, o si necesita otra ronda centrada en orejas/lomo/elevación
+  de cabeza, corresponde a la revisión visual humana). No se declara
+  aprobación artística: sigue pendiente revisión visual humana explícita
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

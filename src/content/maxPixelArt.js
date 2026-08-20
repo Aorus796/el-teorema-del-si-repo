@@ -27,11 +27,16 @@
  * "engulle" un trazo de 1px de ancho (patas, punta de cola), a
  * diferencia de un contorno que sustituyera píxeles de relleno ya
  * existentes. Única excepción deliberada: el hueco entre las dos orejas
- * (fila 0, columnas 5-7, entre la punta de la oreja cercana en columna
- * 4 y la punta de la oreja lejana en columna 8) se protegió
+ * (fila 0, columnas 3-7, entre la punta de la oreja cercana en columna
+ * 2 y la punta de la oreja lejana en columna 8) se protegió
  * explícitamente de esta pasada para que siguiera transparente -- de lo
  * contrario el propio contorno habría fusionado ambas orejas en una
- * sola mancha oscura.
+ * sola mancha oscura. El contorno de la cabeza y el de las patas se
+ * calculan en sub-cuadrículas separadas (no sobre las 18 filas a la
+ * vez): aplicarlo sobre la cuadrícula completa haría que las celdas
+ * transparentes de la cabeza se fusionaran con el contorno ya presente
+ * en las filas de torso, produciendo una franja oscura sin diseñar
+ * entre cabeza y cuerpo.
  *
  * Identidad de Max preservada del render procedural original
  * (WorldScene.js/MaxRenderer.js, antes de la migración a pixel-art
@@ -64,6 +69,37 @@
  * decreciente y una curva suave que termina ligeramente elevada, no
  * vertical. Ver CHANGELOG.md para el detalle completo y la comparación
  * visual contra las dos versiones anteriores.
+ *
+ * Corrección de proporciones (esta versión, sustituye los números de
+ * fila del párrafo anterior): la versión de arriba, aunque corrigió la
+ * lectura equina, fue rechazada por leerse como "camello" -- patas
+ * demasiado largas, cuerpo demasiado alto sobre las patas, cabeza
+ * demasiado pequeña para el conjunto. Cabeza: de 5 a 6 filas (filas
+ * 0-5) y más ancha (span de hasta 11 columnas en cols 0-10, frente a 9
+ * en la versión anterior; 52 píxeles de relleno en esa misma región,
+ * frente a 39 en la versión anterior a esta corrección). Torso: de 5 a
+ * 7 filas (filas 6-12), con tres filas de pecho sólido en vez de una
+ * para dar bulto, no solo altura. Patas: de 8 a 5 filas (filas 13-17).
+ * Ojo en fila 2 columna 4, sin cambios respecto a `e63dc1f`; nariz en
+ * fila 5 columna 0 (antes fila 4 columna 0). Un primer intento de esta
+ * corrección (agrandar la cabeza a 7 filas sin tocar el resto) seguía
+ * leyéndose como camello en la revisión de qa,
+ * pese a que cabeza y patas ya cumplían individualmente lo pedido: el
+ * problema no era el tamaño de esas piezas por separado, sino que la
+ * cabeza se elevaba muy por encima de la línea del lomo (fila 0 a fila
+ * 7, un salto de 7 filas sobre un lomo de 11 filas hasta el suelo --
+ * 64% de la altura del propio lomo), leyéndose como un cuello vertical
+ * con independencia de cuánto hubiera crecido la cabeza en sí. Esta
+ * versión reduce esa elevación comprimiendo el cráneo de 2 filas a 1
+ * (el resto de la cabeza no se toca) y cede la fila ganada al torso:
+ * la cabeza ahora se eleva 6 filas sobre un lomo de 12 (fila 0 a fila
+ * 6) -- 50% en vez de 64%. La cola se mantiene corta y no alcanza las
+ * filas 0-1 donde están las orejas (su píxel de contorno más alto está
+ * en fila 2, columna 20; la punta clara "m" está en fila 3), para no
+ * igualar la altura de la cabeza y recrear una silueta de "dos
+ * extremos alzados" simétrica sobre un lomo plano. Sigue sin collar.
+ * Ver CHANGELOG.md para el detalle completo y la comparación visual
+ * contra las tres versiones anteriores.
  */
 
 export const MAX_PIXEL_WIDTH = 22;
@@ -95,22 +131,22 @@ export const MAX_PIXEL_PALETTE = {
  * un golden-pixel test, es la fuente real del dato.
  */
 export const MAX_SIDE_PIXELS = [
-  "...Ok...dO............",
-  "..OkhhbdbO..........O.",
-  ".OOOObbbbO.........OmO",
-  "OkkkbbbbO..........OdO",
-  "OkkOOOOOO..........Odd",
-  "OOO.ObbbbOOOOOOOOOObbO",
+  ".Ok.....dO............",
+  "OkkbbbbdddO...........",
+  "ObbhOhbbbbO.........O.",
+  "OkkkkObbbO.........OmO",
+  "kkkkObbbO.........OddO",
+  "OkkO.OOO..........OddO",
+  "OOO.ObbbbbbbbbbbbbbbbO",
   "....ObbbbhhhhhhhbbbbO.",
+  "....ObbbbbbbbbbbbbbO..",
+  "....ObbbbbbbbbbbbbbO..",
   "....ObbbbbbbbbbbbbbO..",
   ".....OOOssssssssbbbO..",
   "......OOOOOOOOOOOOO...",
   ".....ObbOddO.ObbOddO..",
   ".....ObbOddO.ObbOddO..",
-  ".....ObbOddO.ObbOddO..",
-  ".....ObbObbO.ObbObbO..",
   ".....OddObbO.OddObbO..",
-  ".....OddObbO.OddObbO..",
-  ".....OddOssO.OddOssO..",
+  "......OOOssO..OOOssO..",
   ".....OssOOO..OssOOO...",
 ];

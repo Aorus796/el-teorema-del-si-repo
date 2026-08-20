@@ -83,20 +83,20 @@ test("MAX_PIXEL_PALETTE no comparte ningún valor con MAX_PALETTE.collar -- Max 
 });
 
 /*
- * Ojos (sección 12 de la tarea): Max solo tiene una vista (lateral), así
- * que el criterio aplicable es "1 ojo visible" -- no hay front/back
- * contra los que diferenciar por fila, a diferencia de los personajes
- * humanos. Se ancla a la posición exacta del ojo (fila 2, columna 4, en
- * la unión cráneo/hocico del rediseño anatómico completo), que debe ser
- * el color de contorno ("O", reutilizado para ojo, mismo patrón que los
- * personajes humanos).
+ * Ojos: Max solo tiene una vista (lateral), así que el criterio
+ * aplicable es "1 ojo visible" -- no hay front/back contra los que
+ * diferenciar por fila, a diferencia de los personajes humanos. Se
+ * ancla a la posición exacta del ojo (fila 2, columna 4, en la unión
+ * cráneo/hocico de la corrección de proporciones que agranda la
+ * cabeza), que debe ser el color de contorno ("O", reutilizado para
+ * ojo, mismo patrón que los personajes humanos).
  */
 test("el ojo (fila 2, columna 4) usa el color de contorno, sin blanco ni pupila compleja", () => {
   assert.equal(MAX_SIDE_PIXELS[2][4], "O");
 });
 
-test("la nariz (fila 4, columna 0) usa el color de contorno, en la punta del hocico", () => {
-  assert.equal(MAX_SIDE_PIXELS[4][0], "O");
+test("la nariz (fila 5, columna 0) usa el color de contorno, en la punta del hocico", () => {
+  assert.equal(MAX_SIDE_PIXELS[5][0], "O");
 });
 
 /*
@@ -118,19 +118,49 @@ function rowSpan(row) {
   return last - first + 1;
 }
 
-test("la región de la cabeza (filas 0-4) no es más ancha en su conjunto que la región del torso (filas 6-9) -- cabeza compacta, no desproporcionada", () => {
+test("la región de la cabeza (filas 0-5) no es más ancha en su conjunto que el torso (filas 6-12, excluyendo el resto de contorno del hocico en columnas 0-3) -- cabeza compacta, no desproporcionada", () => {
   // Restringido a las columnas 0-10 (cráneo/orejas/hocico): en las
-  // filas 0-4 también pasa la raíz de la cola (columnas 18-21), una
+  // filas 0-5 también pasa la raíz de la cola (columnas 18-21), una
   // región anatómica distinta que no debe contar como "ancho de
-  // cabeza" solo por compartir rango de filas.
-  const headRows = MAX_SIDE_PIXELS.slice(0, 5).map((row) => row.slice(0, 11));
-  const torsoRows = MAX_SIDE_PIXELS.slice(6, 10);
+  // cabeza" solo por compartir rango de filas. El torso se restringe a
+  // columnas 4-21: la fila de cuello (fila 6) conserva un resto de
+  // contorno del hocico en columnas 0-2 (donde el hocico termina justo
+  // encima), que si se incluyera haría que el span del torso llegara
+  // trivialmente a 22 sin decir nada real sobre el ancho del cuerpo.
+  const headRows = MAX_SIDE_PIXELS.slice(0, 6).map((row) => row.slice(0, 11));
+  const torsoRows = MAX_SIDE_PIXELS.slice(6, 13).map((row) => row.slice(4));
   const headSpan = Math.max(...headRows.map(rowSpan));
   const torsoSpan = Math.max(...torsoRows.map(rowSpan));
 
   assert.ok(
     headSpan <= torsoSpan,
     `cabeza (${headSpan}) no debería ser más ancha que el torso (${torsoSpan})`,
+  );
+});
+
+test("la cabeza ocupa más superficie (píxeles rellenos en cols 0-10) que en la versión anterior (commit e63dc1f)", () => {
+  // Snapshot literal de MAX_SIDE_PIXELS[0..4] en e63dc1f (la versión que
+  // la revisión humana rechazó por "cabeza demasiado pequeña para el
+  // conjunto"), usado solo como referencia de comparación -- no es la
+  // fuente del dato actual, que sigue siendo el propio MAX_SIDE_PIXELS.
+  const PREVIOUS_HEAD_ROWS = [
+    "...Ok...dO.",
+    "..OkhhbdbO.",
+    ".OOOObbbbO.",
+    "OkkkbbbbO..",
+    "OkkOOOOOO..",
+  ];
+  const countFilled = (rows) =>
+    rows.join("").split("").filter((c) => c !== MAX_TRANSPARENT).length;
+
+  const previousHeadFill = countFilled(PREVIOUS_HEAD_ROWS);
+  const currentHeadFill = countFilled(
+    MAX_SIDE_PIXELS.slice(0, 6).map((row) => row.slice(0, 11)),
+  );
+
+  assert.ok(
+    currentHeadFill > previousHeadFill,
+    `cabeza actual (${currentHeadFill} px) debería ocupar más superficie que la anterior (${previousHeadFill} px)`,
   );
 });
 
@@ -141,14 +171,14 @@ test("la región de la cabeza (filas 0-4) no es más ancha en su conjunto que la
  * mejilla posterior deben seguir en tan).
  */
 test("la máscara facial (símbolo k) está presente en la región de la cabeza", () => {
-  const headRows = MAX_SIDE_PIXELS.slice(0, 5);
+  const headRows = MAX_SIDE_PIXELS.slice(0, 6);
   const maskCount = headRows.join("").split("").filter((c) => c === "k").length;
 
   assert.ok(maskCount > 0, "se esperaba al menos un pixel de máscara en la cabeza");
 });
 
 test("la máscara no ocupa toda la cabeza: hay tan (b/h) visible junto a la máscara", () => {
-  const headRows = MAX_SIDE_PIXELS.slice(0, 5);
+  const headRows = MAX_SIDE_PIXELS.slice(0, 6);
   const joined = headRows.join("");
   const tanCount = [...joined].filter((c) => c === "b" || c === "h").length;
 
@@ -184,9 +214,9 @@ function countFilledSegments(row, windowStart, windowEnd) {
   return segments;
 }
 
-test("hay dos orejas separadas por un hueco transparente real en las filas superiores (filas 0-2, columnas 0-10)", () => {
+test("hay dos orejas separadas por un hueco transparente real en las filas superiores (filas 0-1, columnas 0-10)", () => {
   const headWindow = 10;
-  const hasGapRow = MAX_SIDE_PIXELS.slice(0, 3).some(
+  const hasGapRow = MAX_SIDE_PIXELS.slice(0, 2).some(
     (row) => countFilledSegments(row, 0, headWindow) >= 2,
   );
 
@@ -210,7 +240,7 @@ test("la oreja cercana (k) y la oreja lejana (d) son tonalmente distintas", () =
  * vientre ("s") distinta del tono principal del cuerpo.
  */
 test("el torso no es un rectángulo degenerado: el ancho varía entre filas (pecho/lomo vs. vientre recogido)", () => {
-  const torsoRows = MAX_SIDE_PIXELS.slice(6, 10).map(rowSpan);
+  const torsoRows = MAX_SIDE_PIXELS.slice(6, 13).map(rowSpan);
   const minSpan = Math.min(...torsoRows);
   const maxSpan = Math.max(...torsoRows);
 
@@ -221,36 +251,44 @@ test("el torso no es un rectángulo degenerado: el ancho varía entre filas (pec
 });
 
 test("hay una sombra de vientre (símbolo s) presente en la región del torso", () => {
-  const torsoRows = MAX_SIDE_PIXELS.slice(6, 10).join("");
+  const torsoRows = MAX_SIDE_PIXELS.slice(6, 13).join("");
 
   assert.ok(torsoRows.includes("s"), "se esperaba sombra de vientre (s) en el torso");
 });
 
 /*
- * Cola (sección 10): debe sobresalir del cuerpo principal hacia la
- * derecha, distinguible del cuerpo (llega más allá del borde derecho
- * del bloque de torso, filas 6-9, donde no hay cola), y su grosor debe
- * disminuir hacia la punta (la fila de la punta debe ser más estrecha
- * que la fila de la raíz).
+ * Cola (sección 10): debe existir como apéndice visible que nace de la
+ * grupa y se proyecta hacia arriba/atrás en columnas muy a la derecha
+ * (18-21), separado de la cabeza (que ocupa las columnas 0-10 en las
+ * mismas filas) por una franja transparente real.
  */
-test("la cola sobresale del cuerpo principal hacia la derecha", () => {
-  function rightmostFilledColumn(row) {
-    const chars = [...row];
-    for (let x = chars.length - 1; x >= 0; x -= 1) {
-      if (chars[x] !== MAX_TRANSPARENT) return x;
-    }
-    return -1;
-  }
+test("hay una cola visible (columnas 18-21) en las filas superiores, separada de la cabeza por una franja transparente", () => {
+  const upperRows = MAX_SIDE_PIXELS.slice(0, 6);
 
-  const torsoRows = MAX_SIDE_PIXELS.slice(6, 10);
-  const torsoRightEdge = Math.max(...torsoRows.map(rightmostFilledColumn));
+  const hasTailPixel = upperRows.some((row) =>
+    [...row.slice(18, 22)].some((c) => c !== MAX_TRANSPARENT),
+  );
+  assert.ok(hasTailPixel, "se esperaba al menos un pixel de cola en columnas 18-21");
 
-  const tailRows = MAX_SIDE_PIXELS.slice(0, 9);
-  const tailRightEdge = Math.max(...tailRows.map(rightmostFilledColumn));
-
+  const hasGapBetweenHeadAndTail = upperRows.some((row) =>
+    [...row.slice(11, 18)].every((c) => c === MAX_TRANSPARENT),
+  );
   assert.ok(
-    tailRightEdge > torsoRightEdge,
-    `se esperaba que la cola (columna ${tailRightEdge}) sobresaliera del torso (columna ${torsoRightEdge})`,
+    hasGapBetweenHeadAndTail,
+    "se esperaba al menos una fila con una franja transparente entre cabeza y cola",
+  );
+});
+
+test("la cola se mantiene más baja que la cabeza: no alcanza las filas 0-1 donde están las orejas", () => {
+  const earRows = MAX_SIDE_PIXELS.slice(0, 2);
+  const hasTailPixelNearEars = earRows.some((row) =>
+    [...row.slice(18, 22)].some((c) => c !== MAX_TRANSPARENT),
+  );
+
+  assert.equal(
+    hasTailPixelNearEars,
+    false,
+    "la cola no debería alcanzar la altura de las orejas -- eso reproduce la silueta de 'dos extremos alzados' que se pidió evitar",
   );
 });
 
@@ -281,7 +319,7 @@ test("hay píxeles no transparentes cerca de la línea de suelo (filas 16-17) en
 });
 
 test("cada pata muestra al menos dos tonos distintos (articulación), no un único color uniforme de arriba a abajo", () => {
-  const legRows = MAX_SIDE_PIXELS.slice(10, 18);
+  const legRows = MAX_SIDE_PIXELS.slice(13, 18);
   const legTones = new Set(
     legRows
       .join("")
@@ -292,6 +330,20 @@ test("cada pata muestra al menos dos tonos distintos (articulación), no un úni
   assert.ok(
     legTones.has("b") && legTones.has("d"),
     "se esperaban ambos tonos (b y d) en la región de las patas, sugiriendo un quiebre de articulación",
+  );
+});
+
+test("las patas son más cortas que en la versión anterior (commit e63dc1f): menos filas de altura de pata", () => {
+  // Snapshot literal de MAX_SIDE_PIXELS[10..17] en e63dc1f (8 filas de
+  // pata, la versión que la revisión humana rechazó por "patas
+  // demasiado largas"), usado solo como referencia -- no como fuente
+  // del dato actual.
+  const PREVIOUS_LEG_ROWS = 8;
+  const CURRENT_LEG_ROWS = MAX_SIDE_PIXELS.length - 13;
+
+  assert.ok(
+    CURRENT_LEG_ROWS < PREVIOUS_LEG_ROWS,
+    `las patas (${CURRENT_LEG_ROWS} filas) deberían ser más cortas que en la versión anterior (${PREVIOUS_LEG_ROWS} filas)`,
   );
 });
 
