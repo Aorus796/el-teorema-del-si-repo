@@ -756,7 +756,60 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   aceptable, o si necesita otra ronda centrada en orejas/lomo/elevación
   de cabeza, corresponde a la revisión visual humana). No se declara
   aprobación artística: sigue pendiente revisión visual humana explícita
-  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Cuarta revisión humana:
+  rechazada de nuevo, esta vez centrada exclusivamente en la cabeza --
+  "el cuerpo está muy bien, la cabeza sigue siendo fea": hace falta más
+  masa, más separación visual entre hocico y orejas, y un giro deliberado
+  hacia un estilo cartoon en vez de anatómico-realista. Esta ronda toca
+  solo `src/content/maxPixelArt.js` y solo la cabeza; el torso pierde
+  una única fila de pecho sólido (de tres filas idénticas a dos -- la
+  propia observación de `reviewer` en la ronda anterior) para cedérsela
+  a la cabeza, y las patas quedan byte a byte idénticas a la versión
+  anterior (nueva prueba de regresión así lo protege). Cabeza: de 6 a 7
+  filas (filas 0-6), con 60 píxeles de relleno en cols 0-10 (frente a 52
+  antes de esta ronda, y frente a 39 en la versión rechazada por "cabeza
+  pequeña" dos rondas atrás). El hueco entre orejas pasa a proteger dos
+  filas en vez de una (fila 0 Y fila 1), dejando una fila completa de
+  "solo orejas" antes de que empiece cualquier masa de cráneo -- ese aire
+  es la separación hocico/orejas pedida explícitamente. Un primer intento
+  de esto (proteger solo la fila 0, dejando que el propio paso de
+  contorno rellenara la fila 1 de un lado a otro) produjo un defecto real
+  detectado antes de commitear: las dos orejas quedaban unidas por una
+  franja horizontal oscura que se leía como una rama o un cuerno único en
+  vez de dos orejas separadas -- corregido protegiendo explícitamente el
+  hueco en ambas filas. El cráneo gana una fila de highlight ancho (parche
+  claro en 4 columnas) antes de que el hocico se desprenda de él, dando
+  sensación de frente/coronilla redondeada. Ojo en fila 4 columna 4 (antes
+  fila 2 columna 4); nariz en fila 6 columna 0 (antes fila 5 columna 0).
+  `MaxRenderer.js`, `MaxCompanion.js`, `WorldScene.js`,
+  `characterPalettes.js` y los cinco personajes humanos no se tocan.
+  Tests actualizados en `tests/content/MaxPixelArt.test.js` (nueva
+  posición de ojo/nariz; rangos de fila de cabeza/torso recalculados,
+  patas sin cambiar; nueva comparación de superficie de cabeza contra un
+  snapshot literal de la versión inmediatamente anterior, además de la ya
+  existente contra la versión de "cabeza pequeña"; nuevo test que protege
+  la fila de aire hocico/orejas verificando que existe al menos una fila,
+  aparte de la de las puntas, con tejido de oreja pero sin tejido de
+  cráneo -- `reviewer` encontró que la primera versión de este test
+  incluía la fila de las puntas en la búsqueda, por lo que pasaba igual
+  de bien contra la cabeza rechazada de `444ee1f` sin verificar realmente
+  el colchón nuevo; corregido excluyendo esa fila; nuevo test de igualdad
+  byte a byte de las patas contra la versión anterior) y en el test de
+  anclaje de `tests/scenes/CreditsScene.test.js` (nueva posición de la
+  nariz). Evidencia visual generada a varias escalas de zoom (incluida
+  una captura de solo las orejas a 80px/celda) para verificar con
+  precisión, tras el defecto detectado y corregido, que las dos orejas se
+  leen realmente como separadas y no como un apéndice único. El agente
+  `qa` confirma visualmente más masa, mejor segmentación oreja/cráneo/
+  hocico, ausencia del defecto de orejas unidas, y cuerpo esencialmente
+  igual a `444ee1f`; señala como observación no bloqueante -- ya presente
+  en `444ee1f`, no introducida por esta ronda -- que el color de la oreja
+  cercana ("k") tiene poco contraste contra el contorno ("O"), leyéndose
+  casi como un bloque negro sin volumen propio, y que el resultado global
+  sigue pareciendo más "anatómico miniaturizado" que un giro deliberado
+  de estilo cartoon, aunque masa y separación sí mejoran de forma medible
+  y visible. No se declara aprobación artística: sigue pendiente revisión
+  visual humana explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 
