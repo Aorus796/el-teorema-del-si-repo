@@ -523,6 +523,61 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   absoluta de pantalla; ahora ambos tests acotan también por el rango de
   X propio de cada personaje. Requiere aprobación visual humana del
   acabado final (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+- Silogio Character Pixel-Art -- aplica a Silogio (NPC `library-silogio`
+  en la Biblioteca) el mismo lenguaje visual ya aprobado para Gonzalo,
+  Elena, Corolaria y el Padre de la novia. Migra
+  `WorldScene.renderSilogio()` del render geométrico anterior a tres
+  sprites indexados nuevos -- `SILOGIO_FRONT_PIXELS`,
+  `SILOGIO_BACK_PIXELS` y `SILOGIO_SIDE_PIXELS`
+  (`src/content/silogioPixelArt.js`, 14x22, misma escala que los cuatro
+  personajes anteriores) -- rasterizados y cacheados por un nuevo
+  `src/render/SilogioRenderer.js` (mismo patrón exacto que
+  `BrideFatherRenderer.js`/`CorolariaRenderer.js`/`ElenaRenderer.js`/
+  `GonzaloRenderer.js`: cache local propia,
+  `renderSilogio(context, x, y, facing)`, "left" reutiliza el sprite de
+  "side" reflejado en tiempo de dibujo). Mismo criterio de ojos ya
+  aprobado (2 de frente, 1 en lateral, ninguno de espalda) y, aplicando
+  desde el primer diseño la lección de las microiteraciones de Gonzalo,
+  la cabeza de BACK es pelo puro salvo una única fila de nuca/cuello que
+  conserva piel incluso de espaldas. Añade gafas simples como parte de su
+  identidad ya aprobada (dos clústeres del color de contorno con un hueco
+  de piel central a modo de puente, en la fila justo encima de los ojos;
+  no aparecen en BACK, al no ser visibles de espaldas), que no existían
+  en el render geométrico anterior. Identidad propia de Silogio,
+  deliberadamente distinta de los cuatro personajes anteriores: pelo gris
+  en dos tonos mezclados de forma asimétrica en la coronilla ("algo
+  desordenado"), y sobre todo la silueta más estrecha y vertical de los
+  cinco personajes migrados -- el abrigo/túnica nunca ensancha más allá
+  del ancho de la cabeza en ninguna fila, hombros y dobladillo incluidos
+  (a diferencia de Gonzalo/Corolaria/Padre, que siempre tienen hombros o
+  torso más anchos que la cabeza en algún tramo), y más estrecho que la
+  base recta constante de Corolaria (10 columnas frente a 12). Preserva
+  los cinco colores ya aprobados de `SILOGIO_PALETTE`
+  (`characterPalettes.js`) -- teal, mostaza y la piel compartida con los
+  cuatro personajes anteriores (`SKIN_TONE`) -- con cinco tonos derivados
+  propios para volumen y sombreado. `gonzaloPixelArt.js`,
+  `GonzaloRenderer.js`, `elenaPixelArt.js`, `ElenaRenderer.js`,
+  `corolariaPixelArt.js`, `CorolariaRenderer.js`,
+  `brideFatherPixelArt.js` y `BrideFatherRenderer.js` no se tocan en
+  absoluto. Cambio puramente visual: hitbox, radio de interacción,
+  colisión, flujo hacia el puzle del catálogo, `GameState`, save y audio
+  quedan intactos; Max no se toca. Nuevos tests:
+  `tests/content/SilogioPixelArt.test.js` y
+  `tests/render/SilogioRenderer.test.js` (mismo patrón que los de los
+  cuatro personajes anteriores, más pruebas específicas de la identidad
+  propia de Silogio: gafas presentes y acotadas sin dominar la cabeza,
+  ausentes en BACK, abrigo nunca más ancho que la cabeza en ninguna fila
+  del torso o el dobladillo, y notablemente más estrecho que el torso de
+  Gonzalo en toda su longitud). Los tests de
+  `WorldScene.test.js` que asumían el render geométrico anterior de
+  `library-silogio` se reescriben para comparar contra los datos reales
+  del nuevo sprite, mismo patrón que se usó para Elena/Corolaria/Padre;
+  de paso se elimina `assertDedicatedNpcRender()`, el último helper de
+  test que comparaba primitivas `fillRect` geométricas exactas para NPC
+  dedicados, ya sin ningún consumidor tras esta migración (Corolaria,
+  el Padre y ahora Silogio migraron los tres a render indexado). Requiere
+  aprobación visual humana del acabado final
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 
