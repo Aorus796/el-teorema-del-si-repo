@@ -86,13 +86,14 @@ test("MAX_PIXEL_PALETTE no comparte ningún valor con MAX_PALETTE.collar -- Max 
  * Ojos (sección 5 de la tarea): Max solo tiene una vista (lateral), así
  * que el criterio aplicable es "1 ojo visible" -- no hay front/back
  * contra los que diferenciar por fila, a diferencia de los personajes
- * humanos. Se ancla a la posición exacta del ojo (fila 6, columna 5),
- * que debe ser el color de contorno ("O", reutilizado para ojo, mismo
- * patrón que los personajes humanos), rodeado de máscara/piel, no un
- * bloque aislado.
+ * humanos. Se ancla a la posición exacta del ojo (fila 5, columna 3;
+ * reposicionado en la microiteración de la cabeza para quedar en la
+ * unión cráneo/hocico del nuevo diseño), que debe ser el color de
+ * contorno ("O", reutilizado para ojo, mismo patrón que los personajes
+ * humanos), rodeado de máscara/piel, no un bloque aislado.
  */
-test("el ojo (fila 6, columna 5) usa el color de contorno, sin blanco ni pupila compleja", () => {
-  assert.equal(MAX_SIDE_PIXELS[6][5], "O");
+test("el ojo (fila 5, columna 3) usa el color de contorno, sin blanco ni pupila compleja", () => {
+  assert.equal(MAX_SIDE_PIXELS[5][3], "O");
 });
 
 test("la nariz (fila 7, columna 0) usa el color de contorno, en la punta del hocico", () => {
@@ -132,19 +133,27 @@ test("la máscara no ocupa toda la cabeza: hay tan (b/h) visible junto a la más
  * entre el cuerpo y la cola, que vive en columnas mucho más a la
  * derecha.
  */
+function countFilledSegments(row, windowStart, windowEnd) {
+  const cols = [...row.slice(windowStart, windowEnd)];
+  let segments = 0;
+  let previousFilled = false;
+
+  for (const symbol of cols) {
+    const filled = symbol !== MAX_TRANSPARENT;
+    if (filled && !previousFilled) {
+      segments += 1;
+    }
+    previousFilled = filled;
+  }
+
+  return segments;
+}
+
 test("hay dos orejas separadas por un hueco transparente real en las filas superiores (filas 0-3, columnas 0-7)", () => {
   const headWindow = 8;
-  const hasGapRow = MAX_SIDE_PIXELS.slice(0, 4).some((row) => {
-    const cols = [...row.slice(0, headWindow)];
-    const filled = cols.map((c) => c !== MAX_TRANSPARENT);
-    let transitions = 0;
-    for (let i = 1; i < filled.length; i += 1) {
-      if (filled[i] !== filled[i - 1]) transitions += 1;
-    }
-    // Un solo tramo relleno = 2 transiciones. Dos tramos separados por
-    // al menos un hueco = 4 transiciones o más.
-    return transitions >= 4;
-  });
+  const hasGapRow = MAX_SIDE_PIXELS.slice(0, 4).some(
+    (row) => countFilledSegments(row, 0, headWindow) >= 2,
+  );
 
   assert.ok(
     hasGapRow,

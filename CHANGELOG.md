@@ -628,8 +628,29 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   todavía a Max como objeto jugable). `tests/scenes/CreditsScene.test.js`
   se actualiza para anclar la verificación de Max a un píxel concreto de
   la nariz en vez de a un rect grande de posición fija, mismo patrón que
-  los personajes humanos. Requiere aprobación visual humana del acabado
-  final (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  los personajes humanos. Una microiteración visual posterior, tras la
+  revisión humana ("cuerpo aprobado provisionalmente, cabeza no: no se
+  lee suficientemente como Belgian Malinois"), rediseña únicamente la
+  cabeza (filas 0-7 de `MAX_SIDE_PIXELS`): el hocico y el cráneo medían
+  exactamente el mismo ancho (4 columnas cada uno, solapados entre sí),
+  así que no existía ninguna transición real entre ambos pese al
+  comentario que afirmaba lo contrario. El hocico pasa a ocupar 3
+  columnas propias, sin solapar las 4 columnas del cráneo, dándole una
+  proporción más fina y una transición de ancho visible en la unión --
+  el resto de la identidad de la cabeza (dos orejas separadas por un
+  hueco real, máscara facial continua sin cubrir todo el cráneo, un
+  único ojo, ausencia de collar) se conserva. El ojo se reposiciona a la
+  unión cráneo/hocico del nuevo diseño (antes fila 6 columna 5, ahora
+  fila 5 columna 3); la nariz no cambia de posición. Las filas 8-17
+  (torso, highlight de lomo, vientre, patas, almohadillas, cola)
+  permanecen byte a byte idénticas -- no se tocan en esta
+  microiteración, tal como pedía la revisión humana. Tests actualizados
+  en consecuencia (posición del ojo; el test de separación de orejas se
+  corrige de paso, ya que su umbral original de conteo de transiciones
+  era demasiado estricto para un tramo que toca el borde del sprite,
+  aunque el hueco real sí existía -- se sustituye por un conteo directo
+  de segmentos rellenos). Sigue requiriendo aprobación visual humana del
+  acabado final (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

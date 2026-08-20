@@ -17,8 +17,8 @@
  * inventar cuatro datasets si no hacen falta". Consecuencia directa:
  * MAX_SIDE_PIXELS es la única exportación de pixel-art (no hay
  * MAX_FRONT_PIXELS/MAX_BACK_PIXELS), y el criterio de ojos aplicado es
- * el de "vista lateral: 1 ojo visible", en la posición fija (fila 6,
- * columna 5).
+ * el de "vista lateral: 1 ojo visible", en la posición fija (fila 5,
+ * columna 3).
  *
  * Construido con una pasada de "outer outline": el relleno (cuerpo,
  * cabeza, orejas, patas, cola) se diseñó primero sin contorno, y la
@@ -26,10 +26,10 @@
  * se convirtieron en contorno oscuro ("O") -- así el contorno nunca
  * "engulle" un trazo de 1px de ancho (patas, punta de cola), a
  * diferencia de un contorno que sustituyera píxeles de relleno ya
- * existentes. Única excepción deliberada: el hueco de 1px entre las dos
- * orejas (columna 3, filas 1-3) se protegió explícitamente de esta
- * pasada para que siguiera transparente -- de lo contrario el propio
- * contorno habría fusionado ambas orejas en una sola mancha oscura.
+ * existentes. Única excepción deliberada: el hueco entre las dos orejas
+ * (columna 3, filas 0-1) se protegió explícitamente de esta pasada para
+ * que siguiera transparente -- de lo contrario el propio contorno
+ * habría fusionado ambas orejas en una sola mancha oscura.
  *
  * Identidad de Max preservada del render procedural anterior
  * (WorldScene.js/MaxRenderer.js): cuerpo tan/marrón, máscara facial
@@ -38,6 +38,16 @@
  * characterPalettes.js pero renderMax() nunca lo consumía). Bounding
  * box 22x18, igual que el render geométrico anterior (MAX_DIMENSIONS no
  * cambia).
+ *
+ * Microiteración visual (filas 0-7 únicamente, cabeza/orejas/hocico/
+ * cuello): tras la primera aprobación provisional del cuerpo, la cabeza
+ * se rediseñó para que el hocico (cols 0-2) sea claramente más estrecho
+ * que el cráneo (cols 3-6, antes ambos medían 4 columnas y se
+ * solapaban, sin ninguna transición real) -- ver CHANGELOG.md para el
+ * detalle de la corrección.
+ * Filas 8-17 (torso, highlight de lomo, vientre, patas, almohadillas,
+ * cola) permanecen byte a byte idénticas a la versión anterior: no se
+ * tocaron en esta microiteración.
  */
 
 export const MAX_PIXEL_WIDTH = 22;
@@ -69,14 +79,14 @@ export const MAX_PIXEL_PALETTE = {
  * un golden-pixel test, es la fuente real del dato.
  */
 export const MAX_SIDE_PIXELS = [
-  ".O...O...........OO...",
-  "OkO.OdO.........OmmO..",
+  "OkO.OdO..........OO...",
   "Okk.ddO.........OmmO..",
-  "OkkhddO.........OddO..",
-  ".OObbbbO........OddO..",
-  ".OObbbbO.......OddO...",
-  "OkkkkObOOOOOO..OddO...",
-  "OkkkkObbbhhhhOObbO....",
+  ".OOOOO..........OmmO..",
+  "..OhhOO.........OddO..",
+  "OOkbbbbO........OddO..",
+  "kkkObbbOO......OddO...",
+  "kkkOOObbbOOOO..OddO...",
+  "OkkO.ObbbhhhhOObbO....",
   "OOOOOObbbbbbbbbbbO....",
   ".....ObbbbbbbbbOO.....",
   ".....ObbbbbbbbbOO.....",
