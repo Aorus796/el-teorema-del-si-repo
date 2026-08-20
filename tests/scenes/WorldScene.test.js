@@ -24,7 +24,6 @@ import { GameState } from "../../src/state/GameState.js";
 import {
   BRIDE_FATHER_PALETTE,
   BRIDE_PALETTE,
-  MAYOR_PALETTE,
   SILOGIO_PALETTE,
 } from "../../src/content/characterPalettes.js";
 import {
@@ -32,6 +31,10 @@ import {
   ELENA_PALETTE,
   ELENA_TRANSPARENT,
 } from "../../src/content/elenaPixelArt.js";
+import {
+  COROLARIA_FRONT_PIXELS,
+  COROLARIA_PALETTE,
+} from "../../src/content/corolariaPixelArt.js";
 import { AMBIENT_THEME_PATH } from "../../src/content/ambientAudioConfig.js";
 import { OPENING_THEME_PATH } from "../../src/content/introAudioConfig.js";
 import { INTERACT_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
@@ -1528,38 +1531,60 @@ test("render() sin giftCodeSolved (mayor-corolaria, bride-father, plaza-worker) 
   assert.equal(hairRects.length, 0);
 });
 
-test("renderCorolaria dibuja entre 8 y 12 primitivas, todas de MAYOR_PALETTE, con la silueta en piezas de varios anchos", () => {
+test("mayor-corolaria (Corolaria) usa varios tonos distintos de COROLARIA_PALETTE, no un único color de bloque", () => {
   const setup = createWorldAt("axiom-plaza");
-  const object = findObject("axiom-plaza", "mayor-corolaria");
   const context = new FakeCanvasContext();
 
   setup.scene.render(context);
 
-  const screenX = Math.round(object.x - setup.scene.camera.x);
-  const screenY = Math.round(object.y - setup.scene.camera.y);
+  // Corolaria Character Pixel-Art: mismo razonamiento que el test
+  // equivalente de Elena justo más abajo -- el sprite indexado se
+  // rasteriza pixel a pixel (un fillRect de 1x1 por símbolo no
+  // transparente), así que "varios rects de silueta con ancho variable"
+  // ya no aplica (ese contrato era del render geométrico anterior). Se
+  // comprueba en su lugar que el conjunto de colores realmente usados
+  // cubre toda la paleta declarada.
+  const corolariaColors = new Set(
+    context.fillRects
+      .filter((rect) =>
+        Object.values(COROLARIA_PALETTE).includes(rect.fillStyle),
+      )
+      .map((rect) => rect.fillStyle),
+  );
 
-  assertDedicatedNpcRender({
-    fillRects: context.fillRects,
-    screenX,
-    screenY,
-    palette: MAYOR_PALETTE,
-    expectedOffsets: [
-      { x: 2, y: 5, width: 9, height: 2, color: "silhouette" },
-      { x: 0, y: 6, width: 13, height: 7, color: "silhouette" },
-      { x: 1, y: 12, width: 11, height: 8, color: "silhouette" },
-      { x: 3, y: 0, width: 7, height: 2, color: "hair" },
-      { x: 3, y: 2, width: 7, height: 5, color: "head" },
-      { x: 0, y: 7, width: 2, height: 6, color: "head" },
-      { x: 11, y: 7, width: 2, height: 6, color: "head" },
-      { x: 2, y: 7, width: 9, height: 6, color: "body" },
-      { x: 2, y: 13, width: 9, height: 6, color: "bodyAccent" },
-      { x: 6, y: 7, width: 2, height: 2, color: "bodyAccent" },
-    ],
-    expectedBoundingBox: { width: 13, height: 20 },
-  });
+  assert.equal(corolariaColors.size, Object.keys(COROLARIA_PALETTE).length);
 });
 
-test("la base inferior de Corolaria es tan ancha como su torso, no una falda que se ensancha (a diferencia de Elena)", () => {
+test("mayor-corolaria se dibuja con CorolariaRenderer, anclado en su posición real de pantalla", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "mayor-corolaria");
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  // Se ancla a un pixel de piel concreto del sprite indexado (fila 3,
+  // columna 4 de COROLARIA_FRONT_PIXELS = "k") en vez de a un rect de
+  // silueta de fondo, porque la geometría exacta del contorno es una
+  // decisión cosmética que puede ajustarse sin que este test deba
+  // cambiar -- mismo patrón que los tests de anclaje de Elena/Gonzalo.
+  assert.equal(COROLARIA_FRONT_PIXELS[3][4], "k");
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const skinVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === COROLARIA_PALETTE.k &&
+      rect.x === screenX + 4 &&
+      rect.y === screenY + 3 &&
+      rect.width === 1 &&
+      rect.height === 1,
+  );
+
+  assert.equal(skinVisible, true);
+});
+
+test("la base inferior de Corolaria (mayor-corolaria) es tan ancha como su línea de hombros, sin ensancharse como la falda de Elena", () => {
   const setup = createWorldAt("axiom-plaza");
   const object = findObject("axiom-plaza", "mayor-corolaria");
   const context = new FakeCanvasContext();
@@ -1568,26 +1593,23 @@ test("la base inferior de Corolaria es tan ancha como su torso, no una falda que
 
   const screenX = Math.round(object.x - setup.scene.camera.x);
   const screenY = Math.round(object.y - setup.scene.camera.y);
+  const corolariaColors = new Set(Object.values(COROLARIA_PALETTE));
 
-  const torsoRect = context.fillRects.find(
-    (rect) =>
-      rect.fillStyle === MAYOR_PALETTE.body &&
-      rect.x === screenX + 2 &&
-      rect.y === screenY + 7,
-  );
-  const baseRect = context.fillRects.find(
-    (rect) =>
-      rect.fillStyle === MAYOR_PALETTE.bodyAccent &&
-      rect.x === screenX + 2 &&
-      rect.y === screenY + 13,
-  );
+  const rowSpanAt = (row) => {
+    const xs = context.fillRects
+      .filter(
+        (rect) =>
+          rect.y === screenY + row && corolariaColors.has(rect.fillStyle),
+      )
+      .map((rect) => rect.x - screenX);
 
-  assert.ok(torsoRect, "no se encontró el torso de Corolaria");
-  assert.ok(baseRect, "no se encontró la base inferior de Corolaria");
-  assert.ok(
-    baseRect.width <= torsoRect.width,
-    "la base inferior de Corolaria no debe ensancharse más allá de su torso, a diferencia de la falda de Elena",
-  );
+    assert.ok(xs.length > 0, `no se dibujó ningún pixel de Corolaria en la fila ${row}`);
+    return Math.max(...xs) - Math.min(...xs) + 1;
+  };
+
+  // Fila 9 (línea de hombros) y fila 17 (base del vestido) en
+  // COROLARIA_FRONT_PIXELS -- ver corolariaPixelArt.js.
+  assert.equal(rowSpanAt(17), rowSpanAt(9));
 });
 
 test("renderBrideFather dibuja entre 8 y 12 primitivas, todas de BRIDE_FATHER_PALETTE, con la silueta en piezas de varios anchos", () => {
@@ -2923,9 +2945,10 @@ function findObject(mapId, objectId) {
 
 /*
  * Reproduce el listado exacto de fillRect esperado (posición relativa,
- * tamaño y color de paleta) para un render de NPC dedicado -- ver
- * WorldScene.renderCorolaria/renderBrideFather/renderSilogio -- y verifica
- * que: (a) el conteo de primitivas cae en el rango 8-12; (b) todas esas
+ * tamaño y color de paleta) para un render de NPC dedicado con render
+ * geométrico -- ver WorldScene.renderBrideFather/renderSilogio (Corolaria
+ * ya no lo usa: migró a CorolariaRenderer.js, pixel-art indexado) -- y
+ * verifica que: (a) el conteo de primitivas cae en el rango 8-12; (b) todas esas
  * primitivas se dibujan exactamente en la posición y color esperados
  * (cualquier color ajeno o hardcodeado haría que la primitiva esperada no
  * aparezca); (c) la silueta tiene al menos 3 piezas con al menos dos
