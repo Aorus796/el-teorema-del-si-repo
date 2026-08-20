@@ -810,6 +810,47 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   de estilo cartoon, aunque masa y separación sí mejoran de forma medible
   y visible. No se declara aprobación artística: sigue pendiente revisión
   visual humana explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  Quinta revisión humana: "se acerca, pero todavía no". El cuerpo queda
+  aceptado ("suficientemente bien") -- esta ronda se acota estrictamente
+  a las filas 0-6 (cabeza); las filas 7-17 (torso, pecho, abdomen, patas,
+  cola) son byte a byte idénticas a `84fe78d`, protegido ahora con un
+  test dedicado además del ya existente solo para patas. Los problemas
+  señalados: oreja cercana leída como "apéndice rígido" por bajo
+  contraste contra el contorno, coronilla plana (antes un rectángulo
+  uniforme de 5 columnas), poco volumen craneal, orejas más parecidas a
+  cuernos que a triángulos de perro. Oreja cercana: cambia de relleno
+  "k" (máscara oscura, casi indistinguible del contorno "O") a "h" (tan
+  claro, ya usado como highlight de lomo/frente) -- un salto grande de
+  contraste (no el máximo absoluto de la paleta: "m" tiene más, pero
+  queda reservado a la punta de la cola); nuevo test compara luminosidad
+  relativa y confirma que el contraste actual contra el contorno es muy
+  superior al del tono anterior. Base ensanchada de 3 a 4 columnas.
+  Oreja lejana: se desplaza una fila hacia abajo respecto a la cercana
+  (antes ambas puntas compartían la fila 0), dando una pista de
+  profundidad; su tono
+  "d" pasa a usarse por primera vez de forma consistente con lo que la
+  paleta ya documentaba ("sombra de orejas... traseras"). Coronilla: el
+  antiguo rectángulo plano de 5 columnas se sustituye por un bulto
+  estrecho de 3 columnas que se ensancha hacia la masa craneal principal
+  (9 columnas) en la fila siguiente -- ese estrechamiento hacia arriba
+  produce una silueta más redondeada en vez de la meseta horizontal.
+  Ojo, nariz, máscara, hocico y transición cráneo-hocico: sin cambios de
+  posición ni de forma. Superficie de cabeza prácticamente igual (59
+  píxeles frente a 60 antes) -- esta ronda no perseguía más masa total,
+  sino mejor contraste/lectura de las orejas y una coronilla menos
+  plana. `MaxRenderer.js`, `MaxCompanion.js`, `WorldScene.js`,
+  `characterPalettes.js` y los cinco personajes humanos no se tocan.
+  Tests actualizados en `tests/content/MaxPixelArt.test.js` (tono de la
+  oreja cercana "k"→"h" en el test de distinción tonal; nuevo test de
+  contraste de luminosidad; la señal de "tejido de cráneo" del test de
+  separación hocico/orejas pasa de "b/h" a solo "b", porque "h" ahora
+  también es un tono de oreja y comprobarlo daba un falso negativo en la
+  propia fila de la oreja cercana; nuevo test byte a byte que cubre todo
+  el cuerpo, filas 7-17, contra `84fe78d`, además del ya existente solo
+  para patas). No hace falta tocar `tests/scenes/CreditsScene.test.js`
+  -- ojo y nariz no cambian de posición esta ronda. No se declara
+  aprobación artística: sigue pendiente revisión visual humana explícita
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

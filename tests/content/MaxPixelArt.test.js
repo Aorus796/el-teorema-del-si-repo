@@ -191,26 +191,30 @@ test("la cabeza ocupa más superficie que en la versión anterior a este redise�
 });
 
 /*
- * Separación hocico/orejas (petición humana explícita de esta ronda):
- * debe existir al menos una fila, además de la fila de las puntas de
- * las orejas, que contenga tejido de oreja (k/d) pero ningún tejido de
- * cráneo (b/h) ni de hocico -- un "colchón" de aire visual entre la
- * zona de las orejas y la zona donde empieza la masa de cráneo/hocico,
- * en vez de que ambas zonas se toquen en la fila siguiente a las
- * puntas.
+ * Separación hocico/orejas (petición humana explícita de una ronda
+ * anterior, protegida desde entonces): debe existir al menos una fila,
+ * además de la fila de las puntas de las orejas, que contenga tejido
+ * de oreja (h/d) pero ningún tejido de cráneo (b) ni de hocico -- un
+ * "colchón" de aire visual entre la zona de las orejas y la zona donde
+ * empieza la masa de cráneo/hocico, en vez de que ambas zonas se
+ * toquen en la fila siguiente a las puntas. Se usa "b" (no "h") como
+ * señal de cráneo: esta ronda cambió el tono de la oreja cercana de
+ * "k" a "h" para ganar contraste, y "h" es también el tono de
+ * highlight de la coronilla -- comprobar "h" como señal de cráneo
+ * daría un falso negativo en la propia fila de la oreja. "b" (el
+ * relleno base del cráneo) no se reutiliza en ninguna oreja, así que
+ * sigue siendo una señal inequívoca.
  */
-test("hay al menos una fila de solo-orejas (k/d, sin cráneo b/h), ADEMÁS de la fila de las puntas, entre las puntas de las orejas y la masa de cráneo", () => {
-  // La fila 0 (puntas de las orejas) satisface "tiene k/d, no tiene
-  // b/h" por construcción en cualquier diseño con puntas de oreja
-  // aisladas -- incluida la versión rechazada por "hocico y orejas
-  // pegados" (444ee1f). Para proteger de verdad el colchón de aire
-  // añadido esta ronda, hay que excluir la fila 0 y buscar la
-  // condición en las filas siguientes, donde antes empezaba
-  // directamente la masa de cráneo.
+test("hay al menos una fila de solo-orejas (h/d, sin cráneo b), ADEMÁS de la fila de las puntas, entre las puntas de las orejas y la masa de cráneo", () => {
+  // La fila 0 (puntas de las orejas) satisface "tiene h/d, no tiene b"
+  // por construcción en cualquier diseño con puntas de oreja aisladas.
+  // Para proteger de verdad el colchón de aire, hay que excluir la
+  // fila 0 y buscar la condición en las filas siguientes, donde antes
+  // empezaba directamente la masa de cráneo.
   const earOnlyRow = MAX_SIDE_PIXELS.slice(1, 3).find((row) => {
     const chars = [...row];
-    const hasEarTissue = chars.some((c) => c === "k" || c === "d");
-    const hasSkullTissue = chars.some((c) => c === "b" || c === "h");
+    const hasEarTissue = chars.some((c) => c === "h" || c === "d");
+    const hasSkullTissue = chars.some((c) => c === "b");
     return hasEarTissue && !hasSkullTissue;
   });
 
@@ -247,12 +251,13 @@ test("la máscara no ocupa toda la cabeza: hay tan (b/h) visible junto a la más
 /*
  * Orejas (sección 5): dos formas triangulares erguidas por encima del
  * cráneo (filas superiores), separadas por un hueco transparente real
- * (no solo por tono) -- la oreja cercana usa "k" y la lejana "d", con
- * al menos una columna totalmente transparente entre ambas en su fila
- * más estrecha. Se restringe la comprobación a las columnas 0-10 (zona
- * de la cabeza) para no confundir el hueco entre orejas con el hueco
- * entre el cuerpo y la cola, que vive en columnas mucho más a la
- * derecha.
+ * (no solo por tono) -- la oreja cercana usa "h" (tan claro, cambiado
+ * desde "k" en esta ronda para ganar contraste contra el contorno) y
+ * la lejana "d", con al menos una columna totalmente transparente
+ * entre ambas en su fila más estrecha. Se restringe la comprobación a
+ * las columnas 0-10 (zona de la cabeza) para no confundir el hueco
+ * entre orejas con el hueco entre el cuerpo y la cola, que vive en
+ * columnas mucho más a la derecha.
  */
 function countFilledSegments(row, windowStart, windowEnd) {
   const cols = [...row.slice(windowStart, windowEnd)];
@@ -282,11 +287,41 @@ test("hay dos orejas separadas por un hueco transparente real en las filas super
   );
 });
 
-test("la oreja cercana (k) y la oreja lejana (d) son tonalmente distintas", () => {
+test("la oreja cercana (h) y la oreja lejana (d) son tonalmente distintas", () => {
   const earRows = MAX_SIDE_PIXELS.slice(0, 3).join("");
 
-  assert.ok(earRows.includes("k"), "se esperaba la oreja cercana (k)");
+  assert.ok(earRows.includes("h"), "se esperaba la oreja cercana (h)");
   assert.ok(earRows.includes("d"), "se esperaba la oreja lejana (d)");
+});
+
+test("la oreja cercana (h) tiene mejor contraste contra el contorno que el tono de máscara (k) que usaba antes", () => {
+  // Petición humana explícita de esta ronda: la oreja cercana "se lee
+  // demasiado rígida/apéndice" por bajo contraste contra el contorno.
+  // "h" (#d4a876, tan claro) y "O" (#1c1410, contorno oscuro) están en
+  // extremos opuestos de luminosidad; "k" (#3b2a1f, máscara oscura,
+  // el tono que usaba antes) está mucho más cerca de "O". Se compara
+  // luminosidad relativa (percepción estándar) en vez de fijar un
+  // pixel exacto, para no proteger una silueta concreta más de lo
+  // necesario.
+  function relativeLuminance(hex) {
+    const n = Number.parseInt(hex.slice(1), 16);
+    const r = (n >> 16) & 0xff;
+    const g = (n >> 8) & 0xff;
+    const b = n & 0xff;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  const outlineLuminance = relativeLuminance(MAX_PIXEL_PALETTE.O);
+  const earLuminance = relativeLuminance(MAX_PIXEL_PALETTE.h);
+  const previousEarLuminance = relativeLuminance(MAX_PIXEL_PALETTE.k);
+
+  const currentContrast = Math.abs(earLuminance - outlineLuminance);
+  const previousContrast = Math.abs(previousEarLuminance - outlineLuminance);
+
+  assert.ok(
+    currentContrast > previousContrast,
+    `contraste actual (${currentContrast}) debería ser mayor que el del tono anterior (${previousContrast})`,
+  );
 });
 
 /*
@@ -420,6 +455,33 @@ test("las patas (filas 13-17) son byte a byte idénticas a la versión anterior 
   ];
 
   assert.deepEqual(MAX_SIDE_PIXELS.slice(13, 18), PREVIOUS_LEGS);
+});
+
+/*
+ * Cuerpo completo preservado (restricción explícita de esta ronda:
+ * "modificar únicamente la cabeza... NO reabrir el cuerpo"): torso,
+ * pecho, abdomen, patas y cola (filas 7-17) deben quedar byte a byte
+ * idénticos a la versión inmediatamente anterior (commit 84fe78d),
+ * que ya era la versión en la que se aceptó el cuerpo por primera vez
+ * ("el cuerpo está suficientemente bien"). Esta ronda solo debía tocar
+ * las filas 0-6 (cabeza).
+ */
+test("el cuerpo completo (filas 7-17: torso, pecho, abdomen, patas y cola) es byte a byte idéntico a la versión anterior (commit 84fe78d)", () => {
+  const PREVIOUS_BODY = [
+    "OOO.ObbbbbbbbbbbbbbbbO",
+    "....ObbbbhhhhhhhbbbbO.",
+    "....ObbbbbbbbbbbbbbO..",
+    "....ObbbbbbbbbbbbbbO..",
+    ".....OOOssssssssbbbO..",
+    "......OOOOOOOOOOOOO...",
+    ".....ObbOddO.ObbOddO..",
+    ".....ObbOddO.ObbOddO..",
+    ".....OddObbO.OddObbO..",
+    "......OOOssO..OOOssO..",
+    ".....OssOOO..OssOOO...",
+  ];
+
+  assert.deepEqual(MAX_SIDE_PIXELS.slice(7, 18), PREVIOUS_BODY);
 });
 
 test("todos los pixeles del sprite forman una única silueta conectada (sin piezas flotando por separado)", () => {

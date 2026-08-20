@@ -127,9 +127,43 @@
  * idénticas como un "bloque rectangular" innecesario); las dos filas
  * restantes conservan el mismo bulto de pecho. Patas: sin cambios,
  * mismas 5 filas (13-17) con los mismos datos byte a byte que en la
- * versión anterior. Sigue sin collar. Ver CHANGELOG.md para el detalle
- * completo y la comparación visual contra las cuatro versiones
- * anteriores.
+ * versión anterior. Sigue sin collar.
+ *
+ * Legibilidad de cabeza, sin tocar el cuerpo (esta versión): la
+ * revisión humana aceptó el cuerpo tal cual pero seguía sin aprobar la
+ * cabeza -- oreja cercana leída como "apéndice rígido" por bajo
+ * contraste contra el contorno (ambas usaban tonos oscuros muy
+ * próximos), coronilla plana (fila 2 era un rectángulo uniforme de 5
+ * columnas), poca sensación de volumen craneal, y orejas que se leían
+ * más como puntas/cuernos que como triángulos de perro. Ronda acotada
+ * estrictamente a las filas 0-6 (cabeza); las filas 7-17 (torso, patas,
+ * cola) son, de nuevo, byte a byte idénticas a la versión anterior
+ * -- protegido con una prueba de regresión nueva. Oreja cercana: cambia
+ * de relleno "k" (máscara oscura, casi indistinguible del contorno "O")
+ * a "h" (tan claro, el tono de highlight ya usado en el lomo/frente) --
+ * un salto de contraste grande frente a "O" y "b" (luminosidad relativa
+ * ~174 frente a ~45 de "k", sobre un contorno de ~21), aunque no es el
+ * máximo absoluto de la paleta completa: "m" (~205) tiene aún más
+ * contraste, pero se reserva en exclusiva para la punta de la cola y no
+ * se reutiliza aquí para no diluir esa identidad. Base ensanchada de 3 a
+ * 4 columnas (fila 1) para un triángulo más claro. Oreja lejana: se
+ * desplaza una fila hacia abajo respecto a la cercana (punta en fila 1,
+ * base en fila 2 -- antes ambas puntas estaban en la fila 0), dando una
+ * pista de profundidad/perspectiva; mantiene su tono "d" (documentado
+ * en la paleta como "sombra de orejas... traseras", usado por primera
+ * vez de forma consistente con esa descripción). Coronilla: la fila 2,
+ * antes un rectángulo plano de 5 columnas, pasa a un bulto estrecho de
+ * 3 columnas que se ensancha hacia la fila 3 (9 columnas, la masa
+ * craneal principal) -- ese estrechamiento hacia arriba es lo que
+ * produce una silueta más redondeada en vez de la meseta horizontal
+ * anterior. Ojo (fila 4, columna 4) y nariz (fila 6, columna 0): sin
+ * cambios de posición respecto a la versión anterior. Máscara, hocico y
+ * transición cráneo-hocico (filas 4-6): sin cambios de forma. Cabeza:
+ * 59 píxeles de relleno en cols 0-10 (frente a 60 en la versión
+ * anterior -- prácticamente igual; esta ronda no perseguía más masa
+ * total, sino mejor contraste/lectura de las orejas y una coronilla
+ * menos plana). Ver CHANGELOG.md para el detalle completo y la
+ * comparación visual contra las cinco versiones anteriores.
  */
 
 export const MAX_PIXEL_WIDTH = 22;
@@ -161,9 +195,9 @@ export const MAX_PIXEL_PALETTE = {
  * un golden-pixel test, es la fuente real del dato.
  */
 export const MAX_SIDE_PIXELS = [
-  ".Ok......dO...........",
-  "Okkk....dddO..........",
-  ".OObbbbbOOO...........",
+  ".Oh......O............",
+  "Ohhhh....dO...........",
+  ".OOObhbOdddO........O.",
   "ObbhhhhbbbO........OmO",
   "OkkkObbbbO........OddO",
   "kkkkObbbO.........OddO",
