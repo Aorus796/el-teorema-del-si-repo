@@ -373,16 +373,17 @@ test("el paso 1 dibuja a Max junto a Gonzalo y Elena con un color de MAX_PIXEL_P
   // Character Pixel-Art migró renderMax() a un sprite indexado
   // rasterizado píxel a píxel (un fillRect 1x1 por símbolo no
   // transparente de MAX_SIDE_PIXELS), así que se ancla a un pixel
-  // concreto de la nariz (fila 7, columna 0 de MAX_SIDE_PIXELS = "O")
-  // en vez de a un rect grande de posición fija -- mismo patrón que los
-  // tests de anclaje ya usados para Elena/Corolaria/Padre/Silogio.
-  assert.equal(MAX_SIDE_PIXELS[7][0], "O");
+  // concreto de la nariz (fila 4, columna 0 de MAX_SIDE_PIXELS = "O",
+  // tras el rediseño anatómico completo) en vez de a un rect grande de
+  // posición fija -- mismo patrón que los tests de anclaje ya usados
+  // para Elena/Corolaria/Padre/Silogio.
+  assert.equal(MAX_SIDE_PIXELS[4][0], "O");
 
   const noseVisible = context.fillRects.some(
     (rect) =>
       rect.fillStyle === MAX_PIXEL_PALETTE.O &&
       rect.x === 180 &&
-      rect.y === 197 &&
+      rect.y === 194 &&
       rect.width === 1 &&
       rect.height === 1,
   );

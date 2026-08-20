@@ -649,8 +649,45 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   corrige de paso, ya que su umbral original de conteo de transiciones
   era demasiado estricto para un tramo que toca el borde del sprite,
   aunque el hueco real sí existía -- se sustituye por un conteo directo
-  de segmentos rellenos). Sigue requiriendo aprobación visual humana del
-  acabado final (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  de segmentos rellenos). Tras esa microiteración, una segunda revisión
+  humana la rechaza igualmente ("Max ha perdido claramente la esencia
+  visual de un Belgian Malinois... el problema ya no está limitado a la
+  cabeza... silueta de cánido genérico y en algunos ángulos incluso
+  recuerda a caballo/ciervo"), con la instrucción explícita de no seguir
+  ajustando solo la cabeza. Se rediseñan entonces las 18 filas completas
+  de `MAX_SIDE_PIXELS`. Cambio de proporción principal, identificado como
+  la causa estructural de la lectura equina: la cabeza pasa de ocupar 8
+  de las 18 filas (44%) a solo 5 (filas 0-4, 28%), y las patas pasan de
+  6-7 filas a 8 (filas 10-17, 44%) -- cabeza compacta y patas largas en
+  vez de cabeza grande y patas cortas. Cráneo en cuña (más ancho junto a
+  las orejas que junto al hocico) con hocico claramente más estrecho,
+  máscara facial continua sobre hocico/nariz/ojo sin cubrir coronilla ni
+  mejilla posterior, dos orejas triangulares separadas por un hueco
+  transparente real; cuello corto integrado con un pecho alto y
+  redondeado; lomo con highlight y vientre recogido con sombra, en vez
+  del bloque rectangular del intento anterior; grupa donde nace la cola;
+  cuatro patas largas y claramente separadas entre sí, cada una con una
+  ruptura de tono a media altura sugiriendo una articulación; cola con
+  grosor decreciente, curva natural y punta ligeramente elevada (no
+  vertical). Sigue sin haber collar. Paleta (`MAX_PIXEL_PALETTE`,
+  7 colores) y dimensiones (`MAX_DIMENSIONS`, 22x18) no cambian.
+  `MaxRenderer.js`, `MaxCompanion.js`, `WorldScene.js` y los archivos de
+  los cinco personajes humanos no se tocan -- cambio puramente visual
+  sobre `src/content/maxPixelArt.js`. Tests actualizados en
+  `tests/content/MaxPixelArt.test.js` (nueva posición de ojo y nariz;
+  hocico más estrecho que el cráneo, medido por ancho de fila en vez de
+  columnas fijas; torso no degenerado, con variación de ancho entre
+  filas y sombra de vientre presente; patas con dos tonos por
+  articulación) y en el test de anclaje de
+  `tests/scenes/CreditsScene.test.js` (nueva posición de la nariz).
+  Evidencia visual (sprite aislado, cabeza y cuerpo con zoom alto, junto
+  a Gonzalo, y en la Plaza del Axioma en juego) confirma una silueta
+  notablemente más atlética que las dos versiones anteriores -- pecho y
+  hombro visibles, vientre recogido, cuatro patas diferenciadas, orejas
+  triangulares separadas -- aunque, como en la ronda anterior, sigue
+  requiriendo aprobación visual humana explícita del acabado final
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`): esta ronda no declara
+  aprobación artística por sí misma.
 
 ## [1.0.0] - 2026-08-11
 

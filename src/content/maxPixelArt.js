@@ -17,8 +17,8 @@
  * inventar cuatro datasets si no hacen falta". Consecuencia directa:
  * MAX_SIDE_PIXELS es la única exportación de pixel-art (no hay
  * MAX_FRONT_PIXELS/MAX_BACK_PIXELS), y el criterio de ojos aplicado es
- * el de "vista lateral: 1 ojo visible", en la posición fija (fila 5,
- * columna 3).
+ * el de "vista lateral: 1 ojo visible", en la posición fija (fila 2,
+ * columna 4).
  *
  * Construido con una pasada de "outer outline": el relleno (cuerpo,
  * cabeza, orejas, patas, cola) se diseñó primero sin contorno, y la
@@ -27,27 +27,43 @@
  * "engulle" un trazo de 1px de ancho (patas, punta de cola), a
  * diferencia de un contorno que sustituyera píxeles de relleno ya
  * existentes. Única excepción deliberada: el hueco entre las dos orejas
- * (columna 3, filas 0-1) se protegió explícitamente de esta pasada para
- * que siguiera transparente -- de lo contrario el propio contorno
- * habría fusionado ambas orejas en una sola mancha oscura.
+ * (fila 0, columnas 5-7, entre la punta de la oreja cercana en columna
+ * 4 y la punta de la oreja lejana en columna 8) se protegió
+ * explícitamente de esta pasada para que siguiera transparente -- de lo
+ * contrario el propio contorno habría fusionado ambas orejas en una
+ * sola mancha oscura.
  *
- * Identidad de Max preservada del render procedural anterior
- * (WorldScene.js/MaxRenderer.js): cuerpo tan/marrón, máscara facial
- * oscura, dos orejas erguidas, cuatro patas, cola levantada, sin collar
- * -- MAX_PALETTE ya no tenía un campo "collar" en uso (existía en
- * characterPalettes.js pero renderMax() nunca lo consumía). Bounding
- * box 22x18, igual que el render geométrico anterior (MAX_DIMENSIONS no
- * cambia).
+ * Identidad de Max preservada del render procedural original
+ * (WorldScene.js/MaxRenderer.js, antes de la migración a pixel-art
+ * indexado): cuerpo tan/marrón, máscara facial oscura, dos orejas
+ * erguidas, cuatro patas, cola levantada, sin collar -- MAX_PALETTE ya
+ * no tenía un campo "collar" en uso (existía en characterPalettes.js
+ * pero renderMax() nunca lo consumía). Bounding box 22x18, igual que el
+ * render geométrico anterior (MAX_DIMENSIONS no cambia).
  *
- * Microiteración visual (filas 0-7 únicamente, cabeza/orejas/hocico/
- * cuello): tras la primera aprobación provisional del cuerpo, la cabeza
- * se rediseñó para que el hocico (cols 0-2) sea claramente más estrecho
- * que el cráneo (cols 3-6, antes ambos medían 4 columnas y se
- * solapaban, sin ninguna transición real) -- ver CHANGELOG.md para el
- * detalle de la corrección.
- * Filas 8-17 (torso, highlight de lomo, vientre, patas, almohadillas,
- * cola) permanecen byte a byte idénticas a la versión anterior: no se
- * tocaron en esta microiteración.
+ * Rediseño anatómico completo (esta versión, sustituyendo tanto la
+ * migración inicial como la microiteración posterior que solo tocaba la
+ * cabeza): tras dos rondas de revisión visual humana que rechazaron el
+ * resultado por leerse como "cánido genérico, a veces caballo/ciervo",
+ * se rediseñan las 18 filas completas, no solo la cabeza. Cambio de
+ * proporción principal: la cabeza pasa de ocupar 8 de las 18 filas
+ * (44%) a solo 5 (filas 0-4), y las patas pasan de ocupar 6-7 filas a 8
+ * (filas 10-17, 44%) -- un perro con patas largas y cabeza compacta en
+ * vez de cabeza grande y patas cortas, que era la principal causa
+ * estructural de la lectura equina. Cráneo compacto (relleno tan, fila
+ * 2) del que el hocico (relleno de máscara, filas 3-4) se proyecta
+ * hacia delante-abajo estrechándose hasta la nariz, en vez de mantener
+ * el mismo ancho que el cráneo; pecho alto
+ * y redondeado justo tras un cuello corto (fila 5); lomo con highlight
+ * (fila 6) y vientre recogido con sombra (fila 8) para dar lectura de
+ * "atlético" en vez de bloque rectangular; grupa donde nace la cola
+ * (cols 16-18); cuatro patas largas y fáciles de diferenciar entre sí
+ * (huecos de contorno reales entre las cuatro), cada una con una
+ * ruptura de tono a media altura sugiriendo una articulación
+ * (rodilla/corvejón) en vez de un rectángulo uniforme; cola con grosor
+ * decreciente y una curva suave que termina ligeramente elevada, no
+ * vertical. Ver CHANGELOG.md para el detalle completo y la comparación
+ * visual contra las dos versiones anteriores.
  */
 
 export const MAX_PIXEL_WIDTH = 22;
@@ -79,22 +95,22 @@ export const MAX_PIXEL_PALETTE = {
  * un golden-pixel test, es la fuente real del dato.
  */
 export const MAX_SIDE_PIXELS = [
-  "OkO.OdO..........OO...",
-  "Okk.ddO.........OmmO..",
-  ".OOOOO..........OmmO..",
-  "..OhhOO.........OddO..",
-  "OOkbbbbO........OddO..",
-  "kkkObbbOO......OddO...",
-  "kkkOOObbbOOOO..OddO...",
-  "OkkO.ObbbhhhhOObbO....",
-  "OOOOOObbbbbbbbbbbO....",
-  ".....ObbbbbbbbbOO.....",
-  ".....ObbbbbbbbbOO.....",
-  "......ObbddssbbddO....",
-  "......ObbddOObbddO....",
-  "......ObbddOObbddO....",
-  "......ObbddOObbddO....",
-  "......ObbssOObbssO....",
-  "......OssOO.OssOO.....",
-  ".......OO....OO.......",
+  "...Ok...dO............",
+  "..OkhhbdbO..........O.",
+  ".OOOObbbbO.........OmO",
+  "OkkkbbbbO..........OdO",
+  "OkkOOOOOO..........Odd",
+  "OOO.ObbbbOOOOOOOOOObbO",
+  "....ObbbbhhhhhhhbbbbO.",
+  "....ObbbbbbbbbbbbbbO..",
+  ".....OOOssssssssbbbO..",
+  "......OOOOOOOOOOOOO...",
+  ".....ObbOddO.ObbOddO..",
+  ".....ObbOddO.ObbOddO..",
+  ".....ObbOddO.ObbOddO..",
+  ".....ObbObbO.ObbObbO..",
+  ".....OddObbO.OddObbO..",
+  ".....OddObbO.OddObbO..",
+  ".....OddOssO.OddOssO..",
+  ".....OssOOO..OssOOO...",
 ];
