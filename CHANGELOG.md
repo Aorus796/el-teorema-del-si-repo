@@ -578,6 +578,58 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   el Padre y ahora Silogio migraron los tres a render indexado). Requiere
   aprobación visual humana del acabado final
   (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+- Max Character Pixel-Art -- aplica a Max (perro, pastor belga malinois,
+  compañero de seguimiento en `MaxCompanion.js`) el mismo NIVEL DE
+  CALIDAD ya aprobado para los cinco personajes humanos (Gonzalo, Elena,
+  Corolaria, el Padre de la novia y Silogio), sin copiar su arquitectura
+  visual: Max es un cuadrúpedo con una única pose fija (lateral, cabeza
+  a la izquierda), no un bípedo con variantes de facing -- ni
+  `MaxCompanion.render()` ni `CreditsScene.js` piden nunca una
+  orientación distinta, así que `renderMax(context, x, y)` conserva
+  exactamente la misma firma que el render geométrico anterior y ninguno
+  de los dos consumidores necesitó ningún cambio. Migra `MaxRenderer.js`
+  del render geométrico anterior a un único sprite indexado nuevo,
+  `MAX_SIDE_PIXELS` (`src/content/maxPixelArt.js`, 22x18, mismo bounding
+  box que antes -- `MAX_DIMENSIONS` no cambia), rasterizado y cacheado
+  con el mismo patrón que los renderers humanos (cache local propia,
+  `drawImage` estable, `imageSmoothingEnabled = false`). Mejora
+  sustancialmente la cabeza (hocico, máscara facial oscura alrededor de
+  ojo y nariz sin cubrir todo el cráneo, dos orejas erguidas y separadas
+  por un hueco real), el cuerpo (lomo con highlight, vientre con sombra,
+  silueta más compacta y atlética en vez del bloque alargado del primer
+  intento de esta misma migración), las cuatro patas (delanteras y
+  traseras, con sombra de almohadilla) y la cola (levantada, con raíz,
+  curva y punta diferenciadas del cuerpo). Un solo ojo simple (criterio
+  de vista lateral ya aprobado para los personajes humanos), sin
+  sistema facial, sin collar (el campo `MAX_PALETTE.collar` de
+  `characterPalettes.js` sigue sin pintarse, igual que en el render
+  geométrico anterior). Paleta nueva `MAX_PIXEL_PALETTE`
+  (`src/content/maxPixelArt.js`, nombrada así para no colisionar con
+  `MAX_PALETTE` ya existente) deliberadamente más compacta que la de los
+  personajes humanos (7 colores, no 10) -- preserva exactamente los dos
+  colores ya aprobados que sí se usaban (`MAX_PALETTE.mask`/`.body`) más
+  cinco tonos derivados nuevos. `gonzaloPixelArt.js`,
+  `GonzaloRenderer.js`, `elenaPixelArt.js`, `ElenaRenderer.js`,
+  `corolariaPixelArt.js`, `CorolariaRenderer.js`,
+  `brideFatherPixelArt.js`, `BrideFatherRenderer.js`,
+  `silogioPixelArt.js`, `SilogioRenderer.js`, `Player.js` y
+  `MaxCompanion.js` no se tocan en absoluto -- cambio puramente visual:
+  follow, catch-up, spawn/recolocación, reacción/bounce, transiciones de
+  mapa, presencia en el epílogo, `GameState` y save quedan intactos.
+  Nuevos tests: `tests/content/MaxPixelArt.test.js` (dimensiones, filas,
+  símbolos, cobertura de paleta, ojo/nariz en su posición exacta,
+  máscara presente sin dominar la cabeza, dos orejas separadas por un
+  hueco transparente real, cola que sobresale del torso, cuatro patas en
+  dos grupos separados cerca del suelo, conectividad completa de la
+  silueta sin piezas flotantes, ausencia de collar) y
+  `tests/render/MaxRenderer.test.js`, reescrito por completo (cache,
+  reutilización entre frames, desplazamiento correcto con el origen
+  `(x, y)`, y la comprobación ya existente de que ningún mapa incluye
+  todavía a Max como objeto jugable). `tests/scenes/CreditsScene.test.js`
+  se actualiza para anclar la verificación de Max a un píxel concreto de
+  la nariz en vez de a un rect grande de posición fija, mismo patrón que
+  los personajes humanos. Requiere aprobación visual humana del acabado
+  final (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

@@ -1,205 +1,127 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { MAX_DIMENSIONS, renderMax } from "../../src/render/MaxRenderer.js";
-import { MAX_PALETTE } from "../../src/content/characterPalettes.js";
+import {
+  MAX_PIXEL_HEIGHT,
+  MAX_PIXEL_WIDTH,
+} from "../../src/content/maxPixelArt.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
 
-class FakeCanvasContext {
+/*
+ * Cubre la cache de sprites de MaxRenderer.js (propia, local a ese
+ * módulo -- ver el comentario en el propio archivo). Mismo patrón que
+ * tests/render/SilogioRenderer.test.js/BrideFatherRenderer.test.js/
+ * CorolariaRenderer.test.js/ElenaRenderer.test.js/GonzaloRenderer.test.js:
+ * simula un `document` mínimo ANTES de importar el renderer, para que
+ * su cache tome la rama "hay DOM" en vez del fallback usado por el
+ * resto de la suite. Vive en su propio archivo por la misma razón: la
+ * cache es un Map de módulo compartido entre todos los test() de este
+ * archivo bajo `node --test`.
+ *
+ * A diferencia de los renderers humanos, renderMax(context, x, y) NO
+ * tiene parámetro de facing (Max nunca gira visualmente -- ver el
+ * comentario de MaxRenderer.js), así que no hay tests de "up"/"right"/
+ * "left" aquí: solo existe una pose, cacheada bajo una única clave.
+ */
+
+class FakeSpriteContext {
   constructor() {
-    this.fillRects = [];
+    this.imageSmoothingEnabled = true;
+    this.fillRectCalls = 0;
   }
 
-  fillRect(x, y, width, height) {
-    this.fillRects.push({ x, y, width, height, fillStyle: this.fillStyle });
+  fillRect() {
+    this.fillRectCalls += 1;
   }
 }
 
-test("renderMax usa exclusivamente los tres colores de MAX_PALETTE, sin colores inventados", () => {
-  const context = new FakeCanvasContext();
-
-  renderMax(context, 0, 0);
-
-  const usedColors = new Set(context.fillRects.map((rect) => rect.fillStyle));
-  const allowedColors = new Set(Object.values(MAX_PALETTE));
-
-  for (const color of usedColors) {
-    assert.equal(allowedColors.has(color), true);
-  }
-});
-
-test("renderMax dibuja cuerpo/cabeza, dos orejas erguidas, patas delantera y trasera, cola y una máscara, sin collar", () => {
-  const context = new FakeCanvasContext();
-
-  renderMax(context, 0, 0);
-
-  const bodyRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === MAX_PALETTE.body,
-  );
-  const maskRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === MAX_PALETTE.mask,
-  );
-  const collarRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === MAX_PALETTE.collar,
-  );
-
-  assert.equal(bodyRects.length, 9);
-  assert.equal(maskRects.length, 1);
-  assert.equal(
-    collarRects.length,
-    0,
-    "el collar se eliminó por completo del render",
-  );
-});
-
-test("renderMax dibuja todas sus formas conectadas entre sí, sin piezas flotando por separado (cabeza, pecho, cuerpo, patas, cola)", () => {
-  const context = new FakeCanvasContext();
-
-  renderMax(context, 0, 0);
-
-  const bodyRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === MAX_PALETTE.body,
-  );
-
-  const touches = (a, b) => {
-    const xOverlap = a.x < b.x + b.width && a.x + a.width > b.x;
-    const yOverlap = a.y < b.y + b.height && a.y + a.height > b.y;
-    const xAdjacent = a.x === b.x + b.width || b.x === a.x + a.width;
-    const yAdjacent = a.y === b.y + b.height || b.y === a.y + a.height;
-    return (
-      (xOverlap && yOverlap) ||
-      (xOverlap && yAdjacent) ||
-      (yOverlap && xAdjacent)
-    );
-  };
-
-  const visited = new Set([0]);
-  const queue = [0];
-  while (queue.length > 0) {
-    const current = queue.pop();
-    for (let i = 0; i < bodyRects.length; i += 1) {
-      if (visited.has(i)) {
-        continue;
-      }
-      if (touches(bodyRects[current], bodyRects[i])) {
-        visited.add(i);
-        queue.push(i);
-      }
-    }
+class FakeSpriteCanvas {
+  constructor() {
+    this.width = 0;
+    this.height = 0;
+    this.context = new FakeSpriteContext();
   }
 
-  assert.equal(
-    visited.size,
-    bodyRects.length,
-    `algunas formas de Max quedan desconectadas del resto (conectadas: ${visited.size} de ${bodyRects.length})`,
-  );
-});
-
-test("renderMax dibuja al menos dos patas que llegan hasta la línea de suelo", () => {
-  const context = new FakeCanvasContext();
-
-  renderMax(context, 0, 0);
-
-  const groundLine = MAX_DIMENSIONS.height;
-  const legRects = context.fillRects.filter(
-    (rect) =>
-      rect.fillStyle === MAX_PALETTE.body &&
-      rect.y + rect.height === groundLine,
-  );
-
-  assert.ok(
-    legRects.length >= 2,
-    `se esperaban al menos dos patas llegando al suelo, se encontraron ${legRects.length}`,
-  );
-});
-
-test("renderMax conecta cada pata con el cuerpo o la cabeza, sin huecos flotantes", () => {
-  const context = new FakeCanvasContext();
-
-  renderMax(context, 0, 0);
-
-  const groundLine = MAX_DIMENSIONS.height;
-  const bodyRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === MAX_PALETTE.body,
-  );
-  const legRects = bodyRects.filter(
-    (rect) => rect.y + rect.height === groundLine,
-  );
-
-  for (const leg of legRects) {
-    const connectsAbove = bodyRects.some(
-      (rect) =>
-        rect !== leg &&
-        rect.y + rect.height >= leg.y &&
-        rect.x < leg.x + leg.width &&
-        rect.x + rect.width > leg.x,
-    );
-
-    assert.ok(
-      connectsAbove,
-      `la pata en x=${leg.x} queda flotando, sin ninguna forma que la toque por encima`,
-    );
+  getContext(type) {
+    assert.equal(type, "2d");
+    return this.context;
   }
-});
+}
 
-test("renderMax dibuja una cola que sobresale del cuerpo principal hacia la derecha", () => {
-  const context = new FakeCanvasContext();
-
-  renderMax(context, 0, 0);
-
-  const bodyRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === MAX_PALETTE.body,
-  );
-  const mainBody = bodyRects.reduce((widest, rect) =>
-    rect.width * rect.height > widest.width * widest.height ? rect : widest,
-  );
-  const bodyRightEdge = mainBody.x + mainBody.width;
-
-  const tailRects = bodyRects.filter((rect) => rect.x >= bodyRightEdge);
-
-  assert.ok(
-    tailRects.length >= 1,
-    "se esperaba al menos una cola sobresaliendo del cuerpo principal",
-  );
-});
-
-test("renderMax se desplaza correctamente con el origen (x, y) dado", () => {
-  const contextOrigin = new FakeCanvasContext();
-  const contextOffset = new FakeCanvasContext();
-
-  renderMax(contextOrigin, 0, 0);
-  renderMax(contextOffset, 40, 20);
-
-  assert.equal(contextOrigin.fillRects.length, contextOffset.fillRects.length);
-
-  for (let i = 0; i < contextOrigin.fillRects.length; i += 1) {
-    const originRect = contextOrigin.fillRects[i];
-    const offsetRect = contextOffset.fillRects[i];
-
-    assert.equal(offsetRect.x, originRect.x + 40);
-    assert.equal(offsetRect.y, originRect.y + 20);
-    assert.equal(offsetRect.width, originRect.width);
-    assert.equal(offsetRect.height, originRect.height);
-    assert.equal(offsetRect.fillStyle, originRect.fillStyle);
+class FakeGameContext {
+  constructor() {
+    this.drawImageCalls = [];
+    this.imageSmoothingEnabled = true;
   }
+
+  fillRect() {}
+
+  drawImage(image, x, y) {
+    this.drawImageCalls.push({ image, x, y });
+  }
+}
+
+const createdCanvases = [];
+
+const fakeDocument = {
+  createElement(tagName) {
+    assert.equal(tagName, "canvas");
+
+    const canvas = new FakeSpriteCanvas();
+    createdCanvases.push(canvas);
+    return canvas;
+  },
+};
+
+globalThis.document = fakeDocument;
+
+const { renderMax, MAX_DIMENSIONS } = await import(
+  "../../src/render/MaxRenderer.js"
+);
+
+test("MAX_DIMENSIONS coincide con las dimensiones declaradas en los datos", () => {
+  assert.equal(MAX_DIMENSIONS.width, MAX_PIXEL_WIDTH);
+  assert.equal(MAX_DIMENSIONS.height, MAX_PIXEL_HEIGHT);
 });
 
-test("MAX_DIMENSIONS es coherente con la huella real de los rectángulos dibujados", () => {
-  const context = new FakeCanvasContext();
+test("renderMax() rasteriza el sprite en un canvas aparte, sin smoothing, y lo reutiliza con drawImage", () => {
+  createdCanvases.length = 0;
 
-  renderMax(context, 0, 0);
+  const context = new FakeGameContext();
+  renderMax(context, 10, 20);
 
-  for (const rect of context.fillRects) {
-    assert.ok(rect.x >= 0, `x fuera de rango: ${rect.x}`);
-    assert.ok(rect.y >= 0, `y fuera de rango: ${rect.y}`);
-    assert.ok(
-      rect.x + rect.width <= MAX_DIMENSIONS.width,
-      `rect se sale del ancho: ${rect.x + rect.width} > ${MAX_DIMENSIONS.width}`,
-    );
-    assert.ok(
-      rect.y + rect.height <= MAX_DIMENSIONS.height,
-      `rect se sale del alto: ${rect.y + rect.height} > ${MAX_DIMENSIONS.height}`,
-    );
-  }
+  assert.equal(createdCanvases.length, 1);
+  const [canvas] = createdCanvases;
+
+  assert.equal(canvas.width, MAX_PIXEL_WIDTH);
+  assert.equal(canvas.height, MAX_PIXEL_HEIGHT);
+  assert.equal(canvas.context.imageSmoothingEnabled, false);
+  assert.ok(canvas.context.fillRectCalls > 0);
+
+  assert.equal(context.drawImageCalls.length, 1);
+  assert.equal(context.drawImageCalls[0].image, canvas);
+  assert.equal(context.drawImageCalls[0].x, 10);
+  assert.equal(context.drawImageCalls[0].y, 20);
+});
+
+test("un segundo render no crea un canvas nuevo (cache, no reconstrucción por frame)", () => {
+  const canvasCountAfterFirstFrame = createdCanvases.length;
+
+  const first = new FakeGameContext();
+  const second = new FakeGameContext();
+
+  renderMax(first, 10, 20);
+  renderMax(second, 15, 25);
+
+  assert.equal(createdCanvases.length, canvasCountAfterFirstFrame);
+  assert.equal(first.drawImageCalls[0].image, second.drawImageCalls[0].image);
+});
+
+test("renderMax() se desplaza correctamente con el origen (x, y) dado", () => {
+  const context = new FakeGameContext();
+  renderMax(context, 40, 20);
+
+  assert.equal(context.drawImageCalls[0].x, 40);
+  assert.equal(context.drawImageCalls[0].y, 20);
 });
 
 test("ningún mapa incluye todavía a Max como objeto jugable", () => {

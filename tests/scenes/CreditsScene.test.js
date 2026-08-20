@@ -11,8 +11,11 @@ import { SceneManager } from "../../src/core/SceneManager.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
 import { GameState } from "../../src/state/GameState.js";
 import { COUPLE_DEDICATION } from "../../src/content/personalizationConfig.js";
-import { MAX_PALETTE } from "../../src/content/characterPalettes.js";
 import { ELENA_FRONT_PIXELS } from "../../src/content/elenaPixelArt.js";
+import {
+  MAX_PIXEL_PALETTE,
+  MAX_SIDE_PIXELS,
+} from "../../src/content/maxPixelArt.js";
 
 const TITLE_TEXT = "EL TEOREMA DEL SÍ";
 const CREDITS_LINE_1 = "CREADO CON CARIÑO";
@@ -349,38 +352,42 @@ test("el paso 1 dibuja el contorno de Elena píxel a píxel con ElenaRenderer (n
   );
 });
 
-test("el paso 1 dibuja a Max junto a Gonzalo y Elena con un color de MAX_PALETTE", () => {
+test("el paso 1 dibuja a Max junto a Gonzalo y Elena con un color de MAX_PIXEL_PALETTE", () => {
   const { scene } = createScene();
   scene.enter();
 
   const context = new FakeCanvasContext();
   scene.render(context);
 
-  const allowedMaxColors = new Set(Object.values(MAX_PALETTE));
+  const allowedMaxColors = new Set(Object.values(MAX_PIXEL_PALETTE));
   const maxRects = context.fillRects.filter((rect) =>
     allowedMaxColors.has(rect.fillStyle),
   );
 
   assert.ok(
     maxRects.length > 0,
-    "el paso 1 debe dibujar al menos un rectángulo con un color de MAX_PALETTE",
+    "el paso 1 debe dibujar al menos un rectángulo con un color de MAX_PIXEL_PALETTE",
   );
 
-  // renderClosingShot() invoca renderMax(context, 180, 190); la primera
-  // primitiva que dibuja renderMax() es fillRect(x + 4, y + 1, 2, 3) con
-  // MAX_PALETTE.body (ver src/render/MaxRenderer.js), así que en
-  // coordenadas absolutas debe aparecer en (184, 191).
-  const bodyRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === MAX_PALETTE.body,
+  // renderClosingShot() invoca renderMax(context, 180, 190); Max
+  // Character Pixel-Art migró renderMax() a un sprite indexado
+  // rasterizado píxel a píxel (un fillRect 1x1 por símbolo no
+  // transparente de MAX_SIDE_PIXELS), así que se ancla a un pixel
+  // concreto de la nariz (fila 7, columna 0 de MAX_SIDE_PIXELS = "O")
+  // en vez de a un rect grande de posición fija -- mismo patrón que los
+  // tests de anclaje ya usados para Elena/Corolaria/Padre/Silogio.
+  assert.equal(MAX_SIDE_PIXELS[7][0], "O");
+
+  const noseVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === MAX_PIXEL_PALETTE.O &&
+      rect.x === 180 &&
+      rect.y === 197 &&
+      rect.width === 1 &&
+      rect.height === 1,
   );
 
-  assert.deepEqual(bodyRects[0], {
-    x: 184,
-    y: 191,
-    width: 2,
-    height: 3,
-    fillStyle: MAX_PALETTE.body,
-  });
+  assert.equal(noseVisible, true);
 });
 
 test("ningún texto renderizado cae fuera del canvas de 480x270 ni de sus márgenes", () => {

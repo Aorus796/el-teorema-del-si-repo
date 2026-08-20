@@ -27,8 +27,11 @@ export const BRIDE_PALETTE = Object.freeze({
 });
 
 // Paleta propia de Max (perro, pastor belga malinois) -- no reutiliza
-// SKIN_TONE ni ningún campo de las paletas humanas. Sin consumidor
-// jugable todavía (ver src/render/MaxRenderer.js).
+// SKIN_TONE ni ningún campo de las paletas humanas. Consumida por
+// src/content/maxPixelArt.js (MAX_PIXEL_PALETTE.k/.b reutilizan
+// exactamente .mask/.body); "collar" nunca se ha pintado -- Max nunca
+// lleva collar, en el render geométrico anterior ni en el pixel-art
+// indexado actual.
 export const MAX_PALETTE = Object.freeze({
   body: "#b98653",
   mask: "#3b2a1f",
