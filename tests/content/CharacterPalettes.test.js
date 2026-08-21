@@ -57,32 +57,51 @@ test("NAMED_NPC_PALETTES conserva plaza-worker y los 4 NPC ambientales de Plaza 
     accent: "#d9a06f",
     eyes: true,
     hair: "#4a3b2a",
+    hairShadow: "#3b2f22",
+    bodyShadow: "#566c45",
+    hairStyle: "short",
+    silhouetteVariant: "practical",
   });
   assert.deepEqual(NAMED_NPC_PALETTES["ambient-florist-altar"], {
     body: "#5f8f6a",
     accent: "#e8b4d0",
+    flowerAccent: "#e2574c",
     eyes: true,
     hair: "#2e2419",
+    hairShadow: "#251d14",
+    bodyShadow: "#4c7255",
+    hairStyle: "bun",
+    silhouetteVariant: "light",
   });
   assert.deepEqual(NAMED_NPC_PALETTES["ambient-setup-helper"], {
     body: "#7d6a4f",
     accent: "#cbb994",
     eyes: true,
-    apron: true,
     hair: "#6e5a3f",
+    hairShadow: "#584832",
+    bodyShadow: "#64553f",
+    hairStyle: "side",
+    silhouetteVariant: "practical",
   });
   assert.deepEqual(NAMED_NPC_PALETTES["ambient-waiter-tables"], {
     body: "#2f3b52",
     accent: "#c9a15a",
     eyes: true,
-    apron: true,
     hair: "#1f1a15",
+    hairShadow: "#191511",
+    bodyShadow: "#262f42",
+    hairStyle: "fringe",
+    silhouetteVariant: "formal",
   });
   assert.deepEqual(NAMED_NPC_PALETTES["ambient-guest-bench"], {
     body: "#7a5d8f",
     accent: "#e3c9e8",
     eyes: true,
     hair: "#8a6a4a",
+    hairShadow: "#6e553b",
+    bodyShadow: "#624a72",
+    hairStyle: "medium",
+    silhouetteVariant: "formal",
   });
   assert.equal(Object.isFrozen(NAMED_NPC_PALETTES), true);
 });
@@ -94,11 +113,19 @@ test("las paletas de los 4 NPC ambientales nuevos no colisionan de color (body/a
     NAMED_NPC_PALETTES["ambient-waiter-tables"],
     NAMED_NPC_PALETTES["ambient-guest-bench"],
   ];
-  const ambientColors = ambientPalettes.flatMap((palette) => [
-    palette.body,
-    palette.accent,
-    palette.hair,
-  ]);
+  // flowerAccent es opcional (solo ambient-florist-altar lo define hoy):
+  // se filtran los `undefined` de las otras tres paletas para que no
+  // cuenten como colisión entre sí en el chequeo de unicidad de abajo.
+  const ambientColors = ambientPalettes
+    .flatMap((palette) => [
+      palette.body,
+      palette.accent,
+      palette.hair,
+      palette.hairShadow,
+      palette.bodyShadow,
+      palette.flowerAccent,
+    ])
+    .filter((color) => color !== undefined);
 
   assert.equal(new Set(ambientColors).size, ambientColors.length);
 

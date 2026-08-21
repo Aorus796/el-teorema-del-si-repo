@@ -1278,12 +1278,14 @@ test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
   // Con la jugadora en (445,220) la cámara (205,85) deja dentro del
   // viewport, además de plaza-worker, a dos de los cuatro NPC ambientales
   // nuevos: ambient-florist-altar y ambient-guest-bench. Todos los NPC
-  // dibujados con el render genérico (renderNpc) tienen ahora
-  // palette.eyes true, así que cada uno de esos 3 NPC visibles contribuye
-  // 4 rects en NPC_SILHOUETTE: 1 de silueta base, 2 de 1x1 de ojos y 1 de
-  // la hendidura de piernas (esta última siempre se dibuja, tenga o no
-  // apron el NPC, porque el apron se pinta encima sin eliminar el
-  // fillRect ya emitido). Los otros dos NPC ambientales (ambient-setup-
+  // dibujados con el render genérico (renderNpc, segunda ronda de
+  // refinamiento visual -- ver drawGenericNpc*() en WorldScene.js) tienen
+  // ahora palette.eyes true, así que cada uno de esos 3 NPC visibles
+  // contribuye 6 rects en NPC_SILHOUETTE: 2 de contorno (hombros->cintura
+  // y piernas->zapato), 2 de 1x1 de ojos, 1 de la hendidura de piernas y 1
+  // del zapato (estos dos últimos siempre se dibujan, tenga o no apron el
+  // NPC, porque el apron/corbata se pinta encima sin eliminar los
+  // fillRect ya emitidos). Los otros dos NPC ambientales (ambient-setup-
   // helper y ambient-waiter-tables) quedan fuera del viewport en esta
   // posición. mayor-corolaria y bride-father ya tienen renderers
   // dedicados con su propia silueta. A eso se suma un fillRect de 1x1 por
@@ -1291,7 +1293,7 @@ test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
   // ELENA_PALETTE.O reutiliza el mismo valor "#302637" que
   // BRIDE_PALETTE.silhouette/NPC_SILHOUETTE, así que ambos se cuentan
   // juntos al filtrar por ese color.
-  const genericNpcSilhouetteRects = 4 + 4 + 4;
+  const genericNpcSilhouetteRects = 6 + 6 + 6;
   const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
 
   assert.equal(silhouettes.length, genericNpcSilhouetteRects + elenaOutlinePixels);
@@ -1476,13 +1478,13 @@ test("render() en axiom-plaza sin giftCodeSolved dibuja plaza-worker y el NPC am
   // Con la posición de aparición por defecto (240,192) la cámara queda en
   // (0,57): plaza-worker sigue usando el render genérico y, de los cuatro
   // NPC ambientales nuevos, solo ambient-florist-altar cae dentro del
-  // viewport. Todos los NPC dibujados con renderNpc tienen ahora
-  // palette.eyes true, así que cada uno de estos 2 NPC visibles
-  // contribuye 4 rects en NPC_SILHOUETTE (1 silueta + 2 ojos + 1 hendidura
-  // de piernas). mayor-corolaria y bride-father tienen renderers dedicados
-  // con su propia paleta (MAYOR_PALETTE.silhouette /
-  // BRIDE_FATHER_PALETTE.silhouette).
-  assert.equal(silhouettes.length, 4 + 4);
+  // viewport. Todos los NPC dibujados con renderNpc (segunda ronda de
+  // refinamiento visual) tienen ahora palette.eyes true, así que cada uno
+  // de estos 2 NPC visibles contribuye 6 rects en NPC_SILHOUETTE (2 de
+  // contorno + 2 ojos + 1 hendidura de piernas + 1 zapato). mayor-corolaria
+  // y bride-father tienen renderers dedicados con su propia paleta
+  // (MAYOR_PALETTE.silhouette / BRIDE_FATHER_PALETTE.silhouette).
+  assert.equal(silhouettes.length, 6 + 6);
 });
 
 test("render() en axiom-plaza con giftCodeSolved dibuja plaza-worker, dos NPC ambientales y bride-epilogue", () => {
@@ -1509,24 +1511,31 @@ test("render() en axiom-plaza con giftCodeSolved dibuja plaza-worker, dos NPC am
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // Ver nota equivalente más arriba: 4 rects de plaza-worker + 4 rects de
-  // ambient-florist-altar + 4 rects de ambient-guest-bench (cada uno:
-  // silueta + 2 ojos + hendidura de piernas), los dos únicos NPC
-  // ambientales visibles en esta posición de cámara, + un fillRect de 1x1
-  // por cada pixel de contorno/ojo del sprite indexado de Elena.
-  const genericNpcSilhouetteRects = 4 + 4 + 4;
+  // Ver nota equivalente más arriba: 6 rects de plaza-worker + 6 rects de
+  // ambient-florist-altar + 6 rects de ambient-guest-bench (cada uno: 2
+  // de contorno + 2 ojos + hendidura de piernas + zapato), los dos únicos
+  // NPC ambientales visibles en esta posición de cámara, + un fillRect de
+  // 1x1 por cada pixel de contorno/ojo del sprite indexado de Elena.
+  const genericNpcSilhouetteRects = 6 + 6 + 6;
   const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
 
   assert.equal(silhouettes.length, genericNpcSilhouetteRects + elenaOutlinePixels);
 });
 
 /*
- * Plaza del Axioma -- NPCs ambientales (v1.1): cobertura dedicada de los 4
- * NPC nuevos sin nombre propio. Cada uno usa el render genérico
- * (renderNpc) con su propia entrada de NAMED_NPC_PALETTES, así que se
- * comprueba el mismo patrón que ya cubre plaza-worker (body/accent en las
- * posiciones fijas del render genérico), más los rects de ojos/delantal
- * condicionales según palette.eyes/palette.apron.
+ * Plaza del Axioma -- NPCs ambientales (v1.1), segunda ronda de
+ * refinamiento visual (revisión humana explícita: "todavía se leen
+ * demasiado como BLOQUES" -- ver CHANGELOG.md): cobertura dedicada de los
+ * 4 NPC nuevos sin nombre propio. Cada uno usa el render genérico
+ * (renderNpc, ahora compuesto por las sub-rutinas drawGenericNpc*() de
+ * WorldScene.js -- outline/hair/head/body/legs/apron) con su propia
+ * entrada de NAMED_NPC_PALETTES, así que se comprueba el mismo patrón que
+ * cubre plaza-worker más abajo (hombros/torso/accent/pelo trasero+frontal
+ * en las posiciones fijas del render genérico, con los deltas de
+ * palette.silhouetteVariant), más los rects de ojos condicionales según
+ * palette.eyes. El delantal/peto/corbata (específico por object.id, no
+ * por campo de paleta) tiene su propia cobertura dedicada justo debajo
+ * del bucle.
  */
 const AMBIENT_NPC_IDS = [
   "ambient-florist-altar",
@@ -1540,6 +1549,7 @@ for (const npcId of AMBIENT_NPC_IDS) {
     const setup = createWorldAt("axiom-plaza");
     const object = findObject("axiom-plaza", npcId);
     const palette = NAMED_NPC_PALETTES[npcId];
+    const isLight = palette.silhouetteVariant === "light";
 
     // Coloca a la jugadora encima del NPC para que quede dentro del
     // viewport sin depender de la posición de cámara por defecto.
@@ -1553,36 +1563,58 @@ for (const npcId of AMBIENT_NPC_IDS) {
     const screenX = Math.round(object.x - setup.scene.camera.x);
     const screenY = Math.round(object.y - setup.scene.camera.y);
 
-    const bodyVisible = context.fillRects.some(
+    const shouldersVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        rect.x === screenX + 1 &&
+        rect.y === screenY + 7 &&
+        rect.width === (isLight ? 11 : 12) &&
+        rect.height === 2,
+    );
+    const torsoVisible = context.fillRects.some(
       (rect) =>
         rect.fillStyle === palette.body &&
         rect.x === screenX + 2 &&
-        rect.y === screenY + 7 &&
-        rect.width === 10 &&
-        rect.height === 11,
+        rect.y === screenY + 9 &&
+        rect.width === (isLight ? 9 : 10) &&
+        rect.height === 5,
     );
     const accentVisible = context.fillRects.some(
       (rect) =>
         rect.fillStyle === palette.accent &&
         rect.x === screenX + 5 &&
-        rect.y === screenY + 8 &&
+        rect.y === screenY + 9 &&
         rect.width === 4 &&
-        rect.height === 4,
+        rect.height === 2,
     );
 
-    assert.equal(bodyVisible, true, `${npcId} no dibuja su palette.body`);
+    assert.equal(shouldersVisible, true, `${npcId} no dibuja sus hombros`);
+    assert.equal(torsoVisible, true, `${npcId} no dibuja su torso`);
     assert.equal(accentVisible, true, `${npcId} no dibuja su palette.accent`);
 
-    const hairVisible = context.fillRects.some(
+    const hairShadowVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.hairShadow &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY - 2 &&
+        rect.width === 10 &&
+        rect.height === 4,
+    );
+    const hairFrontVisible = context.fillRects.some(
       (rect) =>
         rect.fillStyle === palette.hair &&
-        rect.x === screenX + 2 &&
+        rect.x === screenX + 3 &&
         rect.y === screenY - 1 &&
-        rect.width === 10 &&
-        rect.height === 8,
+        rect.width === 8 &&
+        rect.height === 3,
     );
 
-    assert.equal(hairVisible, true, `${npcId} no dibuja su palette.hair`);
+    assert.equal(
+      hairShadowVisible,
+      true,
+      `${npcId} no dibuja su palette.hairShadow`,
+    );
+    assert.equal(hairFrontVisible, true, `${npcId} no dibuja su palette.hair`);
 
     if (palette.eyes) {
       const eyeRects = context.fillRects.filter(
@@ -1590,39 +1622,11 @@ for (const npcId of AMBIENT_NPC_IDS) {
           rect.fillStyle === "#302637" &&
           rect.width === 1 &&
           rect.height === 1 &&
-          rect.y === screenY + 3 &&
+          rect.y === screenY + 2 &&
           (rect.x === screenX + 5 || rect.x === screenX + 9),
       );
 
       assert.equal(eyeRects.length, 2, `${npcId} no dibuja sus dos ojos`);
-    }
-
-    if (palette.apron) {
-      const apronVisible = context.fillRects.some(
-        (rect) =>
-          rect.x === screenX + 2 &&
-          rect.y === screenY + 14 &&
-          rect.width === 10 &&
-          rect.height === 4 &&
-          rect.fillStyle !== palette.body &&
-          rect.fillStyle !== palette.accent,
-      );
-
-      assert.equal(apronVisible, true, `${npcId} no dibuja su delantal`);
-    } else {
-      const apronBand = context.fillRects.some(
-        (rect) =>
-          rect.x === screenX + 2 &&
-          rect.y === screenY + 14 &&
-          rect.width === 10 &&
-          rect.height === 4,
-      );
-
-      assert.equal(
-        apronBand,
-        false,
-        `${npcId} no debería dibujar un delantal`,
-      );
     }
   });
 
@@ -1649,9 +1653,257 @@ for (const npcId of AMBIENT_NPC_IDS) {
 }
 
 /*
- * plaza-worker: cobertura dedicada del pulido visual (ojos + pelo) que
- * ahora recibe el mismo render genérico (renderNpc) que los 4 NPC
- * ambientales, sin que cambie su posición, colisión ni diálogo.
+ * Delantal/peto/corbata: forma decidida por object.id (drawGenericNpcApron
+ * en WorldScene.js), no por un campo de paleta nuevo. Cobertura dedicada
+ * por NPC porque cada uno dibuja una forma distinta (o ninguna).
+ */
+test("ambient-setup-helper dibuja su banda de delantal práctica sobre la cintura", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "ambient-setup-helper");
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const apronVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#e6ded0" &&
+      rect.x === screenX + 3 &&
+      rect.y === screenY + 14 &&
+      rect.width === 8 &&
+      rect.height === 2,
+  );
+
+  assert.equal(
+    apronVisible,
+    true,
+    "ambient-setup-helper no dibuja su banda de delantal",
+  );
+});
+
+test("ambient-waiter-tables dibuja su peto integrado (tira vertical + banda de cintura)", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "ambient-waiter-tables");
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const bibVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#e6ded0" &&
+      rect.x === screenX + 6 &&
+      rect.y === screenY + 9 &&
+      rect.width === 2 &&
+      rect.height === 5,
+  );
+  const waistBandVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#e6ded0" &&
+      rect.x === screenX + 3 &&
+      rect.y === screenY + 14 &&
+      rect.width === 8 &&
+      rect.height === 2,
+  );
+
+  assert.equal(
+    bibVisible,
+    true,
+    "ambient-waiter-tables no dibuja la tira vertical de su peto",
+  );
+  assert.equal(
+    waistBandVisible,
+    true,
+    "ambient-waiter-tables no dibuja la banda de cintura de su peto",
+  );
+});
+
+test("ambient-guest-bench dibuja una corbata vertical en vez de delantal", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "ambient-guest-bench");
+  const palette = NAMED_NPC_PALETTES["ambient-guest-bench"];
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const tieVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === palette.accent &&
+      rect.x === screenX + 6 &&
+      rect.y === screenY + 9 &&
+      rect.width === 2 &&
+      rect.height === 4,
+  );
+  // Acotado a la propia caja del NPC (14x18px desde screenX/screenY): el
+  // resto del canvas puede contener a otros NPC ambientales con delantal
+  // real (#e6ded0) dentro del mismo viewport.
+  const apronBand = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#e6ded0" &&
+      rect.x >= screenX &&
+      rect.x < screenX + 14 &&
+      rect.y >= screenY - 2 &&
+      rect.y < screenY + 18,
+  );
+
+  assert.equal(tieVisible, true, "ambient-guest-bench no dibuja su corbata");
+  assert.equal(
+    apronBand,
+    false,
+    "ambient-guest-bench no debería dibujar un delantal",
+  );
+});
+
+test("ambient-florist-altar no dibuja delantal, peto ni corbata", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "ambient-florist-altar");
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  // Acotado a la propia caja del NPC (14x18px desde screenX/screenY): el
+  // resto del canvas puede contener a otros NPC ambientales con delantal
+  // real (#e6ded0) dentro del mismo viewport.
+  const apronBand = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#e6ded0" &&
+      rect.x >= screenX &&
+      rect.x < screenX + 14 &&
+      rect.y >= screenY - 2 &&
+      rect.y < screenY + 18,
+  );
+
+  assert.equal(
+    apronBand,
+    false,
+    "ambient-florist-altar no debería dibujar un delantal",
+  );
+});
+
+test("ambient-florist-altar dibuja su detalle floral (rosetón de flowerAccent + centro hairShadow) sobre el hombro derecho", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "ambient-florist-altar");
+  const palette = NAMED_NPC_PALETTES["ambient-florist-altar"];
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  // Cruz de 4 pétalos en palette.flowerAccent alrededor de un centro en
+  // palette.hairShadow (ver drawGenericNpcBody, rama isLight).
+  const petalCoords = [
+    [10, 5],
+    [9, 6],
+    [11, 6],
+    [10, 7],
+  ];
+  const petalRects = petalCoords.map(([dx, dy]) =>
+    context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.flowerAccent &&
+        rect.x === screenX + dx &&
+        rect.y === screenY + dy &&
+        rect.width === 1 &&
+        rect.height === 1,
+    ),
+  );
+
+  assert.ok(
+    petalRects.every(Boolean),
+    "ambient-florist-altar no dibuja los 4 pétalos de su detalle floral",
+  );
+
+  const centerVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === palette.hairShadow &&
+      rect.x === screenX + 10 &&
+      rect.y === screenY + 6 &&
+      rect.width === 1 &&
+      rect.height === 1,
+  );
+
+  assert.equal(
+    centerVisible,
+    true,
+    "ambient-florist-altar no dibuja el centro de su detalle floral",
+  );
+});
+
+test("ningún otro NPC ambiental ni plaza-worker dibuja con el color flowerAccent de ambient-florist-altar", () => {
+  const floristFlowerAccent =
+    NAMED_NPC_PALETTES["ambient-florist-altar"].flowerAccent;
+  const otherIds = ["plaza-worker", ...AMBIENT_NPC_IDS].filter(
+    (id) => id !== "ambient-florist-altar",
+  );
+
+  for (const npcId of otherIds) {
+    const setup = createWorldAt("axiom-plaza");
+    const object = findObject("axiom-plaza", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    // Acotado a la propia caja del NPC (14x18px desde screenX/screenY):
+    // otros NPC visibles en el mismo viewport (incluido, en algunas
+    // posiciones de cámara, el propio ambient-florist-altar) sí pueden
+    // dibujar con flowerAccent, pero eso no significa que este NPC lo
+    // haga.
+    const usesFlowerAccent = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === floristFlowerAccent &&
+        rect.x >= screenX &&
+        rect.x < screenX + 14 &&
+        rect.y >= screenY - 2 &&
+        rect.y < screenY + 18,
+    );
+
+    assert.equal(
+      usesFlowerAccent,
+      false,
+      `${npcId} no debería dibujar con el flowerAccent de ambient-florist-altar`,
+    );
+  }
+});
+
+/*
+ * plaza-worker: cobertura dedicada del pulido visual (ojos + pelo +
+ * hombros/torso/accent) que ahora recibe el mismo render genérico
+ * (renderNpc) que los 4 NPC ambientales, sin que cambie su posición,
+ * colisión ni diálogo. plaza-worker nunca tuvo delantal, y sigue sin
+ * tenerlo (no se inventa uno nuevo).
  */
 test("plaza-worker se dibuja con ojos en las mismas coordenadas relativas que los NPC ambientales", () => {
   const setup = createWorldAt("axiom-plaza");
@@ -1672,14 +1924,14 @@ test("plaza-worker se dibuja con ojos en las mismas coordenadas relativas que lo
       rect.fillStyle === "#302637" &&
       rect.width === 1 &&
       rect.height === 1 &&
-      rect.y === screenY + 3 &&
+      rect.y === screenY + 2 &&
       (rect.x === screenX + 5 || rect.x === screenX + 9),
   );
 
   assert.equal(eyeRects.length, 2, "plaza-worker no dibuja sus dos ojos");
 });
 
-test("plaza-worker se dibuja con el color de pelo de NAMED_NPC_PALETTES['plaza-worker']", () => {
+test("plaza-worker se dibuja con el pelo trasero (hairShadow) y frontal (hair) de NAMED_NPC_PALETTES['plaza-worker']", () => {
   const setup = createWorldAt("axiom-plaza");
   const object = findObject("axiom-plaza", "plaza-worker");
   const palette = NAMED_NPC_PALETTES["plaza-worker"];
@@ -1694,16 +1946,29 @@ test("plaza-worker se dibuja con el color de pelo de NAMED_NPC_PALETTES['plaza-w
   const screenX = Math.round(object.x - setup.scene.camera.x);
   const screenY = Math.round(object.y - setup.scene.camera.y);
 
-  const hairVisible = context.fillRects.some(
+  const hairShadowVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === palette.hairShadow &&
+      rect.x === screenX + 2 &&
+      rect.y === screenY - 2 &&
+      rect.width === 10 &&
+      rect.height === 4,
+  );
+  const hairFrontVisible = context.fillRects.some(
     (rect) =>
       rect.fillStyle === palette.hair &&
-      rect.x === screenX + 2 &&
+      rect.x === screenX + 3 &&
       rect.y === screenY - 1 &&
-      rect.width === 10 &&
-      rect.height === 8,
+      rect.width === 8 &&
+      rect.height === 3,
   );
 
-  assert.equal(hairVisible, true, "plaza-worker no dibuja su palette.hair");
+  assert.equal(
+    hairShadowVisible,
+    true,
+    "plaza-worker no dibuja su palette.hairShadow",
+  );
+  assert.equal(hairFrontVisible, true, "plaza-worker no dibuja su palette.hair");
 });
 
 test("plaza-worker sigue dibujando su body/accent en la misma posición exacta que antes", () => {
@@ -1721,26 +1986,153 @@ test("plaza-worker sigue dibujando su body/accent en la misma posición exacta q
   const screenX = Math.round(object.x - setup.scene.camera.x);
   const screenY = Math.round(object.y - setup.scene.camera.y);
 
-  const bodyVisible = context.fillRects.some(
+  const shouldersVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === palette.body &&
+      rect.x === screenX + 1 &&
+      rect.y === screenY + 7 &&
+      rect.width === 12 &&
+      rect.height === 2,
+  );
+  const torsoVisible = context.fillRects.some(
     (rect) =>
       rect.fillStyle === palette.body &&
       rect.x === screenX + 2 &&
-      rect.y === screenY + 7 &&
+      rect.y === screenY + 9 &&
       rect.width === 10 &&
-      rect.height === 11,
+      rect.height === 5,
   );
   const accentVisible = context.fillRects.some(
     (rect) =>
       rect.fillStyle === palette.accent &&
       rect.x === screenX + 5 &&
-      rect.y === screenY + 8 &&
+      rect.y === screenY + 9 &&
       rect.width === 4 &&
-      rect.height === 4,
+      rect.height === 2,
   );
 
-  assert.equal(bodyVisible, true, "plaza-worker no dibuja su palette.body");
+  assert.equal(shouldersVisible, true, "plaza-worker no dibuja sus hombros");
+  assert.equal(torsoVisible, true, "plaza-worker no dibuja su torso");
   assert.equal(accentVisible, true, "plaza-worker no dibuja su palette.accent");
 });
+
+test("plaza-worker no dibuja ningún delantal (nunca lo tuvo)", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "plaza-worker");
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  // Acotado a la propia caja del NPC (14x18px desde screenX/screenY): el
+  // resto del canvas puede contener a otros NPC ambientales con delantal
+  // real (#e6ded0) dentro del mismo viewport.
+  const apronBand = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#e6ded0" &&
+      rect.x >= screenX &&
+      rect.x < screenX + 14 &&
+      rect.y >= screenY - 2 &&
+      rect.y < screenY + 18,
+  );
+
+  assert.equal(apronBand, false, "plaza-worker no debería dibujar un delantal");
+});
+
+/*
+ * Cobertura estructural y objetiva de "no bloque" (segunda ronda de
+ * refinamiento visual): en vez de juzgar subjetivamente el resultado,
+ * estos tests comprueban tres propiedades geométricas concretas para
+ * cada uno de los 5 NPC que usan el render genérico -- hombros más
+ * anchos que la fila de piernas, brazos cortos (no pegados a toda la
+ * altura del torso) y un hueco real (un rect NPC_SILHOUETTE) entre dos
+ * rects de pierna con x distintos.
+ */
+const GENERIC_NPC_IDS = ["plaza-worker", ...AMBIENT_NPC_IDS];
+
+for (const npcId of GENERIC_NPC_IDS) {
+  test(`${npcId}: la fila de hombros es más ancha que la fila de piernas, los brazos son cortos y hay un hueco real entre las piernas`, () => {
+    const setup = createWorldAt("axiom-plaza");
+    const object = findObject("axiom-plaza", npcId);
+    const palette = NAMED_NPC_PALETTES[npcId];
+
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    // height === 2 aísla el rect de "hombros" (drawGenericNpcBody) del
+    // rect de contorno hombros->cintura de drawGenericNpcOutline (que
+    // también empieza en y+7 pero mide 8px de alto): sin este filtro, el
+    // contorno de fondo sesgaría la comparación agregada.
+    const shoulderRowWidth = context.fillRects
+      .filter((rect) => rect.y === screenY + 7 && rect.height === 2)
+      .reduce((total, rect) => total + rect.width, 0);
+
+    // Mismo razonamiento para la fila de piernas: height === 2 aísla las
+    // dos piernas (accent) y el hueco (NPC_SILHOUETTE) del rect de
+    // contorno piernas->zapato (también en y+15, pero de 3px de alto).
+    const legRowRects = context.fillRects.filter(
+      (rect) => rect.y === screenY + 15 && rect.height === 2,
+    );
+    const legRowWidth = legRowRects.reduce(
+      (total, rect) => total + rect.width,
+      0,
+    );
+
+    assert.ok(
+      shoulderRowWidth > legRowWidth,
+      `${npcId}: la fila de hombros (${shoulderRowWidth}px) no es más ancha que la fila de piernas (${legRowWidth}px)`,
+    );
+
+    const armRects = context.fillRects.filter(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        (rect.x === screenX + 0 || rect.x === screenX + 12) &&
+        rect.y === screenY + 9,
+    );
+
+    assert.equal(armRects.length, 2, `${npcId}: no hay exactamente dos rects de brazo`);
+    for (const armRect of armRects) {
+      assert.ok(
+        armRect.height <= 4,
+        `${npcId}: un brazo cubre toda la altura del torso (${armRect.height}px)`,
+      );
+    }
+
+    const gapRect = legRowRects.find((rect) => rect.fillStyle === "#302637");
+    const legFillRects = legRowRects.filter(
+      (rect) => rect.fillStyle === palette.accent,
+    );
+
+    assert.ok(gapRect, `${npcId}: no hay hueco real entre las piernas`);
+    assert.equal(
+      legFillRects.length,
+      2,
+      `${npcId}: no hay exactamente dos rects de pierna`,
+    );
+    assert.notEqual(
+      legFillRects[0].x,
+      legFillRects[1].x,
+      `${npcId}: los dos rects de pierna comparten la misma x`,
+    );
+    assert.ok(
+      (legFillRects[0].x < gapRect.x && gapRect.x < legFillRects[1].x) ||
+        (legFillRects[1].x < gapRect.x && gapRect.x < legFillRects[0].x),
+      `${npcId}: el hueco no está estrictamente entre las dos piernas`,
+    );
+  });
+}
 
 test("plaza-worker mantiene exactamente su id/x/y/width/height/interactionRadius/label de antes", () => {
   const object = findObject("axiom-plaza", "plaza-worker");
