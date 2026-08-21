@@ -936,7 +936,71 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   puede pedir una ronda adicional centrada en acercar las dos orejas o
   romper la franja horizontal del cráneo si lo considera necesario. No
   se declara aprobación artística: sigue pendiente revisión visual
-  humana explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  humana explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Séptima
+  revisión humana: confirma exactamente el hallazgo que `qa` ya había
+  señalado (orejas demasiado separadas, cráneo plano entre ellas) y
+  pide la ronda adicional que el CHANGELOG anterior dejaba prevista.
+  Ronda acotada de nuevo a las filas 0-6; las filas 7-17 siguen siendo,
+  byte a byte, las mismas de la versión anterior. Revierte el
+  ensanchamiento de la ronda anterior en vez de partir de él: el ancho
+  físico real baja de 14 columnas (cols 0-13) a 11 columnas (cols 0-10)
+  -- más compacto incluso que la versión de dos rondas atrás (12
+  columnas). Las orejas se acercan de 7 columnas de separación entre
+  puntas (columnas 3 y 10) a 4 columnas (columnas 3 y 7), manteniendo el
+  mismo taper triangular de tres niveles de la ronda anterior -- solo
+  recolocado, no rediseñado, para no reabrir el defecto de cruz/T ya
+  resuelto. El hueco real entre orejas se estrecha de 2-6 columnas
+  (según la fila) a 1-3 columnas, siempre transparente en las tres
+  filas. El cráneo (fila 3) se estrecha de 11 a 9 columnas de relleno, y
+  el highlight deja de ser una franja plana de 7 columnas para ser un
+  parche centrado de 3 columnas. Máscara y hocico mantienen la misma
+  forma relativa, con las columnas de mejilla trasera recortadas (de
+  5/3/3 a 3/2/2 en las filas 4-6) para no sobresalir de la cabeza ya más
+  estrecha. Ojo (fila 4, columna 3) y nariz (fila 6, columna 0): sin
+  cambios de posición. Superficie de relleno en la ventana histórica
+  cols 0-10: 60 píxeles (frente a 61 en la versión anterior -- una
+  reducción pequeña y esperada, ya que esta ronda persigue compacidad,
+  no más masa total; sigue por encima de las tres versiones previas a
+  la mockup: 59, 52 y 39). `MaxRenderer.js`, `MaxCompanion.js`,
+  `WorldScene.js`, `characterPalettes.js`, `tests/scenes/CreditsScene.test.js`
+  y los cinco personajes humanos no se tocan. Tests actualizados en
+  `tests/content/MaxPixelArt.test.js`: las ventanas de columna del test
+  de forma triangular se ajustan de la separación ancha de la ronda
+  anterior a la nueva, más estrecha, para no truncar la oreja lejana;
+  nuevo test que mide directamente el hueco entre orejas en las tres
+  filas y exige que sea más estrecho que en la versión anterior
+  (snapshot literal de `2390783`); nuevo test que exige un tramo
+  contiguo de cráneo de al menos 5 columnas entre orejas y hocico,
+  protegiendo la "masa central" pedida explícitamente; nuevo test que
+  compara el ancho del hocico (relleno de máscara) contra el ancho del
+  cráneo -- un test que el comentario del archivo llevaba varias rondas
+  describiendo sin que existiera realmente, detectado al auditar la
+  cobertura existente. Evidencia visual generada a varias escalas
+  (cabeza aislada a 80px/celda, cuerpo completo, junto a Gonzalo)
+  confirma que las orejas ahora nacen visiblemente más juntas del mismo
+  bloque de cráneo, con un hueco real pero estrecho entre ellas en vez
+  de una meseta ancha con un bulto en cada extremo. `qa` matiza, sin
+  embargo, que llamar a esto "la franja plana desaparece" es más fuerte
+  de lo que el pixel-art realmente muestra: la fila 3 sigue siendo una
+  única fila de relleno uniforme (9 columnas, con un parche de highlight
+  de 3 columnas encima), técnicamente tan plana como antes -- lo que
+  cambia es que ahora es más corta y queda pegada directamente bajo la
+  base de las orejas, por lo que se lee menos como "cuello con dos
+  bultos" y algo más como "donde las orejas se juntan", sin ser una
+  progresión que sugiera redondez real. `qa` también observa que, de
+  cerca, la máscara oscura del hocico (ya aprobada en una ronda
+  anterior, fuera de alcance de esta) sigue evocando más a un mapache o
+  zorro que a un perro cartoon inequívoco, y que a la escala real de
+  juego (sprite de 22x18 px dentro de un canvas de 480x270) ni el
+  defecto de separación de orejas ni esta corrección son perceptibles a
+  simple vista -- toda la evaluación visual de esta tarea, en todas sus
+  rondas, se ha hecho sobre la cabeza ampliada, nunca a la escala en la
+  que el jugador realmente la ve. Esta ronda sí resuelve, de forma
+  verificable, el defecto concreto señalado por el rechazo humano (la
+  separación horizontal de las orejas); no se declara resuelta la
+  redondez del cráneo más allá de eso, ni aprobación artística general:
+  sigue pendiente revisión visual humana explícita (`HUMAN CHARACTER
+  STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

@@ -102,12 +102,11 @@ test("la nariz (fila 6, columna 0) usa el color de contorno, en la punta del hoc
 });
 
 /*
- * Cabeza (sección 4) y hocico (sección 4): el hocico debe ser
- * notablemente más estrecho que el cráneo -- se compara el ancho
- * (span) de una fila de cráneo (fila 2, la más ancha, junto a las
- * orejas) contra una fila de hocico (fila 4, la más avanzada), en vez
- * de fijar columnas exactas, para no proteger una silueta concreta más
- * de lo necesario.
+ * Cabeza y hocico: el hocico debe ser notablemente más estrecho que el
+ * cráneo -- se compara el ancho (span) de la fila de cráneo (fila 3,
+ * la masa craneal) contra el ancho del relleno de máscara ("k") en las
+ * filas de hocico (4-6), en vez de fijar columnas exactas, para no
+ * proteger una silueta concreta más de lo necesario.
  */
 function rowSpan(row) {
   const chars = [...row];
@@ -119,6 +118,26 @@ function rowSpan(row) {
 
   return last - first + 1;
 }
+
+test("el hocico (relleno de máscara \"k\" en filas 4-6) es más estrecho que el cráneo (fila 3)", () => {
+  function symbolSpan(row, symbols) {
+    const chars = [...row];
+    const indexes = chars
+      .map((c, i) => (symbols.has(c) ? i : -1))
+      .filter((i) => i >= 0);
+
+    return indexes.length === 0 ? 0 : indexes[indexes.length - 1] - indexes[0] + 1;
+  }
+
+  const skullSpan = symbolSpan(MAX_SIDE_PIXELS[3], new Set(["b", "h"]));
+  const muzzleRows = MAX_SIDE_PIXELS.slice(4, 7);
+  const muzzleSpan = Math.max(...muzzleRows.map((row) => symbolSpan(row, new Set(["k"]))));
+
+  assert.ok(
+    muzzleSpan < skullSpan,
+    `hocico (${muzzleSpan}) debería ser más estrecho que el cráneo (${skullSpan})`,
+  );
+});
 
 test("la región de la cabeza (filas 0-6) no es más ancha en su conjunto que el torso (filas 7-12, excluyendo el resto de contorno del hocico en columnas 0-3) -- cabeza compacta, no desproporcionada", () => {
   // Restringido a las columnas 0-12 (cráneo/orejas/hocico, ensanchado
@@ -281,6 +300,41 @@ test("la máscara no ocupa toda la cabeza: hay tan (b/h) visible junto a la más
 });
 
 /*
+ * Cráneo con masa entre las orejas (petición humana explícita de esta
+ * ronda: "masa central más alta... coronilla compacta... cabeza con
+ * volumen", no "barra horizontal con orejas"): debe haber una fila,
+ * justo debajo de donde terminan las orejas, con un tramo contiguo
+ * ancho de tejido de cráneo (b/h) -- no solo un par de píxeles
+ * simbólicos. No se fija un ancho exacto para no proteger una silueta
+ * concreta, solo un mínimo razonable que distinga "masa" de "línea".
+ */
+test("hay una fila con un tramo contiguo ancho (al menos 5 columnas) de cráneo (b/h) entre las orejas y el hocico", () => {
+  function longestRun(row, symbols) {
+    const chars = [...row];
+    let longest = 0;
+    let current = 0;
+    for (const c of chars) {
+      if (symbols.has(c)) {
+        current += 1;
+        longest = Math.max(longest, current);
+      } else {
+        current = 0;
+      }
+    }
+    return longest;
+  }
+
+  const skullSymbols = new Set(["b", "h"]);
+  const headRows = MAX_SIDE_PIXELS.slice(0, 7);
+  const maxRun = Math.max(...headRows.map((row) => longestRun(row, skullSymbols)));
+
+  assert.ok(
+    maxRun >= 5,
+    `se esperaba un tramo contiguo de al menos 5 columnas de cráneo, el más largo encontrado mide ${maxRun}`,
+  );
+});
+
+/*
  * Orejas (sección 5): dos formas triangulares erguidas por encima del
  * cráneo (filas superiores), separadas por un hueco transparente real
  * (no solo por tono) -- la oreja cercana usa "h" (tan claro, cambiado
@@ -328,6 +382,60 @@ test("la oreja cercana (h) y la oreja lejana (d) son tonalmente distintas", () =
 });
 
 /*
+ * Separación horizontal entre orejas (petición humana explícita de
+ * esta ronda: "reducir claramente la separación horizontal... no
+ * parecer dos protuberancias en extremos opuestos"): se mide el hueco
+ * transparente entre los dos tramos de oreja en cada una de las tres
+ * filas donde viven, y se compara contra el mismo cálculo aplicado a
+ * un snapshot literal de la versión anterior (commit 2390783, la que
+ * `qa` rechazó por "franja plana" entre orejas demasiado separadas).
+ * No se fija un ancho de hueco exacto -- solo que sea estrictamente
+ * menor que antes en las tres filas, que es la petición literal.
+ */
+test("el hueco horizontal entre orejas es más estrecho, en las tres filas, que en la versión anterior (commit 2390783)", () => {
+  function gapWidth(row) {
+    const chars = [...row];
+    const filledIndexes = chars
+      .map((c, i) => (c !== MAX_TRANSPARENT ? i : -1))
+      .filter((i) => i >= 0);
+    // Hueco = tramo de columnas transparentes entre el final del primer
+    // grupo relleno y el inicio del segundo, dentro de la zona de
+    // orejas (antes de que aparezca cualquier otro relleno más a la
+    // derecha, p. ej. la cola).
+    const earZone = chars.slice(0, 12);
+    const earFilled = earZone
+      .map((c, i) => (c !== MAX_TRANSPARENT ? i : -1))
+      .filter((i) => i >= 0);
+    let firstGapStart = -1;
+    let firstGapEnd = -1;
+    for (let i = 1; i < earFilled.length; i += 1) {
+      if (earFilled[i] - earFilled[i - 1] > 1) {
+        firstGapStart = earFilled[i - 1] + 1;
+        firstGapEnd = earFilled[i] - 1;
+        break;
+      }
+    }
+    return firstGapStart === -1 ? 0 : firstGapEnd - firstGapStart + 1;
+  }
+
+  const PREVIOUS_EAR_ROWS = [
+    "..Oh......dO..........",
+    ".Ohhh....dddO.........",
+    "Ohhhhh..dddddO......O.",
+  ];
+
+  const currentGaps = MAX_SIDE_PIXELS.slice(0, 3).map(gapWidth);
+  const previousGaps = PREVIOUS_EAR_ROWS.map(gapWidth);
+
+  currentGaps.forEach((gap, i) => {
+    assert.ok(
+      gap < previousGaps[i],
+      `fila ${i}: hueco actual (${gap}) debería ser más estrecho que el anterior (${previousGaps[i]})`,
+    );
+  });
+});
+
+/*
  * Forma triangular de las orejas (hallazgo explícito de `qa` en un
  * intento anterior de esta misma ronda): un salto de solo dos niveles
  * de ancho -- una punta de 1 columna directamente a una base de 4-5 --
@@ -354,8 +462,12 @@ test("cada oreja tiene al menos tres niveles de ancho estrictamente crecientes e
 
   const earRows = MAX_SIDE_PIXELS.slice(0, 3);
 
-  const nearWidths = earRows.map((row) => filledRunWidth(row, 0, 7));
-  const farWidths = earRows.map((row) => filledRunWidth(row, 7, 14));
+  // Las ventanas dividen justo en la columna del hueco entre orejas
+  // (columna 5, ver más abajo) -- ajustadas tras la ronda que acercó
+  // las orejas, para no truncar la lejana como haría una ventana
+  // pensada para la separación más ancha de la ronda anterior.
+  const nearWidths = earRows.map((row) => filledRunWidth(row, 0, 6));
+  const farWidths = earRows.map((row) => filledRunWidth(row, 6, 12));
 
   const isStrictlyIncreasing = (widths) =>
     widths[0] < widths[1] && widths[1] < widths[2];

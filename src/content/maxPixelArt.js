@@ -29,14 +29,19 @@
  * existentes. Única excepción deliberada: el hueco entre las dos orejas
  * se protege en las tres filas que ocupan (no solo la primera), porque
  * cada fila tiene su propio ancho de oreja y por tanto su propio hueco:
- * fila 0 columnas 4-9 (puntas en columnas 3 y 10), fila 1 columnas 5-8
- * (tramos medios en columnas 2-4 y 9-11), fila 2 columnas 6-7 (bases en
- * columnas 1-5 y 8-12) -- para que siguieran transparentes en las tres.
- * De lo contrario el propio contorno habría fusionado ambas orejas en
- * una sola mancha oscura, o incluso en una franja horizontal que las
- * uniera por debajo (ver el párrafo final sobre la ronda de la cabeza,
- * donde proteger solo la primera fila de un diseño de dos niveles
- * produjo justo ese defecto). El contorno de la
+ * fila 0 columnas 4-6 (puntas en columnas 3 y 7), fila 1 columna 5
+ * (tramos medios en columnas 2-4 y 6-8), fila 2 columna 5 (bases en
+ * columnas 1-4 y 6-9) -- para que siguieran transparentes en las tres.
+ * Las orejas se acercaron deliberadamente en la última ronda (antes las
+ * puntas estaban en columnas 3 y 10, ahora en 3 y 7) para que dejaran de
+ * leerse como dos protuberancias en extremos opuestos de una cabeza
+ * ancha; el hueco entre ellas sigue siendo real en las tres filas, solo
+ * más estrecho (1-3 columnas en vez de 2-6). De lo contrario el propio
+ * contorno habría fusionado ambas orejas en una sola mancha oscura, o
+ * incluso en una franja horizontal que las uniera por debajo (ver el
+ * párrafo final sobre la ronda de la cabeza, donde proteger solo la
+ * primera fila de un diseño de dos niveles produjo justo ese defecto).
+ * El contorno de la
  * cabeza y el de las patas se calculan en sub-cuadrículas separadas (no
  * sobre las 18 filas a la vez): aplicarlo sobre la cuadrícula completa
  * haría que las celdas transparentes de la cabeza se fusionaran con el
@@ -230,8 +235,38 @@
  * contorno oscuro como ojo sin excepción; introducir blanco aquí
  * rompería esa convención compartida por todo el juego para un detalle
  * que la propia tarea no exige de forma explícita. Sigue sin collar.
- * Ver CHANGELOG.md para el detalle completo y la comparación visual
- * contra las seis versiones anteriores.
+ *
+ * Cabeza compacta (esta versión): la revisión de `qa` sobre el
+ * resultado de la ronda anterior, tras confirmar que el defecto de
+ * cruz/T en las orejas quedaba resuelto, señaló un problema distinto:
+ * con la cabeza ensanchada a 14 columnas, las dos orejas quedaban muy
+ * separadas horizontalmente, unidas por una franja plana de highlight
+ * craneal (7 columnas de "h" en la fila 3) -- se leía como un cuello
+ * con una protuberancia en cada extremo, no como una cabeza compacta.
+ * Esta ronda revierte el ensanchamiento: el ancho físico real vuelve a
+ * bajar de 14 columnas (cols 0-13) a 11 columnas (cols 0-10), más
+ * estrecho incluso que la versión de dos rondas atrás (12 columnas).
+ * Las orejas se acercan de 7 columnas de separación entre puntas (columna
+ * 3 y columna 10) a 4 columnas (columna 3 y columna 7), manteniendo el
+ * mismo taper triangular de tres niveles de la ronda anterior (punta 1
+ * columna, tramo medio 3, base 5) -- solo recolocado, no rediseñado.
+ * El hueco real entre orejas se estrecha de 2-6 columnas (según la
+ * fila) a 1-3 columnas, siempre transparente en las tres filas. El
+ * cráneo (fila 3) se estrecha de 11 a 9 columnas de relleno, y el
+ * highlight deja de ser una franja plana de 7 columnas para ser un
+ * parche centrado de 3 columnas -- menos "barra horizontal", más
+ * "remiendo de luz" sobre una masa más compacta. La máscara y el hocico
+ * (filas 4-6) mantienen la misma forma y proporción relativa al cráneo,
+ * con las columnas de mejilla trasera recortadas para no sobresalir de
+ * la cabeza ya más estrecha (cheek de 3/2/2 columnas en vez de 5/3/3).
+ * Ojo (fila 4, columna 3) y nariz (fila 6, columna 0): sin cambios de
+ * posición. Superficie de relleno en la ventana histórica cols 0-10: 60
+ * píxeles (frente a 61 en la versión anterior -- una reducción pequeña
+ * y esperada, ya que esta ronda persigue compacidad, no más masa total;
+ * sigue siendo más que en las tres versiones anteriores a la
+ * convergencia con el mockup: 59, 52 y 39). Sigue sin collar. Ver
+ * CHANGELOG.md para el detalle completo y la comparación visual contra
+ * las siete versiones anteriores.
  */
 
 export const MAX_PIXEL_WIDTH = 22;
@@ -263,13 +298,13 @@ export const MAX_PIXEL_PALETTE = {
  * un golden-pixel test, es la fuente real del dato.
  */
 export const MAX_SIDE_PIXELS = [
-  "..Oh......dO..........",
-  ".Ohhh....dddO.........",
-  "Ohhhhh..dddddO......O.",
-  "ObbhhhhhhhbbO......OmO",
-  "kkkOkkkbbbbbO.....OddO",
-  "kkkkkkObbbOO......OddO",
-  "OkkkkObbbO........OddO",
+  "..Oh...dO.............",
+  ".Ohhh.dddO............",
+  "Ohhhh.ddddO.........O.",
+  "ObbbhhhbbbO........OmO",
+  "kkkOkkbbbO........OddO",
+  "kkkkkObbO.........OddO",
+  "OkkkObbO..........OddO",
   "OOO.ObbbbbbbbbbbbbbbbO",
   "....ObbbbhhhhhhhbbbbO.",
   "....ObbbbbbbbbbbbbbO..",
