@@ -9,28 +9,57 @@
 import { MAX_DIMENSIONS, renderMax } from "../render/MaxRenderer.js";
 
 /*
+ * Caja de colisión/spawn de Max -- deliberadamente DESACOPLADA de
+ * MAX_DIMENSIONS (el tamaño real del sprite visual, en MaxRenderer.js).
+ * La ronda que amplió el sprite visual de 22x18 a 22x20 para poder
+ * dibujar una cabeza con más detalle fue explícita en que el aumento es
+ * "únicamente visual" y no debe alterar hitbox, colisión, spawn,
+ * reposicionamiento ni ningún otro comportamiento de juego -- por eso
+ * esta constante congela el tamaño lógico anterior (22x18) en vez de
+ * heredar el nuevo tamaño visual. resolveMaxSpawnPosition() (en
+ * WorldScene.js) usa esta constante, no MAX_DIMENSIONS, para construir
+ * la caja que valida contra el CollisionMap. El comentario de
+ * MAX_FOLLOW_MIN_DISTANCE más abajo, en cambio, sí depende del tamaño
+ * VISUAL real (MAX_DIMENSIONS) porque su objetivo es evitar el solape
+ * visual de los dos sprites en pantalla, no la colisión lógica.
+ */
+export const MAX_HITBOX_DIMENSIONS = Object.freeze({ width: 22, height: 18 });
+
+/*
  * Zona muerta: por debajo de esta distancia Max no se mueve.
  *
- * Calculada para que la caja visual de Max (22x18, MAX_DIMENSIONS de
- * MaxRenderer.js) y la de Gonzalo (según los fillRect() reales de
- * Player.render()) nunca se solapen, ni siquiera en la aproximación
- * diagonal más desfavorable durante el seguimiento normal.
+ * Calculada para que la caja VISUAL de Max (MAX_DIMENSIONS de
+ * MaxRenderer.js -- 22x20 desde la ronda que amplió el sprite para
+ * poder dibujar la cabeza con más detalle, antes 22x18) y la de Gonzalo
+ * (según los fillRect() reales de Player.render()) nunca se solapen, ni
+ * siquiera en la aproximación diagonal más desfavorable durante el
+ * seguimiento normal. Esta constante en sí NO cambia con el tamaño
+ * visual del sprite -- es "follow distance", explícitamente fuera de
+ * alcance de esa ronda -- pero el margen de seguridad que ofrece sobre
+ * el peor caso real sí se recalcula automáticamente cada vez que
+ * MAX_DIMENSIONS cambia, porque tests/world/MaxCompanion.test.js lee
+ * MAX_DIMENSIONS en tiempo de ejecución, no estos números fijos en el
+ * comentario (ver el propio test para la cifra vigente del margen).
  *
  * El sprite de Gonzalo NO es simétrico respecto a su ancla (this.x,
  * this.y): el pelo llega hasta 14px por encima del ancla, mientras que las
  * piernas/bodyAccent solo llegan hasta 8px por debajo. Un cálculo que
  * asuma un semi-alto simétrico (por ejemplo 11/11) subestima el caso en el
  * que Max se acerca por arriba (donde el pelo de Gonzalo es lo que hay que
- * despejar), que es el peor caso real:
+ * despejar), que es el peor caso real. Con el sprite visual de 22x18
+ * (el tamaño vigente cuando se fijó este valor):
  *   semiAnchoSuma = MaxAncho/2 + GonzaloAncho/2 = 11 + 7 = 18
  *   semiAltoSuma  = MaxAlto/2 + GonzaloArriba   = 9 + 14 = 23  (peor caso)
  *   distanciaSegura = sqrt(18^2 + 23^2) ≈ 29.21
- * Se redondea hacia arriba a 31 (margen de ~1.79px sobre el peor caso
- * real) y se ha verificado visualmente con capturas de pantalla reales
- * que, con este valor, el sprite de Max ya no se solapa con el de Gonzalo
- * durante el seguimiento normal ni en el spawn tras un cambio de mapa.
- * Ver tests/world/MaxCompanion.test.js para la comprobación geométrica
- * automatizada de esta garantía usando los fillRect() reales de Player.js.
+ * Se redondeó hacia arriba a 31 (margen de ~1.79px sobre el peor caso
+ * real de entonces) y se verificó visualmente con capturas de pantalla
+ * reales que, con este valor, el sprite de Max no se solapaba con el de
+ * Gonzalo durante el seguimiento normal ni en el spawn tras un cambio de
+ * mapa. Con el sprite visual ampliado a 22x20, el margen se reduce (más
+ * alto de sprite = mayor semiAltoSuma) pero sigue siendo positivo -- ver
+ * tests/world/MaxCompanion.test.js para la comprobación geométrica
+ * automatizada y la cifra exacta vigente, calculada sobre el
+ * MAX_DIMENSIONS real en cada ejecución, no sobre estos números fijos.
  */
 export const MAX_FOLLOW_MIN_DISTANCE = 31;
 // A partir de esta distancia, Max usa la velocidad de alcance en vez de la
@@ -196,8 +225,10 @@ export function computeMaxSpawnPosition(player) {
  * posición exacta, no pathfinding: no hay búsqueda de ruta, no se recorre
  * el mapa, no hay estructura de nodos visitados. WorldScene.js
  * (resolveMaxSpawnPosition()) prueba cada una, en este mismo orden, contra
- * el CollisionMap del mapa actual, con el tamaño real de Max
- * (MAX_DIMENSIONS), hasta encontrar la primera que no colisione:
+ * el CollisionMap del mapa actual, con el tamaño lógico de Max
+ * (MAX_HITBOX_DIMENSIONS, deliberadamente distinto del tamaño visual
+ * del sprite -- ver su comentario), hasta encontrar la primera que no
+ * colisione:
  *
  *   Anillo 1 (cardinales, distancia MAX_FOLLOW_MIN_DISTANCE):
  *     1. El offset normal, detrás de Gonzalo según su facing actual (el
@@ -218,10 +249,11 @@ export function computeMaxSpawnPosition(player) {
  *   Último candidato local:
  *     13. La posición exacta de Gonzalo. El jugador cabe ahí porque su
  *        propia caja de colisión (10x14, Player.getCollisionBox()) es más
- *        pequeña que la de Max (MAX_DIMENSIONS, 22x18): un hueco justo del
- *        tamaño de Gonzalo no garantiza sitio para la caja mayor de Max,
- *        así que este candidato tampoco es una garantía por sí solo -- es
- *        solo el último intento local antes de rendirse.
+ *        pequeña que la de Max (MAX_HITBOX_DIMENSIONS, 22x18): un hueco
+ *        justo del tamaño de Gonzalo no garantiza sitio para la caja
+ *        mayor de Max, así que este candidato tampoco es una garantía
+ *        por sí solo -- es solo el último intento local antes de
+ *        rendirse.
  *
  * Los tres anillos garantizan por construcción que Max nunca solapa el
  * sprite de Gonzalo (todas las distancias son >= MAX_FOLLOW_MIN_DISTANCE,

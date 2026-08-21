@@ -102,7 +102,6 @@ import {
 import {
   ARCHIVE_CRITERIA_PHASE,
 } from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
-import { MAX_DIMENSIONS } from "../render/MaxRenderer.js";
 import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
 import { renderCorolaria as renderCorolariaSprite } from "../render/CorolariaRenderer.js";
 import { renderBrideFather as renderBrideFatherSprite } from "../render/BrideFatherRenderer.js";
@@ -111,6 +110,7 @@ import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
 import {
   computeMaxSpawnCandidates,
+  MAX_HITBOX_DIMENSIONS,
   MaxCompanion,
 } from "../world/MaxCompanion.js";
 import { Player } from "../world/Player.js";
@@ -916,10 +916,13 @@ export class WorldScene {
  * prueba, en orden, cada uno de los 13 candidatos locales de
  * computeMaxSpawnCandidates() -- tres anillos fijos alrededor de Gonzalo más
  * su posición exacta, ver el comentario de esa función en MaxCompanion.js --
- * contra el CollisionMap real del mapa actual, usando el tamaño real de Max
- * (MAX_DIMENSIONS), y devuelve el primero que no colisione con un tile
- * sólido (muro, o escenografía sólida como la fuente o las mesas, que ya se
- * representan como región sólida en worldMaps.js).
+ * contra el CollisionMap real del mapa actual, usando el tamaño lógico de
+ * Max (MAX_HITBOX_DIMENSIONS -- deliberadamente distinto del tamaño
+ * visual del sprite, MAX_DIMENSIONS de MaxRenderer.js; ver el comentario
+ * de MAX_HITBOX_DIMENSIONS en MaxCompanion.js), y devuelve el primero
+ * que no colisione con un tile sólido (muro, o escenografía sólida como
+ * la fuente o las mesas, que ya se representan como región sólida en
+ * worldMaps.js).
  *
  * Si ninguno de los 13 candidatos locales es válido, se intenta como último
  * recurso `previousMaxPosition` -- la posición donde ya estaba Max antes de
@@ -968,10 +971,10 @@ export function resolveMaxSpawnPosition(
 
 function getMaxCollisionBox(position) {
   return {
-    x: position.x - MAX_DIMENSIONS.width / 2,
-    y: position.y - MAX_DIMENSIONS.height / 2,
-    width: MAX_DIMENSIONS.width,
-    height: MAX_DIMENSIONS.height,
+    x: position.x - MAX_HITBOX_DIMENSIONS.width / 2,
+    y: position.y - MAX_HITBOX_DIMENSIONS.height / 2,
+    width: MAX_HITBOX_DIMENSIONS.width,
+    height: MAX_HITBOX_DIMENSIONS.height,
   };
 }
 

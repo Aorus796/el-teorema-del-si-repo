@@ -578,6 +578,735 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   el Padre y ahora Silogio migraron los tres a render indexado). Requiere
   aprobación visual humana del acabado final
   (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+- Max Character Pixel-Art -- aplica a Max (perro, pastor belga malinois,
+  compañero de seguimiento en `MaxCompanion.js`) el mismo NIVEL DE
+  CALIDAD ya aprobado para los cinco personajes humanos (Gonzalo, Elena,
+  Corolaria, el Padre de la novia y Silogio), sin copiar su arquitectura
+  visual: Max es un cuadrúpedo con una única pose fija (lateral, cabeza
+  a la izquierda), no un bípedo con variantes de facing -- ni
+  `MaxCompanion.render()` ni `CreditsScene.js` piden nunca una
+  orientación distinta, así que `renderMax(context, x, y)` conserva
+  exactamente la misma firma que el render geométrico anterior y ninguno
+  de los dos consumidores necesitó ningún cambio. Migra `MaxRenderer.js`
+  del render geométrico anterior a un único sprite indexado nuevo,
+  `MAX_SIDE_PIXELS` (`src/content/maxPixelArt.js`, 22x18, mismo bounding
+  box que antes -- `MAX_DIMENSIONS` no cambia), rasterizado y cacheado
+  con el mismo patrón que los renderers humanos (cache local propia,
+  `drawImage` estable, `imageSmoothingEnabled = false`). Mejora
+  sustancialmente la cabeza (hocico, máscara facial oscura alrededor de
+  ojo y nariz sin cubrir todo el cráneo, dos orejas erguidas y separadas
+  por un hueco real), el cuerpo (lomo con highlight, vientre con sombra,
+  silueta más compacta y atlética en vez del bloque alargado del primer
+  intento de esta misma migración), las cuatro patas (delanteras y
+  traseras, con sombra de almohadilla) y la cola (levantada, con raíz,
+  curva y punta diferenciadas del cuerpo). Un solo ojo simple (criterio
+  de vista lateral ya aprobado para los personajes humanos), sin
+  sistema facial, sin collar (el campo `MAX_PALETTE.collar` de
+  `characterPalettes.js` sigue sin pintarse, igual que en el render
+  geométrico anterior). Paleta nueva `MAX_PIXEL_PALETTE`
+  (`src/content/maxPixelArt.js`, nombrada así para no colisionar con
+  `MAX_PALETTE` ya existente) deliberadamente más compacta que la de los
+  personajes humanos (7 colores, no 10) -- preserva exactamente los dos
+  colores ya aprobados que sí se usaban (`MAX_PALETTE.mask`/`.body`) más
+  cinco tonos derivados nuevos. `gonzaloPixelArt.js`,
+  `GonzaloRenderer.js`, `elenaPixelArt.js`, `ElenaRenderer.js`,
+  `corolariaPixelArt.js`, `CorolariaRenderer.js`,
+  `brideFatherPixelArt.js`, `BrideFatherRenderer.js`,
+  `silogioPixelArt.js`, `SilogioRenderer.js`, `Player.js` y
+  `MaxCompanion.js` no se tocan en absoluto -- cambio puramente visual:
+  follow, catch-up, spawn/recolocación, reacción/bounce, transiciones de
+  mapa, presencia en el epílogo, `GameState` y save quedan intactos.
+  Nuevos tests: `tests/content/MaxPixelArt.test.js` (dimensiones, filas,
+  símbolos, cobertura de paleta, ojo/nariz en su posición exacta,
+  máscara presente sin dominar la cabeza, dos orejas separadas por un
+  hueco transparente real, cola que sobresale del torso, cuatro patas en
+  dos grupos separados cerca del suelo, conectividad completa de la
+  silueta sin piezas flotantes, ausencia de collar) y
+  `tests/render/MaxRenderer.test.js`, reescrito por completo (cache,
+  reutilización entre frames, desplazamiento correcto con el origen
+  `(x, y)`, y la comprobación ya existente de que ningún mapa incluye
+  todavía a Max como objeto jugable). `tests/scenes/CreditsScene.test.js`
+  se actualiza para anclar la verificación de Max a un píxel concreto de
+  la nariz en vez de a un rect grande de posición fija, mismo patrón que
+  los personajes humanos. Una microiteración visual posterior, tras la
+  revisión humana ("cuerpo aprobado provisionalmente, cabeza no: no se
+  lee suficientemente como Belgian Malinois"), rediseña únicamente la
+  cabeza (filas 0-7 de `MAX_SIDE_PIXELS`): el hocico y el cráneo medían
+  exactamente el mismo ancho (4 columnas cada uno, solapados entre sí),
+  así que no existía ninguna transición real entre ambos pese al
+  comentario que afirmaba lo contrario. El hocico pasa a ocupar 3
+  columnas propias, sin solapar las 4 columnas del cráneo, dándole una
+  proporción más fina y una transición de ancho visible en la unión --
+  el resto de la identidad de la cabeza (dos orejas separadas por un
+  hueco real, máscara facial continua sin cubrir todo el cráneo, un
+  único ojo, ausencia de collar) se conserva. El ojo se reposiciona a la
+  unión cráneo/hocico del nuevo diseño (antes fila 6 columna 5, ahora
+  fila 5 columna 3); la nariz no cambia de posición. Las filas 8-17
+  (torso, highlight de lomo, vientre, patas, almohadillas, cola)
+  permanecen byte a byte idénticas -- no se tocan en esta
+  microiteración, tal como pedía la revisión humana. Tests actualizados
+  en consecuencia (posición del ojo; el test de separación de orejas se
+  corrige de paso, ya que su umbral original de conteo de transiciones
+  era demasiado estricto para un tramo que toca el borde del sprite,
+  aunque el hueco real sí existía -- se sustituye por un conteo directo
+  de segmentos rellenos). Tras esa microiteración, una segunda revisión
+  humana la rechaza igualmente ("Max ha perdido claramente la esencia
+  visual de un Belgian Malinois... el problema ya no está limitado a la
+  cabeza... silueta de cánido genérico y en algunos ángulos incluso
+  recuerda a caballo/ciervo"), con la instrucción explícita de no seguir
+  ajustando solo la cabeza. Se rediseñan entonces las 18 filas completas
+  de `MAX_SIDE_PIXELS`. Cambio de proporción principal, identificado como
+  la causa estructural de la lectura equina: la cabeza pasa de ocupar 8
+  de las 18 filas (44%) a solo 5 (filas 0-4, 28%), y las patas pasan de
+  6-7 filas a 8 (filas 10-17, 44%) -- cabeza compacta y patas largas en
+  vez de cabeza grande y patas cortas. Cráneo en cuña (más ancho junto a
+  las orejas que junto al hocico) con hocico claramente más estrecho,
+  máscara facial continua sobre hocico/nariz/ojo sin cubrir coronilla ni
+  mejilla posterior, dos orejas triangulares separadas por un hueco
+  transparente real; cuello corto integrado con un pecho alto y
+  redondeado; lomo con highlight y vientre recogido con sombra, en vez
+  del bloque rectangular del intento anterior; grupa donde nace la cola;
+  cuatro patas largas y claramente separadas entre sí, cada una con una
+  ruptura de tono a media altura sugiriendo una articulación; cola con
+  grosor decreciente, curva natural y punta ligeramente elevada (no
+  vertical). Sigue sin haber collar. Paleta (`MAX_PIXEL_PALETTE`,
+  7 colores) y dimensiones (`MAX_DIMENSIONS`, 22x18) no cambian.
+  `MaxRenderer.js`, `MaxCompanion.js`, `WorldScene.js` y los archivos de
+  los cinco personajes humanos no se tocan -- cambio puramente visual
+  sobre `src/content/maxPixelArt.js`. Tests actualizados en
+  `tests/content/MaxPixelArt.test.js` (nueva posición de ojo y nariz;
+  hocico más estrecho que el cráneo, medido por ancho de fila en vez de
+  columnas fijas; torso no degenerado, con variación de ancho entre
+  filas y sombra de vientre presente; patas con dos tonos por
+  articulación) y en el test de anclaje de
+  `tests/scenes/CreditsScene.test.js` (nueva posición de la nariz).
+  Evidencia visual (sprite aislado, cabeza y cuerpo con zoom alto, junto
+  a Gonzalo, y en la Plaza del Axioma en juego) confirma una silueta
+  notablemente más atlética que las dos versiones anteriores -- pecho y
+  hombro visibles, vientre recogido, cuatro patas diferenciadas, orejas
+  triangulares separadas -- aunque, como en la ronda anterior, sigue
+  requiriendo aprobación visual humana explícita del acabado final
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`): esta ronda no declara
+  aprobación artística por sí misma. Tercera revisión humana: rechazada
+  de nuevo, esta vez por "camello" -- patas demasiado largas, cuerpo
+  demasiado alto sobre las patas, cabeza demasiado pequeña para el
+  conjunto. Un primer intento de corrección (cabeza de 5 a 7 filas y más
+  ancha, torso con una fila extra de pecho, patas de 8 a 5 filas) cumplía
+  los tres ajustes pedidos por separado, pero la revisión independiente
+  del agente `qa` señaló que el conjunto seguía leyéndose como camello:
+  la cabeza se elevaba 7 filas por encima de la línea del lomo, sobre un
+  lomo de 11 filas hasta el suelo -- un 64% de la altura del propio
+  lomo, el patrón exacto de "dos extremos alzados sobre un lomo plano"
+  que define a un camélido, con independencia del tamaño de cabeza y
+  patas por separado. Se corrige comprimiendo el cráneo de 2 filas a 1
+  (sin tocar el resto de la cabeza) y cediendo esa fila al torso: la
+  cabeza final ocupa 6 filas (filas 0-5, span de hasta 11 columnas y 52
+  píxeles de relleno en cols 0-10, frente a 39 en la versión rechazada
+  por "cabeza pequeña"); el torso pasa a 7 filas (filas 6-12, tres filas
+  de pecho sólido); las patas se mantienen en 5 filas (filas 13-17). La
+  elevación de la cabeza sobre el lomo baja a 6 filas sobre un lomo de
+  12 -- 50%, frente al 64% del intento anterior. Ojo en fila 2 columna 4;
+  nariz en fila 5 columna 0. La cola se mantiene corta: su píxel de
+  contorno más alto queda en la fila 2 (columna 20) y la punta clara en
+  la fila 3, sin alcanzar las filas 0-1 donde están las orejas. Solo se
+  modifica `src/content/maxPixelArt.js`; `MaxRenderer.js`,
+  `MaxCompanion.js`, `WorldScene.js`, `characterPalettes.js` y los cinco
+  personajes humanos no se tocan. La revisión independiente del agente
+  `reviewer` sobre el primer intento encontró varias imprecisiones
+  cuantitativas en el comentario de cabecera y el CHANGELOG (una fila
+  citada incorrectamente para la franja de contorno recoloreada, una
+  posición previa de la nariz que no coincidía con los datos reales de
+  `e63dc1f`, una justificación de diseño sobre la columna de
+  mejilla/nuca que no se sostenía al verificar la conectividad sin ella,
+  y la altura de la cola descrita de forma inexacta) -- se corrigen
+  todas en esta versión final, verificando cada cifra directamente
+  contra `MAX_SIDE_PIXELS` antes de escribirla. Tests actualizados en
+  `tests/content/MaxPixelArt.test.js` (nueva posición de ojo/nariz;
+  rangos de fila de cabeza/torso/patas recalculados; la comparación de
+  ancho cabeza-vs-torso se restringe a columnas 4-21 en el torso para no
+  incluir un resto de contorno del hocico que la inflaba trivialmente,
+  hallazgo también de `reviewer`; dos comparaciones contra un snapshot
+  literal de la versión rechazada por "cabeza pequeña" -- más píxeles de
+  superficie, menos filas de pata -- en vez de límites arbitrarios) y en
+  el test de anclaje de `tests/scenes/CreditsScene.test.js` (nueva
+  posición de la nariz). Evidencia visual generada y revisada en cada
+  iteración (aislado y junto a Gonzalo, comparada paso a paso contra la
+  iteración anterior) confirma que la brecha visual entre cabeza y lomo
+  se reduce notablemente frente al intento anterior. Una segunda revisión
+  de `reviewer` sobre esta corrección encontró dos imprecisiones más en
+  el mismo comentario/CHANGELOG (el ojo se describía como reposicionado
+  desde la fila 3 cuando en realidad nunca se movió respecto a
+  `e63dc1f` -- siempre estuvo en fila 2 columna 4 -- y el torso se
+  describía con dos filas de pecho sólido cuando los datos reales tienen
+  tres filas idénticas consecutivas); corregidas ambas. El propio
+  `reviewer` señaló, como observación de diseño no bloqueante, que esas
+  tres filas idénticas reintroducen parcialmente el "bloque rectangular"
+  que la ronda anterior decía evitar mediante variación de tono. En la
+  misma línea, el agente `qa` -- tras confirmar que el defecto técnico
+  concreto de esta ronda (la columna de mejilla/nuca leída como cuello
+  vertical) queda resuelto -- reporta que la silueta general, evaluada
+  de forma aislada, sigue sin leerse de forma inequívoca como Belgian
+  Malinois: ahora se acerca más a una lectura de llama/alpaca que de
+  camello, por la combinación de cabeza todavía perceptiblemente elevada
+  sobre el lomo, orejas pequeñas en proporción al conjunto, y el lomo de
+  techo plano ya mencionado. Estas son observaciones de diseño/estilo,
+  no defectos técnicos -- se documentan aquí en vez de seguir iterando
+  el pixel-art dentro de esta misma ronda, tal como pide la propia tarea
+  ("no declarar aprobación artística"; la decisión de si esta lectura es
+  aceptable, o si necesita otra ronda centrada en orejas/lomo/elevación
+  de cabeza, corresponde a la revisión visual humana). No se declara
+  aprobación artística: sigue pendiente revisión visual humana explícita
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Cuarta revisión humana:
+  rechazada de nuevo, esta vez centrada exclusivamente en la cabeza --
+  "el cuerpo está muy bien, la cabeza sigue siendo fea": hace falta más
+  masa, más separación visual entre hocico y orejas, y un giro deliberado
+  hacia un estilo cartoon en vez de anatómico-realista. Esta ronda toca
+  solo `src/content/maxPixelArt.js` y solo la cabeza; el torso pierde
+  una única fila de pecho sólido (de tres filas idénticas a dos -- la
+  propia observación de `reviewer` en la ronda anterior) para cedérsela
+  a la cabeza, y las patas quedan byte a byte idénticas a la versión
+  anterior (nueva prueba de regresión así lo protege). Cabeza: de 6 a 7
+  filas (filas 0-6), con 60 píxeles de relleno en cols 0-10 (frente a 52
+  antes de esta ronda, y frente a 39 en la versión rechazada por "cabeza
+  pequeña" dos rondas atrás). El hueco entre orejas pasa a proteger dos
+  filas en vez de una (fila 0 Y fila 1), dejando una fila completa de
+  "solo orejas" antes de que empiece cualquier masa de cráneo -- ese aire
+  es la separación hocico/orejas pedida explícitamente. Un primer intento
+  de esto (proteger solo la fila 0, dejando que el propio paso de
+  contorno rellenara la fila 1 de un lado a otro) produjo un defecto real
+  detectado antes de commitear: las dos orejas quedaban unidas por una
+  franja horizontal oscura que se leía como una rama o un cuerno único en
+  vez de dos orejas separadas -- corregido protegiendo explícitamente el
+  hueco en ambas filas. El cráneo gana una fila de highlight ancho (parche
+  claro en 4 columnas) antes de que el hocico se desprenda de él, dando
+  sensación de frente/coronilla redondeada. Ojo en fila 4 columna 4 (antes
+  fila 2 columna 4); nariz en fila 6 columna 0 (antes fila 5 columna 0).
+  `MaxRenderer.js`, `MaxCompanion.js`, `WorldScene.js`,
+  `characterPalettes.js` y los cinco personajes humanos no se tocan.
+  Tests actualizados en `tests/content/MaxPixelArt.test.js` (nueva
+  posición de ojo/nariz; rangos de fila de cabeza/torso recalculados,
+  patas sin cambiar; nueva comparación de superficie de cabeza contra un
+  snapshot literal de la versión inmediatamente anterior, además de la ya
+  existente contra la versión de "cabeza pequeña"; nuevo test que protege
+  la fila de aire hocico/orejas verificando que existe al menos una fila,
+  aparte de la de las puntas, con tejido de oreja pero sin tejido de
+  cráneo -- `reviewer` encontró que la primera versión de este test
+  incluía la fila de las puntas en la búsqueda, por lo que pasaba igual
+  de bien contra la cabeza rechazada de `444ee1f` sin verificar realmente
+  el colchón nuevo; corregido excluyendo esa fila; nuevo test de igualdad
+  byte a byte de las patas contra la versión anterior) y en el test de
+  anclaje de `tests/scenes/CreditsScene.test.js` (nueva posición de la
+  nariz). Evidencia visual generada a varias escalas de zoom (incluida
+  una captura de solo las orejas a 80px/celda) para verificar con
+  precisión, tras el defecto detectado y corregido, que las dos orejas se
+  leen realmente como separadas y no como un apéndice único. El agente
+  `qa` confirma visualmente más masa, mejor segmentación oreja/cráneo/
+  hocico, ausencia del defecto de orejas unidas, y cuerpo esencialmente
+  igual a `444ee1f`; señala como observación no bloqueante -- ya presente
+  en `444ee1f`, no introducida por esta ronda -- que el color de la oreja
+  cercana ("k") tiene poco contraste contra el contorno ("O"), leyéndose
+  casi como un bloque negro sin volumen propio, y que el resultado global
+  sigue pareciendo más "anatómico miniaturizado" que un giro deliberado
+  de estilo cartoon, aunque masa y separación sí mejoran de forma medible
+  y visible. No se declara aprobación artística: sigue pendiente revisión
+  visual humana explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  Quinta revisión humana: "se acerca, pero todavía no". El cuerpo queda
+  aceptado ("suficientemente bien") -- esta ronda se acota estrictamente
+  a las filas 0-6 (cabeza); las filas 7-17 (torso, pecho, abdomen, patas,
+  cola) son byte a byte idénticas a `84fe78d`, protegido ahora con un
+  test dedicado además del ya existente solo para patas. Los problemas
+  señalados: oreja cercana leída como "apéndice rígido" por bajo
+  contraste contra el contorno, coronilla plana (antes un rectángulo
+  uniforme de 5 columnas), poco volumen craneal, orejas más parecidas a
+  cuernos que a triángulos de perro. Oreja cercana: cambia de relleno
+  "k" (máscara oscura, casi indistinguible del contorno "O") a "h" (tan
+  claro, ya usado como highlight de lomo/frente) -- un salto grande de
+  contraste (no el máximo absoluto de la paleta: "m" tiene más, pero
+  queda reservado a la punta de la cola); nuevo test compara luminosidad
+  relativa y confirma que el contraste actual contra el contorno es muy
+  superior al del tono anterior. Base ensanchada de 3 a 4 columnas.
+  Oreja lejana: se desplaza una fila hacia abajo respecto a la cercana
+  (antes ambas puntas compartían la fila 0), dando una pista de
+  profundidad; su tono
+  "d" pasa a usarse por primera vez de forma consistente con lo que la
+  paleta ya documentaba ("sombra de orejas... traseras"). Coronilla: el
+  antiguo rectángulo plano de 5 columnas se sustituye por un bulto
+  estrecho de 3 columnas que se ensancha hacia la masa craneal principal
+  (9 columnas) en la fila siguiente -- ese estrechamiento hacia arriba
+  produce una silueta más redondeada en vez de la meseta horizontal.
+  Ojo, nariz, máscara, hocico y transición cráneo-hocico: sin cambios de
+  posición ni de forma. Superficie de cabeza prácticamente igual (59
+  píxeles frente a 60 antes) -- esta ronda no perseguía más masa total,
+  sino mejor contraste/lectura de las orejas y una coronilla menos
+  plana. `MaxRenderer.js`, `MaxCompanion.js`, `WorldScene.js`,
+  `characterPalettes.js` y los cinco personajes humanos no se tocan.
+  Tests actualizados en `tests/content/MaxPixelArt.test.js` (tono de la
+  oreja cercana "k"→"h" en el test de distinción tonal; nuevo test de
+  contraste de luminosidad; la señal de "tejido de cráneo" del test de
+  separación hocico/orejas pasa de "b/h" a solo "b", porque "h" ahora
+  también es un tono de oreja y comprobarlo daba un falso negativo en la
+  propia fila de la oreja cercana; nuevo test byte a byte que cubre todo
+  el cuerpo, filas 7-17, contra `84fe78d`, además del ya existente solo
+  para patas). No hace falta tocar `tests/scenes/CreditsScene.test.js`
+  -- ojo y nariz no cambian de posición esta ronda. No se declara
+  aprobación artística: sigue pendiente revisión visual humana explícita
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Sexta revisión humana:
+  adjunta una mockup visual de referencia (cabeza grande y redondeada,
+  máscara amplia cubriendo hocico y zona del ojo, orejas triangulares
+  prominentes, lectura cartoon) y pide converger con ella en vez de
+  seguir defendiendo el diseño de la ronda anterior. Ronda acotada de
+  nuevo a las filas 0-6; las filas 7-17 quedan, otra vez, byte a byte
+  idénticas a `3353f43` (que a su vez ya eran idénticas a `84fe78d`),
+  protegido por el test de cuerpo completo existente.
+  Dos magnitudes de ancho distintas, que no deben confundirse (un
+  intento anterior de esta misma entrada sí las confundió, señalado por
+  `reviewer`): (A) el ancho físico real del sprite -- desde la columna 0
+  hasta la última columna con algún píxel de cabeza -- pasa de 12
+  columnas en la versión anterior (cols 0-11: el contorno de la base de
+  la oreja lejana de esa versión ya llegaba a la columna 11, no a la
+  10) a 14 columnas en esta versión (cols 0-13). (B) las ventanas fijas
+  de conteo que usan los tests de regresión, que no representan ese
+  ancho físico: cols 0-10 (61 píxeles de relleno, frente a 59 en la
+  versión anterior en la misma ventana) y cols 0-12 (71 píxeles),
+  ambas ventanas ya usadas en rondas previas para comparar contra
+  versiones más antiguas y estrechas.
+  La máscara pasa de una franja de 3-4 columnas bajo el hocico a cubrir
+  hasta 7 columnas en la fila 4, incluyendo la zona del ojo -- ahora
+  marca con claridad dónde termina el cráneo (tan) y empieza el hocico
+  (máscara), en vez de una transición de un solo píxel. El ojo se
+  desplaza a fila 4 columna 3 (antes columna 4), quedando embebido en la
+  máscara en vez de en su borde. Coronilla y cráneo se comprimen de dos
+  filas (bulto estrecho + masa ancha) a una sola fila de masa craneal
+  ancha, cediendo la fila liberada a las orejas. Nariz sin cambios de
+  posición.
+  Orejas: un primer intento de esta ronda se limitó a recolocar el
+  mecanismo de tono y desfase de profundidad de la ronda anterior sin
+  cambiar su forma -- la revisión de `qa` sobre ese intento encontró que
+  el salto de solo dos niveles de ancho (punta de 1 columna directamente
+  a una base de 4-5) trazaba, una vez con contorno, una cruz o una T, no
+  un triángulo, precisamente el rasgo más explícito que pedía la mockup.
+  Se rediseñan por completo con tres niveles de ancho estrictamente
+  crecientes por oreja (punta de 1 columna, tramo medio de 3, base de 5,
+  cada uno centrado sobre el anterior), lo que sí traza un contorno
+  triangular reconocible; se pierde a cambio el desfase de una fila
+  entre oreja cercana y lejana de la ronda anterior (ambas puntas
+  vuelven a compartir la fila 0) -- no había presupuesto de filas para
+  mantener el desfase y el triángulo de tres niveles a la vez sin invadir
+  la fila de la máscara. Mismo tono por oreja que siempre ("h" cercana,
+  "d" lejana).
+  Deliberadamente NO se añade un reflejo blanco al ojo pese a que la
+  mockup lo muestra -- los cinco personajes humanos y todas las rondas
+  previas de Max usan un único píxel de contorno oscuro como ojo, sin
+  excepción; se documenta esta decisión en el comentario de cabecera de
+  `maxPixelArt.js` en vez de romper esa convención compartida por un
+  detalle que la tarea no exige de forma explícita. `MaxRenderer.js`,
+  `MaxCompanion.js`, `WorldScene.js`, `characterPalettes.js`,
+  `tests/scenes/CreditsScene.test.js` y los cinco personajes humanos no
+  se tocan -- ojo y nariz cambian de columna pero no de fila, y la nariz
+  (usada para el anclaje del test de créditos) no cambia en absoluto.
+  Tests actualizados en `tests/content/MaxPixelArt.test.js` (posición
+  del ojo; ventanas de columna ensanchadas de 10-11 a 12-13 en los tests
+  de ancho de cabeza y separación de orejas, para no cortar la punta de
+  la oreja lejana; nueva comparación de superficie de cabeza contra un
+  snapshot literal de la versión inmediatamente anterior, además de las
+  dos ya existentes; nuevo test que protege directamente la forma
+  triangular -- exige tres niveles de ancho estrictamente crecientes por
+  oreja en sus primeras tres filas, en vez de solo comprobar que existe
+  algún hueco entre ellas, que no habría detectado el defecto de
+  cruz/T). Evidencia visual generada a varias escalas (cabeza aislada a
+  80px/celda, cuerpo completo, junto a Gonzalo), revisada tras el
+  hallazgo de `qa` y otra vez tras el rediseño de las orejas, confirma
+  que el defecto puntual de cruz/T queda resuelto: ambas orejas trazan
+  ahora una progresión estrictamente creciente de ancho (verificada por
+  `qa` de forma independiente, midiendo `[2, 4, 6]` en ambas). Pero la
+  revisión visual de `qa` sobre el resultado final, con la cabeza
+  ensanchada a 14 columnas, señala un problema distinto y no resuelto:
+  las dos orejas quedan muy separadas horizontalmente, unidas por una
+  franja horizontal plana (el highlight de la fila 3, de cráneo a
+  cráneo) que, junto con el hocico alargado, se lee más como un cuello
+  con una protuberancia en cada extremo que como una cabeza compacta y
+  redonda con las orejas juntas -- a juicio de `qa`, sigue evocando un
+  perfil de llama/alpaca/ciervo más que el de un pastor belga, aunque ya
+  no por el defecto de cruz/T original. Esta observación se documenta
+  aquí, sin abrir una octava ronda de rediseño dentro de esta misma
+  tarea (que estaba acotada a corregir la imprecisión de ancho físico
+  encontrada por `reviewer` y el defecto de forma de orejas encontrado
+  por `qa` en su primera pasada, ambos ya resueltos y confirmados) --
+  queda como información explícita para la revisión visual humana, que
+  puede pedir una ronda adicional centrada en acercar las dos orejas o
+  romper la franja horizontal del cráneo si lo considera necesario. No
+  se declara aprobación artística: sigue pendiente revisión visual
+  humana explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Séptima
+  revisión humana: confirma exactamente el hallazgo que `qa` ya había
+  señalado (orejas demasiado separadas, cráneo plano entre ellas) y
+  pide la ronda adicional que el CHANGELOG anterior dejaba prevista.
+  Ronda acotada de nuevo a las filas 0-6; las filas 7-17 siguen siendo,
+  byte a byte, las mismas de la versión anterior. Revierte el
+  ensanchamiento de la ronda anterior en vez de partir de él: el ancho
+  físico real baja de 14 columnas (cols 0-13) a 11 columnas (cols 0-10)
+  -- más compacto incluso que la versión de dos rondas atrás (12
+  columnas). Las orejas se acercan de 7 columnas de separación entre
+  puntas (columnas 3 y 10) a 4 columnas (columnas 3 y 7), manteniendo el
+  mismo taper triangular de tres niveles de la ronda anterior -- solo
+  recolocado, no rediseñado, para no reabrir el defecto de cruz/T ya
+  resuelto. El hueco real entre orejas se estrecha de 2-6 columnas
+  (según la fila) a 1-3 columnas, siempre transparente en las tres
+  filas. El cráneo (fila 3) se estrecha de 11 a 9 columnas de relleno, y
+  el highlight deja de ser una franja plana de 7 columnas para ser un
+  parche centrado de 3 columnas. Máscara y hocico mantienen la misma
+  forma relativa, con las columnas de mejilla trasera recortadas (de
+  5/3/3 a 3/2/2 en las filas 4-6) para no sobresalir de la cabeza ya más
+  estrecha. Ojo (fila 4, columna 3) y nariz (fila 6, columna 0): sin
+  cambios de posición. Superficie de relleno en la ventana histórica
+  cols 0-10: 60 píxeles (frente a 61 en la versión anterior -- una
+  reducción pequeña y esperada, ya que esta ronda persigue compacidad,
+  no más masa total; sigue por encima de las tres versiones previas a
+  la mockup: 59, 52 y 39). `MaxRenderer.js`, `MaxCompanion.js`,
+  `WorldScene.js`, `characterPalettes.js`, `tests/scenes/CreditsScene.test.js`
+  y los cinco personajes humanos no se tocan. Tests actualizados en
+  `tests/content/MaxPixelArt.test.js`: las ventanas de columna del test
+  de forma triangular se ajustan de la separación ancha de la ronda
+  anterior a la nueva, más estrecha, para no truncar la oreja lejana;
+  nuevo test que mide directamente el hueco entre orejas en las tres
+  filas y exige que sea más estrecho que en la versión anterior
+  (snapshot literal de `2390783`); nuevo test que exige un tramo
+  contiguo de cráneo de al menos 5 columnas entre orejas y hocico,
+  protegiendo la "masa central" pedida explícitamente; nuevo test que
+  compara el ancho del hocico (relleno de máscara) contra el ancho del
+  cráneo -- un test que el comentario del archivo llevaba varias rondas
+  describiendo sin que existiera realmente, detectado al auditar la
+  cobertura existente. Evidencia visual generada a varias escalas
+  (cabeza aislada a 80px/celda, cuerpo completo, junto a Gonzalo)
+  confirma que las orejas ahora nacen visiblemente más juntas del mismo
+  bloque de cráneo, con un hueco real pero estrecho entre ellas en vez
+  de una meseta ancha con un bulto en cada extremo. `qa` matiza, sin
+  embargo, que llamar a esto "la franja plana desaparece" es más fuerte
+  de lo que el pixel-art realmente muestra: la fila 3 sigue siendo una
+  única fila de relleno uniforme (9 columnas, con un parche de highlight
+  de 3 columnas encima), técnicamente tan plana como antes -- lo que
+  cambia es que ahora es más corta y queda pegada directamente bajo la
+  base de las orejas, por lo que se lee menos como "cuello con dos
+  bultos" y algo más como "donde las orejas se juntan", sin ser una
+  progresión que sugiera redondez real. `qa` también observa que, de
+  cerca, la máscara oscura del hocico (ya aprobada en una ronda
+  anterior, fuera de alcance de esta) sigue evocando más a un mapache o
+  zorro que a un perro cartoon inequívoco, y que a la escala real de
+  juego (sprite de 22x18 px dentro de un canvas de 480x270) ni el
+  defecto de separación de orejas ni esta corrección son perceptibles a
+  simple vista -- toda la evaluación visual de esta tarea, en todas sus
+  rondas, se ha hecho sobre la cabeza ampliada, nunca a la escala en la
+  que el jugador realmente la ve. Esta ronda sí resuelve, de forma
+  verificable, el defecto concreto señalado por el rechazo humano (la
+  separación horizontal de las orejas); no se declara resuelta la
+  redondez del cráneo más allá de eso, ni aprobación artística general:
+  sigue pendiente revisión visual humana explícita (`HUMAN CHARACTER
+  STYLE APPROVAL REQUIRED`). Octava revisión humana: rechaza de nuevo,
+  pero por un motivo distinto al de las rondas anteriores -- ya no la
+  separación horizontal de las orejas, sino la falta de ALTURA de la
+  cabeza ("apenas existe frente... hocico y orejas están demasiado cerca
+  verticalmente... parece que le hubieran aplastado la cabeza"), pidiendo
+  explícitamente no volver a tocar la anchura. La cabeza sigue acotada al
+  mismo presupuesto de 7 filas (filas 0-6; las filas 7-17 del cuerpo
+  siguen intocadas, protegidas por el test de igualdad byte a byte), así
+  que la altura adicional sale de redistribuir esas 7 filas, no de sumar
+  filas nuevas: el hocico (relleno de máscara "k") se comprime de 3 filas
+  a 2 -- se elimina la fila intermedia de la ronda anterior, manteniendo
+  el mismo contenido relativo en la fila del ojo y la misma posición de
+  nariz en la fila inferior (aunque esa fila gana un píxel de contorno en
+  la columna 8, no es completamente byte-idéntica a la anterior) -- y la
+  fila liberada se cede a una fila de frente nueva, entre el cráneo (sin
+  cambios: 9 columnas de relleno, highlight centrado de 3) y la
+  máscara/ojo. Antes la máscara arrancaba justo debajo del cráneo sin
+  transición; ahora hay una fila de tejido craneal (b/h) sin mezcla de
+  máscara entre ambos, y la distancia vertical entre el final de las
+  orejas y el inicio del hocico crece de 2 a 3 filas de diferencia. Orejas
+  (filas 0-2): verbatim de la ronda anterior, sin ningún cambio -- la
+  separación horizontal ya estaba resuelta y esta ronda es explícitamente
+  sobre altura, no sobre anchura. Ojo: se desplaza de fila 4 a fila 5
+  (empujado por la nueva fila de frente), misma columna 3. Nariz: sin
+  cambios de posición (fila 6, columna 0), por lo que el test de anclaje
+  de `tests/scenes/CreditsScene.test.js` no necesitó tocarse. `MaxRenderer.js`
+  y `MaxCompanion.js` tampoco se tocan -- el cambio es enteramente de
+  datos en `maxPixelArt.js`. Tests nuevos en
+  `tests/content/MaxPixelArt.test.js`: comparación de filas de
+  cráneo/frente (tejido b/h sin máscara) contra un snapshot literal de la
+  versión anterior (commit 3ae4209), exigiendo más filas que antes;
+  comprobación de que existe una fila de frente inmediatamente encima de
+  la fila del ojo, en vez de que la máscara empiece pegada al cráneo;
+  comparación de la distancia vertical entre orejas y hocico contra el
+  mismo snapshot anterior, exigiendo que sea mayor. El test de "hocico
+  más estrecho que cráneo" y el propio test del ojo se actualizan a las
+  nuevas filas (5-6 para el hocico, fila 5 para el ojo) sin cambiar lo
+  que protegen. Evidencia visual generada a varias escalas (cabeza
+  ampliada, cuerpo completo aislado, junto a Gonzalo) muestra una
+  progresión vertical real en la cabeza ampliada -- orejas, luego una
+  masa de cráneo/frente, luego la máscara oscura, con una fila más de
+  separación entre ambas que antes. `qa` matiza, sin embargo, algo
+  importante que no se puede omitir: el bounding box total de la cabeza
+  NO creció -- sigue ocupando exactamente las mismas 7 filas (0-6) que
+  la versión rechazada; lo que cambió es la redistribución interna, no
+  el tamaño del sprite. Comparando el sprite completo a la escala real
+  de render del juego (no ampliado), `qa` encuentra que la nueva fila de
+  frente se funde visualmente con el cráneo de arriba, al compartir los
+  mismos tonos "b"/"h" -- la diferencia es sutil, casi imperceptible sin
+  zoom o una cuadrícula de referencia, y no puede afirmar con confianza
+  que esto vaya a leerse como "menos aplastado" para un ojo humano no
+  entrenado en el detalle de píxel a esa escala, aunque tampoco reabre
+  ningún defecto de rondas anteriores (orejas y cuerpo verificados
+  intactos). Esta ronda resuelve, de forma verificable en el dato y en
+  la cabeza ampliada, la redistribución vertical pedida (más distancia
+  entre orejas y hocico, una fila de frente propia); no se garantiza que
+  ese cambio sea suficientemente perceptible a tamaño real de juego para
+  satisfacer el rechazo humano por "cabeza aplastada" -- eso queda,
+  explícitamente, para la revisión visual humana. No se declara
+  aprobación artística: sigue pendiente revisión visual humana explícita
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Décima revisión humana:
+  autoriza explícitamente romper el límite visual de 22x18 -- "tras
+  múltiples iteraciones queda demostrado visualmente que 22x18 no ofrece
+  resolución suficiente" -- y pide converger con la mockup aprobada
+  redibujando la cabeza desde cero a una resolución mayor, sin escalar
+  el sprite anterior. Nuevo tamaño: 22x20 (ancho sin cambios, alto +2
+  filas). No se adoptó el rango sugerido (26x20/28x20): una auditoría
+  previa a cualquier cambio de arte (sección "audita primero el
+  renderer y el anclaje real" del propio encargo) encontró que
+  `MAX_DIMENSIONS` (MaxRenderer.js) se usaba a la vez para centrar el
+  render visual y como caja de colisión/spawn de Max en
+  `getMaxCollisionBox()` (WorldScene.js) -- el mismo valor gobernando
+  tanto lo visual como lo lógico. `tests/world/MaxCompanion.test.js`
+  protege matemáticamente que `MAX_FOLLOW_MIN_DISTANCE` (31, congelada
+  por instrucción explícita de la tarea: "NO modificar... follow
+  distance") deja margen suficiente para que la caja visual de Max
+  nunca se solape con la de Gonzalo en el peor caso diagonal; recalculado
+  contra cada tamaño candidato, 26x20 y 28x20 ya rompían esa garantía
+  (margen negativo) sin tocar la propia distancia, y 22x18 ampliado a
+  cualquier tamaño con height >= 21 también, salvo compensando con un
+  ancho más recortado. Se optó por 22x20 -- el mayor que conserva un
+  margen positivo (~1.00px) manteniendo el ancho sin cambios -- y,
+  crucialmente, se DESACOPLÓ la caja de colisión/spawn del tamaño
+  visual: nueva constante `MAX_HITBOX_DIMENSIONS` (22x18, el tamaño
+  lógico congelado) en `MaxCompanion.js`, usada exclusivamente por
+  `getMaxCollisionBox()` en `WorldScene.js`; `MAX_DIMENSIONS` de
+  MaxRenderer.js sigue reflejando el tamaño real del sprite (ahora
+  22x20) y se usa exclusivamente para centrar el render en
+  `MaxCompanion.render()`. Resultado: hitbox, colisión de spawn, radio
+  de seguimiento, velocidad de alcance y reacción quedan bit a bit
+  iguales a antes (verificado por la suite completa sin cambios en
+  `tests/world/MaxCompanion.test.js` más allá de heredar
+  automáticamente el nuevo `MAX_DIMENSIONS` en el cálculo de margen, que
+  sigue siendo positivo). `MaxRenderer.js` no necesitó ningún cambio de
+  código -- ya era completamente genérico sobre `MAX_PIXEL_WIDTH`/
+  `MAX_PIXEL_HEIGHT`, así que ampliar el canvas fue solo cuestión de
+  cambiar esas dos constantes y redibujar `MAX_SIDE_PIXELS`.
+  `CreditsScene.js` no se tocó (sigue llamando a `renderMax()` sin
+  ningún parámetro nuevo); su test de anclaje a la nariz se actualizó
+  porque la nariz cambió de fila (6 -> 8) al redibujar la cabeza.
+  Cabeza redibujada por completo (filas 0-8, 9 filas, frente a 7 en el
+  presupuesto anterior) aplicando la lección de un primer intento
+  fallido dentro de esta misma ronda: un cráneo cuyo borde frontal
+  recede progresivamente fila a fila, combinado con el salto hacia
+  delante del hocico, traza una única diagonal continua de punta de
+  oreja a punta de nariz -- confirmado visualmente como lectura de
+  llama/ciervo, no de perro, el mismo defecto que once rondas de esta
+  tarea llevaban intentando eliminar. La corrección: el borde frontal
+  del cráneo (columna 3) es CONSTANTE en las cuatro filas 3-6 -- una
+  pared vertical, no una rampa -- y la redondez viene del borde trasero
+  abultándose hacia atrás (9, 8, 7 y 6 columnas de ancho en las filas
+  3, 4, 5 y 6 respectivamente), nunca del frontal moviéndose. El hocico
+  (filas 7-8) salta hacia delante hasta la columna 0 en un único paso
+  repentino, protegido de que el contorno automático lo rellene (misma
+  técnica ya usada para el hueco entre orejas, aplicada aquí a un
+  escalón vertical). Un segundo defecto, encontrado durante la propia
+  verificación de esta ronda: la coronilla (fila 2) era más estrecha
+  que la base de las orejas que la coronaban, creando un "pinzamiento"
+  visual en la unión -- el mismo problema de fondo (lectura de cuello
+  delgado) causado de otra forma. Se corrigió ensanchando la coronilla
+  (de 8 a 10 columnas, cols 1-10) para respaldar por completo ambas
+  bases sin que sobresalgan. Orejas: se acortan de 3 filas a 2 (punta
+  + base, sin fila intermedia) con base ensanchada -- un primer intento
+  con 3 filas seguía leyéndose como astas incluso tras resolver el
+  pinzamiento; acortar su alcance vertical relativo a su base ancha se
+  lee más como un triángulo de perro corto y menos como un asta de
+  ciervo. Pequeño highlight interior ("m") en la base de la oreja
+  cercana (autorización explícita de esta ronda: "interior opcional").
+  Ojo: fila 6, columna 4 (con tan a ambos lados -- una posición inicial
+  en columna 3, pegada al escalón del hocico, hacía que se fundiera con
+  el fondo transparente en la evidencia generada, y se corrigió antes
+  de darla por buena). Nariz: fila 8, columna 0. Máscara deliberadamente
+  amplia (8 columnas en la fila 7, la mayor de cualquier ronda de esta
+  tarea), sin alcanzar la coronilla. Cuerpo: se reutiliza, byte a byte,
+  el cuerpo ya aprobado de `2fda024` (filas 7-17), desplazado a las
+  filas 9-19 -- la tarea no obligaba a conservarlo byte a byte al
+  cambiar de resolución, pero no había motivo para tocar un cuerpo ya
+  aceptado.
+  Tests reescritos por completo: se eliminan los tests que protegían
+  geometría de cabeza ya descartada (comparaciones de superficie/altura
+  contra commits concretos como `e63dc1f`/`444ee1f`/`3353f43`/
+  `3ae4209`/`2390783`) -- instrucción explícita de la tarea, "NO crear
+  tests contra commits visualmente rechazados" -- y se sustituyen por
+  contratos absolutos: borde frontal del cráneo constante en sus filas
+  inferiores; hocico proyectando delante de ese borde; coronilla al
+  menos tan ancha como la base de las orejas; al menos 4 filas de
+  cráneo puro; máscara sin alcanzar la coronilla; además de los
+  contratos ya establecidos (dos orejas separadas con ensanchamiento
+  punta-a-base, ojo único, ausencia de collar, conectividad, paleta,
+  torso no degenerado, patas con articulación, cola separada y más
+  baja que las orejas). El test de cuerpo protege ahora la igualdad
+  byte a byte contra `2fda024` en las nuevas filas 9-19.
+  Evidencia visual generada a varias escalas (cabeza aislada, cuerpo
+  completo, junto a Gonzalo, y a escala real de juego dentro del canvas
+  nativo de 480x270) confirma un avance real y verificable frente a
+  todas las rondas anteriores: la cabeza tiene volumen genuino, el
+  hocico se lee como un bloque que sobresale (no como continuación del
+  mismo trazo), las orejas ya no se leen como astas, y el ojo es
+  visible. A escala real de juego el conjunto se lee de forma más
+  reconocible como un pequeño cánido que en cualquier ronda anterior
+  dentro de 22x18. `qa` confirma lo anterior de forma independiente,
+  generando su propia comparación directa entre la versión anterior
+  (22x18) y esta, pero matiza dos cosas con honestidad: la mejora de
+  reconocibilidad a escala real de juego es incremental, no un salto
+  transformador (ambas versiones eran ya razonablemente legibles como
+  perro a esa escala); y las dos orejas se perciben ligeramente menos
+  separadas/más fusionadas en la comparación ampliada que en la versión
+  22x18, pese a que el hueco transparente entre ellas mide exactamente
+  lo mismo en columnas -- un efecto secundario probable de la coronilla
+  más ancha, no documentado antes de que `qa` lo señalara. `reviewer`
+  encontró y corrigió, antes de este commit, un error real de datos en
+  este mismo párrafo del CHANGELOG y en el comentario de cabecera de
+  `maxPixelArt.js` (los anchos de cráneo de las filas 3-6 estaban
+  citados en el orden equivocado: 6,9,8,7 en vez de 9,8,7,6), además de
+  confirmar de forma independiente el punto más crítico de esta ronda
+  -- que el aumento de tamaño visual no afecta a la hitbox de
+  colisión/spawn, verificado leyendo el diff real de `WorldScene.js` y
+  ejecutando `tests/world/MaxCompanion.test.js`. No se declara
+  aprobación artística definitiva ni se da por resuelta la convergencia
+  completa con la mockup: sigue pendiente revisión visual humana
+  explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Duodécima
+  revisión humana: mantiene el tamaño 22x20 y la masa craneal ganada
+  (explícitamente: "no volver a cambiar tamaño... cuerpo... patas...
+  cola... hitbox... MaxCompanion"), pero señala tres problemas
+  concretos sobre la cabeza -- las orejas no se distinguen
+  suficientemente, el hocico se ve como una masa oscura/cuadrada poco
+  natural, y falta separación visual entre orejas, frente, ojo/máscara
+  y hocico. Microiteración acotada estrictamente a la cabeza (filas
+  0-8); el cuerpo (filas 9-19) no se toca, verificado byte a byte
+  idéntico a `2fda024`. Redistribución del presupuesto fijo de 9 filas:
+  orejas de 2 a 3 (recupera el taper de tres niveles -- punta 1
+  columna, cuerpo 3, base 4 -- ya validado visualmente en rondas
+  anteriores a la ampliación de tamaño, con highlight interior "m" en
+  ambas orejas en vez de solo en la cercana); cráneo de 4 pasos de
+  estrechamiento a 3 (coronilla 10 columnas cols 1-10 sin cambios,
+  mejilla 9 columnas sin cambios, frente y fila del ojo se fusionan en
+  una sola fila de 6 columnas -- se cede el paso intermedio que existía
+  entre ambas); hocico de 2 filas a 3, con la máscara ganando terreno en
+  tres pasos en vez de un salto de 2 niveles con anchos similares que se
+  leía como bloque (3, 6 y 3 columnas de máscara "k" en las filas 6, 7 y
+  8) -- la fila superior del hocico empieza con máscara pequeña y
+  mejilla tan todavía dominante a los lados (6 columnas de "b"), la
+  fila siguiente pasa a máscara dominante, y la última se estrecha de
+  nuevo hacia la nariz, en vez de que la máscara aparezca de golpe como
+  un rectángulo oscuro completo. Ojo: se desplaza de fila 6 a fila 5 (al
+  fusionarse la fila de frente con la del ojo), misma columna 4, con
+  tan a ambos lados. Nariz: fila 8, columna 0, sin cambios de posición.
+  La pared frontal constante del cráneo (la corrección de la ronda
+  anterior contra la lectura diagonal de llama/ciervo) se conserva,
+  ahora en las filas 4-5 en vez de 3-6 -- dos filas en vez de cuatro,
+  pero sigue siendo una pared real, no una rampa. Tests actualizados:
+  los índices de fila de todos los tests de cabeza se desplazan según
+  la nueva estructura (ojo, pared frontal, cráneo-vs-base-de-orejas,
+  máscara-no-alcanza-coronilla, hocico-más-estrecho-que-cráneo, hueco
+  entre orejas); el test de "cráneo ocupa al menos 4 filas puras" baja
+  a 3 (cesión explícita de una fila a orejas y otra a hocico, sin
+  perder coronilla ni mejilla); el test de taper de orejas se actualiza
+  de 2 niveles a 3, coherente con el nuevo diseño. `qa` revisó un primer
+  intento de esta ronda (antes de cualquier commit) y encontró que la
+  base de cada oreja se fundía sin transición visual con la coronilla
+  -- comparten tonos y no hay contorno entre ellas, porque el contorno
+  automático solo actúa sobre el borde exterior de la silueta, no entre
+  dos regiones internas contiguas -- de forma que a escala real de
+  juego las dos orejas y la coronilla volvían a leerse como un único
+  bulto, deshaciendo buena parte de la separación buscada. Se corrigió
+  añadiendo un único píxel de contorno en el centro de la base de cada
+  oreja, justo donde toca la coronilla -- un pliegue puntual, no una
+  línea completa que las desconectaría del cráneo del que nacen.
+  `reviewer` encontró y corrigió, antes de este commit, una cifra
+  incorrecta en este mismo párrafo y en el comentario de cabecera de
+  `maxPixelArt.js`: el taper de máscara del hocico se había citado como
+  "8, 6 y 3" columnas en las filas 6, 7 y 8, cuando el dato real es "3,
+  6 y 3" (la fila 6 empieza con máscara pequeña y mejilla tan todavía
+  dominante, no con 8 columnas de máscara) -- el mismo patrón de error
+  (cifras citadas sin recalcular contra el array real) que ya había
+  corregido en la ronda anterior, ahora señalado explícitamente como
+  recurrente para vigilar en rondas futuras. `qa` matiza con honestidad
+  que, tras su primera revisión (previa al pliegue de orejas), la
+  mejora de esta ronda fue parcial en los tres puntos que señaló el
+  humano -- clara en la separación frente/ojo-máscara, modesta en
+  orejas y hocico, sin alcanzar una transformación cualitativa -- y que
+  el hocico, aunque ya no es un bloque macizo de una sola pared, sigue
+  leyéndose angular más que como una curva orgánica de morro canino,
+  dentro de las limitaciones de la resolución. No se declara aprobación
+  artística definitiva ni se da por resuelta la convergencia completa
+  con la mockup: sigue pendiente revisión visual humana explícita
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Decimotercera revisión
+  humana: acepta la mejora de la microiteración anterior pero mantiene
+  el rechazo, con los mismos tres problemas ahora más precisos --
+  orejas todavía poco distinguibles ("el mayor fallo actual"), cráneo
+  con poca masa visual, hocico demasiado irregular (el taper de 3
+  niveles de la ronda anterior, 3/6/3 columnas, se leía como un zigzag
+  de "demasiados quiebros") -- y pide explícitamente dejar de hacer
+  microajustes de uno o dos píxeles y construir una cabeza cartoon
+  deliberada, con un presupuesto de píxeles orientativo (no un
+  contrato de test): orejas 3-4 filas de altura, cráneo 7-9 columnas de
+  ancho y 4-5 filas de masa, hocico 3-4 columnas de largo y 2-3 filas
+  de alto. Redistribución del presupuesto fijo de 9 filas: cráneo de 3
+  filas a 4 (coronilla 10 columnas cols 1-10 sin cambios, mejilla 9
+  columnas sin cambios, frente y fila del ojo vuelven a separarse en
+  dos filas -- 7 y 6 columnas respectivamente -- en vez de la fila
+  fusionada de la ronda anterior), a costa de simplificar el hocico de
+  3 filas a 2 (un único escalón limpio de la pared del cráneo hasta la
+  columna 0, con 6 columnas de máscara en la fila 7 y 3 en la fila 8
+  para la nariz, en vez del taper de tres niveles 3/6/3 que se leía
+  como zigzag) -- "cráneo grande + morro corto que sobresale" en dos
+  filas, no tres. Orejas: sin cambios de fila (siguen siendo 3, dentro
+  del rango 3-4 sugerido) pero con el pliegue de separación reubicado:
+  un primer intento de esta ronda probó ensanchar el pliegue de la base
+  de la oreja (introducido en la ronda anterior) de 1 a 2 columnas
+  dentro de la propia oreja, y acabó partiendo la base en dos mitades
+  separadas por un hueco oscuro -- un defecto peor que el "modesto"
+  que corregía. Se movió el pliegue de dentro de la oreja a la fila de
+  la coronilla justo debajo (un único píxel de contorno en la columna
+  bajo cada oreja, columna 2 cercana y columna 7 lejana): marca el
+  límite entre oreja y cráneo sin restar ningún píxel a la propia
+  oreja. Ojo: fila 6, columna 4 (baja una fila al separarse de nuevo
+  frente y fila del ojo). Nariz: fila 8, columna 0, sin cambios de
+  posición en ninguna ronda desde su introducción. Tests: los tests de
+  cabeza se actualizan a los nuevos índices de fila (ojo, hocico-vs-
+  cráneo, pared frontal -- ahora en las tres filas 4-6 en vez de solo
+  4-5, ya que la fila del ojo vuelve a ser una fila propia de la pared);
+  el test de "cráneo ocupa al menos N filas puras" sube de 3 a 4,
+  reflejando la ganancia real de masa craneal de esta ronda. Evidencia
+  visual generada antes de tocar tests o CHANGELOG, siguiendo la
+  instrucción explícita de la tarea de no avanzar sobre una captura que
+  siga viéndose mal: cabeza ampliada, Max completo, junto a Gonzalo, y
+  a escala real de juego. `qa` revisó un primer intento de esta ronda
+  (antes de cualquier commit) y confirmó de forma independiente que el
+  cráneo y el hocico sí cumplían lo pedido, pero encontró que las
+  orejas -- "el mayor fallo actual" según el propio encargo humano --
+  apenas habían cambiado: las filas 0-1 seguían siendo idénticas a la
+  versión ya rechazada, y el pliegue de la coronilla (de la ronda
+  anterior) es un ajuste cosmético de la costura oreja-cráneo, no un
+  cambio a la separación entre ambas orejas, que seguía siendo de solo
+  1 columna en la base -- demasiado estrecha para leerse a escala real
+  de juego según su propia evidencia visual. Se corrigió desplazando la
+  punta lejana de la columna 7 a la 9 (separación entre puntas de 4 a 6
+  columnas) sin estrechar ninguna base (ambas se mantienen en 4
+  columnas): el hueco crece a 2 columnas en la base y 3 en el nivel
+  medio, ganando separación sin sacrificar volumen. La coronilla (10
+  columnas, sin cambios) sigue respaldando por completo la base lejana,
+  que ahora llega hasta la columna 10. No se declara aprobación
+  artística definitiva ni se da por resuelta la convergencia completa
+  con la mockup: sigue pendiente revisión de `qa` y `reviewer`, y
+  revisión visual humana explícita (`HUMAN CHARACTER STYLE APPROVAL
+  REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 
