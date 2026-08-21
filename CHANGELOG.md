@@ -1060,7 +1060,127 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   satisfacer el rechazo humano por "cabeza aplastada" -- eso queda,
   explícitamente, para la revisión visual humana. No se declara
   aprobación artística: sigue pendiente revisión visual humana explícita
-  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Décima revisión humana:
+  autoriza explícitamente romper el límite visual de 22x18 -- "tras
+  múltiples iteraciones queda demostrado visualmente que 22x18 no ofrece
+  resolución suficiente" -- y pide converger con la mockup aprobada
+  redibujando la cabeza desde cero a una resolución mayor, sin escalar
+  el sprite anterior. Nuevo tamaño: 22x20 (ancho sin cambios, alto +2
+  filas). No se adoptó el rango sugerido (26x20/28x20): una auditoría
+  previa a cualquier cambio de arte (sección "audita primero el
+  renderer y el anclaje real" del propio encargo) encontró que
+  `MAX_DIMENSIONS` (MaxRenderer.js) se usaba a la vez para centrar el
+  render visual y como caja de colisión/spawn de Max en
+  `getMaxCollisionBox()` (WorldScene.js) -- el mismo valor gobernando
+  tanto lo visual como lo lógico. `tests/world/MaxCompanion.test.js`
+  protege matemáticamente que `MAX_FOLLOW_MIN_DISTANCE` (31, congelada
+  por instrucción explícita de la tarea: "NO modificar... follow
+  distance") deja margen suficiente para que la caja visual de Max
+  nunca se solape con la de Gonzalo en el peor caso diagonal; recalculado
+  contra cada tamaño candidato, 26x20 y 28x20 ya rompían esa garantía
+  (margen negativo) sin tocar la propia distancia, y 22x18 ampliado a
+  cualquier tamaño con height >= 21 también, salvo compensando con un
+  ancho más recortado. Se optó por 22x20 -- el mayor que conserva un
+  margen positivo (~1.00px) manteniendo el ancho sin cambios -- y,
+  crucialmente, se DESACOPLÓ la caja de colisión/spawn del tamaño
+  visual: nueva constante `MAX_HITBOX_DIMENSIONS` (22x18, el tamaño
+  lógico congelado) en `MaxCompanion.js`, usada exclusivamente por
+  `getMaxCollisionBox()` en `WorldScene.js`; `MAX_DIMENSIONS` de
+  MaxRenderer.js sigue reflejando el tamaño real del sprite (ahora
+  22x20) y se usa exclusivamente para centrar el render en
+  `MaxCompanion.render()`. Resultado: hitbox, colisión de spawn, radio
+  de seguimiento, velocidad de alcance y reacción quedan bit a bit
+  iguales a antes (verificado por la suite completa sin cambios en
+  `tests/world/MaxCompanion.test.js` más allá de heredar
+  automáticamente el nuevo `MAX_DIMENSIONS` en el cálculo de margen, que
+  sigue siendo positivo). `MaxRenderer.js` no necesitó ningún cambio de
+  código -- ya era completamente genérico sobre `MAX_PIXEL_WIDTH`/
+  `MAX_PIXEL_HEIGHT`, así que ampliar el canvas fue solo cuestión de
+  cambiar esas dos constantes y redibujar `MAX_SIDE_PIXELS`.
+  `CreditsScene.js` no se tocó (sigue llamando a `renderMax()` sin
+  ningún parámetro nuevo); su test de anclaje a la nariz se actualizó
+  porque la nariz cambió de fila (6 -> 8) al redibujar la cabeza.
+  Cabeza redibujada por completo (filas 0-8, 9 filas, frente a 7 en el
+  presupuesto anterior) aplicando la lección de un primer intento
+  fallido dentro de esta misma ronda: un cráneo cuyo borde frontal
+  recede progresivamente fila a fila, combinado con el salto hacia
+  delante del hocico, traza una única diagonal continua de punta de
+  oreja a punta de nariz -- confirmado visualmente como lectura de
+  llama/ciervo, no de perro, el mismo defecto que once rondas de esta
+  tarea llevaban intentando eliminar. La corrección: el borde frontal
+  del cráneo (columna 3) es CONSTANTE en las cuatro filas 3-6 -- una
+  pared vertical, no una rampa -- y la redondez viene del borde trasero
+  abultándose hacia atrás (9, 8, 7 y 6 columnas de ancho en las filas
+  3, 4, 5 y 6 respectivamente), nunca del frontal moviéndose. El hocico
+  (filas 7-8) salta hacia delante hasta la columna 0 en un único paso
+  repentino, protegido de que el contorno automático lo rellene (misma
+  técnica ya usada para el hueco entre orejas, aplicada aquí a un
+  escalón vertical). Un segundo defecto, encontrado durante la propia
+  verificación de esta ronda: la coronilla (fila 2) era más estrecha
+  que la base de las orejas que la coronaban, creando un "pinzamiento"
+  visual en la unión -- el mismo problema de fondo (lectura de cuello
+  delgado) causado de otra forma. Se corrigió ensanchando la coronilla
+  (de 8 a 10 columnas, cols 1-10) para respaldar por completo ambas
+  bases sin que sobresalgan. Orejas: se acortan de 3 filas a 2 (punta
+  + base, sin fila intermedia) con base ensanchada -- un primer intento
+  con 3 filas seguía leyéndose como astas incluso tras resolver el
+  pinzamiento; acortar su alcance vertical relativo a su base ancha se
+  lee más como un triángulo de perro corto y menos como un asta de
+  ciervo. Pequeño highlight interior ("m") en la base de la oreja
+  cercana (autorización explícita de esta ronda: "interior opcional").
+  Ojo: fila 6, columna 4 (con tan a ambos lados -- una posición inicial
+  en columna 3, pegada al escalón del hocico, hacía que se fundiera con
+  el fondo transparente en la evidencia generada, y se corrigió antes
+  de darla por buena). Nariz: fila 8, columna 0. Máscara deliberadamente
+  amplia (8 columnas en la fila 7, la mayor de cualquier ronda de esta
+  tarea), sin alcanzar la coronilla. Cuerpo: se reutiliza, byte a byte,
+  el cuerpo ya aprobado de `2fda024` (filas 7-17), desplazado a las
+  filas 9-19 -- la tarea no obligaba a conservarlo byte a byte al
+  cambiar de resolución, pero no había motivo para tocar un cuerpo ya
+  aceptado.
+  Tests reescritos por completo: se eliminan los tests que protegían
+  geometría de cabeza ya descartada (comparaciones de superficie/altura
+  contra commits concretos como `e63dc1f`/`444ee1f`/`3353f43`/
+  `3ae4209`/`2390783`) -- instrucción explícita de la tarea, "NO crear
+  tests contra commits visualmente rechazados" -- y se sustituyen por
+  contratos absolutos: borde frontal del cráneo constante en sus filas
+  inferiores; hocico proyectando delante de ese borde; coronilla al
+  menos tan ancha como la base de las orejas; al menos 4 filas de
+  cráneo puro; máscara sin alcanzar la coronilla; además de los
+  contratos ya establecidos (dos orejas separadas con ensanchamiento
+  punta-a-base, ojo único, ausencia de collar, conectividad, paleta,
+  torso no degenerado, patas con articulación, cola separada y más
+  baja que las orejas). El test de cuerpo protege ahora la igualdad
+  byte a byte contra `2fda024` en las nuevas filas 9-19.
+  Evidencia visual generada a varias escalas (cabeza aislada, cuerpo
+  completo, junto a Gonzalo, y a escala real de juego dentro del canvas
+  nativo de 480x270) confirma un avance real y verificable frente a
+  todas las rondas anteriores: la cabeza tiene volumen genuino, el
+  hocico se lee como un bloque que sobresale (no como continuación del
+  mismo trazo), las orejas ya no se leen como astas, y el ojo es
+  visible. A escala real de juego el conjunto se lee de forma más
+  reconocible como un pequeño cánido que en cualquier ronda anterior
+  dentro de 22x18. `qa` confirma lo anterior de forma independiente,
+  generando su propia comparación directa entre la versión anterior
+  (22x18) y esta, pero matiza dos cosas con honestidad: la mejora de
+  reconocibilidad a escala real de juego es incremental, no un salto
+  transformador (ambas versiones eran ya razonablemente legibles como
+  perro a esa escala); y las dos orejas se perciben ligeramente menos
+  separadas/más fusionadas en la comparación ampliada que en la versión
+  22x18, pese a que el hueco transparente entre ellas mide exactamente
+  lo mismo en columnas -- un efecto secundario probable de la coronilla
+  más ancha, no documentado antes de que `qa` lo señalara. `reviewer`
+  encontró y corrigió, antes de este commit, un error real de datos en
+  este mismo párrafo del CHANGELOG y en el comentario de cabecera de
+  `maxPixelArt.js` (los anchos de cráneo de las filas 3-6 estaban
+  citados en el orden equivocado: 6,9,8,7 en vez de 9,8,7,6), además de
+  confirmar de forma independiente el punto más crítico de esta ronda
+  -- que el aumento de tamaño visual no afecta a la hitbox de
+  colisión/spawn, verificado leyendo el diff real de `WorldScene.js` y
+  ejecutando `tests/world/MaxCompanion.test.js`. No se declara
+  aprobación artística definitiva ni se da por resuelta la convergencia
+  completa con la mockup: sigue pendiente revisión visual humana
+  explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

@@ -45,11 +45,11 @@ import { INTERACT_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
 import {
   computeMaxSpawnPosition,
   MAX_FOLLOW_MIN_DISTANCE,
+  MAX_HITBOX_DIMENSIONS,
   MAX_REACTION_DURATION_SECONDS,
   MaxCompanion,
 } from "../../src/world/MaxCompanion.js";
 import { CollisionMap } from "../../src/world/CollisionMap.js";
-import { MAX_DIMENSIONS } from "../../src/render/MaxRenderer.js";
 
 class FakeInput {
   constructor() {
@@ -2508,10 +2508,10 @@ test("resolveMaxSpawnPosition() prueba los siguientes candidatos, en orden, cuan
 
 function getMaxCollisionBoxForTest(position) {
   return {
-    x: position.x - MAX_DIMENSIONS.width / 2,
-    y: position.y - MAX_DIMENSIONS.height / 2,
-    width: MAX_DIMENSIONS.width,
-    height: MAX_DIMENSIONS.height,
+    x: position.x - MAX_HITBOX_DIMENSIONS.width / 2,
+    y: position.y - MAX_HITBOX_DIMENSIONS.height / 2,
+    width: MAX_HITBOX_DIMENSIONS.width,
+    height: MAX_HITBOX_DIMENSIONS.height,
   };
 }
 
@@ -2590,7 +2590,7 @@ test("resolveMaxSpawnPosition() cae al tercer anillo (cardinales lejanos) cuando
 
 /*
  * Contrato reforzado: resolveMaxSpawnPosition() solo puede devolver una
- * posición cuyo bounding box completo de Max (MAX_DIMENSIONS) haya sido
+ * posición cuyo bounding box completo de Max (MAX_HITBOX_DIMENSIONS) haya sido
  * validado como libre por el CollisionMap real -- nunca una posición que
  * el propio CollisionMap marca como colisionante. Se verifica sobre varios
  * mapas sintéticos distintos, incluido el caso patológico de los 13
