@@ -1276,18 +1276,22 @@ test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
   );
 
   // Con la jugadora en (445,220) la cámara (205,85) deja dentro del
-  // viewport, además de plaza-worker (1 rect de silueta), a dos de los
-  // cuatro NPC ambientales nuevos: ambient-florist-altar y
-  // ambient-guest-bench (ambos con palette.eyes -- 1 rect de silueta + 2
-  // rects de 1x1 de ojos, también en NPC_SILHOUETTE, cada uno). Los otros
-  // dos NPC ambientales (ambient-setup-helper y ambient-waiter-tables)
-  // quedan fuera del viewport en esta posición. mayor-corolaria y
-  // bride-father ya tienen renderers dedicados con su propia silueta. A
-  // eso se suma un fillRect de 1x1 por cada pixel de contorno/ojo ("O") del
-  // sprite indexado de Elena -- ELENA_PALETTE.O reutiliza el mismo valor
-  // "#302637" que BRIDE_PALETTE.silhouette/NPC_SILHOUETTE, así que ambos
-  // se cuentan juntos al filtrar por ese color.
-  const genericNpcSilhouetteRects = 1 + 3 + 3;
+  // viewport, además de plaza-worker, a dos de los cuatro NPC ambientales
+  // nuevos: ambient-florist-altar y ambient-guest-bench. Todos los NPC
+  // dibujados con el render genérico (renderNpc) tienen ahora
+  // palette.eyes true, así que cada uno de esos 3 NPC visibles contribuye
+  // 4 rects en NPC_SILHOUETTE: 1 de silueta base, 2 de 1x1 de ojos y 1 de
+  // la hendidura de piernas (esta última siempre se dibuja, tenga o no
+  // apron el NPC, porque el apron se pinta encima sin eliminar el
+  // fillRect ya emitido). Los otros dos NPC ambientales (ambient-setup-
+  // helper y ambient-waiter-tables) quedan fuera del viewport en esta
+  // posición. mayor-corolaria y bride-father ya tienen renderers
+  // dedicados con su propia silueta. A eso se suma un fillRect de 1x1 por
+  // cada pixel de contorno/ojo ("O") del sprite indexado de Elena --
+  // ELENA_PALETTE.O reutiliza el mismo valor "#302637" que
+  // BRIDE_PALETTE.silhouette/NPC_SILHOUETTE, así que ambos se cuentan
+  // juntos al filtrar por ese color.
+  const genericNpcSilhouetteRects = 4 + 4 + 4;
   const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
 
   assert.equal(silhouettes.length, genericNpcSilhouetteRects + elenaOutlinePixels);
@@ -1470,13 +1474,15 @@ test("render() en axiom-plaza sin giftCodeSolved dibuja plaza-worker y el NPC am
   );
 
   // Con la posición de aparición por defecto (240,192) la cámara queda en
-  // (0,57): plaza-worker sigue usando el render genérico (1 rect de
-  // silueta) y, de los cuatro NPC ambientales nuevos, solo
-  // ambient-florist-altar cae dentro del viewport (con palette.eyes -- 1
-  // rect de silueta + 2 rects de 1x1 de ojos, también en NPC_SILHOUETTE).
-  // mayor-corolaria y bride-father tienen renderers dedicados con su propia
-  // paleta (MAYOR_PALETTE.silhouette / BRIDE_FATHER_PALETTE.silhouette).
-  assert.equal(silhouettes.length, 1 + 3);
+  // (0,57): plaza-worker sigue usando el render genérico y, de los cuatro
+  // NPC ambientales nuevos, solo ambient-florist-altar cae dentro del
+  // viewport. Todos los NPC dibujados con renderNpc tienen ahora
+  // palette.eyes true, así que cada uno de estos 2 NPC visibles
+  // contribuye 4 rects en NPC_SILHOUETTE (1 silueta + 2 ojos + 1 hendidura
+  // de piernas). mayor-corolaria y bride-father tienen renderers dedicados
+  // con su propia paleta (MAYOR_PALETTE.silhouette /
+  // BRIDE_FATHER_PALETTE.silhouette).
+  assert.equal(silhouettes.length, 4 + 4);
 });
 
 test("render() en axiom-plaza con giftCodeSolved dibuja plaza-worker, dos NPC ambientales y bride-epilogue", () => {
@@ -1503,12 +1509,12 @@ test("render() en axiom-plaza con giftCodeSolved dibuja plaza-worker, dos NPC am
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // Ver nota equivalente más arriba: 1 rect de plaza-worker + 3 rects de
-  // ambient-florist-altar (silueta + 2 ojos) + 3 rects de
-  // ambient-guest-bench (silueta + 2 ojos), los dos únicos NPC ambientales
-  // visibles en esta posición de cámara, + un fillRect de 1x1 por cada
-  // pixel de contorno/ojo del sprite indexado de Elena.
-  const genericNpcSilhouetteRects = 1 + 3 + 3;
+  // Ver nota equivalente más arriba: 4 rects de plaza-worker + 4 rects de
+  // ambient-florist-altar + 4 rects de ambient-guest-bench (cada uno:
+  // silueta + 2 ojos + hendidura de piernas), los dos únicos NPC
+  // ambientales visibles en esta posición de cámara, + un fillRect de 1x1
+  // por cada pixel de contorno/ojo del sprite indexado de Elena.
+  const genericNpcSilhouetteRects = 4 + 4 + 4;
   const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
 
   assert.equal(silhouettes.length, genericNpcSilhouetteRects + elenaOutlinePixels);
@@ -1566,6 +1572,17 @@ for (const npcId of AMBIENT_NPC_IDS) {
 
     assert.equal(bodyVisible, true, `${npcId} no dibuja su palette.body`);
     assert.equal(accentVisible, true, `${npcId} no dibuja su palette.accent`);
+
+    const hairVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.hair &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY - 1 &&
+        rect.width === 10 &&
+        rect.height === 8,
+    );
+
+    assert.equal(hairVisible, true, `${npcId} no dibuja su palette.hair`);
 
     if (palette.eyes) {
       const eyeRects = context.fillRects.filter(
@@ -1630,6 +1647,115 @@ for (const npcId of AMBIENT_NPC_IDS) {
     assert.deepEqual(stateAfter, stateBefore);
   });
 }
+
+/*
+ * plaza-worker: cobertura dedicada del pulido visual (ojos + pelo) que
+ * ahora recibe el mismo render genérico (renderNpc) que los 4 NPC
+ * ambientales, sin que cambie su posición, colisión ni diálogo.
+ */
+test("plaza-worker se dibuja con ojos en las mismas coordenadas relativas que los NPC ambientales", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "plaza-worker");
+
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const eyeRects = context.fillRects.filter(
+    (rect) =>
+      rect.fillStyle === "#302637" &&
+      rect.width === 1 &&
+      rect.height === 1 &&
+      rect.y === screenY + 3 &&
+      (rect.x === screenX + 5 || rect.x === screenX + 9),
+  );
+
+  assert.equal(eyeRects.length, 2, "plaza-worker no dibuja sus dos ojos");
+});
+
+test("plaza-worker se dibuja con el color de pelo de NAMED_NPC_PALETTES['plaza-worker']", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "plaza-worker");
+  const palette = NAMED_NPC_PALETTES["plaza-worker"];
+
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const hairVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === palette.hair &&
+      rect.x === screenX + 2 &&
+      rect.y === screenY - 1 &&
+      rect.width === 10 &&
+      rect.height === 8,
+  );
+
+  assert.equal(hairVisible, true, "plaza-worker no dibuja su palette.hair");
+});
+
+test("plaza-worker sigue dibujando su body/accent en la misma posición exacta que antes", () => {
+  const setup = createWorldAt("axiom-plaza");
+  const object = findObject("axiom-plaza", "plaza-worker");
+  const palette = NAMED_NPC_PALETTES["plaza-worker"];
+
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const bodyVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === palette.body &&
+      rect.x === screenX + 2 &&
+      rect.y === screenY + 7 &&
+      rect.width === 10 &&
+      rect.height === 11,
+  );
+  const accentVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === palette.accent &&
+      rect.x === screenX + 5 &&
+      rect.y === screenY + 8 &&
+      rect.width === 4 &&
+      rect.height === 4,
+  );
+
+  assert.equal(bodyVisible, true, "plaza-worker no dibuja su palette.body");
+  assert.equal(accentVisible, true, "plaza-worker no dibuja su palette.accent");
+});
+
+test("plaza-worker mantiene exactamente su id/x/y/width/height/interactionRadius/label de antes", () => {
+  const object = findObject("axiom-plaza", "plaza-worker");
+
+  assert.deepEqual(object, {
+    id: "plaza-worker",
+    type: "npc",
+    x: 224,
+    y: 240,
+    width: 14,
+    height: 18,
+    interactionRadius: 28,
+    label: "Ayudante de la ceremonia",
+  });
+});
 
 test("render() con giftCodeSolved dibuja el color de pelo oscuro de Elena tantas veces como pixeles de ese tono tiene su propio sprite", () => {
   const setup = createWorldAt("axiom-plaza");
@@ -2404,13 +2530,26 @@ test("abrir un diálogo de varias líneas y avanzarlo varias veces con interactu
 
   assert.deepEqual(setup.audio.playSfxCalls, [INTERACT_SFX_PATH]);
   assert.ok(setup.ui.dialogue !== null);
+  assert.equal(setup.ui.dialogue.speaker, "Ayudante de la ceremonia");
+  assert.deepEqual(setup.ui.dialogue.lines, [
+    "He contado las sillas tres veces.",
+    "Siempre sobra una, pero nunca es la misma.",
+    "La alcaldesa dice que eso no es un problema matemático sino logístico.",
+  ]);
+
+  const stateBefore = structuredClone(setup.state.toSaveData());
+  delete stateBefore.savedAt;
 
   for (let i = 0; i < 3; i += 1) {
     setup.input.press("interact");
     setup.scene.update(0);
   }
 
+  const stateAfter = structuredClone(setup.state.toSaveData());
+  delete stateAfter.savedAt;
+
   assert.deepEqual(setup.audio.playSfxCalls, [INTERACT_SFX_PATH]);
+  assert.deepEqual(stateAfter, stateBefore);
 });
 
 test("moverse sin pulsar interactuar no dispara ningún SFX", () => {

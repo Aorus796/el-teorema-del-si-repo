@@ -55,33 +55,39 @@ test("NAMED_NPC_PALETTES conserva plaza-worker y los 4 NPC ambientales de Plaza 
   assert.deepEqual(NAMED_NPC_PALETTES["plaza-worker"], {
     body: "#6c8756",
     accent: "#d9a06f",
+    eyes: true,
+    hair: "#4a3b2a",
   });
   assert.deepEqual(NAMED_NPC_PALETTES["ambient-florist-altar"], {
     body: "#5f8f6a",
     accent: "#e8b4d0",
     eyes: true,
+    hair: "#2e2419",
   });
   assert.deepEqual(NAMED_NPC_PALETTES["ambient-setup-helper"], {
     body: "#7d6a4f",
     accent: "#cbb994",
     eyes: true,
     apron: true,
+    hair: "#6e5a3f",
   });
   assert.deepEqual(NAMED_NPC_PALETTES["ambient-waiter-tables"], {
     body: "#2f3b52",
     accent: "#c9a15a",
     eyes: true,
     apron: true,
+    hair: "#1f1a15",
   });
   assert.deepEqual(NAMED_NPC_PALETTES["ambient-guest-bench"], {
     body: "#7a5d8f",
     accent: "#e3c9e8",
     eyes: true,
+    hair: "#8a6a4a",
   });
   assert.equal(Object.isFrozen(NAMED_NPC_PALETTES), true);
 });
 
-test("las paletas de los 4 NPC ambientales nuevos no colisionan de color (body/accent) entre sí ni con las demás paletas del archivo", () => {
+test("las paletas de los 4 NPC ambientales nuevos no colisionan de color (body/accent/hair) entre sí ni con las demás paletas del archivo", () => {
   const ambientPalettes = [
     NAMED_NPC_PALETTES["ambient-florist-altar"],
     NAMED_NPC_PALETTES["ambient-setup-helper"],
@@ -91,6 +97,7 @@ test("las paletas de los 4 NPC ambientales nuevos no colisionan de color (body/a
   const ambientColors = ambientPalettes.flatMap((palette) => [
     palette.body,
     palette.accent,
+    palette.hair,
   ]);
 
   assert.equal(new Set(ambientColors).size, ambientColors.length);
@@ -104,6 +111,8 @@ test("las paletas de los 4 NPC ambientales nuevos no colisionan de color (body/a
     ...Object.values(MAX_PALETTE),
     ...Object.values(NAMED_NPC_PALETTES["plaza-worker"]),
     ...Object.values(DEFAULT_NPC_PALETTE),
+    NPC_SILHOUETTE,
+    NPC_HEAD,
   ];
 
   for (const color of ambientColors) {

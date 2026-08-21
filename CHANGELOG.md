@@ -1314,9 +1314,15 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   con un diálogo ambiental de un único turno sin flags ni efectos de
   estado. Reutilizan el render genérico `WorldScene.renderNpc()` con su
   propia entrada en `NAMED_NPC_PALETTES`
-  (`src/content/characterPalettes.js`), que ahora admite dos rasgos
-  opcionales -- ojos y delantal -- dibujados solo cuando la paleta los
-  declara, sin alterar el render ya existente de `plaza-worker`.
+  (`src/content/characterPalettes.js`), que ahora admite rasgos
+  opcionales -- ojos, pelo y delantal -- dibujados solo cuando la paleta
+  los declara. En una corrección de alcance posterior sobre esta misma
+  entrada, `renderNpc()` se extendió con pelo, hombros, brazos y una
+  hendidura de piernas para los 5 NPC que usan este render genérico
+  (los 4 ambientales y también `plaza-worker`, que hasta entonces se
+  había quedado sin el tratamiento visual nuevo pese a compartir la misma
+  función), sin tocar posición, colisión, diálogo ni lógica de
+  interacción de ninguno de los cinco.
 
 ## [1.0.0] - 2026-08-11
 

@@ -81,28 +81,37 @@ export const NPC_HEAD = SKIN_TONE;
 // BRIDE_FATHER_PALETTE directamente, igual que bride-epilogue con
 // BRIDE_PALETTE.
 export const NAMED_NPC_PALETTES = Object.freeze({
-  "plaza-worker": Object.freeze({ body: "#6c8756", accent: "#d9a06f" }),
+  "plaza-worker": Object.freeze({
+    body: "#6c8756",
+    accent: "#d9a06f",
+    eyes: true,
+    hair: "#4a3b2a",
+  }),
   "ambient-florist-altar": Object.freeze({
     body: "#5f8f6a",
     accent: "#e8b4d0",
     eyes: true,
+    hair: "#2e2419",
   }),
   "ambient-setup-helper": Object.freeze({
     body: "#7d6a4f",
     accent: "#cbb994",
     eyes: true,
     apron: true,
+    hair: "#6e5a3f",
   }),
   "ambient-waiter-tables": Object.freeze({
     body: "#2f3b52",
     accent: "#c9a15a",
     eyes: true,
     apron: true,
+    hair: "#1f1a15",
   }),
   "ambient-guest-bench": Object.freeze({
     body: "#7a5d8f",
     accent: "#e3c9e8",
     eyes: true,
+    hair: "#8a6a4a",
   }),
 });
 

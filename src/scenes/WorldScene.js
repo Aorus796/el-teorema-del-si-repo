@@ -1942,6 +1942,11 @@ function renderNpc(context, x, y, object) {
   context.fillStyle = NPC_SILHOUETTE;
   context.fillRect(x + 1, y + 5, 12, 14);
 
+  if (palette.hair) {
+    context.fillStyle = palette.hair;
+    context.fillRect(x + 2, y - 1, 10, 8);
+  }
+
   context.fillStyle = NPC_HEAD;
   context.fillRect(x + 3, y, 8, 7);
 
@@ -1952,10 +1957,16 @@ function renderNpc(context, x, y, object) {
   }
 
   context.fillStyle = palette.body;
+  context.fillRect(x + 1, y + 7, 12, 2);
+  context.fillRect(x, y + 9, 2, 8);
+  context.fillRect(x + 12, y + 9, 2, 8);
   context.fillRect(x + 2, y + 7, 10, 11);
 
   context.fillStyle = palette.accent;
   context.fillRect(x + 5, y + 8, 4, 4);
+
+  context.fillStyle = NPC_SILHOUETTE;
+  context.fillRect(x + 6, y + 14, 2, 4);
 
   if (palette.apron) {
     context.fillStyle = "#e6ded0";
