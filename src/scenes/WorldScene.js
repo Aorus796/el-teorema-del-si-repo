@@ -428,6 +428,44 @@ export class WorldScene {
       return;
     }
 
+    if (object.id === "ambient-florist-altar") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Las flores tienen que aguantar frescas hasta el último brindis.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-setup-helper") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Todavía faltan sillas por colocar antes de que lleguen los invitados.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-waiter-tables") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Cuidado con los manteles, que el viento no perdona hoy.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-guest-bench") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: ["Qué ganas de que empiece la ceremonia."],
+      });
+      return;
+    }
+
     if (object.id === "library-silogio") {
       this.interactWithSilogio();
       return;
@@ -1907,11 +1945,22 @@ function renderNpc(context, x, y, object) {
   context.fillStyle = NPC_HEAD;
   context.fillRect(x + 3, y, 8, 7);
 
+  if (palette.eyes) {
+    context.fillStyle = NPC_SILHOUETTE;
+    context.fillRect(x + 5, y + 3, 1, 1);
+    context.fillRect(x + 9, y + 3, 1, 1);
+  }
+
   context.fillStyle = palette.body;
   context.fillRect(x + 2, y + 7, 10, 11);
 
   context.fillStyle = palette.accent;
   context.fillRect(x + 5, y + 8, 4, 4);
+
+  if (palette.apron) {
+    context.fillStyle = "#e6ded0";
+    context.fillRect(x + 2, y + 14, 10, 4);
+  }
 }
 
 // Elena Character Pixel-Art: migra del render geométrico anterior (arriba

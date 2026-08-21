@@ -21,7 +21,10 @@ import { P2_PHASE } from "../../src/puzzles/p2-bridges/P2State.js";
 import { P2BridgesScene } from "../../src/scenes/P2BridgesScene.js";
 import { WorldScene, resolveMaxSpawnPosition } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
-import { BRIDE_PALETTE } from "../../src/content/characterPalettes.js";
+import {
+  BRIDE_PALETTE,
+  NAMED_NPC_PALETTES,
+} from "../../src/content/characterPalettes.js";
 import {
   ELENA_FRONT_PIXELS,
   ELENA_PALETTE,
@@ -1272,13 +1275,19 @@ test("render() con epilogueCompleted sigue mostrando a bride-epilogue", () => {
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // 1 rect de silueta del NPC genérico restante (plaza-worker; mayor-
-  // corolaria y bride-father ya tienen renderers dedicados con su propia
-  // silueta) + un fillRect de 1x1 por cada pixel de contorno/ojo ("O") del
+  // Con la jugadora en (445,220) la cámara (205,85) deja dentro del
+  // viewport, además de plaza-worker (1 rect de silueta), a dos de los
+  // cuatro NPC ambientales nuevos: ambient-florist-altar y
+  // ambient-guest-bench (ambos con palette.eyes -- 1 rect de silueta + 2
+  // rects de 1x1 de ojos, también en NPC_SILHOUETTE, cada uno). Los otros
+  // dos NPC ambientales (ambient-setup-helper y ambient-waiter-tables)
+  // quedan fuera del viewport en esta posición. mayor-corolaria y
+  // bride-father ya tienen renderers dedicados con su propia silueta. A
+  // eso se suma un fillRect de 1x1 por cada pixel de contorno/ojo ("O") del
   // sprite indexado de Elena -- ELENA_PALETTE.O reutiliza el mismo valor
   // "#302637" que BRIDE_PALETTE.silhouette/NPC_SILHOUETTE, así que ambos
   // se cuentan juntos al filtrar por ese color.
-  const genericNpcSilhouetteRects = 1;
+  const genericNpcSilhouetteRects = 1 + 3 + 3;
   const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
 
   assert.equal(silhouettes.length, genericNpcSilhouetteRects + elenaOutlinePixels);
@@ -1450,7 +1459,7 @@ test("los objetos y decoraciones de axiom-plaza no cambian con giftCodeSolved", 
   );
 });
 
-test("render() en axiom-plaza sin giftCodeSolved dibuja tres NPC, sin bride-epilogue", () => {
+test("render() en axiom-plaza sin giftCodeSolved dibuja plaza-worker y el NPC ambiental visible en cámara, sin bride-epilogue", () => {
   const setup = createWorldAt("axiom-plaza");
   const context = new FakeCanvasContext();
 
@@ -1460,13 +1469,17 @@ test("render() en axiom-plaza sin giftCodeSolved dibuja tres NPC, sin bride-epil
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // Solo plaza-worker sigue usando el render genérico (1 rect de silueta);
+  // Con la posición de aparición por defecto (240,192) la cámara queda en
+  // (0,57): plaza-worker sigue usando el render genérico (1 rect de
+  // silueta) y, de los cuatro NPC ambientales nuevos, solo
+  // ambient-florist-altar cae dentro del viewport (con palette.eyes -- 1
+  // rect de silueta + 2 rects de 1x1 de ojos, también en NPC_SILHOUETTE).
   // mayor-corolaria y bride-father tienen renderers dedicados con su propia
   // paleta (MAYOR_PALETTE.silhouette / BRIDE_FATHER_PALETTE.silhouette).
-  assert.equal(silhouettes.length, 1);
+  assert.equal(silhouettes.length, 1 + 3);
 });
 
-test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bride-epilogue", () => {
+test("render() en axiom-plaza con giftCodeSolved dibuja plaza-worker, dos NPC ambientales y bride-epilogue", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.investigationComplete = true;
   setup.state.flags.epilogueUnlocked = true;
@@ -1474,9 +1487,11 @@ test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bri
   setup.state.flags.giftCodeSolved = true;
   setup.state.flags.epilogueCompleted = false;
 
-  // Posiciona a la jugadora a medio camino entre los cuatro NPC de
-  // axiom-plaza para que la cámara (viewport de 480x270, clamped al
-  // tamaño del mapa) los muestre todos a la vez, incluida bride-epilogue.
+  // Posiciona a la jugadora a medio camino entre plaza-worker y
+  // bride-epilogue en axiom-plaza para que la cámara (viewport de
+  // 480x270, clamped al tamaño del mapa) los muestre a ambos a la vez,
+  // junto con los NPC ambientales que caen dentro de ese mismo viewport
+  // (ambient-florist-altar y ambient-guest-bench).
   setup.scene.player.x = 445;
   setup.scene.player.y = 220;
   setup.scene.update(0);
@@ -1488,13 +1503,133 @@ test("render() en axiom-plaza con giftCodeSolved dibuja cuatro NPC, incluida bri
     (rect) => rect.fillStyle === "#302637",
   );
 
-  // Ver nota equivalente más arriba: 1 rect de plaza-worker + un fillRect
-  // de 1x1 por cada pixel de contorno/ojo del sprite indexado de Elena.
-  const genericNpcSilhouetteRects = 1;
+  // Ver nota equivalente más arriba: 1 rect de plaza-worker + 3 rects de
+  // ambient-florist-altar (silueta + 2 ojos) + 3 rects de
+  // ambient-guest-bench (silueta + 2 ojos), los dos únicos NPC ambientales
+  // visibles en esta posición de cámara, + un fillRect de 1x1 por cada
+  // pixel de contorno/ojo del sprite indexado de Elena.
+  const genericNpcSilhouetteRects = 1 + 3 + 3;
   const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
 
   assert.equal(silhouettes.length, genericNpcSilhouetteRects + elenaOutlinePixels);
 });
+
+/*
+ * Plaza del Axioma -- NPCs ambientales (v1.1): cobertura dedicada de los 4
+ * NPC nuevos sin nombre propio. Cada uno usa el render genérico
+ * (renderNpc) con su propia entrada de NAMED_NPC_PALETTES, así que se
+ * comprueba el mismo patrón que ya cubre plaza-worker (body/accent en las
+ * posiciones fijas del render genérico), más los rects de ojos/delantal
+ * condicionales según palette.eyes/palette.apron.
+ */
+const AMBIENT_NPC_IDS = [
+  "ambient-florist-altar",
+  "ambient-setup-helper",
+  "ambient-waiter-tables",
+  "ambient-guest-bench",
+];
+
+for (const npcId of AMBIENT_NPC_IDS) {
+  test(`${npcId} se dibuja con su propio body/accent de NAMED_NPC_PALETTES, anclado en su posición real de pantalla`, () => {
+    const setup = createWorldAt("axiom-plaza");
+    const object = findObject("axiom-plaza", npcId);
+    const palette = NAMED_NPC_PALETTES[npcId];
+
+    // Coloca a la jugadora encima del NPC para que quede dentro del
+    // viewport sin depender de la posición de cámara por defecto.
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    const bodyVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY + 7 &&
+        rect.width === 10 &&
+        rect.height === 11,
+    );
+    const accentVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.accent &&
+        rect.x === screenX + 5 &&
+        rect.y === screenY + 8 &&
+        rect.width === 4 &&
+        rect.height === 4,
+    );
+
+    assert.equal(bodyVisible, true, `${npcId} no dibuja su palette.body`);
+    assert.equal(accentVisible, true, `${npcId} no dibuja su palette.accent`);
+
+    if (palette.eyes) {
+      const eyeRects = context.fillRects.filter(
+        (rect) =>
+          rect.fillStyle === "#302637" &&
+          rect.width === 1 &&
+          rect.height === 1 &&
+          rect.y === screenY + 3 &&
+          (rect.x === screenX + 5 || rect.x === screenX + 9),
+      );
+
+      assert.equal(eyeRects.length, 2, `${npcId} no dibuja sus dos ojos`);
+    }
+
+    if (palette.apron) {
+      const apronVisible = context.fillRects.some(
+        (rect) =>
+          rect.x === screenX + 2 &&
+          rect.y === screenY + 14 &&
+          rect.width === 10 &&
+          rect.height === 4 &&
+          rect.fillStyle !== palette.body &&
+          rect.fillStyle !== palette.accent,
+      );
+
+      assert.equal(apronVisible, true, `${npcId} no dibuja su delantal`);
+    } else {
+      const apronBand = context.fillRects.some(
+        (rect) =>
+          rect.x === screenX + 2 &&
+          rect.y === screenY + 14 &&
+          rect.width === 10 &&
+          rect.height === 4,
+      );
+
+      assert.equal(
+        apronBand,
+        false,
+        `${npcId} no debería dibujar un delantal`,
+      );
+    }
+  });
+
+  test(`interactuar con ${npcId} abre un diálogo de un único turno con su label como speaker, sin tocar GameState`, () => {
+    const setup = createWorldAt("axiom-plaza");
+    const object = findObject("axiom-plaza", npcId);
+    setup.scene.player.x = object.x + object.width / 2;
+    setup.scene.player.y = object.y + object.height / 2;
+    setup.input.press("interact");
+
+    const stateBefore = structuredClone(setup.state.toSaveData());
+    delete stateBefore.savedAt;
+
+    setup.scene.update(0);
+
+    const stateAfter = structuredClone(setup.state.toSaveData());
+    delete stateAfter.savedAt;
+
+    assert.ok(setup.ui.dialogue !== null);
+    assert.equal(setup.ui.dialogue.speaker, object.label);
+    assert.equal(setup.ui.dialogue.lines.length, 1);
+    assert.deepEqual(stateAfter, stateBefore);
+  });
+}
 
 test("render() con giftCodeSolved dibuja el color de pelo oscuro de Elena tantas veces como pixeles de ese tono tiene su propio sprite", () => {
   const setup = createWorldAt("axiom-plaza");

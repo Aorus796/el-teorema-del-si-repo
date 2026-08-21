@@ -224,16 +224,70 @@ test("library, archive y seven-bridges-walk no tienen dawnPalette", () => {
  * justo lo que un cambio meramente visual podría romper por accidente:
  * geometría de colisión, objetos/NPCs existentes, y solapes nuevos.
  */
-test("axiom-plaza conserva exactamente los mismos solidTiles, objetos y NPCs que antes de la decoración", () => {
+test("axiom-plaza conserva los mismos solidTiles que antes de la decoración y suma los 4 NPCs ambientales nuevos", () => {
   const map = getWorldMap("axiom-plaza");
 
   assert.equal(map.solidTiles.length, 238);
-  assert.equal(map.objects.length, 11);
+  assert.equal(map.objects.length, 15);
   assert.equal(
     map.objects.filter((object) => object.type === "npc").length,
-    4,
-    "esta tarea no añade NPCs ambientales nuevos (ver informe: decisión explícita)",
+    8,
+    "Plaza del Axioma -- NPCs ambientales suma 4 NPC sin nombre propio a los 4 ya existentes",
   );
+});
+
+test("los 4 NPCs ambientales nuevos de axiom-plaza no tienen requiresFlag y no solapan nada", () => {
+  const map = getWorldMap("axiom-plaza");
+  const ambientIds = [
+    "ambient-florist-altar",
+    "ambient-setup-helper",
+    "ambient-waiter-tables",
+    "ambient-guest-bench",
+  ];
+
+  const ambientObjects = ambientIds.map((id) =>
+    map.objects.find((object) => object.id === id),
+  );
+
+  for (const object of ambientObjects) {
+    assert.ok(object, "falta uno de los NPCs ambientales nuevos");
+    assert.equal(object.type, "npc");
+    assert.equal(object.requiresFlag, undefined);
+  }
+
+  const ids = ambientObjects.map((object) => object.id);
+  assert.equal(new Set(ids).size, ids.length);
+
+  for (const objectId of ambientIds) {
+    assertObjectIsClear("axiom-plaza", objectId);
+  }
+});
+
+test("ninguno de los 4 NPCs ambientales nuevos de axiom-plaza solapa el rectángulo de aparición del jugador", () => {
+  const map = getWorldMap("axiom-plaza");
+  const playerState = new GameState().getPlayerState("axiom-plaza");
+  const spawnBounds = {
+    x: playerState.x - 5,
+    y: playerState.y - 7,
+    width: 10,
+    height: 14,
+  };
+  const ambientIds = [
+    "ambient-florist-altar",
+    "ambient-setup-helper",
+    "ambient-waiter-tables",
+    "ambient-guest-bench",
+  ];
+
+  for (const objectId of ambientIds) {
+    const object = map.objects.find((entry) => entry.id === objectId);
+
+    assert.equal(
+      rectanglesOverlap(spawnBounds, object),
+      false,
+      `${objectId} solapa la aparición del jugador`,
+    );
+  }
 });
 
 test("axiom-plaza tiene entre 3 y 5 mesas de boda redondas ('wedding-table')", () => {

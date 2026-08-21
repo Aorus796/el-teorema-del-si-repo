@@ -44,13 +44,75 @@ test("NPC_SILHOUETTE conserva el valor ya usado por WorldScene.renderNpc", () =>
   assert.equal(NPC_SILHOUETTE, "#302637");
 });
 
-test("NAMED_NPC_PALETTES conserva solo plaza-worker; mayor-corolaria y bride-father tienen renderers dedicados", () => {
-  assert.deepEqual(Object.keys(NAMED_NPC_PALETTES).sort(), ["plaza-worker"]);
+test("NAMED_NPC_PALETTES conserva plaza-worker y los 4 NPC ambientales de Plaza del Axioma; mayor-corolaria y bride-father tienen renderers dedicados", () => {
+  assert.deepEqual(Object.keys(NAMED_NPC_PALETTES).sort(), [
+    "ambient-florist-altar",
+    "ambient-guest-bench",
+    "ambient-setup-helper",
+    "ambient-waiter-tables",
+    "plaza-worker",
+  ]);
   assert.deepEqual(NAMED_NPC_PALETTES["plaza-worker"], {
     body: "#6c8756",
     accent: "#d9a06f",
   });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-florist-altar"], {
+    body: "#5f8f6a",
+    accent: "#e8b4d0",
+    eyes: true,
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-setup-helper"], {
+    body: "#7d6a4f",
+    accent: "#cbb994",
+    eyes: true,
+    apron: true,
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-waiter-tables"], {
+    body: "#2f3b52",
+    accent: "#c9a15a",
+    eyes: true,
+    apron: true,
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-guest-bench"], {
+    body: "#7a5d8f",
+    accent: "#e3c9e8",
+    eyes: true,
+  });
   assert.equal(Object.isFrozen(NAMED_NPC_PALETTES), true);
+});
+
+test("las paletas de los 4 NPC ambientales nuevos no colisionan de color (body/accent) entre sí ni con las demás paletas del archivo", () => {
+  const ambientPalettes = [
+    NAMED_NPC_PALETTES["ambient-florist-altar"],
+    NAMED_NPC_PALETTES["ambient-setup-helper"],
+    NAMED_NPC_PALETTES["ambient-waiter-tables"],
+    NAMED_NPC_PALETTES["ambient-guest-bench"],
+  ];
+  const ambientColors = ambientPalettes.flatMap((palette) => [
+    palette.body,
+    palette.accent,
+  ]);
+
+  assert.equal(new Set(ambientColors).size, ambientColors.length);
+
+  const otherColors = [
+    ...Object.values(PROTAGONIST_PALETTE),
+    ...Object.values(BRIDE_PALETTE),
+    ...Object.values(MAYOR_PALETTE),
+    ...Object.values(BRIDE_FATHER_PALETTE),
+    ...Object.values(SILOGIO_PALETTE),
+    ...Object.values(MAX_PALETTE),
+    ...Object.values(NAMED_NPC_PALETTES["plaza-worker"]),
+    ...Object.values(DEFAULT_NPC_PALETTE),
+  ];
+
+  for (const color of ambientColors) {
+    assert.equal(
+      otherColors.includes(color),
+      false,
+      `color ${color} colisiona con una paleta existente`,
+    );
+  }
 });
 
 test("DEFAULT_NPC_PALETTE conserva su valor de fallback aunque hoy no lo consulte ningún NPC real", () => {

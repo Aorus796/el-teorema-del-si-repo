@@ -1307,6 +1307,16 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   con la mockup: sigue pendiente revisión de `qa` y `reviewer`, y
   revisión visual humana explícita (`HUMAN CHARACTER STYLE APPROVAL
   REQUIRED`).
+- Plaza del Axioma -- NPCs ambientales: 4 NPC nuevos, estáticos y sin
+  nombre propio (`ambient-florist-altar`, `ambient-setup-helper`,
+  `ambient-waiter-tables`, `ambient-guest-bench`) junto al altar, el
+  puesto de montaje, las mesas de boda y los bancos de la Plaza, cada uno
+  con un diálogo ambiental de un único turno sin flags ni efectos de
+  estado. Reutilizan el render genérico `WorldScene.renderNpc()` con su
+  propia entrada en `NAMED_NPC_PALETTES`
+  (`src/content/characterPalettes.js`), que ahora admite dos rasgos
+  opcionales -- ojos y delantal -- dibujados solo cuando la paleta los
+  declara, sin alterar el render ya existente de `plaza-worker`.
 
 ## [1.0.0] - 2026-08-11
 
