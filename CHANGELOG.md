@@ -850,7 +850,93 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   para patas). No hace falta tocar `tests/scenes/CreditsScene.test.js`
   -- ojo y nariz no cambian de posición esta ronda. No se declara
   aprobación artística: sigue pendiente revisión visual humana explícita
-  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Sexta revisión humana:
+  adjunta una mockup visual de referencia (cabeza grande y redondeada,
+  máscara amplia cubriendo hocico y zona del ojo, orejas triangulares
+  prominentes, lectura cartoon) y pide converger con ella en vez de
+  seguir defendiendo el diseño de la ronda anterior. Ronda acotada de
+  nuevo a las filas 0-6; las filas 7-17 quedan, otra vez, byte a byte
+  idénticas a `3353f43` (que a su vez ya eran idénticas a `84fe78d`),
+  protegido por el test de cuerpo completo existente.
+  Dos magnitudes de ancho distintas, que no deben confundirse (un
+  intento anterior de esta misma entrada sí las confundió, señalado por
+  `reviewer`): (A) el ancho físico real del sprite -- desde la columna 0
+  hasta la última columna con algún píxel de cabeza -- pasa de 12
+  columnas en la versión anterior (cols 0-11: el contorno de la base de
+  la oreja lejana de esa versión ya llegaba a la columna 11, no a la
+  10) a 14 columnas en esta versión (cols 0-13). (B) las ventanas fijas
+  de conteo que usan los tests de regresión, que no representan ese
+  ancho físico: cols 0-10 (61 píxeles de relleno, frente a 59 en la
+  versión anterior en la misma ventana) y cols 0-12 (71 píxeles),
+  ambas ventanas ya usadas en rondas previas para comparar contra
+  versiones más antiguas y estrechas.
+  La máscara pasa de una franja de 3-4 columnas bajo el hocico a cubrir
+  hasta 7 columnas en la fila 4, incluyendo la zona del ojo -- ahora
+  marca con claridad dónde termina el cráneo (tan) y empieza el hocico
+  (máscara), en vez de una transición de un solo píxel. El ojo se
+  desplaza a fila 4 columna 3 (antes columna 4), quedando embebido en la
+  máscara en vez de en su borde. Coronilla y cráneo se comprimen de dos
+  filas (bulto estrecho + masa ancha) a una sola fila de masa craneal
+  ancha, cediendo la fila liberada a las orejas. Nariz sin cambios de
+  posición.
+  Orejas: un primer intento de esta ronda se limitó a recolocar el
+  mecanismo de tono y desfase de profundidad de la ronda anterior sin
+  cambiar su forma -- la revisión de `qa` sobre ese intento encontró que
+  el salto de solo dos niveles de ancho (punta de 1 columna directamente
+  a una base de 4-5) trazaba, una vez con contorno, una cruz o una T, no
+  un triángulo, precisamente el rasgo más explícito que pedía la mockup.
+  Se rediseñan por completo con tres niveles de ancho estrictamente
+  crecientes por oreja (punta de 1 columna, tramo medio de 3, base de 5,
+  cada uno centrado sobre el anterior), lo que sí traza un contorno
+  triangular reconocible; se pierde a cambio el desfase de una fila
+  entre oreja cercana y lejana de la ronda anterior (ambas puntas
+  vuelven a compartir la fila 0) -- no había presupuesto de filas para
+  mantener el desfase y el triángulo de tres niveles a la vez sin invadir
+  la fila de la máscara. Mismo tono por oreja que siempre ("h" cercana,
+  "d" lejana).
+  Deliberadamente NO se añade un reflejo blanco al ojo pese a que la
+  mockup lo muestra -- los cinco personajes humanos y todas las rondas
+  previas de Max usan un único píxel de contorno oscuro como ojo, sin
+  excepción; se documenta esta decisión en el comentario de cabecera de
+  `maxPixelArt.js` en vez de romper esa convención compartida por un
+  detalle que la tarea no exige de forma explícita. `MaxRenderer.js`,
+  `MaxCompanion.js`, `WorldScene.js`, `characterPalettes.js`,
+  `tests/scenes/CreditsScene.test.js` y los cinco personajes humanos no
+  se tocan -- ojo y nariz cambian de columna pero no de fila, y la nariz
+  (usada para el anclaje del test de créditos) no cambia en absoluto.
+  Tests actualizados en `tests/content/MaxPixelArt.test.js` (posición
+  del ojo; ventanas de columna ensanchadas de 10-11 a 12-13 en los tests
+  de ancho de cabeza y separación de orejas, para no cortar la punta de
+  la oreja lejana; nueva comparación de superficie de cabeza contra un
+  snapshot literal de la versión inmediatamente anterior, además de las
+  dos ya existentes; nuevo test que protege directamente la forma
+  triangular -- exige tres niveles de ancho estrictamente crecientes por
+  oreja en sus primeras tres filas, en vez de solo comprobar que existe
+  algún hueco entre ellas, que no habría detectado el defecto de
+  cruz/T). Evidencia visual generada a varias escalas (cabeza aislada a
+  80px/celda, cuerpo completo, junto a Gonzalo), revisada tras el
+  hallazgo de `qa` y otra vez tras el rediseño de las orejas, confirma
+  que el defecto puntual de cruz/T queda resuelto: ambas orejas trazan
+  ahora una progresión estrictamente creciente de ancho (verificada por
+  `qa` de forma independiente, midiendo `[2, 4, 6]` en ambas). Pero la
+  revisión visual de `qa` sobre el resultado final, con la cabeza
+  ensanchada a 14 columnas, señala un problema distinto y no resuelto:
+  las dos orejas quedan muy separadas horizontalmente, unidas por una
+  franja horizontal plana (el highlight de la fila 3, de cráneo a
+  cráneo) que, junto con el hocico alargado, se lee más como un cuello
+  con una protuberancia en cada extremo que como una cabeza compacta y
+  redonda con las orejas juntas -- a juicio de `qa`, sigue evocando un
+  perfil de llama/alpaca/ciervo más que el de un pastor belga, aunque ya
+  no por el defecto de cruz/T original. Esta observación se documenta
+  aquí, sin abrir una octava ronda de rediseño dentro de esta misma
+  tarea (que estaba acotada a corregir la imprecisión de ancho físico
+  encontrada por `reviewer` y el defecto de forma de orejas encontrado
+  por `qa` en su primera pasada, ambos ya resueltos y confirmados) --
+  queda como información explícita para la revisión visual humana, que
+  puede pedir una ronda adicional centrada en acercar las dos orejas o
+  romper la franja horizontal del cráneo si lo considera necesario. No
+  se declara aprobación artística: sigue pendiente revisión visual
+  humana explícita (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

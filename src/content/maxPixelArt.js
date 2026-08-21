@@ -18,7 +18,7 @@
  * MAX_SIDE_PIXELS es la única exportación de pixel-art (no hay
  * MAX_FRONT_PIXELS/MAX_BACK_PIXELS), y el criterio de ojos aplicado es
  * el de "vista lateral: 1 ojo visible", en la posición fija (fila 4,
- * columna 4).
+ * columna 3).
  *
  * Construido con una pasada de "outer outline": el relleno (cuerpo,
  * cabeza, orejas, patas, cola) se diseñó primero sin contorno, y la
@@ -27,13 +27,16 @@
  * "engulle" un trazo de 1px de ancho (patas, punta de cola), a
  * diferencia de un contorno que sustituyera píxeles de relleno ya
  * existentes. Única excepción deliberada: el hueco entre las dos orejas
- * se protege en dos filas, no solo una (fila 0, columnas 3-8; fila 1,
- * columnas 4-7 -- la punta de la oreja cercana está en columna 2, la
- * punta de la lejana en columna 9) para que siguiera transparente -- de
- * lo contrario el propio contorno habría fusionado ambas orejas en una
- * sola mancha oscura, o incluso en una franja horizontal que las uniera
- * por debajo (ver el párrafo final sobre la ronda de la cabeza, donde
- * proteger solo la fila 0 produjo justo ese defecto). El contorno de la
+ * se protege en las tres filas que ocupan (no solo la primera), porque
+ * cada fila tiene su propio ancho de oreja y por tanto su propio hueco:
+ * fila 0 columnas 4-9 (puntas en columnas 3 y 10), fila 1 columnas 5-8
+ * (tramos medios en columnas 2-4 y 9-11), fila 2 columnas 6-7 (bases en
+ * columnas 1-5 y 8-12) -- para que siguieran transparentes en las tres.
+ * De lo contrario el propio contorno habría fusionado ambas orejas en
+ * una sola mancha oscura, o incluso en una franja horizontal que las
+ * uniera por debajo (ver el párrafo final sobre la ronda de la cabeza,
+ * donde proteger solo la primera fila de un diseño de dos niveles
+ * produjo justo ese defecto). El contorno de la
  * cabeza y el de las patas se calculan en sub-cuadrículas separadas (no
  * sobre las 18 filas a la vez): aplicarlo sobre la cuadrícula completa
  * haría que las celdas transparentes de la cabeza se fusionaran con el
@@ -162,8 +165,73 @@
  * 59 píxeles de relleno en cols 0-10 (frente a 60 en la versión
  * anterior -- prácticamente igual; esta ronda no perseguía más masa
  * total, sino mejor contraste/lectura de las orejas y una coronilla
- * menos plana). Ver CHANGELOG.md para el detalle completo y la
- * comparación visual contra las cinco versiones anteriores.
+ * menos plana). Sigue sin collar.
+ *
+ * Convergencia con mockup aprobado (esta versión, sustituye de nuevo
+ * los números de fila del párrafo anterior): la revisión humana adjuntó
+ * una mockup de referencia (cabeza grande y redondeada, máscara amplia
+ * cubriendo hocico y zona del ojo, orejas triangulares prominentes,
+ * lectura cartoon) y pidió converger visualmente con ella en vez de
+ * seguir defendiendo el diseño anterior. Ronda acotada de nuevo a las
+ * filas 0-6; las filas 7-17 siguen siendo, byte a byte, las mismas de
+ * la versión anterior.
+ *
+ * Dos magnitudes de "ancho" distintas, para no repetir la imprecisión
+ * que `reviewer` encontró en un intento anterior de este mismo párrafo
+ * (confundir el ancho físico real con una ventana de conteo fija):
+ * (A) el ancho físico real del sprite (desde la columna 0 hasta la
+ * última columna con algún píxel no transparente en las filas 0-6,
+ * cola aparte) pasa de 12 columnas en la versión anterior (cols 0-11:
+ * el contorno que cierra la base de la oreja lejana en esa versión
+ * llegaba hasta la columna 11, no la 10) a 14 columnas en esta versión
+ * (cols 0-13: el contorno de la base de la oreja lejana ahora llega
+ * hasta la columna 13). (B) las ventanas de conteo de superficie que
+ * usan los tests de regresión son fijas y no representan ese ancho
+ * físico: cols 0-10 (11 columnas) es la ventana histórica usada desde
+ * hace varias rondas para comparar contra versiones antiguas más
+ * estrechas -- en esa ventana, esta versión tiene 61 píxeles de
+ * relleno frente a 59 en la versión anterior; cols 0-12 (13 columnas)
+ * es una ventana más amplia introducida en esta ronda, con 71 píxeles.
+ *
+ * La máscara deja de ser una franja delgada bajo el hocico y pasa a
+ * cubrir la zona del ojo y buena parte del hocico superior (filas 4-6,
+ * hasta 7 columnas de ancho en la fila 4) -- así se marca con claridad
+ * dónde termina el cráneo (tan) y empieza el hocico (máscara), en vez
+ * de una transición de un solo píxel. El ojo se desplaza a fila 4,
+ * columna 3 (antes fila 4, columna 4), quedando embebido dentro de la
+ * propia máscara. La coronilla y el cráneo se comprimen de dos filas
+ * (bulto estrecho + masa ancha) a una sola fila de masa craneal ancha
+ * (fila 3, 11 columnas de relleno con highlight de 7 columnas) --
+ * la fila que antes ocupaba el bulto se cede a las orejas (ver más
+ * abajo), y el propio salto entre las bases de las orejas (fila 2,
+ * separadas por un hueco) y la masa craneal continua de la fila 3
+ * (sin hueco) reproduce un efecto de ensanchamiento similar.
+ *
+ * Orejas, rediseñadas por completo esta misma ronda tras un primer
+ * intento (recolocar el mecanismo de tono+desfase de la ronda anterior
+ * sin cambiar su forma) que la revisión de `qa` señaló como
+ * insuficiente: con solo dos niveles de ancho (punta de 1 columna
+ * saltando directamente a una base de 4-5), el contorno resultante se
+ * leía como una cruz o una T, no como un triángulo. Esta versión usa
+ * tres niveles de ancho por oreja -- punta (1 columna, fila 0), tramo
+ * medio (3 columnas, fila 1), base (5 columnas, fila 2), cada nivel
+ * centrado sobre el anterior -- lo que sí traza un contorno triangular
+ * reconocible. Se pierde el desfase de una fila entre oreja cercana y
+ * lejana que tenía la ronda anterior (ambas puntas vuelven a compartir
+ * la fila 0): no había presupuesto de filas para mantener ambas cosas
+ * a la vez (el desfase de profundidad y el triángulo de tres niveles)
+ * sin invadir la fila de la máscara. Mismo tono por oreja que en todas
+ * las rondas anteriores ("h" cercana, "d" lejana). Nariz: sin cambios
+ * de posición (fila 6, columna 0).
+ *
+ * No se añade blanco al ojo pese a que la mockup muestra un pequeño
+ * reflejo claro en la pupila -- los cinco personajes humanos y el
+ * propio Max, en todas las rondas anteriores, usan un único píxel de
+ * contorno oscuro como ojo sin excepción; introducir blanco aquí
+ * rompería esa convención compartida por todo el juego para un detalle
+ * que la propia tarea no exige de forma explícita. Sigue sin collar.
+ * Ver CHANGELOG.md para el detalle completo y la comparación visual
+ * contra las seis versiones anteriores.
  */
 
 export const MAX_PIXEL_WIDTH = 22;
@@ -195,13 +263,13 @@ export const MAX_PIXEL_PALETTE = {
  * un golden-pixel test, es la fuente real del dato.
  */
 export const MAX_SIDE_PIXELS = [
-  ".Oh......O............",
-  "Ohhhh....dO...........",
-  ".OOObhbOdddO........O.",
-  "ObbhhhhbbbO........OmO",
-  "OkkkObbbbO........OddO",
-  "kkkkObbbO.........OddO",
-  "OkkOObbbO.........OddO",
+  "..Oh......dO..........",
+  ".Ohhh....dddO.........",
+  "Ohhhhh..dddddO......O.",
+  "ObbhhhhhhhbbO......OmO",
+  "kkkOkkkbbbbbO.....OddO",
+  "kkkkkkObbbOO......OddO",
+  "OkkkkObbbO........OddO",
   "OOO.ObbbbbbbbbbbbbbbbO",
   "....ObbbbhhhhhhhbbbbO.",
   "....ObbbbbbbbbbbbbbO..",
