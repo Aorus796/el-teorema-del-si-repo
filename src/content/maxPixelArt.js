@@ -16,7 +16,7 @@
  * no se crean. Consecuencia directa: MAX_SIDE_PIXELS es la única
  * exportación de pixel-art (no hay MAX_FRONT_PIXELS/MAX_BACK_PIXELS), y
  * el criterio de ojos aplicado es el de "vista lateral: 1 ojo visible",
- * en la posición fija (fila 6, columna 4).
+ * en la posición fija (fila 5, columna 4).
  *
  * Construido con una pasada de "outer outline": el relleno (cuerpo,
  * cabeza, orejas, patas, cola) se diseñó primero sin contorno, y la
@@ -31,15 +31,15 @@
  * torso, produciendo una franja oscura sin diseñar entre cabeza y
  * cuerpo. Dos excepciones deliberadas al contorno automático, ambas
  * para preservar huecos que el propio diseño necesita: (1) el hueco
- * entre las dos orejas, protegido en las dos filas que ocupan (fila 0
- * columnas 4-6, fila 1 columna 5), para que sigan leyéndose como dos
- * triángulos separados; (2) el escalón delante del hocico (fila 6,
- * columnas 0-2), protegido para que el hocico (que se proyecta hacia
- * delante en la fila 7) se lea como un bloque realmente adosado por
- * debajo del cráneo, no como una continuación plana de él -- sin esta
- * protección, el contorno del hocico se filtraría hacia arriba en la
- * fila 6 y borraría tanto el escalón como el ojo, que vive justo en
- * esa fila.
+ * entre las dos orejas, protegido en las tres filas que ocupan (fila 0
+ * columnas 4-6, fila 1 columna 5, fila 2 columna 5), para que sigan
+ * leyéndose como dos triángulos separados; (2) el escalón delante del
+ * hocico (fila 5, columnas 0-2), protegido para que el hocico (que se
+ * proyecta hacia delante en la fila 6) se lea como un bloque realmente
+ * adosado por debajo del cráneo, no como una continuación plana de él
+ * -- sin esta protección, el contorno del hocico se filtraría hacia
+ * arriba en la fila 5 y borraría tanto el escalón como el ojo, que
+ * vive justo en esa fila.
  *
  * Identidad de Max preservada del render procedural original
  * (WorldScene.js/MaxRenderer.js, antes de la migración a pixel-art
@@ -72,39 +72,60 @@
  * MaxRenderer.js no necesitó ningún cambio de código: ya era
  * completamente genérico sobre MAX_PIXEL_WIDTH/MAX_PIXEL_HEIGHT.
  *
- * Cabeza redibujada por completo (filas 0-8, 9 filas). Lección de un
- * primer intento fallido dentro de esta misma ronda: un cráneo cuyo
- * borde frontal recede progresivamente fila a fila, combinado con un
- * hocico que salta hacia delante, traza una única diagonal continua de
+ * Cabeza redibujada dos veces dentro de las últimas dos rondas, ambas
+ * dentro del mismo presupuesto fijo de 9 filas (0-8). Primera pasada
+ * (redibujo completo, tras ampliar a 22x20): un cráneo cuyo borde
+ * frontal recedía progresivamente fila a fila, combinado con un hocico
+ * que saltaba hacia delante, trazaba una única diagonal continua de
  * punta de oreja a punta de nariz -- lectura de llama/ciervo, no de
- * perro, confirmada visualmente. Corrección: el borde frontal del
- * cráneo (columna 3) es CONSTANTE en las filas 3-6 -- una pared
- * vertical, no una rampa -- y la redondez viene del borde trasero
- * abultándose hacia atrás (9, 8, 7 y 6 columnas de ancho en las filas
- * 3, 4, 5 y 6), nunca del frontal moviéndose. El hocico (filas 7-8)
- * salta hacia delante hasta la columna 0 en un único paso repentino,
- * protegido de que el contorno lo rellene (ver más arriba). Segundo
- * defecto encontrado en esta misma ronda: la coronilla (fila 2) era
- * más estrecha que la base de las orejas que la coronaban, creando un
- * "pinzamiento" que se leía como cuello delgado -- corregido
- * ensanchando la coronilla a 10 columnas (cols 1-10) para respaldar
- * ambas bases sin que sobresalgan. Orejas acortadas de 3 filas a 2
- * (punta + base, sin fila intermedia) con base ensanchada: 3 filas
- * seguían leyéndose como astas incluso ya resuelto el pinzamiento;
- * acortar el alcance vertical relativo a una base ancha se lee más
- * como triángulo corto de perro. Highlight interior ("m") en la base
- * de la oreja cercana. Ojo: fila 6, columna 4, con tan a ambos lados
- * (una posición inicial en columna 3, pegada al escalón del hocico, se
- * fundía con el fondo transparente en la evidencia generada, y se
- * corrigió antes de darla por buena). Nariz: fila 8, columna 0.
- * Máscara amplia (8 columnas en la fila 7), sin alcanzar la coronilla.
+ * perro. Se corrigió con un borde frontal del cráneo CONSTANTE (una
+ * pared vertical, no una rampa) y un salto único y repentino del
+ * hocico hacia delante, protegido de que el contorno lo rellene (ver
+ * más arriba); y ensanchando la coronilla para que respaldara por
+ * completo la base de las orejas sin pinzamiento.
  *
- * Cuerpo: se reutiliza, byte a byte, el cuerpo ya aprobado de 2fda024
- * (filas 7-17), desplazado a las filas 9-19 -- no había motivo para
- * tocar un cuerpo ya aceptado solo por cambiar de resolución. Sigue
+ * Segunda pasada (esta versión, microiteración tras aprobación parcial
+ * humana de la masa craneal ganada): la revisión humana mantuvo el
+ * tamaño 22x20 y la masa craneal, pero señaló que las orejas de 2
+ * filas seguían sin distinguirse, el hocico se leía como un bloque
+ * oscuro y cuadrado, y faltaba separación visual entre las cuatro
+ * zonas de la cara (orejas / cráneo-frente / ojo-máscara / hocico).
+ * Redistribución del presupuesto de 9 filas: orejas de 2 a 3 (taper de
+ * punta-cuerpo-base ya validado en rondas anteriores a la ampliación
+ * de tamaño, tip en columnas 3/7, separación de 4 columnas sin
+ * cambios), cráneo de 4 pasos de estrechamiento a 3 (coronilla 10
+ * columnas cols 1-10, mejilla 9 columnas, frente+ojo fusionados en una
+ * sola fila de 6 columnas -- se pierde un paso intermedio del taper
+ * para ceder esa fila a las orejas y al hocico), y hocico de 2 filas a
+ * 3 (3, 6 y 3 columnas de máscara en las filas 6, 7 y 8 -- la máscara
+ * empieza pequeña en la fila 6, todavía con mejilla tan dominante a
+ * los lados (6 columnas de "b"), se vuelve dominante en la fila 7, y
+ * se estrecha de nuevo en la fila 8 hacia la nariz, en vez de
+ * aparecer de golpe como un bloque de dos anchos similares).
+ * Highlight interior ("m") ahora en ambas orejas (antes solo en la
+ * cercana), en su nivel medio. Ojo: fila 5, columna 4 (antes fila 6,
+ * al fusionarse frente y fila del ojo en una sola fila), con tan a
+ * ambos lados. Nariz: fila 8, columna 0 -- sin cambios de posición
+ * respecto a la ronda anterior.
+ *
+ * Línea de pliegue en la base de cada oreja (hallazgo de `qa` sobre un
+ * primer intento de esta misma ronda, antes de cualquier commit): la
+ * base de la oreja y la coronilla comparten tonos sin ningún contorno
+ * entre ellas -- el contorno automático solo actúa sobre el borde
+ * EXTERIOR de la silueta, no entre dos regiones internas contiguas
+ * -- así que a escala real de juego las dos orejas y la coronilla se
+ * fundían visualmente en un único bulto, deshaciendo buena parte de la
+ * separación que esta ronda buscaba. Se añadió un único píxel de
+ * contorno ("O") en el centro de la base de cada oreja, justo donde
+ * toca la coronilla (columna 2 para la cercana, columna 7 para la
+ * lejana) -- un pliegue/crease puntual, no una línea completa que
+ * desconectaría la oreja del cráneo del que nace.
+ *
+ * Cuerpo: sin cambios en esta ronda -- sigue siendo, byte a byte, el
+ * cuerpo ya aprobado de 2fda024 (filas 7-17), en las filas 9-19. Sigue
  * sin collar. Ver CHANGELOG.md para el detalle completo, las cifras
- * verificadas de esta ronda y el historial de las diez rondas
- * anteriores dentro del límite de 22x18.
+ * verificadas de esta ronda y el historial de las once rondas
+ * anteriores.
  */
 
 export const MAX_PIXEL_WIDTH = 22;
@@ -136,15 +157,15 @@ export const MAX_PIXEL_PALETTE = {
  * un golden-pixel test, es la fuente real del dato.
  */
 export const MAX_SIDE_PIXELS = [
-  ".OOh...dOO............",
-  "Ohmhh.ddddO...........",
+  "..Oh...dO.............",
+  ".Ohmh.dmdO............",
+  "OhOhh.dOddO...........",
   "ObbbhhhbbbbO..........",
-  ".OObbbbbbbbbO.........",
-  "..ObbbbbbbbO........O.",
-  "..ObbbbbbbO........OmO",
-  "...bObbbbO........OddO",
-  "kkkkkkkkbbO.......OddO",
-  "OkkkkkbbOO........OddO",
+  ".OObbbbbbbbbO.......O.",
+  "...bObbbbOOO.......OmO",
+  "kkkbbbbbbO........OddO",
+  "kkkkkkbbO.........OddO",
+  "OkkkbOOO..........OddO",
   "OOO.ObbbbbbbbbbbbbbbbO",
   "....ObbbbhhhhhhhbbbbO.",
   "....ObbbbbbbbbbbbbbO..",

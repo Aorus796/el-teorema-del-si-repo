@@ -128,18 +128,18 @@ test("MAX_PIXEL_PALETTE no comparte ningún valor con MAX_PALETTE.collar -- Max 
 /*
  * Ojos: Max solo tiene una vista (lateral), así que el criterio
  * aplicable es "1 ojo visible" -- no hay front/back contra los que
- * diferenciar por fila. Se ancla a la posición exacta del ojo (fila 6,
- * columna 4), embebido en la fila inferior de frente, con tan a ambos
- * lados (columnas 3 y 5) en vez de pegado al escalón del hocico -- ver
- * el comentario de cabecera de maxPixelArt.js.
+ * diferenciar por fila. Se ancla a la posición exacta del ojo (fila 5,
+ * columna 4), embebido en la fila de frente/ojo fusionada, con tan a
+ * ambos lados (columnas 3 y 5) en vez de pegado al escalón del hocico
+ * -- ver el comentario de cabecera de maxPixelArt.js.
  */
-test("el ojo (fila 6, columna 4) usa el color de contorno, sin blanco ni pupila compleja", () => {
-  assert.equal(MAX_SIDE_PIXELS[6][4], "O");
+test("el ojo (fila 5, columna 4) usa el color de contorno, sin blanco ni pupila compleja", () => {
+  assert.equal(MAX_SIDE_PIXELS[5][4], "O");
 });
 
 test("el ojo tiene tan (b) a ambos lados en su propia fila -- embebido en la cara, no pegado al escalón del hocico", () => {
-  assert.equal(MAX_SIDE_PIXELS[6][3], "b");
-  assert.equal(MAX_SIDE_PIXELS[6][5], "b");
+  assert.equal(MAX_SIDE_PIXELS[5][3], "b");
+  assert.equal(MAX_SIDE_PIXELS[5][5], "b");
 });
 
 test("la nariz (fila 8, columna 0) usa el color de contorno, en la punta del hocico", () => {
@@ -149,13 +149,14 @@ test("la nariz (fila 8, columna 0) usa el color de contorno, en la punta del hoc
 /*
  * Cabeza y hocico: el hocico debe ser notablemente más estrecho que el
  * cráneo -- se compara el ancho (span) de la fila más ancha del cráneo
- * (fila 3, la "mejilla") contra el ancho del relleno de máscara ("k")
- * en las filas de hocico (7-8), en vez de fijar columnas exactas, para
- * no proteger una silueta concreta más de lo necesario.
+ * (fila 3, la coronilla, que respalda la base de las orejas) contra el
+ * ancho del relleno de máscara ("k") en las filas de hocico (6-8), en
+ * vez de fijar columnas exactas, para no proteger una silueta concreta
+ * más de lo necesario.
  */
-test("el hocico (relleno de máscara \"k\" en filas 7-8) es más estrecho que el cráneo (fila 3, la más ancha)", () => {
+test("el hocico (relleno de máscara \"k\" en filas 6-8) es más estrecho que el cráneo (fila 3, la más ancha)", () => {
   const skullSpan = symbolSpan(MAX_SIDE_PIXELS[3], new Set(["b", "h"]));
-  const muzzleRows = MAX_SIDE_PIXELS.slice(7, 9);
+  const muzzleRows = MAX_SIDE_PIXELS.slice(6, 9);
   const muzzleSpan = Math.max(...muzzleRows.map((row) => symbolSpan(row, new Set(["k"]))));
 
   assert.ok(
@@ -195,19 +196,20 @@ test("la región de la cabeza (filas 0-8) no es más ancha en su conjunto que el
  * una rampa.
  */
 test("el borde frontal del cráneo es constante en sus filas inferiores, la pared que separa el cráneo del hocico (no una rampa diagonal)", () => {
-  // Restringido a las filas 3-6 (bajo la coronilla): la coronilla
-  // (fila 2) tiene deliberadamente su propio borde frontal, más
+  // Restringido a las filas 4-5 (mejilla y frente/ojo): la coronilla
+  // (fila 3) tiene deliberadamente su propio borde frontal, más
   // adelantado, para respaldar por completo la base de las orejas sin
   // dejarlas "colgando" fuera del cráneo (ver el test dedicado a esa
-  // propiedad) -- no forma parte de la pared vertical que evita la
-  // rampa diagonal cráneo->hocico, que es lo que este test protege.
+  // propiedad); la fila del hocico (6) ya mezcla máscara. Ninguna de
+  // las dos forma parte de la pared vertical que evita la rampa
+  // diagonal cráneo->hocico, que es lo que este test protege.
   const skullSymbols = new Set(["b", "h"]);
-  const craniumRows = MAX_SIDE_PIXELS.slice(3, 7);
+  const craniumRows = MAX_SIDE_PIXELS.slice(4, 6);
 
   craniumRows.forEach((row) => {
     assert.ok(
       symbolSpan(row, skullSymbols) >= 5,
-      `se esperaba masa de cráneo real (>=5 columnas) en cada fila 3-6, fila "${row}" no la tiene`,
+      `se esperaba masa de cráneo real (>=5 columnas) en cada fila 4-5, fila "${row}" no la tiene`,
     );
   });
 
@@ -216,7 +218,7 @@ test("el borde frontal del cráneo es constante en sus filas inferiores, la pare
 
   assert.ok(
     allSame,
-    `se esperaba el mismo borde frontal en las filas 3-6 del cráneo, se obtuvo [${frontEdges.join(", ")}]`,
+    `se esperaba el mismo borde frontal en las filas 4-5 del cráneo, se obtuvo [${frontEdges.join(", ")}]`,
   );
 });
 
@@ -253,8 +255,8 @@ test("el cráneo (fila superior) es al menos tan ancho como la base de las oreja
   const skullSymbols = new Set(["b", "h"]);
   const earSymbols = new Set(["h", "d"]);
 
-  const crownSpan = symbolSpan(MAX_SIDE_PIXELS[2], skullSymbols);
-  const earBaseSpan = symbolSpan(MAX_SIDE_PIXELS[1], earSymbols);
+  const crownSpan = symbolSpan(MAX_SIDE_PIXELS[3], skullSymbols);
+  const earBaseSpan = symbolSpan(MAX_SIDE_PIXELS[2], earSymbols);
 
   assert.ok(
     crownSpan >= earBaseSpan,
@@ -263,13 +265,16 @@ test("el cráneo (fila superior) es al menos tan ancho como la base de las oreja
 });
 
 /*
- * Altura/masa del cráneo (autorización humana explícita de esta ronda:
- * "cráneo alto... frente visible... mejilla"): al menos 4 filas de
- * tejido craneal puro (b/h, sin ninguna mezcla de máscara) antes de
- * que empiece el hocico -- más que el máximo alcanzado en cualquier
- * intento dentro del presupuesto anterior de 18 filas.
+ * Altura/masa del cráneo: al menos 3 filas de tejido craneal puro
+ * (b/h, sin ninguna mezcla de máscara) antes de que empiece el hocico.
+ * Baja de 4 a 3 en esta ronda -- microiteración explícita que cede una
+ * fila de cráneo a las orejas (2 filas -> 3) y otra al hocico (2 filas
+ * -> 3) para resolver los problemas de "orejas no se distinguen" y
+ * "hocico demasiado compacto" que señaló la revisión humana, sin
+ * renunciar a la coronilla ni a la mejilla (las dos filas más anchas,
+ * que sí se conservan intactas).
  */
-test("el cráneo ocupa al menos 4 filas de tejido craneal puro (b/h, sin máscara) antes del hocico", () => {
+test("el cráneo ocupa al menos 3 filas de tejido craneal puro (b/h, sin máscara) antes del hocico", () => {
   const skullSymbols = new Set(["b", "h"]);
   const muzzleSymbols = new Set(["k"]);
   const headRows = MAX_SIDE_PIXELS.slice(0, 9);
@@ -282,8 +287,8 @@ test("el cráneo ocupa al menos 4 filas de tejido craneal puro (b/h, sin máscar
   );
 
   assert.ok(
-    craniumRows.length >= 4,
-    `se esperaban al menos 4 filas de cráneo puro con masa real, hay ${craniumRows.length}`,
+    craniumRows.length >= 3,
+    `se esperaban al menos 3 filas de cráneo puro con masa real, hay ${craniumRows.length}`,
   );
 });
 
@@ -310,10 +315,10 @@ test("la máscara no ocupa toda la cabeza: hay tan (b/h) visible junto a la más
   );
 });
 
-test("la máscara no alcanza la coronilla (fila 2): la fila superior del cráneo está enteramente en tan", () => {
+test("la máscara no alcanza la coronilla (fila 3): la fila superior del cráneo está enteramente en tan", () => {
   assert.ok(
-    !hasSymbol(MAX_SIDE_PIXELS[2], new Set(["k"])),
-    "la coronilla (fila 2) no debería tener ningún pixel de máscara",
+    !hasSymbol(MAX_SIDE_PIXELS[3], new Set(["k"])),
+    "la coronilla (fila 3) no debería tener ningún pixel de máscara",
   );
 });
 
@@ -349,32 +354,43 @@ test("hay dos orejas separadas por un hueco transparente real en la fila de las 
 });
 
 test("la oreja cercana (h) y la oreja lejana (d) son tonalmente distintas", () => {
-  const earRows = MAX_SIDE_PIXELS.slice(0, 2).join("");
+  const earRows = MAX_SIDE_PIXELS.slice(0, 3).join("");
 
   assert.ok(earRows.includes("h"), "se esperaba la oreja cercana (h)");
   assert.ok(earRows.includes("d"), "se esperaba la oreja lejana (d)");
 });
 
-test("cada oreja se ensancha de la punta (fila 0) a la base (fila 1) -- forma triangular, no un bloque del mismo ancho", () => {
+/*
+ * Forma triangular de las orejas (microiteración explícita: "usar al
+ * menos 3 niveles visuales si el espacio lo permite -- punta, cuerpo,
+ * base"): esta ronda amplía las orejas de 2 filas a 3 -- 2 filas
+ * seguían leyéndose como bultos/astas incluso con el pinzamiento
+ * cráneo-orejas ya resuelto. Se protege que cada oreja tenga un ancho
+ * estrictamente creciente en sus 3 niveles (punta -> cuerpo -> base),
+ * no solo 2.
+ */
+test("cada oreja tiene tres niveles de ancho estrictamente crecientes (punta -> cuerpo -> base) -- forma triangular, no un bloque", () => {
   function filledRunWidth(row, windowStart, windowEnd) {
     return symbolSpan(row.slice(windowStart, windowEnd), new Set(["h", "d", "m"]));
   }
 
-  const earRows = MAX_SIDE_PIXELS.slice(0, 2);
+  const earRows = MAX_SIDE_PIXELS.slice(0, 3);
   const nearWidths = earRows.map((row) => filledRunWidth(row, 0, 6));
   const farWidths = earRows.map((row) => filledRunWidth(row, 6, 12));
 
+  const isStrictlyIncreasing = (widths) => widths[0] < widths[1] && widths[1] < widths[2];
+
   assert.ok(
-    nearWidths[0] < nearWidths[1],
-    `se esperaba un ancho creciente en la oreja cercana (punta -> base), se obtuvo [${nearWidths.join(", ")}]`,
+    isStrictlyIncreasing(nearWidths),
+    `se esperaba un ancho creciente en la oreja cercana por nivel, se obtuvo [${nearWidths.join(", ")}]`,
   );
   assert.ok(
-    farWidths[0] < farWidths[1],
-    `se esperaba un ancho creciente en la oreja lejana (punta -> base), se obtuvo [${farWidths.join(", ")}]`,
+    isStrictlyIncreasing(farWidths),
+    `se esperaba un ancho creciente en la oreja lejana por nivel, se obtuvo [${farWidths.join(", ")}]`,
   );
 });
 
-test("hay un hueco transparente real de al menos 1 columna entre las dos orejas, en ambas filas donde viven", () => {
+test("hay un hueco transparente real de al menos 1 columna entre las dos orejas, en las tres filas donde viven", () => {
   function gapWidth(row) {
     const chars = [...row];
     const earZone = chars.slice(0, 12);
@@ -393,7 +409,7 @@ test("hay un hueco transparente real de al menos 1 columna entre las dos orejas,
     return firstGapStart === -1 ? 0 : firstGapEnd - firstGapStart + 1;
   }
 
-  const gaps = MAX_SIDE_PIXELS.slice(0, 2).map(gapWidth);
+  const gaps = MAX_SIDE_PIXELS.slice(0, 3).map(gapWidth);
 
   gaps.forEach((gap, i) => {
     assert.ok(gap >= 1, `fila ${i}: se esperaba un hueco de al menos 1 columna, hay ${gap}`);
