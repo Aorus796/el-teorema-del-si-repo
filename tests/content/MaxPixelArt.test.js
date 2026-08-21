@@ -86,15 +86,16 @@ test("MAX_PIXEL_PALETTE no comparte ningún valor con MAX_PALETTE.collar -- Max 
  * Ojos: Max solo tiene una vista (lateral), así que el criterio
  * aplicable es "1 ojo visible" -- no hay front/back contra los que
  * diferenciar por fila, a diferencia de los personajes humanos. Se
- * ancla a la posición exacta del ojo (fila 4, columna 3, embebido en
- * la máscara tras la ronda de convergencia con el mockup aprobado),
- * que debe ser el color de contorno ("O", reutilizado para ojo, mismo
- * patrón que los personajes humanos y sin blanco -- ver el comentario
- * de cabecera de maxPixelArt.js sobre por qué no se añade el reflejo
- * claro que sí muestra el mockup).
+ * ancla a la posición exacta del ojo (fila 5, columna 3, embebido en
+ * la máscara -- desplazado de la fila 4 a la 5 en la ronda que añadió
+ * una fila de frente entre el cráneo y el ojo para dar más altura
+ * vertical a la cabeza), que debe ser el color de contorno ("O",
+ * reutilizado para ojo, mismo patrón que los personajes humanos y sin
+ * blanco -- ver el comentario de cabecera de maxPixelArt.js sobre por
+ * qué no se añade el reflejo claro que sí muestra el mockup).
  */
-test("el ojo (fila 4, columna 3) usa el color de contorno, sin blanco ni pupila compleja", () => {
-  assert.equal(MAX_SIDE_PIXELS[4][3], "O");
+test("el ojo (fila 5, columna 3) usa el color de contorno, sin blanco ni pupila compleja", () => {
+  assert.equal(MAX_SIDE_PIXELS[5][3], "O");
 });
 
 test("la nariz (fila 6, columna 0) usa el color de contorno, en la punta del hocico", () => {
@@ -105,7 +106,8 @@ test("la nariz (fila 6, columna 0) usa el color de contorno, en la punta del hoc
  * Cabeza y hocico: el hocico debe ser notablemente más estrecho que el
  * cráneo -- se compara el ancho (span) de la fila de cráneo (fila 3,
  * la masa craneal) contra el ancho del relleno de máscara ("k") en las
- * filas de hocico (4-6), en vez de fijar columnas exactas, para no
+ * filas de hocico (5-6, comprimido de 3 a 2 filas en la ronda que ganó
+ * una fila de frente), en vez de fijar columnas exactas, para no
  * proteger una silueta concreta más de lo necesario.
  */
 function rowSpan(row) {
@@ -119,7 +121,7 @@ function rowSpan(row) {
   return last - first + 1;
 }
 
-test("el hocico (relleno de máscara \"k\" en filas 4-6) es más estrecho que el cráneo (fila 3)", () => {
+test("el hocico (relleno de máscara \"k\" en filas 5-6) es más estrecho que el cráneo (fila 3)", () => {
   function symbolSpan(row, symbols) {
     const chars = [...row];
     const indexes = chars
@@ -130,7 +132,7 @@ test("el hocico (relleno de máscara \"k\" en filas 4-6) es más estrecho que el
   }
 
   const skullSpan = symbolSpan(MAX_SIDE_PIXELS[3], new Set(["b", "h"]));
-  const muzzleRows = MAX_SIDE_PIXELS.slice(4, 7);
+  const muzzleRows = MAX_SIDE_PIXELS.slice(5, 7);
   const muzzleSpan = Math.max(...muzzleRows.map((row) => symbolSpan(row, new Set(["k"]))));
 
   assert.ok(
@@ -331,6 +333,81 @@ test("hay una fila con un tramo contiguo ancho (al menos 5 columnas) de cráneo 
   assert.ok(
     maxRun >= 5,
     `se esperaba un tramo contiguo de al menos 5 columnas de cráneo, el más largo encontrado mide ${maxRun}`,
+  );
+});
+
+/*
+ * Altura de cabeza / frente (petición humana explícita de esta ronda:
+ * "la cabeza tiene muy poca altura... apenas existe frente... hocico y
+ * orejas están demasiado cerca verticalmente"): se protegen tres
+ * propiedades distintas de la separación horizontal ya protegida más
+ * arriba. "Fila de cráneo/frente" = fila con tejido b/h pero SIN tejido
+ * de máscara k (así se excluyen las filas de hocico, que también llevan
+ * algo de "b" en las mejillas). Comparadas contra un snapshot literal de
+ * las filas 3-6 de la versión anterior (commit 3ae4209, la que el
+ * humano rechazó por falta de altura), no contra el propio dato actual,
+ * para que el test falle de verdad si el diseño no gana altura real.
+ */
+function craniumRowCount(rows) {
+  return rows.filter((row) => {
+    const chars = [...row];
+    const hasCranium = chars.some((c) => c === "b" || c === "h");
+    const hasMuzzle = chars.some((c) => c === "k");
+    return hasCranium && !hasMuzzle;
+  }).length;
+}
+
+const PREVIOUS_SKULL_TO_MUZZLE_ROWS_3AE4209 = [
+  "ObbbhhhbbbO........OmO",
+  "kkkOkkbbbO........OddO",
+  "kkkkkObbO.........OddO",
+  "OkkkObbO..........OddO",
+];
+
+test("la cabeza tiene más filas de cráneo/frente (tejido b/h sin máscara) que en la versión anterior (commit 3ae4209) -- más altura vertical", () => {
+  const previousCount = craniumRowCount(PREVIOUS_SKULL_TO_MUZZLE_ROWS_3AE4209);
+  const currentCount = craniumRowCount(MAX_SIDE_PIXELS.slice(3, 7));
+
+  assert.ok(
+    currentCount > previousCount,
+    `filas de cráneo/frente actuales (${currentCount}) deberían ser más que en la versión anterior (${previousCount})`,
+  );
+});
+
+test("existe una fila de frente (cráneo b/h, sin máscara) inmediatamente encima de la fila del ojo, distinta de la fila del cráneo (fila 3) -- no solo el cráneo ya pegado al ojo, como en la versión anterior (commit 3ae4209)", () => {
+  // No basta con comprobar "hay cráneo sin máscara justo encima del
+  // ojo": en 3ae4209 esa condición ya se cumplía trivialmente, porque el
+  // cráneo (fila 3) estaba directamente pegado a la máscara/ojo sin
+  // ninguna fila de frente entre medias -- ese test pasaría igual contra
+  // el diseño que el humano rechazó por falta de frente. Se exige además
+  // que esa fila NO sea la propia fila del cráneo (fila 3), es decir,
+  // que exista una fila de frente independiente y adicional.
+  const eyeRowIndex = MAX_SIDE_PIXELS.findIndex((row) => row[3] === "O");
+  const foreheadRowIndex = eyeRowIndex - 1;
+  const foreheadRow = MAX_SIDE_PIXELS[foreheadRowIndex];
+  const chars = [...foreheadRow];
+
+  const hasCranium = chars.some((c) => c === "b" || c === "h");
+  const hasMuzzle = chars.some((c) => c === "k");
+  const isSkullRowItself = foreheadRowIndex === 3;
+
+  assert.ok(
+    hasCranium && !hasMuzzle && !isSkullRowItself,
+    `se esperaba una fila de frente propia (cráneo sin máscara, distinta de la fila 3 del cráneo) justo encima de la fila del ojo (fila ${eyeRowIndex}), pero la fila ${foreheadRowIndex} es "${foreheadRow}"`,
+  );
+});
+
+test("la distancia vertical entre el final de las orejas y el inicio del hocico (máscara k) es mayor que en la versión anterior (commit 3ae4209)", () => {
+  function firstMuzzleRowOffset(rows) {
+    return rows.findIndex((row) => row.includes("k"));
+  }
+
+  const previousOffset = firstMuzzleRowOffset(PREVIOUS_SKULL_TO_MUZZLE_ROWS_3AE4209);
+  const currentOffset = firstMuzzleRowOffset(MAX_SIDE_PIXELS.slice(3, 7));
+
+  assert.ok(
+    currentOffset > previousOffset,
+    `distancia actual (${currentOffset} filas tras el cráneo) debería ser mayor que la anterior (${previousOffset})`,
   );
 });
 

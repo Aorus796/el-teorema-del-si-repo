@@ -17,8 +17,9 @@
  * inventar cuatro datasets si no hacen falta". Consecuencia directa:
  * MAX_SIDE_PIXELS es la única exportación de pixel-art (no hay
  * MAX_FRONT_PIXELS/MAX_BACK_PIXELS), y el criterio de ojos aplicado es
- * el de "vista lateral: 1 ojo visible", en la posición fija (fila 4,
- * columna 3).
+ * el de "vista lateral: 1 ojo visible", en la posición fija (fila 5,
+ * columna 3 tras la ronda que añadió una fila de frente -- ver el
+ * párrafo final).
  *
  * Construido con una pasada de "outer outline": el relleno (cuerpo,
  * cabeza, orejas, patas, cola) se diseñó primero sin contorno, y la
@@ -264,9 +265,43 @@
  * píxeles (frente a 61 en la versión anterior -- una reducción pequeña
  * y esperada, ya que esta ronda persigue compacidad, no más masa total;
  * sigue siendo más que en las tres versiones anteriores a la
- * convergencia con el mockup: 59, 52 y 39). Sigue sin collar. Ver
- * CHANGELOG.md para el detalle completo y la comparación visual contra
- * las siete versiones anteriores.
+ * convergencia con el mockup: 59, 52 y 39). Sigue sin collar.
+ *
+ * Altura de cabeza / frente (esta versión): la revisión humana rechazó
+ * la ronda anterior por un motivo nuevo, distinto de la separación
+ * horizontal de orejas ya resuelta -- "la cabeza tiene muy poca altura...
+ * apenas existe frente... hocico y orejas están demasiado cerca
+ * verticalmente". La cabeza sigue ocupando exactamente el mismo
+ * presupuesto de 7 filas (filas 0-6; las filas 7-17 del cuerpo siguen
+ * intocadas, protegidas por el test de igualdad byte a byte), así que
+ * "más altura" no significa más filas totales, sino redistribuir esas 7
+ * filas: el hocico (relleno de máscara "k") se comprime de 3 filas a 2
+ * (se elimina la fila intermedia de la ronda anterior, la menos
+ * distintiva de las tres -- la fila superior con el ojo mantiene el
+ * mismo contenido relativo, y la fila inferior con la nariz mantiene la
+ * misma posición de nariz, aunque no es completamente byte-idéntica:
+ * gana un píxel de contorno en la columna 8 al cerrarse un hueco que
+ * quedó adyacente al relleno de cuerpo tras eliminar la fila
+ * intermedia), y la fila que queda libre se cede
+ * a una fila de frente nueva (fila 4) entre el cráneo (fila 3, sin
+ * cambios: 9 columnas de relleno con highlight centrado de 3) y la
+ * máscara/ojo (fila 5, antes fila 4). Antes, la máscara empezaba
+ * directamente debajo del cráneo, sin transición; ahora hay una fila de
+ * tejido craneal (b/h) más estrecha que el cráneo pero sin mezcla de
+ * máscara, tapering visualmente hacia el ojo. La distancia vertical
+ * entre el final de las orejas (fila 2) y el inicio del hocico crece de
+ * 2 a 3 filas de diferencia. Orejas (filas 0-2): sin ningún cambio,
+ * verbatim de la versión anterior -- la separación horizontal ya estaba
+ * resuelta y esta ronda es explícitamente sobre altura, no sobre
+ * anchura; no se vuelve a ensanchar. Ojo: se desplaza de fila 4 a fila 5
+ * (empujado hacia abajo por la nueva fila de frente), misma columna 3.
+ * Nariz: sin cambios de posición (fila 6, columna 0 -- sigue siendo la
+ * última fila del presupuesto de cabeza), por lo que el test de anclaje
+ * de `tests/scenes/CreditsScene.test.js` no necesitó tocarse. Máscara:
+ * misma amplitud relativa, ahora en 2 filas en vez de 3; sigue cubriendo
+ * hocico, nariz y zona del ojo sin ocupar la nueva fila de frente. Sigue
+ * sin collar. Ver CHANGELOG.md para el detalle completo y la comparación
+ * visual contra las ocho versiones anteriores.
  */
 
 export const MAX_PIXEL_WIDTH = 22;
@@ -302,9 +337,9 @@ export const MAX_SIDE_PIXELS = [
   ".Ohhh.dddO............",
   "Ohhhh.ddddO.........O.",
   "ObbbhhhbbbO........OmO",
+  "OObbhhbbbO........OddO",
   "kkkOkkbbbO........OddO",
-  "kkkkkObbO.........OddO",
-  "OkkkObbO..........OddO",
+  "OkkkObbOO.........OddO",
   "OOO.ObbbbbbbbbbbbbbbbO",
   "....ObbbbhhhhhhhbbbbO.",
   "....ObbbbbbbbbbbbbbO..",

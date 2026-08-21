@@ -1000,7 +1000,67 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   separación horizontal de las orejas); no se declara resuelta la
   redondez del cráneo más allá de eso, ni aprobación artística general:
   sigue pendiente revisión visual humana explícita (`HUMAN CHARACTER
-  STYLE APPROVAL REQUIRED`).
+  STYLE APPROVAL REQUIRED`). Octava revisión humana: rechaza de nuevo,
+  pero por un motivo distinto al de las rondas anteriores -- ya no la
+  separación horizontal de las orejas, sino la falta de ALTURA de la
+  cabeza ("apenas existe frente... hocico y orejas están demasiado cerca
+  verticalmente... parece que le hubieran aplastado la cabeza"), pidiendo
+  explícitamente no volver a tocar la anchura. La cabeza sigue acotada al
+  mismo presupuesto de 7 filas (filas 0-6; las filas 7-17 del cuerpo
+  siguen intocadas, protegidas por el test de igualdad byte a byte), así
+  que la altura adicional sale de redistribuir esas 7 filas, no de sumar
+  filas nuevas: el hocico (relleno de máscara "k") se comprime de 3 filas
+  a 2 -- se elimina la fila intermedia de la ronda anterior, manteniendo
+  el mismo contenido relativo en la fila del ojo y la misma posición de
+  nariz en la fila inferior (aunque esa fila gana un píxel de contorno en
+  la columna 8, no es completamente byte-idéntica a la anterior) -- y la
+  fila liberada se cede a una fila de frente nueva, entre el cráneo (sin
+  cambios: 9 columnas de relleno, highlight centrado de 3) y la
+  máscara/ojo. Antes la máscara arrancaba justo debajo del cráneo sin
+  transición; ahora hay una fila de tejido craneal (b/h) sin mezcla de
+  máscara entre ambos, y la distancia vertical entre el final de las
+  orejas y el inicio del hocico crece de 2 a 3 filas de diferencia. Orejas
+  (filas 0-2): verbatim de la ronda anterior, sin ningún cambio -- la
+  separación horizontal ya estaba resuelta y esta ronda es explícitamente
+  sobre altura, no sobre anchura. Ojo: se desplaza de fila 4 a fila 5
+  (empujado por la nueva fila de frente), misma columna 3. Nariz: sin
+  cambios de posición (fila 6, columna 0), por lo que el test de anclaje
+  de `tests/scenes/CreditsScene.test.js` no necesitó tocarse. `MaxRenderer.js`
+  y `MaxCompanion.js` tampoco se tocan -- el cambio es enteramente de
+  datos en `maxPixelArt.js`. Tests nuevos en
+  `tests/content/MaxPixelArt.test.js`: comparación de filas de
+  cráneo/frente (tejido b/h sin máscara) contra un snapshot literal de la
+  versión anterior (commit 3ae4209), exigiendo más filas que antes;
+  comprobación de que existe una fila de frente inmediatamente encima de
+  la fila del ojo, en vez de que la máscara empiece pegada al cráneo;
+  comparación de la distancia vertical entre orejas y hocico contra el
+  mismo snapshot anterior, exigiendo que sea mayor. El test de "hocico
+  más estrecho que cráneo" y el propio test del ojo se actualizan a las
+  nuevas filas (5-6 para el hocico, fila 5 para el ojo) sin cambiar lo
+  que protegen. Evidencia visual generada a varias escalas (cabeza
+  ampliada, cuerpo completo aislado, junto a Gonzalo) muestra una
+  progresión vertical real en la cabeza ampliada -- orejas, luego una
+  masa de cráneo/frente, luego la máscara oscura, con una fila más de
+  separación entre ambas que antes. `qa` matiza, sin embargo, algo
+  importante que no se puede omitir: el bounding box total de la cabeza
+  NO creció -- sigue ocupando exactamente las mismas 7 filas (0-6) que
+  la versión rechazada; lo que cambió es la redistribución interna, no
+  el tamaño del sprite. Comparando el sprite completo a la escala real
+  de render del juego (no ampliado), `qa` encuentra que la nueva fila de
+  frente se funde visualmente con el cráneo de arriba, al compartir los
+  mismos tonos "b"/"h" -- la diferencia es sutil, casi imperceptible sin
+  zoom o una cuadrícula de referencia, y no puede afirmar con confianza
+  que esto vaya a leerse como "menos aplastado" para un ojo humano no
+  entrenado en el detalle de píxel a esa escala, aunque tampoco reabre
+  ningún defecto de rondas anteriores (orejas y cuerpo verificados
+  intactos). Esta ronda resuelve, de forma verificable en el dato y en
+  la cabeza ampliada, la redistribución vertical pedida (más distancia
+  entre orejas y hocico, una fila de frente propia); no se garantiza que
+  ese cambio sea suficientemente perceptible a tamaño real de juego para
+  satisfacer el rechazo humano por "cabeza aplastada" -- eso queda,
+  explícitamente, para la revisión visual humana. No se declara
+  aprobación artística: sigue pendiente revisión visual humana explícita
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 
