@@ -1246,7 +1246,67 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   dentro de las limitaciones de la resolución. No se declara aprobación
   artística definitiva ni se da por resuelta la convergencia completa
   con la mockup: sigue pendiente revisión visual humana explícita
-  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`).
+  (`HUMAN CHARACTER STYLE APPROVAL REQUIRED`). Decimotercera revisión
+  humana: acepta la mejora de la microiteración anterior pero mantiene
+  el rechazo, con los mismos tres problemas ahora más precisos --
+  orejas todavía poco distinguibles ("el mayor fallo actual"), cráneo
+  con poca masa visual, hocico demasiado irregular (el taper de 3
+  niveles de la ronda anterior, 3/6/3 columnas, se leía como un zigzag
+  de "demasiados quiebros") -- y pide explícitamente dejar de hacer
+  microajustes de uno o dos píxeles y construir una cabeza cartoon
+  deliberada, con un presupuesto de píxeles orientativo (no un
+  contrato de test): orejas 3-4 filas de altura, cráneo 7-9 columnas de
+  ancho y 4-5 filas de masa, hocico 3-4 columnas de largo y 2-3 filas
+  de alto. Redistribución del presupuesto fijo de 9 filas: cráneo de 3
+  filas a 4 (coronilla 10 columnas cols 1-10 sin cambios, mejilla 9
+  columnas sin cambios, frente y fila del ojo vuelven a separarse en
+  dos filas -- 7 y 6 columnas respectivamente -- en vez de la fila
+  fusionada de la ronda anterior), a costa de simplificar el hocico de
+  3 filas a 2 (un único escalón limpio de la pared del cráneo hasta la
+  columna 0, con 6 columnas de máscara en la fila 7 y 3 en la fila 8
+  para la nariz, en vez del taper de tres niveles 3/6/3 que se leía
+  como zigzag) -- "cráneo grande + morro corto que sobresale" en dos
+  filas, no tres. Orejas: sin cambios de fila (siguen siendo 3, dentro
+  del rango 3-4 sugerido) pero con el pliegue de separación reubicado:
+  un primer intento de esta ronda probó ensanchar el pliegue de la base
+  de la oreja (introducido en la ronda anterior) de 1 a 2 columnas
+  dentro de la propia oreja, y acabó partiendo la base en dos mitades
+  separadas por un hueco oscuro -- un defecto peor que el "modesto"
+  que corregía. Se movió el pliegue de dentro de la oreja a la fila de
+  la coronilla justo debajo (un único píxel de contorno en la columna
+  bajo cada oreja, columna 2 cercana y columna 7 lejana): marca el
+  límite entre oreja y cráneo sin restar ningún píxel a la propia
+  oreja. Ojo: fila 6, columna 4 (baja una fila al separarse de nuevo
+  frente y fila del ojo). Nariz: fila 8, columna 0, sin cambios de
+  posición en ninguna ronda desde su introducción. Tests: los tests de
+  cabeza se actualizan a los nuevos índices de fila (ojo, hocico-vs-
+  cráneo, pared frontal -- ahora en las tres filas 4-6 en vez de solo
+  4-5, ya que la fila del ojo vuelve a ser una fila propia de la pared);
+  el test de "cráneo ocupa al menos N filas puras" sube de 3 a 4,
+  reflejando la ganancia real de masa craneal de esta ronda. Evidencia
+  visual generada antes de tocar tests o CHANGELOG, siguiendo la
+  instrucción explícita de la tarea de no avanzar sobre una captura que
+  siga viéndose mal: cabeza ampliada, Max completo, junto a Gonzalo, y
+  a escala real de juego. `qa` revisó un primer intento de esta ronda
+  (antes de cualquier commit) y confirmó de forma independiente que el
+  cráneo y el hocico sí cumplían lo pedido, pero encontró que las
+  orejas -- "el mayor fallo actual" según el propio encargo humano --
+  apenas habían cambiado: las filas 0-1 seguían siendo idénticas a la
+  versión ya rechazada, y el pliegue de la coronilla (de la ronda
+  anterior) es un ajuste cosmético de la costura oreja-cráneo, no un
+  cambio a la separación entre ambas orejas, que seguía siendo de solo
+  1 columna en la base -- demasiado estrecha para leerse a escala real
+  de juego según su propia evidencia visual. Se corrigió desplazando la
+  punta lejana de la columna 7 a la 9 (separación entre puntas de 4 a 6
+  columnas) sin estrechar ninguna base (ambas se mantienen en 4
+  columnas): el hueco crece a 2 columnas en la base y 3 en el nivel
+  medio, ganando separación sin sacrificar volumen. La coronilla (10
+  columnas, sin cambios) sigue respaldando por completo la base lejana,
+  que ahora llega hasta la columna 10. No se declara aprobación
+  artística definitiva ni se da por resuelta la convergencia completa
+  con la mockup: sigue pendiente revisión de `qa` y `reviewer`, y
+  revisión visual humana explícita (`HUMAN CHARACTER STYLE APPROVAL
+  REQUIRED`).
 
 ## [1.0.0] - 2026-08-11
 

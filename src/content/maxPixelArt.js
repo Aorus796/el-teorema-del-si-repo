@@ -16,7 +16,7 @@
  * no se crean. Consecuencia directa: MAX_SIDE_PIXELS es la única
  * exportación de pixel-art (no hay MAX_FRONT_PIXELS/MAX_BACK_PIXELS), y
  * el criterio de ojos aplicado es el de "vista lateral: 1 ojo visible",
- * en la posición fija (fila 5, columna 4).
+ * en la posición fija (fila 6, columna 4).
  *
  * Construido con una pasada de "outer outline": el relleno (cuerpo,
  * cabeza, orejas, patas, cola) se diseñó primero sin contorno, y la
@@ -32,13 +32,16 @@
  * cuerpo. Dos excepciones deliberadas al contorno automático, ambas
  * para preservar huecos que el propio diseño necesita: (1) el hueco
  * entre las dos orejas, protegido en las tres filas que ocupan (fila 0
- * columnas 4-6, fila 1 columna 5, fila 2 columna 5), para que sigan
- * leyéndose como dos triángulos separados; (2) el escalón delante del
- * hocico (fila 5, columnas 0-2), protegido para que el hocico (que se
- * proyecta hacia delante en la fila 6) se lea como un bloque realmente
+ * columnas 4 y 8, fila 1 columnas 5 y 7, fila 2 columnas 5 y 6) --
+ * solo las celdas inmediatamente adyacentes a una punta/base necesitan
+ * protección; las que quedan más adentro del hueco nunca tocan relleno
+ * y quedan transparentes por sí solas --, para que sigan leyéndose
+ * como dos triángulos separados; (2) el escalón delante del
+ * hocico (fila 6, columnas 0-2), protegido para que el hocico (que se
+ * proyecta hacia delante en la fila 7) se lea como un bloque realmente
  * adosado por debajo del cráneo, no como una continuación plana de él
  * -- sin esta protección, el contorno del hocico se filtraría hacia
- * arriba en la fila 5 y borraría tanto el escalón como el ojo, que
+ * arriba en la fila 6 y borraría tanto el escalón como el ojo, que
  * vive justo en esa fila.
  *
  * Identidad de Max preservada del render procedural original
@@ -84,42 +87,65 @@
  * más arriba); y ensanchando la coronilla para que respaldara por
  * completo la base de las orejas sin pinzamiento.
  *
- * Segunda pasada (esta versión, microiteración tras aprobación parcial
- * humana de la masa craneal ganada): la revisión humana mantuvo el
- * tamaño 22x20 y la masa craneal, pero señaló que las orejas de 2
+ * Segunda pasada (microiteración anterior): la revisión humana mantuvo
+ * el tamaño 22x20 y la masa craneal, pero señaló que las orejas de 2
  * filas seguían sin distinguirse, el hocico se leía como un bloque
  * oscuro y cuadrado, y faltaba separación visual entre las cuatro
- * zonas de la cara (orejas / cráneo-frente / ojo-máscara / hocico).
- * Redistribución del presupuesto de 9 filas: orejas de 2 a 3 (taper de
- * punta-cuerpo-base ya validado en rondas anteriores a la ampliación
- * de tamaño, tip en columnas 3/7, separación de 4 columnas sin
- * cambios), cráneo de 4 pasos de estrechamiento a 3 (coronilla 10
- * columnas cols 1-10, mejilla 9 columnas, frente+ojo fusionados en una
- * sola fila de 6 columnas -- se pierde un paso intermedio del taper
- * para ceder esa fila a las orejas y al hocico), y hocico de 2 filas a
- * 3 (3, 6 y 3 columnas de máscara en las filas 6, 7 y 8 -- la máscara
- * empieza pequeña en la fila 6, todavía con mejilla tan dominante a
- * los lados (6 columnas de "b"), se vuelve dominante en la fila 7, y
- * se estrecha de nuevo en la fila 8 hacia la nariz, en vez de
- * aparecer de golpe como un bloque de dos anchos similares).
- * Highlight interior ("m") ahora en ambas orejas (antes solo en la
- * cercana), en su nivel medio. Ojo: fila 5, columna 4 (antes fila 6,
- * al fusionarse frente y fila del ojo en una sola fila), con tan a
- * ambos lados. Nariz: fila 8, columna 0 -- sin cambios de posición
- * respecto a la ronda anterior.
+ * zonas de la cara. Orejas de 2 filas a 3 (taper punta-cuerpo-base);
+ * cráneo de 4 pasos a 3 (coronilla, mejilla, frente+ojo fusionados);
+ * hocico de 2 filas a 3 (taper de máscara 3/6/3 columnas). Un pliegue
+ * de 1 píxel en el centro de la base de cada oreja (hallazgo de `qa`:
+ * la base de la oreja y la coronilla compartían tono sin ningún
+ * contorno entre ellas, porque el contorno automático solo actúa
+ * sobre el borde EXTERIOR de la silueta, no entre regiones internas
+ * contiguas) ayudó, pero `qa` lo calificó de mejora solo "modesta".
  *
- * Línea de pliegue en la base de cada oreja (hallazgo de `qa` sobre un
- * primer intento de esta misma ronda, antes de cualquier commit): la
- * base de la oreja y la coronilla comparten tonos sin ningún contorno
- * entre ellas -- el contorno automático solo actúa sobre el borde
- * EXTERIOR de la silueta, no entre dos regiones internas contiguas
- * -- así que a escala real de juego las dos orejas y la coronilla se
- * fundían visualmente en un único bulto, deshaciendo buena parte de la
- * separación que esta ronda buscaba. Se añadió un único píxel de
- * contorno ("O") en el centro de la base de cada oreja, justo donde
- * toca la coronilla (columna 2 para la cercana, columna 7 para la
- * lejana) -- un pliegue/crease puntual, no una línea completa que
- * desconectaría la oreja del cráneo del que nace.
+ * Tercera pasada (esta versión, rediseño deliberado en vez de
+ * micro-ajustes): la revisión humana aceptó la mejora pero mantuvo el
+ * rechazo, con tres problemas concretos -- orejas todavía poco
+ * distinguibles ("el mayor fallo actual"), cráneo con poca masa
+ * visual, hocico demasiado irregular (el taper de 3 niveles de la
+ * ronda anterior, 3/6/3, se leía como un zigzag de "demasiados
+ * quiebros"). Redistribución del presupuesto de 9 filas, ahora
+ * orejas(3) + cráneo(4) + hocico(2) en vez de orejas(3) + cráneo(3) +
+ * hocico(3): el cráneo gana una fila real de masa (coronilla 10
+ * columnas cols 1-10 sin cambios; mejilla 9 columnas sin cambios;
+ * frente 7 columnas y fila del ojo 6 columnas, ahora dos filas
+ * distintas en vez de una sola fusionada) a costa de simplificar el
+ * hocico a un único escalón limpio en vez de un taper de tres niveles
+ * (máscara de 6 columnas en la fila 7, frente a 3/6/3 antes, y 3
+ * columnas en la fila 8 para la nariz -- "cráneo grande + morro corto
+ * que sobresale" en dos filas, no tres). El pliegue de la base de las
+ * orejas se traslada de dentro de la propia oreja (que en un primer
+ * intento de esta ronda se probó ensanchar a 2 columnas y acabó
+ * partiendo la base en dos mitades separadas, un defecto peor que el
+ * que corregía) a la fila de la coronilla justo debajo: un único
+ * píxel de contorno en la coronilla, en la columna bajo cada oreja
+ * (columna 2 cercana, columna 7 lejana antes de que la separación de
+ * orejas se ensanchara -- ver más abajo), que marca el límite sin
+ * restar ningún píxel a la propia oreja. Ojo: fila 6, columna 4 (baja
+ * una fila respecto a la ronda anterior, al separarse de nuevo frente
+ * y fila del ojo). Nariz: fila 8, columna 0 -- sin cambios de
+ * posición en ninguna ronda desde su introducción.
+ *
+ * Separación horizontal de las orejas ensanchada (mismo commit,
+ * corrección tras revisión de `qa` de un primer intento de esta ronda
+ * que dejaba las orejas sin cambio estructural real): `qa` encontró
+ * que el cráneo y el hocico sí cumplían lo pedido, pero las orejas --
+ * "el mayor fallo actual" según el propio encargo humano -- apenas
+ * habían cambiado: las filas 0-1 eran idénticas a la versión ya
+ * rechazada, y el pliegue de la coronilla es un ajuste cosmético de la
+ * costura, no un cambio de la separación entre ambas orejas, que
+ * seguía siendo de solo 1 columna en la base -- demasiado estrecha
+ * para leerse a escala real de juego. Corrección: la punta lejana se
+ * desplaza de la columna 7 a la columna 9 (separación entre puntas de
+ * 4 a 6 columnas), sin estrechar ninguna base (ambas se mantienen en 4
+ * columnas) -- el hueco crece a 2 columnas en la base y 3 en el nivel
+ * medio, ganando separación Y manteniendo el volumen de cada oreja, no
+ * intercambiando uno por otro. La coronilla (10 columnas, cols 1-10)
+ * sigue respaldando por completo la base lejana, que ahora llega hasta
+ * la columna 10 en vez de la 9. El pliegue de la coronilla se
+ * desplaza junto con la base lejana, de la columna 7 a la columna 8.
  *
  * Cuerpo: sin cambios en esta ronda -- sigue siendo, byte a byte, el
  * cuerpo ya aprobado de 2fda024 (filas 7-17), en las filas 9-19. Sigue
@@ -157,13 +183,13 @@ export const MAX_PIXEL_PALETTE = {
  * un golden-pixel test, es la fuente real del dato.
  */
 export const MAX_SIDE_PIXELS = [
-  "..Oh...dO.............",
-  ".Ohmh.dmdO............",
-  "OhOhh.dOddO...........",
-  "ObbbhhhbbbbO..........",
+  "..Oh.....dO...........",
+  ".Ohmh...dmdO..........",
+  "Ohhhh..ddddO..........",
+  "ObObhhhbObbO..........",
   ".OObbbbbbbbbO.......O.",
-  "...bObbbbOOO.......OmO",
-  "kkkbbbbbbO........OddO",
+  "..ObbbbbbbOO.......OmO",
+  "...bObbbbO........OddO",
   "kkkkkkbbO.........OddO",
   "OkkkbOOO..........OddO",
   "OOO.ObbbbbbbbbbbbbbbbO",
