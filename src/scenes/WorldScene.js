@@ -497,6 +497,36 @@ export class WorldScene {
       return;
     }
 
+    if (object.id === "ambient-fisher-dock") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Llevo toda la mañana aquí y todavía no ha picado nada, pero no me quejo.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-riverside-stroller") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Este paseo junto al río es mi momento favorito del día.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-bench-watcher") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Me siento aquí un rato a mirar el agua antes de seguir camino.",
+        ],
+      });
+      return;
+    }
+
     if (object.id === "library-silogio") {
       this.interactWithSilogio();
       return;
@@ -2155,6 +2185,11 @@ function renderObjects(context, camera, objects, state) {
  */
 const GENERIC_NPC_APRON_COLOR = "#e6ded0";
 
+// Color de la caña de pescar de ambient-fisher-dock (Seven Bridges Walk,
+// v1.1) -- marrón madera, análogo a GENERIC_NPC_APRON_COLOR pero exclusivo
+// de este NPC (ningún otro id lo usa, ver drawGenericNpcApron() más abajo).
+const GENERIC_NPC_ROD_COLOR = "#5a4632";
+
 function drawGenericNpcOutline(context, x, y) {
   context.fillStyle = NPC_SILHOUETTE;
   context.fillRect(x + 0, y + 7, 14, 8);
@@ -2299,6 +2334,19 @@ function drawGenericNpcApron(context, x, y, object) {
     const palette = NAMED_NPC_PALETTES[object.id];
     context.fillStyle = palette.accent;
     context.fillRect(x + 6, y + 9, 2, 4);
+    return;
+  }
+
+  // Caña de pescar de ambient-fisher-dock (Seven Bridges Walk, v1.1):
+  // puramente decorativa, sin lógica de pesca/animación/peces. Sale a
+  // propósito del bbox de 14x18 hacia abajo/izquierda -- renderObjects() no
+  // recorta ni depende del bbox dibujado para ninguna prueba de colisión o
+  // solape, solo usa object.width/height declarados -- para leerse
+  // extendida desde la mano/torso hacia el agua adyacente al embarcadero.
+  if (object.id === "ambient-fisher-dock") {
+    context.fillStyle = GENERIC_NPC_ROD_COLOR;
+    context.fillRect(x + 1, y + 9, 2, 14);
+    context.fillRect(x - 6, y + 21, 8, 2);
   }
 }
 

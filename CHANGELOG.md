@@ -1453,6 +1453,19 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   `ambient-guest-bench` (la corbata de 2px de ancho no cubre por completo
   al collar de 4px pintado antes; ambos se funden visualmente porque
   comparten `palette.accent`, no porque uno contenga al otro).
+- Paseo de los Siete Puentes -- NPCs ambientales: 3 NPC nuevos, estáticos y
+  sin nombre propio (`ambient-fisher-dock`, `ambient-riverside-stroller`,
+  `ambient-bench-watcher`) junto al embarcadero, la orilla oeste y el banco
+  de la orilla este, reutilizando exactamente el mismo mecanismo ya cerrado
+  en la Plaza del Axioma (`renderNpc()`/`drawGenericNpc*()` en
+  `WorldScene.js`, `NAMED_NPC_PALETTES` en `characterPalettes.js`), cada
+  uno con su propio diálogo ambiental de un único turno sin flags ni
+  efectos de estado. `ambient-fisher-dock` añade además una caña de pescar
+  puramente decorativa (`drawGenericNpcApron()`, rama nueva al final, sin
+  lógica de pesca/animación/peces) que se extiende hacia el agua adyacente
+  al embarcadero. No toca `solidRegions`, ninguna `decoration` ni posición
+  de los 5 `objects` ya existentes de este mapa, ni ningún personaje con
+  nombre propio, progresión o colisión del puzle de los siete puentes.
 
 ## [1.0.0] - 2026-08-11
 

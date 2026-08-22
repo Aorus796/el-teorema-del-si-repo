@@ -1966,6 +1966,218 @@ test("ningún otro NPC ambiental ni plaza-worker dibuja con el color flowerAccen
 });
 
 /*
+ * NPC ambientales de Seven Bridges Walk (v1.1, "Paseo de los Siete
+ * Puentes"): mismo mecanismo exacto que los 4 de Plaza del Axioma de
+ * arriba (renderNpc/drawGenericNpc*, NAMED_NPC_PALETTES), reutilizando el
+ * mismo patrón de test render/interacción para cada uno.
+ */
+const SEVEN_BRIDGES_AMBIENT_NPC_IDS = [
+  "ambient-fisher-dock",
+  "ambient-riverside-stroller",
+  "ambient-bench-watcher",
+];
+
+for (const npcId of SEVEN_BRIDGES_AMBIENT_NPC_IDS) {
+  test(`${npcId} se dibuja con su propio body/accent de NAMED_NPC_PALETTES, anclado en su posición real de pantalla`, () => {
+    const setup = createWorldAt("seven-bridges-walk");
+    const object = findObject("seven-bridges-walk", npcId);
+    const palette = NAMED_NPC_PALETTES[npcId];
+
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    const shouldersVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        rect.x === screenX + 1 &&
+        rect.y === screenY + 7 &&
+        rect.width === 12 &&
+        rect.height === 2,
+    );
+    const torsoVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY + 9 &&
+        rect.width === 10 &&
+        rect.height === 5,
+    );
+    const accentVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.accent &&
+        rect.x === screenX + 5 &&
+        rect.y === screenY + 9 &&
+        rect.width === 4 &&
+        rect.height === 2,
+    );
+
+    assert.equal(shouldersVisible, true, `${npcId} no dibuja sus hombros`);
+    assert.equal(torsoVisible, true, `${npcId} no dibuja su torso`);
+    assert.equal(accentVisible, true, `${npcId} no dibuja su palette.accent`);
+
+    const hairShadowVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.hairShadow &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY - 2 &&
+        rect.width === 10 &&
+        rect.height === 4,
+    );
+    const hairFrontVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.hair &&
+        rect.x === screenX + 3 &&
+        rect.y === screenY - 1 &&
+        rect.width === 8 &&
+        rect.height === 3,
+    );
+
+    assert.equal(
+      hairShadowVisible,
+      true,
+      `${npcId} no dibuja su palette.hairShadow`,
+    );
+    assert.equal(hairFrontVisible, true, `${npcId} no dibuja su palette.hair`);
+
+    if (palette.eyes) {
+      const eyeRects = context.fillRects.filter(
+        (rect) =>
+          rect.fillStyle === "#302637" &&
+          rect.width === 1 &&
+          rect.height === 1 &&
+          rect.y === screenY + 2 &&
+          (rect.x === screenX + 5 || rect.x === screenX + 9),
+      );
+
+      assert.equal(eyeRects.length, 2, `${npcId} no dibuja sus dos ojos`);
+    }
+  });
+
+  test(`interactuar con ${npcId} abre un diálogo de un único turno con su label como speaker, sin tocar GameState`, () => {
+    const setup = createWorldAt("seven-bridges-walk");
+    const object = findObject("seven-bridges-walk", npcId);
+    setup.scene.player.x = object.x + object.width / 2;
+    setup.scene.player.y = object.y + object.height / 2;
+    setup.input.press("interact");
+
+    const stateBefore = structuredClone(setup.state.toSaveData());
+    delete stateBefore.savedAt;
+
+    setup.scene.update(0);
+
+    const stateAfter = structuredClone(setup.state.toSaveData());
+    delete stateAfter.savedAt;
+
+    assert.ok(setup.ui.dialogue !== null);
+    assert.equal(setup.ui.dialogue.speaker, object.label);
+    assert.equal(setup.ui.dialogue.lines.length, 1);
+    assert.deepEqual(stateAfter, stateBefore);
+  });
+}
+
+/*
+ * Caña de pescar de ambient-fisher-dock (drawGenericNpcApron, rama nueva al
+ * final): color exclusivo (GENERIC_NPC_ROD_COLOR = "#5a4632" en
+ * WorldScene.js, no exportado -- se referencia por su valor literal, mismo
+ * patrón que GENERIC_NPC_APRON_COLOR = "#e6ded0" en los tests de arriba)
+ * que ningún otro NPC genérico debería usar.
+ */
+// Ambas coordenadas de la caña (context.fillRect(x+1,y+9,2,14) y
+// context.fillRect(x-6,y+21,8,2), ver drawGenericNpcApron() en
+// WorldScene.js) salen a propósito de la caja de 14x18px del NPC -- este
+// margen generoso (todavía muy por debajo de la separación real en pantalla
+// entre cualquier par de NPC de este mapa/Plaza) la sigue acotando a la
+// posición real de un NPC concreto, para no confundirla con la de otro NPC
+// visible en el mismo viewport.
+function findRodRectsNear(context, screenX, screenY) {
+  return context.fillRects.filter(
+    (rect) =>
+      rect.fillStyle === "#5a4632" &&
+      rect.x >= screenX - 10 &&
+      rect.x < screenX + 20 &&
+      rect.y >= screenY - 5 &&
+      rect.y < screenY + 25,
+  );
+}
+
+test("ambient-fisher-dock dibuja su caña de pescar con GENERIC_NPC_ROD_COLOR", () => {
+  const setup = createWorldAt("seven-bridges-walk");
+  const object = findObject("seven-bridges-walk", "ambient-fisher-dock");
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const rodRects = findRodRectsNear(context, screenX, screenY);
+
+  assert.ok(
+    rodRects.length > 0,
+    "ambient-fisher-dock no dibuja ningún rect con el color de la caña",
+  );
+});
+
+test("ningún otro NPC (los 3 nuevos de Seven Bridges Walk ni los 5 de Plaza del Axioma) dibuja con el color de la caña de ambient-fisher-dock", () => {
+  const otherSevenBridgesIds = SEVEN_BRIDGES_AMBIENT_NPC_IDS.filter(
+    (id) => id !== "ambient-fisher-dock",
+  );
+
+  for (const npcId of otherSevenBridgesIds) {
+    const setup = createWorldAt("seven-bridges-walk");
+    const object = findObject("seven-bridges-walk", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    const rodRects = findRodRectsNear(context, screenX, screenY);
+
+    assert.equal(
+      rodRects.length,
+      0,
+      `${npcId} no debería dibujar con el color de la caña de ambient-fisher-dock`,
+    );
+  }
+
+  for (const npcId of ["plaza-worker", ...AMBIENT_NPC_IDS]) {
+    const setup = createWorldAt("axiom-plaza");
+    const object = findObject("axiom-plaza", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const rodRects = context.fillRects.filter(
+      (rect) => rect.fillStyle === "#5a4632",
+    );
+
+    assert.equal(
+      rodRects.length,
+      0,
+      `${npcId} no debería dibujar con el color de la caña de ambient-fisher-dock`,
+    );
+  }
+});
+
+/*
  * plaza-worker: cobertura dedicada del pulido visual (ojos + pelo +
  * hombros/torso/accent) que ahora recibe el mismo render genérico
  * (renderNpc) que los 4 NPC ambientales, sin que cambie su posición,
