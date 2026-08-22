@@ -1307,6 +1307,64 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   con la mockup: sigue pendiente revisión de `qa` y `reviewer`, y
   revisión visual humana explícita (`HUMAN CHARACTER STYLE APPROVAL
   REQUIRED`).
+- Plaza del Axioma -- NPCs ambientales: 4 NPC nuevos, estáticos y sin
+  nombre propio (`ambient-florist-altar`, `ambient-setup-helper`,
+  `ambient-waiter-tables`, `ambient-guest-bench`) junto al altar, el
+  puesto de montaje, las mesas de boda y los bancos de la Plaza, cada uno
+  con un diálogo ambiental de un único turno sin flags ni efectos de
+  estado. Reutilizan el render genérico `WorldScene.renderNpc()` con su
+  propia entrada en `NAMED_NPC_PALETTES`
+  (`src/content/characterPalettes.js`), que ahora admite rasgos
+  opcionales -- ojos, pelo y delantal -- dibujados solo cuando la paleta
+  los declara. En una corrección de alcance posterior sobre esta misma
+  entrada, `renderNpc()` se extendió con pelo, hombros, brazos y una
+  hendidura de piernas para los 5 NPC que usan este render genérico
+  (los 4 ambientales y también `plaza-worker`, que hasta entonces se
+  había quedado sin el tratamiento visual nuevo pese a compartir la misma
+  función), sin tocar posición, colisión, diálogo ni lógica de
+  interacción de ninguno de los cinco. Tras revisión visual humana
+  explícita de esa ronda ("todavía se leen demasiado como BLOQUES" --
+  `HUMAN NPC STYLE APPROVAL: NOT APPROVED YET`), una segunda corrección de
+  alcance, también puramente visual, reestructuró `renderNpc()` en seis
+  sub-rutinas privadas compartidas (`drawGenericNpcOutline/Hair/Head/
+  Body/Legs/Apron()`, todavía `fillRect` directo, sin migrar al pipeline
+  de pixel-art indexado/cacheado): silueta en dos bloques (hombros->
+  cintura y piernas->zapato), pelo trasero+frontal+detalle según
+  `palette.hairStyle` (`short|medium|side|bun|fringe`, uno distinto por
+  NPC), cabeza con mandíbula y cuello diferenciados de la silueta,
+  hombros más anchos que la cintura con brazos cortos integrados (en vez
+  de bloques pegados a toda la altura del torso) y piernas separadas por
+  un hueco real, con variantes de silueta (`palette.silhouetteVariant`:
+  `practical`/`light`/`formal`) para hombros/torso/piernas y un
+  delantal/peto/corbata distinto por `object.id` (banda práctica para
+  `ambient-setup-helper`, peto integrado con tira vertical + banda para
+  `ambient-waiter-tables`, corbata vertical en vez de delantal para
+  `ambient-guest-bench`, detalle floral para `ambient-florist-altar`,
+  ninguno para `plaza-worker`, que nunca lo tuvo). `NAMED_NPC_PALETTES`
+  gana `hairStyle`, `hairShadow` y `bodyShadow` (~20% más oscuros que
+  `hair`/`body`, para dar volumen sin colisionar con ningún otro color ya
+  usado en el archivo) por cada una de las 5 entradas. Sigue sin tocar
+  posición, colisión, diálogo, lógica de interacción, guardado ni audio
+  de ninguno de los cinco NPC. No se declara aprobación artística
+  definitiva: sigue pendiente revisión de `qa`/`reviewer` y una nueva
+  revisión visual humana explícita.
+
+  Una tercera corrección, también puramente visual, responde a hallazgos
+  independientes de `qa` y `reviewer` sobre esa segunda ronda: el
+  "detalle floral" de `ambient-florist-altar` (2px sueltos en
+  `palette.accent`, el mismo color ya reutilizado en la banda de pecho y
+  en las piernas de todos los NPC genéricos) no se leía como una flor.
+  Ahora usa un color propio, `palette.flowerAccent` (nuevo campo, solo en
+  `ambient-florist-altar`), y dibuja un rosetón de 5px sobre el hombro
+  derecho -- una cruz de 4 pétalos en `flowerAccent` con un centro en
+  `palette.hairShadow` a modo de estambre oscuro -- verificado con una
+  captura visual real. De paso, se elimina el campo `apron: true`, ya
+  huérfano en `ambient-setup-helper`/`ambient-waiter-tables` desde que la
+  segunda ronda movió la decisión del delantal/peto/corbata a
+  `object.id`, y se corrige un comentario impreciso sobre la corbata de
+  `ambient-guest-bench` (la corbata de 2px de ancho no cubre por completo
+  al collar de 4px pintado antes; ambos se funden visualmente porque
+  comparten `palette.accent`, no porque uno contenga al otro).
 
 ## [1.0.0] - 2026-08-11
 

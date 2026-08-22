@@ -428,6 +428,44 @@ export class WorldScene {
       return;
     }
 
+    if (object.id === "ambient-florist-altar") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Las flores tienen que aguantar frescas hasta el último brindis.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-setup-helper") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Todavía faltan sillas por colocar antes de que lleguen los invitados.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-waiter-tables") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Cuidado con los manteles, que el viento no perdona hoy.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-guest-bench") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: ["Qué ganas de que empiece la ceremonia."],
+      });
+      return;
+    }
+
     if (object.id === "library-silogio") {
       this.interactWithSilogio();
       return;
@@ -1878,6 +1916,173 @@ function renderObjects(context, camera, objects, state) {
   }
 }
 
+/*
+ * Segunda ronda de refinamiento visual de los 5 NPC de Nivel C que
+ * comparten el render genérico (los 4 NPC ambientales de Plaza del Axioma
+ * más plaza-worker), tras revisión humana explícita: "todavía se leen
+ * demasiado como BLOQUES" (ver CHANGELOG.md). Las funciones
+ * drawGenericNpc*() de abajo son sub-rutinas de un único dibujo
+ * compartido -- no 5 renderers independientes ni un framework de piezas
+ * combinables -- parametrizadas por `palette` (NAMED_NPC_PALETTES) y, solo
+ * para el delantal/peto/corbata, por el propio `object.id` (no por un
+ * campo de paleta nuevo). Sigue siendo fillRect directo (Nivel C): sin
+ * drawImage, sin cache, sin canvas nuevo por frame -- se acerca al
+ * lenguaje visual de Gonzalo/Elena/Corolaria (contorno en dos bloques,
+ * pelo con volumen trasero+frontal+detalle, cabeza/mandíbula/cuello
+ * diferenciados, hombros más anchos que la cintura, brazos cortos
+ * integrados en vez de bloques pegados de la altura del torso, piernas
+ * separadas por un hueco real) sin llegar a su mismo nivel de detalle ni
+ * migrar al pipeline de pixel-art indexado/cacheado.
+ */
+const GENERIC_NPC_APRON_COLOR = "#e6ded0";
+
+function drawGenericNpcOutline(context, x, y) {
+  context.fillStyle = NPC_SILHOUETTE;
+  context.fillRect(x + 0, y + 7, 14, 8);
+  context.fillRect(x + 2, y + 15, 10, 3);
+}
+
+function drawGenericNpcHair(context, x, y, palette) {
+  if (!palette.hair) {
+    return;
+  }
+
+  const hairShadow = palette.hairShadow ?? palette.hair;
+
+  context.fillStyle = hairShadow;
+  context.fillRect(x + 2, y - 2, 10, 4);
+
+  context.fillStyle = palette.hair;
+  context.fillRect(x + 3, y - 1, 8, 3);
+
+  const hairStyle = palette.hairStyle ?? "short";
+
+  if (hairStyle === "side") {
+    context.fillStyle = palette.hair;
+    context.fillRect(x + 2, y + 1, 2, 3);
+    return;
+  }
+
+  if (hairStyle === "bun") {
+    context.fillStyle = hairShadow;
+    context.fillRect(x + 9, y - 3, 2, 2);
+    return;
+  }
+
+  if (hairStyle === "fringe") {
+    context.fillStyle = palette.hair;
+    context.fillRect(x + 4, y + 1, 6, 1);
+    return;
+  }
+
+  if (hairStyle === "medium") {
+    context.fillStyle = palette.hair;
+    context.fillRect(x + 2, y + 2, 1, 3);
+    context.fillRect(x + 11, y + 2, 1, 3);
+  }
+}
+
+function drawGenericNpcHead(context, x, y, palette) {
+  context.fillStyle = NPC_HEAD;
+  context.fillRect(x + 3, y, 8, 5);
+  context.fillRect(x + 4, y + 5, 6, 1);
+  context.fillRect(x + 5, y + 6, 4, 1);
+
+  if (palette.eyes) {
+    context.fillStyle = NPC_SILHOUETTE;
+    context.fillRect(x + 5, y + 2, 1, 1);
+    context.fillRect(x + 9, y + 2, 1, 1);
+  }
+}
+
+function drawGenericNpcBody(context, x, y, palette) {
+  const isLight = palette.silhouetteVariant === "light";
+  const bodyShadow = palette.bodyShadow ?? palette.body;
+
+  context.fillStyle = palette.body;
+  context.fillRect(x + 1, y + 7, isLight ? 11 : 12, 2);
+
+  context.fillRect(x + 0, y + 9, 2, 4);
+  context.fillRect(x + 12, y + 9, 2, 4);
+
+  context.fillStyle = NPC_HEAD;
+  context.fillRect(x + 0, y + 13, 2, 1);
+  context.fillRect(x + 12, y + 13, 2, 1);
+
+  context.fillStyle = palette.body;
+  context.fillRect(x + 2, y + 9, isLight ? 9 : 10, 5);
+
+  if (isLight) {
+    // Detalle floral exclusivo de ambient-florist-altar (silhouetteVariant
+    // "light"): un pequeño rosetón de 5px sobre el hombro derecho -- cruz
+    // de 4 pétalos en palette.flowerAccent (color propio, no
+    // palette.accent, que ya se reutiliza en la banda de pecho de la línea
+    // de abajo y en las piernas de todos los NPC genéricos) con un centro
+    // en palette.hairShadow para dar contraste de "estambre" oscuro. Se
+    // pinta después del torso y antes del collar/sombra de cintura, que no
+    // comparten ninguna de estas coordenadas, así que nada posterior lo
+    // tapa.
+    context.fillStyle = palette.flowerAccent;
+    context.fillRect(x + 10, y + 5, 1, 1);
+    context.fillRect(x + 9, y + 6, 1, 1);
+    context.fillRect(x + 11, y + 6, 1, 1);
+    context.fillRect(x + 10, y + 7, 1, 1);
+
+    context.fillStyle = palette.hairShadow;
+    context.fillRect(x + 10, y + 6, 1, 1);
+  }
+
+  context.fillStyle = palette.accent;
+  context.fillRect(x + 5, y + 9, 4, 2);
+
+  context.fillStyle = bodyShadow;
+  context.fillRect(x + 3, y + 14, 8, 1);
+}
+
+function drawGenericNpcLegs(context, x, y, palette) {
+  const isFormal = palette.silhouetteVariant === "formal";
+
+  context.fillStyle = palette.accent;
+  context.fillRect(x + 3, y + 15, isFormal ? 2 : 3, 2);
+
+  context.fillStyle = NPC_SILHOUETTE;
+  context.fillRect(x + (isFormal ? 5 : 6), y + 15, isFormal ? 3 : 2, 2);
+
+  context.fillStyle = palette.accent;
+  context.fillRect(x + 8, y + 15, isFormal ? 2 : 3, 2);
+
+  context.fillStyle = NPC_SILHOUETTE;
+  context.fillRect(x + 3, y + 17, 8, 1);
+}
+
+function drawGenericNpcApron(context, x, y, object) {
+  if (object.id === "ambient-setup-helper") {
+    context.fillStyle = GENERIC_NPC_APRON_COLOR;
+    context.fillRect(x + 3, y + 14, 8, 2);
+    return;
+  }
+
+  if (object.id === "ambient-waiter-tables") {
+    context.fillStyle = GENERIC_NPC_APRON_COLOR;
+    context.fillRect(x + 6, y + 9, 2, 5);
+    context.fillRect(x + 3, y + 14, 8, 2);
+    return;
+  }
+
+  // Sin delantal: esta corbata/tira vertical (2px de ancho) se pinta
+  // encima del collar rectangular ya pintado en drawGenericNpcBody()
+  // (x+5..9, y+9..11, 4px de ancho) con el mismo palette.accent. La
+  // corbata NO cubre por completo al collar en X -- es más estrecha --
+  // pero, al compartir color, ambos rects se funden visualmente en una
+  // sola forma en T (collar horizontal + corbata vertical), no en un
+  // collar duplicado.
+  if (object.id === "ambient-guest-bench") {
+    const palette = NAMED_NPC_PALETTES[object.id];
+    context.fillStyle = palette.accent;
+    context.fillRect(x + 6, y + 9, 2, 4);
+  }
+}
+
 function renderNpc(context, x, y, object) {
   if (object.id === "bride-epilogue") {
     renderElena(context, x, y);
@@ -1901,17 +2106,12 @@ function renderNpc(context, x, y, object) {
 
   const palette = NAMED_NPC_PALETTES[object.id] ?? DEFAULT_NPC_PALETTE;
 
-  context.fillStyle = NPC_SILHOUETTE;
-  context.fillRect(x + 1, y + 5, 12, 14);
-
-  context.fillStyle = NPC_HEAD;
-  context.fillRect(x + 3, y, 8, 7);
-
-  context.fillStyle = palette.body;
-  context.fillRect(x + 2, y + 7, 10, 11);
-
-  context.fillStyle = palette.accent;
-  context.fillRect(x + 5, y + 8, 4, 4);
+  drawGenericNpcOutline(context, x, y);
+  drawGenericNpcHair(context, x, y, palette);
+  drawGenericNpcHead(context, x, y, palette);
+  drawGenericNpcBody(context, x, y, palette);
+  drawGenericNpcLegs(context, x, y, palette);
+  drawGenericNpcApron(context, x, y, object);
 }
 
 // Elena Character Pixel-Art: migra del render geométrico anterior (arriba

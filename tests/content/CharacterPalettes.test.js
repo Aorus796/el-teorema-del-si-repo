@@ -44,13 +44,111 @@ test("NPC_SILHOUETTE conserva el valor ya usado por WorldScene.renderNpc", () =>
   assert.equal(NPC_SILHOUETTE, "#302637");
 });
 
-test("NAMED_NPC_PALETTES conserva solo plaza-worker; mayor-corolaria y bride-father tienen renderers dedicados", () => {
-  assert.deepEqual(Object.keys(NAMED_NPC_PALETTES).sort(), ["plaza-worker"]);
+test("NAMED_NPC_PALETTES conserva plaza-worker y los 4 NPC ambientales de Plaza del Axioma; mayor-corolaria y bride-father tienen renderers dedicados", () => {
+  assert.deepEqual(Object.keys(NAMED_NPC_PALETTES).sort(), [
+    "ambient-florist-altar",
+    "ambient-guest-bench",
+    "ambient-setup-helper",
+    "ambient-waiter-tables",
+    "plaza-worker",
+  ]);
   assert.deepEqual(NAMED_NPC_PALETTES["plaza-worker"], {
     body: "#6c8756",
     accent: "#d9a06f",
+    eyes: true,
+    hair: "#4a3b2a",
+    hairShadow: "#3b2f22",
+    bodyShadow: "#566c45",
+    hairStyle: "short",
+    silhouetteVariant: "practical",
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-florist-altar"], {
+    body: "#5f8f6a",
+    accent: "#e8b4d0",
+    flowerAccent: "#e2574c",
+    eyes: true,
+    hair: "#2e2419",
+    hairShadow: "#251d14",
+    bodyShadow: "#4c7255",
+    hairStyle: "bun",
+    silhouetteVariant: "light",
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-setup-helper"], {
+    body: "#7d6a4f",
+    accent: "#cbb994",
+    eyes: true,
+    hair: "#6e5a3f",
+    hairShadow: "#584832",
+    bodyShadow: "#64553f",
+    hairStyle: "side",
+    silhouetteVariant: "practical",
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-waiter-tables"], {
+    body: "#2f3b52",
+    accent: "#c9a15a",
+    eyes: true,
+    hair: "#1f1a15",
+    hairShadow: "#191511",
+    bodyShadow: "#262f42",
+    hairStyle: "fringe",
+    silhouetteVariant: "formal",
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-guest-bench"], {
+    body: "#7a5d8f",
+    accent: "#e3c9e8",
+    eyes: true,
+    hair: "#8a6a4a",
+    hairShadow: "#6e553b",
+    bodyShadow: "#624a72",
+    hairStyle: "medium",
+    silhouetteVariant: "formal",
   });
   assert.equal(Object.isFrozen(NAMED_NPC_PALETTES), true);
+});
+
+test("las paletas de los 4 NPC ambientales nuevos no colisionan de color (body/accent/hair) entre sí ni con las demás paletas del archivo", () => {
+  const ambientPalettes = [
+    NAMED_NPC_PALETTES["ambient-florist-altar"],
+    NAMED_NPC_PALETTES["ambient-setup-helper"],
+    NAMED_NPC_PALETTES["ambient-waiter-tables"],
+    NAMED_NPC_PALETTES["ambient-guest-bench"],
+  ];
+  // flowerAccent es opcional (solo ambient-florist-altar lo define hoy):
+  // se filtran los `undefined` de las otras tres paletas para que no
+  // cuenten como colisión entre sí en el chequeo de unicidad de abajo.
+  const ambientColors = ambientPalettes
+    .flatMap((palette) => [
+      palette.body,
+      palette.accent,
+      palette.hair,
+      palette.hairShadow,
+      palette.bodyShadow,
+      palette.flowerAccent,
+    ])
+    .filter((color) => color !== undefined);
+
+  assert.equal(new Set(ambientColors).size, ambientColors.length);
+
+  const otherColors = [
+    ...Object.values(PROTAGONIST_PALETTE),
+    ...Object.values(BRIDE_PALETTE),
+    ...Object.values(MAYOR_PALETTE),
+    ...Object.values(BRIDE_FATHER_PALETTE),
+    ...Object.values(SILOGIO_PALETTE),
+    ...Object.values(MAX_PALETTE),
+    ...Object.values(NAMED_NPC_PALETTES["plaza-worker"]),
+    ...Object.values(DEFAULT_NPC_PALETTE),
+    NPC_SILHOUETTE,
+    NPC_HEAD,
+  ];
+
+  for (const color of ambientColors) {
+    assert.equal(
+      otherColors.includes(color),
+      false,
+      `color ${color} colisiona con una paleta existente`,
+    );
+  }
 });
 
 test("DEFAULT_NPC_PALETTE conserva su valor de fallback aunque hoy no lo consulte ningún NPC real", () => {

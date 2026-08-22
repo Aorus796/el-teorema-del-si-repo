@@ -80,8 +80,72 @@ export const NPC_HEAD = SKIN_TONE;
 // WorldScene.renderBrideFather) que consultan MAYOR_PALETTE y
 // BRIDE_FATHER_PALETTE directamente, igual que bride-epilogue con
 // BRIDE_PALETTE.
+//
+// Segunda ronda de refinamiento visual (tras "todavía se leen demasiado
+// como BLOQUES" -- ver CHANGELOG.md): cada entrada añade `hairStyle`
+// (distinto por NPC, para diferenciar sus siluetas de pelo),
+// `hairShadow`/`bodyShadow` (~20% más oscuros que `hair`/`body`, para dar
+// volumen al pelo y a la franja de cintura) y `silhouetteVariant`
+// ("practical"/"light"/"formal", consumido por
+// WorldScene.drawGenericNpcBody/Legs para variar hombros, torso y ancho
+// de piernas sin necesitar un renderer dedicado por NPC).
 export const NAMED_NPC_PALETTES = Object.freeze({
-  "plaza-worker": Object.freeze({ body: "#6c8756", accent: "#d9a06f" }),
+  "plaza-worker": Object.freeze({
+    body: "#6c8756",
+    accent: "#d9a06f",
+    eyes: true,
+    hair: "#4a3b2a",
+    hairShadow: "#3b2f22",
+    bodyShadow: "#566c45",
+    hairStyle: "short",
+    silhouetteVariant: "practical",
+  }),
+  "ambient-florist-altar": Object.freeze({
+    body: "#5f8f6a",
+    accent: "#e8b4d0",
+    // Color propio del detalle floral (drawGenericNpcBody, rama isLight en
+    // WorldScene.js) -- deliberadamente distinto de `accent`, que ya se
+    // reutiliza en la banda de pecho y en las piernas de todos los NPC
+    // genéricos, para que el rosetón se lea como una flor y no como ruido
+    // de paleta.
+    flowerAccent: "#e2574c",
+    eyes: true,
+    hair: "#2e2419",
+    hairShadow: "#251d14",
+    bodyShadow: "#4c7255",
+    hairStyle: "bun",
+    silhouetteVariant: "light",
+  }),
+  "ambient-setup-helper": Object.freeze({
+    body: "#7d6a4f",
+    accent: "#cbb994",
+    eyes: true,
+    hair: "#6e5a3f",
+    hairShadow: "#584832",
+    bodyShadow: "#64553f",
+    hairStyle: "side",
+    silhouetteVariant: "practical",
+  }),
+  "ambient-waiter-tables": Object.freeze({
+    body: "#2f3b52",
+    accent: "#c9a15a",
+    eyes: true,
+    hair: "#1f1a15",
+    hairShadow: "#191511",
+    bodyShadow: "#262f42",
+    hairStyle: "fringe",
+    silhouetteVariant: "formal",
+  }),
+  "ambient-guest-bench": Object.freeze({
+    body: "#7a5d8f",
+    accent: "#e3c9e8",
+    eyes: true,
+    hair: "#8a6a4a",
+    hairShadow: "#6e553b",
+    bodyShadow: "#624a72",
+    hairStyle: "medium",
+    silhouetteVariant: "formal",
+  }),
 });
 
 // Paleta usada por cualquier NPC sin entrada explícita en
