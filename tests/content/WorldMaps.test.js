@@ -428,7 +428,9 @@ test("seven-bridges-walk conserva exactamente los mismos objetos y tiene los sol
   // el corredor de piedra/puentes -- ver el comentario de geometría junto
   // a SEVEN_BRIDGES_WALK. Verificado por separado con un script de
   // referencia fuera de este repositorio; este test es la fuente de
-  // verdad automatizada.
+  // verdad automatizada. No cambia con los 3 NPC ambientales de esta
+  // ronda: decorations/objects nunca alimentan solidTiles (ver createMap()
+  // en worldMaps.js).
   assert.equal(map.solidTiles.length, 600);
   assert.deepEqual(
     map.objects.map((object) => ({ id: object.id, type: object.type })),
@@ -438,9 +440,208 @@ test("seven-bridges-walk conserva exactamente los mismos objetos y tiene los sol
       { id: "p2-evidence", type: "evidence" },
       { id: "seven-bridges-to-library", type: "exit" },
       { id: "blocked-mill-path", type: "blocked-exit" },
+      { id: "ambient-fisher-dock", type: "npc" },
+      { id: "ambient-riverside-stroller", type: "npc" },
+      { id: "ambient-bench-watcher", type: "npc" },
     ],
   );
 });
+
+/*
+ * Regresión directa del contrato de #58 (Seven Bridges Visual Polish): los
+ * 5 objects originales conservan id/type/x/y/width/height/label exactos --
+ * y, para los exits, también targetMapId/targetPlayerState -- tras añadir
+ * los 3 NPC ambientales nuevos al final de la lista.
+ */
+test("los 5 objetos originales de seven-bridges-walk (#58) conservan su geometría, label y destino exactos", () => {
+  const map = getWorldMap("seven-bridges-walk");
+
+  assert.deepEqual(
+    map.objects.find((object) => object.id === "seven-bridges-to-plaza"),
+    {
+      id: "seven-bridges-to-plaza",
+      type: "exit",
+      x: 16,
+      y: 160,
+      width: 16,
+      height: 64,
+      interactionRadius: 30,
+      label: "Plaza del Axioma",
+      targetMapId: "axiom-plaza",
+      targetPlayerState: { x: 688, y: 256, facing: "left" },
+    },
+  );
+  assert.deepEqual(map.objects.find((object) => object.id === "p2-bridge-board"), {
+    id: "p2-bridge-board",
+    type: "puzzle",
+    x: 336,
+    y: 112,
+    width: 24,
+    height: 24,
+    interactionRadius: 32,
+    label: "Mapa de los siete puentes",
+  });
+  assert.deepEqual(map.objects.find((object) => object.id === "p2-evidence"), {
+    id: "p2-evidence",
+    type: "evidence",
+    x: 544,
+    y: 304,
+    width: 20,
+    height: 20,
+    interactionRadius: 30,
+    label: "Anotación junto al embarcadero",
+  });
+  assert.deepEqual(
+    map.objects.find((object) => object.id === "seven-bridges-to-library"),
+    {
+      id: "seven-bridges-to-library",
+      type: "exit",
+      x: 656,
+      y: 272,
+      width: 16,
+      height: 64,
+      interactionRadius: 30,
+      label: "Biblioteca",
+      targetMapId: "library",
+      targetPlayerState: { x: 240, y: 256, facing: "up" },
+    },
+  );
+  assert.deepEqual(map.objects.find((object) => object.id === "blocked-mill-path"), {
+    id: "blocked-mill-path",
+    type: "blocked-exit",
+    x: 656,
+    y: 160,
+    width: 16,
+    height: 64,
+    interactionRadius: 30,
+    label: "Camino del molino",
+  });
+});
+
+/*
+ * Cobertura de los 3 NPC ambientales de Seven Bridges Walk (v1.1), mismo
+ * mecanismo que los 4 de Plaza del Axioma: sin requiresFlag, sin colisión
+ * contra solidTiles reales, sin solape con ningún otro object (incluidos
+ * los otros dos NPC nuevos entre sí).
+ *
+ * ambient-fisher-dock queda deliberadamente sobre "embarcadero" (dock) --
+ * no se reutiliza assertObjectIsClear() para él porque ese helper comprueba
+ * solape contra TODAS las decorations sin excepción, y "dock" está
+ * explícitamente excluido de las comprobaciones de solape en el resto de
+ * este archivo (mismo criterio que ya usa p2-evidence, ver
+ * EXCLUDED_FROM_OVERLAP_CHECKS más abajo).
+ */
+const SEVEN_BRIDGES_AMBIENT_NPC_IDS = [
+  "ambient-fisher-dock",
+  "ambient-riverside-stroller",
+  "ambient-bench-watcher",
+];
+
+test("los 3 NPC ambientales nuevos de seven-bridges-walk no tienen requiresFlag, son ids únicos de tipo npc y no colisionan con solidTiles reales", () => {
+  const map = getWorldMap("seven-bridges-walk");
+  const collisionMap = new CollisionMap({
+    width: map.width,
+    height: map.height,
+    tileSize: map.tileSize,
+    solidTiles: map.solidTiles,
+  });
+
+  const ambientObjects = SEVEN_BRIDGES_AMBIENT_NPC_IDS.map((id) =>
+    map.objects.find((object) => object.id === id),
+  );
+
+  for (const object of ambientObjects) {
+    assert.ok(object, "falta uno de los NPCs ambientales nuevos");
+    assert.equal(object.type, "npc");
+    assert.equal(object.requiresFlag, undefined);
+    assert.equal(
+      collisionMap.collides({
+        x: object.x,
+        y: object.y,
+        width: object.width,
+        height: object.height,
+      }),
+      false,
+      `${object.id} colisiona con solidTiles reales`,
+    );
+  }
+
+  const ids = ambientObjects.map((object) => object.id);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("los 3 NPC ambientales nuevos de seven-bridges-walk no solapan ningún otro object del mapa, entre sí incluidos", () => {
+  const map = getWorldMap("seven-bridges-walk");
+
+  for (const objectId of SEVEN_BRIDGES_AMBIENT_NPC_IDS) {
+    const object = map.objects.find((entry) => entry.id === objectId);
+
+    for (const other of map.objects) {
+      if (other.id === objectId) {
+        continue;
+      }
+
+      assert.equal(
+        rectanglesOverlap(object, other),
+        false,
+        `${objectId} solapa el objeto ${other.id}`,
+      );
+    }
+  }
+});
+
+test("ambient-riverside-stroller y ambient-bench-watcher no solapan ninguna decoración del mapa", () => {
+  const map = getWorldMap("seven-bridges-walk");
+  const ids = ["ambient-riverside-stroller", "ambient-bench-watcher"];
+
+  for (const objectId of ids) {
+    const object = map.objects.find((entry) => entry.id === objectId);
+
+    for (const decoration of map.decorations) {
+      assert.equal(
+        rectanglesOverlap(object, decoration),
+        false,
+        `${objectId} solapa la decoración ${decoration.id}`,
+      );
+    }
+  }
+});
+
+test("ambient-fisher-dock no solapa ninguna decoración de primer plano del mapa (excluye 'river'/'dock', capas de fondo con solapes intencionados en todo este mapa)", () => {
+  const map = getWorldMap("seven-bridges-walk");
+  const object = map.objects.find(
+    (entry) => entry.id === "ambient-fisher-dock",
+  );
+
+  // "river" (capa de fondo que cubre casi todo el cauce) y "dock"
+  // (embarcadero, sobre el que se apoya a propósito, igual que la nota
+  // "p2-evidence" original) ya están excluidos del resto de comprobaciones
+  // de solape de este archivo -- ver EXCLUDED_FROM_OVERLAP_CHECKS más abajo.
+  for (const decoration of map.decorations) {
+    if (EXCLUDED_FROM_OVERLAP_CHECKS.has(decoration.type)) {
+      continue;
+    }
+
+    assert.equal(
+      rectanglesOverlap(object, decoration),
+      false,
+      `ambient-fisher-dock solapa la decoración ${decoration.id}`,
+    );
+  }
+});
+
+for (const objectId of SEVEN_BRIDGES_AMBIENT_NPC_IDS) {
+  test(`${objectId} es alcanzable a pie desde el spawn por defecto de seven-bridges-walk`, () => {
+    assertObjectIsReachable("seven-bridges-walk", objectId);
+  });
+
+  test(`${objectId} es alcanzable a pie desde la entrada real llegando desde Biblioteca`, () => {
+    assertObjectIsReachable("seven-bridges-walk", objectId, {
+      x: 624,
+      y: 304,
+    });
+  });
+}
 
 test("cada decoración 'pier' de seven-bridges-walk es realmente transitable (ya no un restyle de bloques sólidos) y hay exactamente 3", () => {
   const map = getWorldMap("seven-bridges-walk");
