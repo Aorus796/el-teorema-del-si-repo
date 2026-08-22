@@ -114,14 +114,10 @@ import {
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
 import {
-  BRIDE_FATHER_PALETTE,
-  BRIDE_PALETTE,
   DEFAULT_NPC_PALETTE,
-  MAYOR_PALETTE,
   NAMED_NPC_PALETTES,
   NPC_HEAD,
   NPC_SILHOUETTE,
-  SILOGIO_PALETTE,
 } from "../content/characterPalettes.js";
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
 import {
@@ -130,11 +126,15 @@ import {
 import {
   ARCHIVE_CRITERIA_PHASE,
 } from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
-import { MAX_DIMENSIONS } from "../render/MaxRenderer.js";
+import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
+import { renderCorolaria as renderCorolariaSprite } from "../render/CorolariaRenderer.js";
+import { renderBrideFather as renderBrideFatherSprite } from "../render/BrideFatherRenderer.js";
+import { renderSilogio as renderSilogioSprite } from "../render/SilogioRenderer.js";
 import { Camera } from "../world/Camera.js";
 import { CollisionMap } from "../world/CollisionMap.js";
 import {
   computeMaxSpawnCandidates,
+  MAX_HITBOX_DIMENSIONS,
   MaxCompanion,
 } from "../world/MaxCompanion.js";
 import { Player } from "../world/Player.js";
@@ -448,6 +448,44 @@ export class WorldScene {
           "Siempre sobra una, pero nunca es la misma.",
           "La alcaldesa dice que eso no es un problema matemático sino logístico.",
         ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-florist-altar") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Las flores tienen que aguantar frescas hasta el último brindis.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-setup-helper") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Todavía faltan sillas por colocar antes de que lleguen los invitados.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-waiter-tables") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Cuidado con los manteles, que el viento no perdona hoy.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-guest-bench") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: ["Qué ganas de que empiece la ceremonia."],
       });
       return;
     }
@@ -940,10 +978,13 @@ export class WorldScene {
  * prueba, en orden, cada uno de los 13 candidatos locales de
  * computeMaxSpawnCandidates() -- tres anillos fijos alrededor de Gonzalo más
  * su posición exacta, ver el comentario de esa función en MaxCompanion.js --
- * contra el CollisionMap real del mapa actual, usando el tamaño real de Max
- * (MAX_DIMENSIONS), y devuelve el primero que no colisione con un tile
- * sólido (muro, o escenografía sólida como la fuente o las mesas, que ya se
- * representan como región sólida en worldMaps.js).
+ * contra el CollisionMap real del mapa actual, usando el tamaño lógico de
+ * Max (MAX_HITBOX_DIMENSIONS -- deliberadamente distinto del tamaño
+ * visual del sprite, MAX_DIMENSIONS de MaxRenderer.js; ver el comentario
+ * de MAX_HITBOX_DIMENSIONS en MaxCompanion.js), y devuelve el primero
+ * que no colisione con un tile sólido (muro, o escenografía sólida como
+ * la fuente o las mesas, que ya se representan como región sólida en
+ * worldMaps.js).
  *
  * Si ninguno de los 13 candidatos locales es válido, se intenta como último
  * recurso `previousMaxPosition` -- la posición donde ya estaba Max antes de
@@ -992,10 +1033,10 @@ export function resolveMaxSpawnPosition(
 
 function getMaxCollisionBox(position) {
   return {
-    x: position.x - MAX_DIMENSIONS.width / 2,
-    y: position.y - MAX_DIMENSIONS.height / 2,
-    width: MAX_DIMENSIONS.width,
-    height: MAX_DIMENSIONS.height,
+    x: position.x - MAX_HITBOX_DIMENSIONS.width / 2,
+    y: position.y - MAX_HITBOX_DIMENSIONS.height / 2,
+    width: MAX_HITBOX_DIMENSIONS.width,
+    height: MAX_HITBOX_DIMENSIONS.height,
   };
 }
 
@@ -2037,6 +2078,173 @@ function renderObjects(context, camera, objects, state) {
   }
 }
 
+/*
+ * Segunda ronda de refinamiento visual de los 5 NPC de Nivel C que
+ * comparten el render genérico (los 4 NPC ambientales de Plaza del Axioma
+ * más plaza-worker), tras revisión humana explícita: "todavía se leen
+ * demasiado como BLOQUES" (ver CHANGELOG.md). Las funciones
+ * drawGenericNpc*() de abajo son sub-rutinas de un único dibujo
+ * compartido -- no 5 renderers independientes ni un framework de piezas
+ * combinables -- parametrizadas por `palette` (NAMED_NPC_PALETTES) y, solo
+ * para el delantal/peto/corbata, por el propio `object.id` (no por un
+ * campo de paleta nuevo). Sigue siendo fillRect directo (Nivel C): sin
+ * drawImage, sin cache, sin canvas nuevo por frame -- se acerca al
+ * lenguaje visual de Gonzalo/Elena/Corolaria (contorno en dos bloques,
+ * pelo con volumen trasero+frontal+detalle, cabeza/mandíbula/cuello
+ * diferenciados, hombros más anchos que la cintura, brazos cortos
+ * integrados en vez de bloques pegados de la altura del torso, piernas
+ * separadas por un hueco real) sin llegar a su mismo nivel de detalle ni
+ * migrar al pipeline de pixel-art indexado/cacheado.
+ */
+const GENERIC_NPC_APRON_COLOR = "#e6ded0";
+
+function drawGenericNpcOutline(context, x, y) {
+  context.fillStyle = NPC_SILHOUETTE;
+  context.fillRect(x + 0, y + 7, 14, 8);
+  context.fillRect(x + 2, y + 15, 10, 3);
+}
+
+function drawGenericNpcHair(context, x, y, palette) {
+  if (!palette.hair) {
+    return;
+  }
+
+  const hairShadow = palette.hairShadow ?? palette.hair;
+
+  context.fillStyle = hairShadow;
+  context.fillRect(x + 2, y - 2, 10, 4);
+
+  context.fillStyle = palette.hair;
+  context.fillRect(x + 3, y - 1, 8, 3);
+
+  const hairStyle = palette.hairStyle ?? "short";
+
+  if (hairStyle === "side") {
+    context.fillStyle = palette.hair;
+    context.fillRect(x + 2, y + 1, 2, 3);
+    return;
+  }
+
+  if (hairStyle === "bun") {
+    context.fillStyle = hairShadow;
+    context.fillRect(x + 9, y - 3, 2, 2);
+    return;
+  }
+
+  if (hairStyle === "fringe") {
+    context.fillStyle = palette.hair;
+    context.fillRect(x + 4, y + 1, 6, 1);
+    return;
+  }
+
+  if (hairStyle === "medium") {
+    context.fillStyle = palette.hair;
+    context.fillRect(x + 2, y + 2, 1, 3);
+    context.fillRect(x + 11, y + 2, 1, 3);
+  }
+}
+
+function drawGenericNpcHead(context, x, y, palette) {
+  context.fillStyle = NPC_HEAD;
+  context.fillRect(x + 3, y, 8, 5);
+  context.fillRect(x + 4, y + 5, 6, 1);
+  context.fillRect(x + 5, y + 6, 4, 1);
+
+  if (palette.eyes) {
+    context.fillStyle = NPC_SILHOUETTE;
+    context.fillRect(x + 5, y + 2, 1, 1);
+    context.fillRect(x + 9, y + 2, 1, 1);
+  }
+}
+
+function drawGenericNpcBody(context, x, y, palette) {
+  const isLight = palette.silhouetteVariant === "light";
+  const bodyShadow = palette.bodyShadow ?? palette.body;
+
+  context.fillStyle = palette.body;
+  context.fillRect(x + 1, y + 7, isLight ? 11 : 12, 2);
+
+  context.fillRect(x + 0, y + 9, 2, 4);
+  context.fillRect(x + 12, y + 9, 2, 4);
+
+  context.fillStyle = NPC_HEAD;
+  context.fillRect(x + 0, y + 13, 2, 1);
+  context.fillRect(x + 12, y + 13, 2, 1);
+
+  context.fillStyle = palette.body;
+  context.fillRect(x + 2, y + 9, isLight ? 9 : 10, 5);
+
+  if (isLight) {
+    // Detalle floral exclusivo de ambient-florist-altar (silhouetteVariant
+    // "light"): un pequeño rosetón de 5px sobre el hombro derecho -- cruz
+    // de 4 pétalos en palette.flowerAccent (color propio, no
+    // palette.accent, que ya se reutiliza en la banda de pecho de la línea
+    // de abajo y en las piernas de todos los NPC genéricos) con un centro
+    // en palette.hairShadow para dar contraste de "estambre" oscuro. Se
+    // pinta después del torso y antes del collar/sombra de cintura, que no
+    // comparten ninguna de estas coordenadas, así que nada posterior lo
+    // tapa.
+    context.fillStyle = palette.flowerAccent;
+    context.fillRect(x + 10, y + 5, 1, 1);
+    context.fillRect(x + 9, y + 6, 1, 1);
+    context.fillRect(x + 11, y + 6, 1, 1);
+    context.fillRect(x + 10, y + 7, 1, 1);
+
+    context.fillStyle = palette.hairShadow;
+    context.fillRect(x + 10, y + 6, 1, 1);
+  }
+
+  context.fillStyle = palette.accent;
+  context.fillRect(x + 5, y + 9, 4, 2);
+
+  context.fillStyle = bodyShadow;
+  context.fillRect(x + 3, y + 14, 8, 1);
+}
+
+function drawGenericNpcLegs(context, x, y, palette) {
+  const isFormal = palette.silhouetteVariant === "formal";
+
+  context.fillStyle = palette.accent;
+  context.fillRect(x + 3, y + 15, isFormal ? 2 : 3, 2);
+
+  context.fillStyle = NPC_SILHOUETTE;
+  context.fillRect(x + (isFormal ? 5 : 6), y + 15, isFormal ? 3 : 2, 2);
+
+  context.fillStyle = palette.accent;
+  context.fillRect(x + 8, y + 15, isFormal ? 2 : 3, 2);
+
+  context.fillStyle = NPC_SILHOUETTE;
+  context.fillRect(x + 3, y + 17, 8, 1);
+}
+
+function drawGenericNpcApron(context, x, y, object) {
+  if (object.id === "ambient-setup-helper") {
+    context.fillStyle = GENERIC_NPC_APRON_COLOR;
+    context.fillRect(x + 3, y + 14, 8, 2);
+    return;
+  }
+
+  if (object.id === "ambient-waiter-tables") {
+    context.fillStyle = GENERIC_NPC_APRON_COLOR;
+    context.fillRect(x + 6, y + 9, 2, 5);
+    context.fillRect(x + 3, y + 14, 8, 2);
+    return;
+  }
+
+  // Sin delantal: esta corbata/tira vertical (2px de ancho) se pinta
+  // encima del collar rectangular ya pintado en drawGenericNpcBody()
+  // (x+5..9, y+9..11, 4px de ancho) con el mismo palette.accent. La
+  // corbata NO cubre por completo al collar en X -- es más estrecha --
+  // pero, al compartir color, ambos rects se funden visualmente en una
+  // sola forma en T (collar horizontal + corbata vertical), no en un
+  // collar duplicado.
+  if (object.id === "ambient-guest-bench") {
+    const palette = NAMED_NPC_PALETTES[object.id];
+    context.fillStyle = palette.accent;
+    context.fillRect(x + 6, y + 9, 2, 4);
+  }
+}
+
 function renderNpc(context, x, y, object) {
   if (object.id === "bride-epilogue") {
     renderElena(context, x, y);
@@ -2060,116 +2268,57 @@ function renderNpc(context, x, y, object) {
 
   const palette = NAMED_NPC_PALETTES[object.id] ?? DEFAULT_NPC_PALETTE;
 
-  context.fillStyle = NPC_SILHOUETTE;
-  context.fillRect(x + 1, y + 5, 12, 14);
-
-  context.fillStyle = NPC_HEAD;
-  context.fillRect(x + 3, y, 8, 7);
-
-  context.fillStyle = palette.body;
-  context.fillRect(x + 2, y + 7, 10, 11);
-
-  context.fillStyle = palette.accent;
-  context.fillRect(x + 5, y + 8, 4, 4);
+  drawGenericNpcOutline(context, x, y);
+  drawGenericNpcHair(context, x, y, palette);
+  drawGenericNpcHead(context, x, y, palette);
+  drawGenericNpcBody(context, x, y, palette);
+  drawGenericNpcLegs(context, x, y, palette);
+  drawGenericNpcApron(context, x, y, object);
 }
 
+// Elena Character Pixel-Art: migra del render geométrico anterior (arriba
+// en el historial de este archivo) al sprite indexado cacheado de
+// ElenaRenderer.js -- mismo (x,y) de anclaje (esquina superior izquierda)
+// que el render geométrico anterior usaba, así que no hace falta ningún
+// ajuste de posición. "bride-epilogue" es un NPC estático sin lógica de
+// movimiento/dirección propia, así que siempre se pide el frontal.
 function renderElena(context, x, y) {
-  context.fillStyle = BRIDE_PALETTE.silhouette;
-  context.fillRect(x + 2, y, 10, 3);
-  context.fillRect(x + 1, y + 3, 12, 17);
-
-  context.fillStyle = BRIDE_PALETTE.hair;
-  context.fillRect(x + 3, y + 1, 8, 2);
-
-  context.fillStyle = BRIDE_PALETTE.head;
-  context.fillRect(x + 3, y + 3, 8, 6);
-
-  context.fillStyle = BRIDE_PALETTE.hair;
-  context.fillRect(x + 1, y + 3, 2, 14);
-  context.fillRect(x + 11, y + 3, 2, 14);
-
-  context.fillStyle = BRIDE_PALETTE.head;
-  context.fillRect(x + 1, y + 10, 2, 6);
-  context.fillRect(x + 11, y + 10, 2, 6);
-
-  context.fillStyle = BRIDE_PALETTE.body;
-  context.fillRect(x + 3, y + 10, 8, 6);
-
-  context.fillStyle = BRIDE_PALETTE.bodyAccent;
-  context.fillRect(x + 2, y + 16, 10, 4);
+  renderElenaSprite(context, x, y, "down");
 }
 
+// Corolaria Character Pixel-Art: migra del render geométrico anterior
+// (arriba en el historial de este archivo) al mismo sprite indexado
+// cacheado de CorolariaRenderer.js -- mismo (x,y) de anclaje (esquina
+// superior izquierda) que el render geométrico anterior usaba, así que
+// no hace falta ningún ajuste de posición. "mayor-corolaria" es un NPC
+// estático sin lógica de movimiento/dirección propia, así que siempre se
+// pide el frontal (mismo patrón que renderElena() justo arriba).
 function renderCorolaria(context, x, y) {
-  context.fillStyle = MAYOR_PALETTE.silhouette;
-  context.fillRect(x + 2, y + 5, 9, 2);
-  context.fillRect(x + 0, y + 6, 13, 7);
-  context.fillRect(x + 1, y + 12, 11, 8);
-
-  context.fillStyle = MAYOR_PALETTE.hair;
-  context.fillRect(x + 3, y + 0, 7, 2);
-
-  context.fillStyle = MAYOR_PALETTE.head;
-  context.fillRect(x + 3, y + 2, 7, 5);
-
-  context.fillStyle = MAYOR_PALETTE.head;
-  context.fillRect(x + 0, y + 7, 2, 6);
-  context.fillRect(x + 11, y + 7, 2, 6);
-
-  context.fillStyle = MAYOR_PALETTE.body;
-  context.fillRect(x + 2, y + 7, 9, 6);
-
-  context.fillStyle = MAYOR_PALETTE.bodyAccent;
-  context.fillRect(x + 2, y + 13, 9, 6);
-  context.fillRect(x + 6, y + 7, 2, 2);
+  renderCorolariaSprite(context, x, y, "down");
 }
 
+// Bride Father Character Pixel-Art: migra del render geométrico anterior
+// (arriba en el historial de este archivo) al mismo sprite indexado
+// cacheado de BrideFatherRenderer.js -- mismo (x,y) de anclaje (esquina
+// superior izquierda) que el render geométrico anterior usaba, así que
+// no hace falta ningún ajuste de posición. "bride-father" es un NPC
+// estático sin lógica de movimiento/dirección propia, así que siempre se
+// pide el frontal (mismo patrón que renderElena()/renderCorolaria() justo
+// arriba).
 function renderBrideFather(context, x, y) {
-  context.fillStyle = BRIDE_FATHER_PALETTE.silhouette;
-  context.fillRect(x + 3, y + 0, 10, 3);
-  context.fillRect(x + 3, y + 3, 10, 7);
-  context.fillRect(x + 1, y + 10, 14, 6);
-  context.fillRect(x + 4, y + 16, 8, 6);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.hair;
-  context.fillRect(x + 4, y + 1, 8, 2);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.head;
-  context.fillRect(x + 4, y + 3, 8, 7);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.head;
-  context.fillRect(x + 1, y + 10, 2, 6);
-  context.fillRect(x + 13, y + 10, 2, 6);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.body;
-  context.fillRect(x + 3, y + 10, 10, 6);
-
-  context.fillStyle = BRIDE_FATHER_PALETTE.bodyAccent;
-  context.fillRect(x + 5, y + 17, 2, 5);
-  context.fillRect(x + 9, y + 17, 2, 5);
+  renderBrideFatherSprite(context, x, y, "down");
 }
 
+// Silogio Character Pixel-Art: migra del render geométrico anterior
+// (arriba en el historial de este archivo) al mismo sprite indexado
+// cacheado de SilogioRenderer.js -- mismo (x,y) de anclaje (esquina
+// superior izquierda) que el render geométrico anterior usaba, así que
+// no hace falta ningún ajuste de posición. "library-silogio" es un NPC
+// estático sin lógica de movimiento/dirección propia, así que siempre se
+// pide el frontal (mismo patrón que renderElena()/renderCorolaria()/
+// renderBrideFather() justo arriba).
 function renderSilogio(context, x, y) {
-  context.fillStyle = SILOGIO_PALETTE.silhouette;
-  context.fillRect(x + 4, y + 0, 5, 3);
-  context.fillRect(x + 2, y + 3, 9, 9);
-  context.fillRect(x + 0, y + 12, 12, 10);
-
-  context.fillStyle = SILOGIO_PALETTE.hair;
-  context.fillRect(x + 5, y + 0, 4, 2);
-
-  context.fillStyle = SILOGIO_PALETTE.head;
-  context.fillRect(x + 3, y + 2, 6, 5);
-
-  context.fillStyle = SILOGIO_PALETTE.head;
-  context.fillRect(x + 1, y + 7, 1, 7);
-  context.fillRect(x + 10, y + 7, 1, 7);
-
-  context.fillStyle = SILOGIO_PALETTE.body;
-  context.fillRect(x + 3, y + 7, 6, 6);
-
-  context.fillStyle = SILOGIO_PALETTE.bodyAccent;
-  context.fillRect(x + 3, y + 13, 6, 4);
-  context.fillRect(x + 5, y + 8, 2, 2);
+  renderSilogioSprite(context, x, y, "down");
 }
 
 function renderHud(context, map, objectiveId) {

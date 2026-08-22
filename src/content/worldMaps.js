@@ -145,6 +145,54 @@ const AXIOM_PLAZA = createMap({
       label: PARTNER_NAME,
       requiresFlag: "giftCodeSolved",
     },
+    /*
+     * NPCs ambientales de Plaza del Axioma (v1.1, sin nombre propio, sin
+     * requiresFlag ni diálogo con estado): rellenan la plaza durante los
+     * preparativos junto al altar, el puesto de montaje, las mesas de boda
+     * y los bancos. Posiciones verificadas contra solidRegions, el resto de
+     * objects, todas las decorations y el rectángulo de aparición del
+     * jugador (ver tests/content/WorldMaps.test.js).
+     */
+    {
+      id: "ambient-florist-altar",
+      type: "npc",
+      x: 260,
+      y: 100,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona revisando las flores",
+    },
+    {
+      id: "ambient-setup-helper",
+      type: "npc",
+      x: 506,
+      y: 66,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona ayudando con el montaje",
+    },
+    {
+      id: "ambient-waiter-tables",
+      type: "npc",
+      x: 188,
+      y: 374,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona sirviendo en las mesas",
+    },
+    {
+      id: "ambient-guest-bench",
+      type: "npc",
+      x: 634,
+      y: 112,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona invitada esperando",
+    },
   ],
   /*
    * Plaza Visual Polish -- Wedding Preparation Style Lock (v1.1, Plaza

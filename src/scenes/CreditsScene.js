@@ -5,6 +5,7 @@ import {
   PROTAGONIST_PALETTE,
 } from "../content/characterPalettes.js";
 import { renderMax } from "../render/MaxRenderer.js";
+import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
 
 export { BRIDE_PALETTE, PROTAGONIST_PALETTE };
 
@@ -178,30 +179,15 @@ function drawGonzalo(context, x, y) {
   context.fillRect(x + 8, y + 17, 2, 5);
 }
 
+// Elena Character Pixel-Art: migra del render geométrico anterior (arriba
+// en el historial de este archivo) al mismo sprite indexado cacheado de
+// ElenaRenderer.js ya usado en WorldScene.renderElena() -- mismo (x,y) de
+// anclaje (esquina superior izquierda) que el render geométrico anterior
+// usaba, así que no hace falta ningún ajuste de posición/escala. Gonzalo
+// (drawGonzalo, justo arriba) se deja intacto a propósito: esta corrección
+// es exclusiva de Elena.
 function drawElena(context, x, y) {
-  context.fillStyle = BRIDE_PALETTE.silhouette;
-  context.fillRect(x + 2, y, 10, 3);
-  context.fillRect(x + 1, y + 3, 12, 17);
-
-  context.fillStyle = BRIDE_PALETTE.hair;
-  context.fillRect(x + 3, y + 1, 8, 2);
-
-  context.fillStyle = BRIDE_PALETTE.head;
-  context.fillRect(x + 3, y + 3, 8, 6);
-
-  context.fillStyle = BRIDE_PALETTE.hair;
-  context.fillRect(x + 1, y + 3, 2, 14);
-  context.fillRect(x + 11, y + 3, 2, 14);
-
-  context.fillStyle = BRIDE_PALETTE.head;
-  context.fillRect(x + 1, y + 10, 2, 6);
-  context.fillRect(x + 11, y + 10, 2, 6);
-
-  context.fillStyle = BRIDE_PALETTE.body;
-  context.fillRect(x + 3, y + 10, 8, 6);
-
-  context.fillStyle = BRIDE_PALETTE.bodyAccent;
-  context.fillRect(x + 2, y + 16, 10, 4);
+  renderElenaSprite(context, x, y, "down");
 }
 
 function renderClosingShot(context) {

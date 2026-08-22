@@ -11,7 +11,11 @@ import { SceneManager } from "../../src/core/SceneManager.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
 import { GameState } from "../../src/state/GameState.js";
 import { COUPLE_DEDICATION } from "../../src/content/personalizationConfig.js";
-import { MAX_PALETTE } from "../../src/content/characterPalettes.js";
+import { ELENA_FRONT_PIXELS } from "../../src/content/elenaPixelArt.js";
+import {
+  MAX_PIXEL_PALETTE,
+  MAX_SIDE_PIXELS,
+} from "../../src/content/maxPixelArt.js";
 
 const TITLE_TEXT = "EL TEOREMA DEL SÍ";
 const CREDITS_LINE_1 = "CREADO CON CARIÑO";
@@ -223,7 +227,7 @@ test("el paso 1 dibuja dos personajes con las paletas reutilizadas del jugador y
   assert.ok(fillStyles.includes(BRIDE_PALETTE.bodyAccent));
 });
 
-test("el paso 1 dibuja el pelo, la cabeza, los brazos, el cuerpo y la segunda zona cromática de Gonzalo y Elena en las posiciones esperadas", () => {
+test("el paso 1 dibuja el pelo, la cabeza, los brazos y el cuerpo de Gonzalo en las posiciones geométricas esperadas, y las mismas zonas de Elena con la cantidad de píxeles que declara ElenaRenderer", () => {
   const { scene } = createScene();
   scene.enter();
 
@@ -237,19 +241,32 @@ test("el paso 1 dibuja el pelo, la cabeza, los brazos, el cuerpo y la segunda zo
     { x: 211, y: 189, width: 8, height: 2, fillStyle: PROTAGONIST_PALETTE.hair },
     { x: 218, y: 191, width: 2, height: 3, fillStyle: PROTAGONIST_PALETTE.hair },
   ]);
+
   // PROTAGONIST_PALETTE.head y BRIDE_PALETTE.head son literalmente el
-  // mismo valor (SKIN_TONE compartido), así que filtrar por ese color
-  // devuelve las piezas de piel de ambos personajes juntas: cabeza y dos
-  // brazos de Gonzalo, luego cabeza y dos brazos de Elena.
+  // mismo valor (SKIN_TONE compartido). Gonzalo sigue con el renderer
+  // geométrico antiguo (rects grandes, width/height > 1); Elena ahora usa
+  // ElenaRenderer, que rasteriza píxel a píxel (rects 1x1) -- así que se
+  // separan por tamaño de rect en vez de por posición exacta.
   assert.equal(PROTAGONIST_PALETTE.head, BRIDE_PALETTE.head);
-  assert.deepEqual(byColor(PROTAGONIST_PALETTE.head), [
+  const headRects = byColor(PROTAGONIST_PALETTE.head);
+  const gonzaloHeadRects = headRects.filter(
+    (rect) => rect.width > 1 || rect.height > 1,
+  );
+  const elenaSkinPixels = headRects.filter(
+    (rect) => rect.width === 1 && rect.height === 1,
+  );
+
+  assert.deepEqual(gonzaloHeadRects, [
     { x: 211, y: 191, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
     { x: 209, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
     { x: 219, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
-    { x: 233, y: 191, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
-    { x: 231, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
-    { x: 241, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
   ]);
+  assert.equal(
+    elenaSkinPixels.length,
+    countSymbolInPixels(ELENA_FRONT_PIXELS, "k"),
+    "la cantidad de píxeles de piel de Elena debe coincidir con el símbolo 'k' de ELENA_FRONT_PIXELS",
+  );
+
   assert.deepEqual(byColor(PROTAGONIST_PALETTE.body), [
     { x: 211, y: 198, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.body },
   ]);
@@ -258,79 +275,121 @@ test("el paso 1 dibuja el pelo, la cabeza, los brazos, el cuerpo y la segunda zo
     { x: 216, y: 205, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
   ]);
 
-  assert.deepEqual(byColor(BRIDE_PALETTE.hair), [
-    { x: 233, y: 189, width: 8, height: 2, fillStyle: BRIDE_PALETTE.hair },
-    { x: 231, y: 191, width: 2, height: 14, fillStyle: BRIDE_PALETTE.hair },
-    { x: 241, y: 191, width: 2, height: 14, fillStyle: BRIDE_PALETTE.hair },
-  ]);
-  assert.deepEqual(byColor(BRIDE_PALETTE.body), [
-    { x: 233, y: 198, width: 8, height: 6, fillStyle: BRIDE_PALETTE.body },
-  ]);
-  assert.deepEqual(byColor(BRIDE_PALETTE.bodyAccent), [
-    { x: 232, y: 204, width: 10, height: 4, fillStyle: BRIDE_PALETTE.bodyAccent },
-  ]);
+  // Elena: BRIDE_PALETTE.hair/.body/.bodyAccent no colisionan con ningún
+  // color de Gonzalo, así que estos rects son exclusivamente suyos. Todos
+  // deben ser 1x1 (ElenaRenderer), y su cantidad debe coincidir con el
+  // símbolo correspondiente en ELENA_FRONT_PIXELS ("d"=pelo, "b"=vestido
+  // medio, "L"=vestido claro/cintura -- ver elenaPixelArt.js).
+  const elenaHairRects = byColor(BRIDE_PALETTE.hair);
+  assert.equal(
+    elenaHairRects.length,
+    countSymbolInPixels(ELENA_FRONT_PIXELS, "d"),
+  );
+  assert.ok(elenaHairRects.every((rect) => rect.width === 1 && rect.height === 1));
+
+  const elenaBodyRects = byColor(BRIDE_PALETTE.body);
+  assert.equal(
+    elenaBodyRects.length,
+    countSymbolInPixels(ELENA_FRONT_PIXELS, "b"),
+  );
+  assert.ok(elenaBodyRects.every((rect) => rect.width === 1 && rect.height === 1));
+
+  const elenaBodyAccentRects = byColor(BRIDE_PALETTE.bodyAccent);
+  assert.equal(
+    elenaBodyAccentRects.length,
+    countSymbolInPixels(ELENA_FRONT_PIXELS, "L"),
+  );
+  assert.ok(
+    elenaBodyAccentRects.every((rect) => rect.width === 1 && rect.height === 1),
+  );
 });
 
-test("el paso 1 dibuja el contorno de Gonzalo y Elena como varias piezas estrechas, no como un bloque de fondo grande", () => {
+test("el paso 1 dibuja el contorno de Gonzalo como varias piezas estrechas, no como un bloque de fondo grande", () => {
   const { scene } = createScene();
   scene.enter();
 
   const context = new FakeCanvasContext();
   scene.render(context);
 
-  for (const [label, silhouetteColor] of [
-    ["Gonzalo", PROTAGONIST_PALETTE.silhouette],
-    ["Elena", BRIDE_PALETTE.silhouette],
-  ]) {
-    const silhouetteRects = context.fillRects.filter(
-      (rect) => rect.fillStyle === silhouetteColor,
-    );
+  const silhouetteRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === PROTAGONIST_PALETTE.silhouette,
+  );
 
-    assert.ok(
-      silhouetteRects.length >= 2,
-      `${label}: el contorno debe tener varias piezas, no un único rectángulo de fondo (encontradas: ${silhouetteRects.length})`,
-    );
+  assert.ok(
+    silhouetteRects.length >= 2,
+    `el contorno debe tener varias piezas, no un único rectángulo de fondo (encontradas: ${silhouetteRects.length})`,
+  );
 
-    const widths = silhouetteRects.map((rect) => rect.width);
-    assert.ok(
-      Math.min(...widths) < Math.max(...widths),
-      `${label}: las piezas de contorno deben variar de ancho (más estrechas donde el cuerpo es más estrecho), no ser todas iguales a un único ancho de fondo`,
-    );
-  }
+  const widths = silhouetteRects.map((rect) => rect.width);
+  assert.ok(
+    Math.min(...widths) < Math.max(...widths),
+    "las piezas de contorno deben variar de ancho (más estrechas donde el cuerpo es más estrecho), no ser todas iguales a un único ancho de fondo",
+  );
 });
 
-test("el paso 1 dibuja a Max junto a Gonzalo y Elena con un color de MAX_PALETTE", () => {
+test("el paso 1 dibuja el contorno de Elena píxel a píxel con ElenaRenderer (no el bloque geométrico antiguo de BRIDE_PALETTE)", () => {
   const { scene } = createScene();
   scene.enter();
 
   const context = new FakeCanvasContext();
   scene.render(context);
 
-  const allowedMaxColors = new Set(Object.values(MAX_PALETTE));
+  const silhouetteRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === BRIDE_PALETTE.silhouette,
+  );
+
+  // El renderer geométrico antiguo dibujaba el contorno de Elena en solo 2
+  // rects grandes (12x17 y 10x3). ElenaRenderer rasteriza un fillRect 1x1
+  // por símbolo "O" de ELENA_FRONT_PIXELS: la cantidad exacta y el tamaño
+  // uniforme 1x1 son la prueba de que ya no se usa el renderer antiguo.
+  assert.equal(
+    silhouetteRects.length,
+    countSymbolInPixels(ELENA_FRONT_PIXELS, "O"),
+  );
+  assert.ok(
+    silhouetteRects.every((rect) => rect.width === 1 && rect.height === 1),
+    "ElenaRenderer dibuja el contorno píxel a píxel (1x1), no como bloques grandes",
+  );
+});
+
+test("el paso 1 dibuja a Max junto a Gonzalo y Elena con un color de MAX_PIXEL_PALETTE", () => {
+  const { scene } = createScene();
+  scene.enter();
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  const allowedMaxColors = new Set(Object.values(MAX_PIXEL_PALETTE));
   const maxRects = context.fillRects.filter((rect) =>
     allowedMaxColors.has(rect.fillStyle),
   );
 
   assert.ok(
     maxRects.length > 0,
-    "el paso 1 debe dibujar al menos un rectángulo con un color de MAX_PALETTE",
+    "el paso 1 debe dibujar al menos un rectángulo con un color de MAX_PIXEL_PALETTE",
   );
 
-  // renderClosingShot() invoca renderMax(context, 180, 190); la primera
-  // primitiva que dibuja renderMax() es fillRect(x + 4, y + 1, 2, 3) con
-  // MAX_PALETTE.body (ver src/render/MaxRenderer.js), así que en
-  // coordenadas absolutas debe aparecer en (184, 191).
-  const bodyRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === MAX_PALETTE.body,
+  // renderClosingShot() invoca renderMax(context, 180, 190); Max
+  // Character Pixel-Art migró renderMax() a un sprite indexado
+  // rasterizado píxel a píxel (un fillRect 1x1 por símbolo no
+  // transparente de MAX_SIDE_PIXELS), así que se ancla a un pixel
+  // concreto de la nariz (fila 8, columna 0 de MAX_SIDE_PIXELS = "O",
+  // tras la ronda que amplió el sprite a 22x20 para redibujar la cabeza
+  // con más detalle) en vez de a un rect grande de posición fija --
+  // mismo patrón que los tests de anclaje ya usados para
+  // Elena/Corolaria/Padre/Silogio.
+  assert.equal(MAX_SIDE_PIXELS[8][0], "O");
+
+  const noseVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === MAX_PIXEL_PALETTE.O &&
+      rect.x === 180 &&
+      rect.y === 198 &&
+      rect.width === 1 &&
+      rect.height === 1,
   );
 
-  assert.deepEqual(bodyRects[0], {
-    x: 184,
-    y: 191,
-    width: 2,
-    height: 3,
-    fillStyle: MAX_PALETTE.body,
-  });
+  assert.equal(noseVisible, true);
 });
 
 test("ningún texto renderizado cae fuera del canvas de 480x270 ni de sus márgenes", () => {
@@ -945,6 +1004,10 @@ test("prepareTerminalState sigue siendo idempotente tras el fix de posición", (
 
   assert.deepEqual(afterSecond, afterFirst);
 });
+
+function countSymbolInPixels(pixels, symbol) {
+  return pixels.join("").split("").filter((char) => char === symbol).length;
+}
 
 function textIncludesClosingLine(context) {
   const joined = context.texts.map((entry) => entry.text).join(" ");

@@ -1,4 +1,4 @@
-import { PROTAGONIST_PALETTE } from "../content/characterPalettes.js";
+import { GONZALO_DIMENSIONS, renderGonzalo } from "../render/GonzaloRenderer.js";
 
 export class Player {
   constructor({ x, y, facing = "down" }) {
@@ -62,31 +62,12 @@ export class Player {
     const screenX = Math.round(this.x - camera.x);
     const screenY = Math.round(this.y - camera.y);
 
-    context.fillStyle = PROTAGONIST_PALETTE.silhouette;
-    context.fillRect(screenX - 5, screenY - 14, 10, 3);
-    context.fillRect(screenX - 5, screenY - 11, 10, 7);
-    context.fillRect(screenX - 7, screenY - 4, 14, 6);
-    context.fillRect(screenX - 4, screenY + 2, 8, 6);
-
-    context.fillStyle = PROTAGONIST_PALETTE.hair;
-    context.fillRect(screenX - 4, screenY - 13, 8, 2);
-
-    context.fillStyle = PROTAGONIST_PALETTE.head;
-    context.fillRect(screenX - 4, screenY - 11, 8, 7);
-
-    context.fillStyle = PROTAGONIST_PALETTE.hair;
-    context.fillRect(screenX + 3, screenY - 11, 2, 3);
-
-    context.fillStyle = PROTAGONIST_PALETTE.head;
-    context.fillRect(screenX - 6, screenY - 4, 2, 6);
-    context.fillRect(screenX + 4, screenY - 4, 2, 6);
-
-    context.fillStyle = PROTAGONIST_PALETTE.body;
-    context.fillRect(screenX - 4, screenY - 4, 8, 6);
-
-    context.fillStyle = PROTAGONIST_PALETTE.bodyAccent;
-    context.fillRect(screenX - 3, screenY + 3, 2, 5);
-    context.fillRect(screenX + 1, screenY + 3, 2, 5);
+    renderGonzalo(
+      context,
+      screenX - GONZALO_DIMENSIONS.width / 2,
+      screenY - 14,
+      this.facing,
+    );
 
     context.fillStyle = "#f5e8c8";
     drawFacingMarker(context, screenX, screenY, this.facing);
