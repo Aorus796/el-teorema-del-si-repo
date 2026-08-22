@@ -1340,6 +1340,73 @@ test("render() en axiom-plaza con giftCodeSolved usa la paleta de amanecer", () 
   assert.equal(styles.includes(palette.water), false);
 });
 
+/*
+ * Regresión de un hallazgo real de `reviewer`: las bandas de agua oscura y
+ * las líneas de reflejo de "river" (renderBackgroundDecorations, Seven
+ * Bridges Visual Polish) se dibujaban con un paso fijo que no dividía
+ * exactamente la altura real de la decoración, desbordando una banda
+ * opaca 4px más allá del borde inferior del río, sobre césped transitable.
+ * Este test no compara contra una imagen de referencia (evitaría un golden
+ * pixel test frágil): filtra, por color de fillStyle, exactamente los
+ * fillRect que pertenecen a esas dos bandas (derivando los mismos tonos
+ * que produce mixHexColors() en WorldScene.js a partir de la paleta real
+ * del mapa) y comprueba la única invariante que importa -- ningún
+ * fillRect de esas bandas empieza antes de `river.y` ni termina después
+ * de `river.y + river.height`, sea cual sea el paso o el offset elegido.
+ */
+test("las bandas de agua de 'river' en seven-bridges-walk nunca se dibujan fuera de los límites verticales de la decoración", () => {
+  function mixHex(colorA, colorB, ratio) {
+    const parse = (hex) => {
+      const value = hex.replace("#", "");
+      return {
+        r: parseInt(value.slice(0, 2), 16),
+        g: parseInt(value.slice(2, 4), 16),
+        b: parseInt(value.slice(4, 6), 16),
+      };
+    };
+    const a = parse(colorA);
+    const b = parse(colorB);
+    const mix = (channelA, channelB) =>
+      Math.round(channelA + (channelB - channelA) * ratio);
+
+    return `rgb(${mix(a.r, b.r)} ${mix(a.g, b.g)} ${mix(a.b, b.b)})`;
+  }
+
+  const setup = createWorldAt("seven-bridges-walk");
+  const map = getWorldMap("seven-bridges-walk");
+  const river = map.decorations.find((decoration) => decoration.type === "river");
+  const waterDeep = mixHex(map.palette.water, "#000000", 0.22);
+  const waterLight = mixHex(map.palette.water, "#ffffff", 0.16);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const bandRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === waterDeep || rect.fillStyle === waterLight,
+  );
+
+  assert.ok(
+    bandRects.length > 0,
+    "se esperaba al menos una banda de agua dibujada (river debe estar en el viewport del spawn por defecto)",
+  );
+
+  for (const rect of bandRects) {
+    // rect.y ya está en coordenadas de pantalla (post-cámara); se compara
+    // contra river en las mismas coordenadas, restando camera.x/y, igual
+    // que hace renderBackgroundDecorations() para dibujar.
+    const riverScreenY = Math.round(river.y - setup.scene.camera.y);
+
+    assert.ok(
+      rect.y >= riverScreenY,
+      `una banda de agua empieza en y=${rect.y}, antes del borde superior del río (${riverScreenY})`,
+    );
+    assert.ok(
+      rect.y + rect.height <= riverScreenY + river.height,
+      `una banda de agua termina en y=${rect.y + rect.height}, más allá del borde inferior del río (${riverScreenY + river.height})`,
+    );
+  }
+});
+
 test("render() con giftCodeSolved en otro mapa activo mantiene su paleta normal", () => {
   for (const mapId of ["seven-bridges-walk", "library"]) {
     const setup = createWorldAt(mapId);

@@ -86,6 +86,37 @@ import {
   FABRIC_ROLL_TRANSPARENT,
 } from "../content/fabricRollPixelArt.js";
 import {
+  PIER_PALETTE,
+  PIER_CENTER_PIXEL_HEIGHT,
+  PIER_CENTER_PIXEL_WIDTH,
+  PIER_CENTER_PIXELS,
+  PIER_SIDE_PIXEL_HEIGHT,
+  PIER_SIDE_PIXEL_WIDTH,
+  PIER_SIDE_PIXELS,
+  PIER_TRANSPARENT,
+} from "../content/pierPixelArt.js";
+import {
+  BRIDGE_PALETTE,
+  BRIDGE_PIXEL_HEIGHT,
+  BRIDGE_PIXEL_WIDTH,
+  BRIDGE_PIXELS,
+  BRIDGE_TRANSPARENT,
+} from "../content/bridgePixelArt.js";
+import {
+  PATH_SIGN_PALETTE,
+  PATH_SIGN_PIXEL_HEIGHT,
+  PATH_SIGN_PIXEL_WIDTH,
+  PATH_SIGN_PIXELS,
+  PATH_SIGN_TRANSPARENT,
+} from "../content/pathSignPixelArt.js";
+import {
+  BOAT_PALETTE,
+  BOAT_PIXEL_HEIGHT,
+  BOAT_PIXEL_WIDTH,
+  BOAT_PIXELS,
+  BOAT_TRANSPARENT,
+} from "../content/boatPixelArt.js";
+import {
   PARTNER_NAME,
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
@@ -939,8 +970,8 @@ export class WorldScene {
         : this.map;
 
     renderGround(context, this.camera, map);
-    renderBackgroundDecorations(context, this.camera, map);
     renderSolidTiles(context, this.camera, map);
+    renderBackgroundDecorations(context, this.camera, map);
     renderForegroundDecorations(context, this.camera, map);
     renderObjects(context, this.camera, map.objects, this.state);
     this.maxCompanion?.render(context, this.camera);
@@ -1168,6 +1199,26 @@ function renderSolidTiles(context, camera, map) {
   }
 }
 
+/*
+ * Pese al nombre (heredado de cuando "river" era la única capa dibujada
+ * antes que nada más, incluidos los tiles sólidos), render() la llama
+ * DESPUÉS de renderSolidTiles(), no antes -- hallazgo real de la
+ * verificación visual obligatoria de "Seven Bridges Visual Polish" al
+ * invertir la semántica agua/paseo: ahora buena parte del cauce de
+ * seven-bridges-walk SÍ es sólida (ver solidRegions en worldMaps.js), y
+ * renderSolidTiles() pinta un rectángulo opaco lisos (palette.wall) sobre
+ * CUALQUIER tile sólido sin saber qué decoración hay debajo. Si "river" se
+ * dibujara antes, ese gris liso de muro genérico taparía por completo el
+ * agua real bloqueada, y el jugador vería un muro cualquiera donde
+ * debería leer inequívocamente "esto es agua". Dibujar "river" después
+ * repinta esa franja entera (sólida o no, ya que "river" ya cubría también
+ * los huecos transitables de puentes/pilares antes de esta ronda) con el
+ * lenguaje visual de agua real, y renderForegroundDecorations() -- que se
+ * sigue llamando el último de los tres -- se encarga de tapar con
+ * pier/bridge/dock/boat las zonas que sí son transitables. axiom-plaza no
+ * usa ningún decoration de tipo "river", así que este reordenamiento no le
+ * afecta.
+ */
 function renderBackgroundDecorations(context, camera, map) {
   for (const decoration of map.decorations) {
     if (decoration.type !== "river") {
@@ -1176,20 +1227,49 @@ function renderBackgroundDecorations(context, camera, map) {
 
     const x = Math.round(decoration.x - camera.x);
     const y = Math.round(decoration.y - camera.y);
+    const width = decoration.width;
+    const height = decoration.height;
+
+    /*
+     * Lenguaje de agua aprobado (Sección 13, Seven Bridges Visual Polish):
+     * 2-3 tonos de agua, reflejos, borde de piedra y sombra de contacto,
+     * sin simulación real -- todo primitivas de canvas estáticas, sin
+     * canvas ni arrays nuevos por frame. Colores derivados de la paleta
+     * real del mapa con mixHexColors() ya existente, para no introducir
+     * valores hardcodeados ajenos a axiom-plaza/seven-bridges-walk.
+     */
+    const waterDeep = mixHexColors(map.palette.water, "#000000", 0.22);
+    const waterLight = mixHexColors(map.palette.water, "#ffffff", 0.16);
+    const bankStone = mixHexColors(map.palette.wallTop, "#ffffff", 0.08);
 
     context.fillStyle = map.palette.water;
-    context.fillRect(
-      x,
-      y,
-      decoration.width,
-      decoration.height,
-    );
+    context.fillRect(x, y, width, height);
 
-    context.fillStyle = "rgb(255 255 255 / 18%)";
-
-    for (let lineY = y + 8; lineY < y + decoration.height; lineY += 18) {
-      context.fillRect(x + 8, lineY, decoration.width - 16, 2);
+    context.fillStyle = waterDeep;
+    for (let bandY = y + 4; bandY < y + height; bandY += 34) {
+      const bandHeight = Math.min(10, y + height - bandY);
+      context.fillRect(x, bandY, width, bandHeight);
     }
+
+    context.fillStyle = waterLight;
+    for (let lineY = y + 8; lineY < y + height; lineY += 18) {
+      const lineHeight = Math.min(2, y + height - lineY);
+      context.fillRect(x + 8, lineY, width - 16, lineHeight);
+    }
+
+    // Borde de piedra cálida del cauce, con una línea de sombra de
+    // contacto hacia el agua para separar visualmente tierra/muelles.
+    context.fillStyle = bankStone;
+    context.fillRect(x, y, width, 4);
+    context.fillRect(x, y + height - 4, width, 4);
+    context.fillRect(x, y, 4, height);
+    context.fillRect(x + width - 4, y, 4, height);
+
+    context.fillStyle = "rgb(0 0 0 / 22%)";
+    context.fillRect(x, y + 4, width, 3);
+    context.fillRect(x, y + height - 7, width, 3);
+    context.fillRect(x + 4, y, 3, height);
+    context.fillRect(x + width - 7, y, 3, height);
   }
 }
 
@@ -1319,6 +1399,26 @@ function renderForegroundDecorations(context, camera, map) {
           decoration.height,
         );
       }
+      continue;
+    }
+
+    if (decoration.type === "pier") {
+      drawPier(context, x, y, decoration.width, decoration.height);
+      continue;
+    }
+
+    if (decoration.type === "bridge") {
+      drawBridge(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "boat") {
+      drawBoat(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "path-sign") {
+      drawPathSign(context, x, y);
     }
   }
 }
@@ -1819,6 +1919,125 @@ function drawFabricRoll(context, x, y) {
     FABRIC_ROLL_PIXEL_WIDTH,
     FABRIC_ROLL_PIXEL_HEIGHT,
     drawFabricRollIndexedSprite,
+  );
+}
+
+/*
+ * Props de seven-bridges-walk (Seven Bridges Visual Polish -- style lock
+ * indexado aprobado en axiom-plaza aplicado al Paseo de los Siete Puentes).
+ * Todo lo de aquí abajo es puramente cosmético: "pier" se dibuja EXACTAMENTE
+ * sobre el footprint en px de un solidRegion ya existente (restyle visual
+ * de un bloque que ya era sólido, cero cambio de colisión) y "bridge" /
+ * "path-sign" son decoraciones nuevas que nunca alimentan solidTiles (ver
+ * createMap() en worldMaps.js), igual que cualquier otra decoración.
+ */
+const drawPierSideIndexedSprite = createIndexedPixelSprite({
+  width: PIER_SIDE_PIXEL_WIDTH,
+  height: PIER_SIDE_PIXEL_HEIGHT,
+  palette: PIER_PALETTE,
+  pixels: PIER_SIDE_PIXELS,
+  transparent: PIER_TRANSPARENT,
+});
+
+const drawPierCenterIndexedSprite = createIndexedPixelSprite({
+  width: PIER_CENTER_PIXEL_WIDTH,
+  height: PIER_CENTER_PIXEL_HEIGHT,
+  palette: PIER_PALETTE,
+  pixels: PIER_CENTER_PIXELS,
+  transparent: PIER_TRANSPARENT,
+});
+
+// seven-bridges-walk tiene 5 solidRegions con solo 2 tamaños reales (5x8 y
+// 5x12 tiles, ver worldMaps.js): las decoraciones "pier" correspondientes
+// declaran ese mismo width/height exacto en px, así que basta distinguir
+// por tamaño, igual que drawDecorativeBush() con sus 3 variantes.
+function drawPier(context, x, y, width, height) {
+  if (width === PIER_CENTER_PIXEL_WIDTH && height === PIER_CENTER_PIXEL_HEIGHT) {
+    drawCachedProp(
+      context,
+      "pier-center-indexed",
+      x,
+      y,
+      PIER_CENTER_PIXEL_WIDTH,
+      PIER_CENTER_PIXEL_HEIGHT,
+      drawPierCenterIndexedSprite,
+    );
+    return;
+  }
+
+  drawCachedProp(
+    context,
+    "pier-side-indexed",
+    x,
+    y,
+    PIER_SIDE_PIXEL_WIDTH,
+    PIER_SIDE_PIXEL_HEIGHT,
+    drawPierSideIndexedSprite,
+  );
+}
+
+const drawBridgeIndexedSprite = createIndexedPixelSprite({
+  width: BRIDGE_PIXEL_WIDTH,
+  height: BRIDGE_PIXEL_HEIGHT,
+  palette: BRIDGE_PALETTE,
+  pixels: BRIDGE_PIXELS,
+  transparent: BRIDGE_TRANSPARENT,
+});
+
+function drawBridge(context, x, y) {
+  drawCachedProp(
+    context,
+    "bridge-indexed",
+    x,
+    y,
+    BRIDGE_PIXEL_WIDTH,
+    BRIDGE_PIXEL_HEIGHT,
+    drawBridgeIndexedSprite,
+  );
+}
+
+const drawPathSignIndexedSprite = createIndexedPixelSprite({
+  width: PATH_SIGN_PIXEL_WIDTH,
+  height: PATH_SIGN_PIXEL_HEIGHT,
+  palette: PATH_SIGN_PALETTE,
+  pixels: PATH_SIGN_PIXELS,
+  transparent: PATH_SIGN_TRANSPARENT,
+});
+
+function drawPathSign(context, x, y) {
+  drawCachedProp(
+    context,
+    "path-sign-indexed",
+    x,
+    y,
+    PATH_SIGN_PIXEL_WIDTH,
+    PATH_SIGN_PIXEL_HEIGHT,
+    drawPathSignIndexedSprite,
+  );
+}
+
+// "boat": pequeño bote decorativo sobre agua realmente bloqueada (Seven
+// Bridges Visual Polish -- inversión de semántica agua/paseo). Puramente
+// cosmético, mismo patrón createIndexedPixelSprite()+drawCachedProp() que
+// el resto de props indexados: sin colisión, sin interacción, sin
+// animación.
+const drawBoatIndexedSprite = createIndexedPixelSprite({
+  width: BOAT_PIXEL_WIDTH,
+  height: BOAT_PIXEL_HEIGHT,
+  palette: BOAT_PALETTE,
+  pixels: BOAT_PIXELS,
+  transparent: BOAT_TRANSPARENT,
+});
+
+function drawBoat(context, x, y) {
+  drawCachedProp(
+    context,
+    "boat-indexed",
+    x,
+    y,
+    BOAT_PIXEL_WIDTH,
+    BOAT_PIXEL_HEIGHT,
+    drawBoatIndexedSprite,
   );
 }
 
