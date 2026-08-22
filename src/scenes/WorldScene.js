@@ -110,6 +110,13 @@ import {
   PATH_SIGN_TRANSPARENT,
 } from "../content/pathSignPixelArt.js";
 import {
+  BOAT_PALETTE,
+  BOAT_PIXEL_HEIGHT,
+  BOAT_PIXEL_WIDTH,
+  BOAT_PIXELS,
+  BOAT_TRANSPARENT,
+} from "../content/boatPixelArt.js";
+import {
   PARTNER_NAME,
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
@@ -963,8 +970,8 @@ export class WorldScene {
         : this.map;
 
     renderGround(context, this.camera, map);
-    renderBackgroundDecorations(context, this.camera, map);
     renderSolidTiles(context, this.camera, map);
+    renderBackgroundDecorations(context, this.camera, map);
     renderForegroundDecorations(context, this.camera, map);
     renderObjects(context, this.camera, map.objects, this.state);
     this.maxCompanion?.render(context, this.camera);
@@ -1192,6 +1199,26 @@ function renderSolidTiles(context, camera, map) {
   }
 }
 
+/*
+ * Pese al nombre (heredado de cuando "river" era la única capa dibujada
+ * antes que nada más, incluidos los tiles sólidos), render() la llama
+ * DESPUÉS de renderSolidTiles(), no antes -- hallazgo real de la
+ * verificación visual obligatoria de "Seven Bridges Visual Polish" al
+ * invertir la semántica agua/paseo: ahora buena parte del cauce de
+ * seven-bridges-walk SÍ es sólida (ver solidRegions en worldMaps.js), y
+ * renderSolidTiles() pinta un rectángulo opaco lisos (palette.wall) sobre
+ * CUALQUIER tile sólido sin saber qué decoración hay debajo. Si "river" se
+ * dibujara antes, ese gris liso de muro genérico taparía por completo el
+ * agua real bloqueada, y el jugador vería un muro cualquiera donde
+ * debería leer inequívocamente "esto es agua". Dibujar "river" después
+ * repinta esa franja entera (sólida o no, ya que "river" ya cubría también
+ * los huecos transitables de puentes/pilares antes de esta ronda) con el
+ * lenguaje visual de agua real, y renderForegroundDecorations() -- que se
+ * sigue llamando el último de los tres -- se encarga de tapar con
+ * pier/bridge/dock/boat las zonas que sí son transitables. axiom-plaza no
+ * usa ningún decoration de tipo "river", así que este reordenamiento no le
+ * afecta.
+ */
 function renderBackgroundDecorations(context, camera, map) {
   for (const decoration of map.decorations) {
     if (decoration.type !== "river") {
@@ -1382,6 +1409,11 @@ function renderForegroundDecorations(context, camera, map) {
 
     if (decoration.type === "bridge") {
       drawBridge(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "boat") {
+      drawBoat(context, x, y);
       continue;
     }
 
@@ -1981,6 +2013,31 @@ function drawPathSign(context, x, y) {
     PATH_SIGN_PIXEL_WIDTH,
     PATH_SIGN_PIXEL_HEIGHT,
     drawPathSignIndexedSprite,
+  );
+}
+
+// "boat": pequeño bote decorativo sobre agua realmente bloqueada (Seven
+// Bridges Visual Polish -- inversión de semántica agua/paseo). Puramente
+// cosmético, mismo patrón createIndexedPixelSprite()+drawCachedProp() que
+// el resto de props indexados: sin colisión, sin interacción, sin
+// animación.
+const drawBoatIndexedSprite = createIndexedPixelSprite({
+  width: BOAT_PIXEL_WIDTH,
+  height: BOAT_PIXEL_HEIGHT,
+  palette: BOAT_PALETTE,
+  pixels: BOAT_PIXELS,
+  transparent: BOAT_TRANSPARENT,
+});
+
+function drawBoat(context, x, y) {
+  drawCachedProp(
+    context,
+    "boat-indexed",
+    x,
+    y,
+    BOAT_PIXEL_WIDTH,
+    BOAT_PIXEL_HEIGHT,
+    drawBoatIndexedSprite,
   );
 }
 

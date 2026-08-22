@@ -352,6 +352,44 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   que solape a propósito, no solo la ausencia de solape. Requiere
   aprobación visual humana del acabado final
   (`HUMAN MAP STYLE APPROVAL REQUIRED`), igual que Plaza Visual Polish.
+  El acabado anterior fue rechazado en revisión humana: las zonas azules
+  (`river`) parecían agua pero eran transitables, y las estructuras grises
+  (`pier`, restyle visual de `solidRegions` ya existentes) parecían
+  piedra/paseo pero estaban bloqueadas -- exactamente al revés de lo
+  esperable. Una segunda ronda corrige la semántica visual-navegable por
+  completo: `solidRegions` pasa a cubrir el cauce de agua real (11
+  regiones -- antes 5 -- que dejan un corredor de piedra/puentes libre),
+  y `pier`/`bridge`/`dock` son transitables de verdad porque su footprint
+  cae fuera de `solidRegions`, no al revés. `pier` deja de restylar 5
+  bloques sólidos y pasa a representar 3 piezas de piedra realmente
+  transitables (orillas oeste/este intermedias más la isla central, misma
+  variante de tamaño 80x128/80x192 de siempre); `bridge-west`/`bridge-east`
+  se realinean al nuevo corredor (fila 10-12); `river` se acorta 16px para
+  que la orilla este empiece exactamente donde termina el cauce;
+  `sign-p2-board` se recoloca sobre la isla central (antes flotaba sobre
+  lo que ahora es agua bloqueada). Se añade un bote decorativo nuevo,
+  puramente cosmético (`src/content/boatPixelArt.js`, tipo `boat` nuevo en
+  `WorldScene.js`), dentro de agua realmente bloqueada cerca del
+  embarcadero. El puzle P2 (`P2BridgesScene.js`, `src/puzzles/p2-bridges/`)
+  no se toca. Hallazgo real de la verificación visual obligatoria de esta
+  ronda: con agua ahora sólida, `renderSolidTiles()` pintaba un rectángulo
+  gris opaco de muro genérico ENCIMA de la decoración `river` en cualquier
+  tile de agua sólido, ocultando por completo el agua azul y haciéndola
+  leer como un muro cualquiera; se corrige reordenando `render()` para
+  dibujar `river` después de `renderSolidTiles()` en vez de antes (única
+  decoración de tipo `river` del juego, sin efecto en `axiom-plaza`).
+  `tests/content/WorldMaps.test.js` se reescribe en esta sección: los
+  tests que codificaban el diseño rechazado (`pier` cubre tiles sólidos,
+  5 piezas) se sustituyen por su contrario correcto (`pier` cubre tiles
+  transitables, 3 piezas), se añaden tests explícitos del contrato
+  visual-colisión (centros de agua colisionan, centros de pier/bridge y
+  los 4 extremos de cada bridge no colisionan), y el helper
+  `assertObjectIsReachable()` incorpora un raymarch de refinamiento de 1px
+  sobre el flood-fill de 8px existente (que tiene un artefacto real de
+  discretización) -- con esto `p2-evidence` deja de necesitar exclusión y
+  queda cubierto igual que `p2-bridge-board`. `pierPixelArt.js`,
+  `bridgePixelArt.js`, `pathSignPixelArt.js` y `MaxCompanion.js` no se
+  tocan.
 - Gonzalo Character Pixel-Art Spike -- prueba si el style lock de pixel-art
   indexado ya aprobado para props (Plaza Visual Polish) generaliza también
   a personajes. Migra el render de Gonzalo (`src/world/Player.js`) del

@@ -659,6 +659,30 @@ const AXIOM_PLAZA = createMap({
   ],
 });
 
+/*
+ * Seven Bridges Visual Polish -- inversión de semántica agua/paseo
+ * (segunda ronda de esta tarea, sustituye por completo la primera): en la
+ * ronda anterior "river" (decoración) parecía agua pero era transitable, y
+ * "pier" (decoración que restylaba solidRegions ya existentes) parecía
+ * piedra/paseo pero estaba bloqueado -- exactamente al revés de lo que
+ * espera un jugador. Ahora solidRegions cubre el agua REAL (todo el cauce
+ * del río salvo el corredor de piedra/puentes), y "pier"/"bridge"/"dock"
+ * son transitables de verdad porque caen fuera de solidRegions.
+ *
+ * Geometría (en tiles, TILE_SIZE=16): "river" cubre columnas 9-35, filas
+ * 2-25 (x144-576, y32-416). Dentro de esa franja, un corredor horizontal
+ * de piedra en filas 10-12 (y160-208) conecta orilla oeste -> pier-west
+ * (cols9-13) -> bridge-west (cols14-19) -> pier-center (cols20-24) ->
+ * bridge-east (cols25-30) -> pier-east (cols31-35) -> orilla este (desde
+ * col36, x576, ya fuera de "river"). pier-center además se extiende hacia
+ * abajo (filas 8-19) formando la isla central de piedra donde se apoya el
+ * tablero del puzle P2 y desde la que arranca bridge-east. El resto del
+ * cauce (banda superior filas2-7, banda inferior filas21-25, y los huecos
+ * de agua entre columnas de pilares que ningún puente cubre) permanece
+ * sólido: agua de verdad, no transitable. Ver el test dedicado en
+ * tests/content/WorldMaps.test.js que verifica punto a punto agua/piedra/
+ * puentes contra CollisionMap, no solo la aritmética de solidRegions.
+ */
 const SEVEN_BRIDGES_WALK = createMap({
   id: "seven-bridges-walk",
   name: "Paseo de los Siete Puentes",
@@ -672,11 +696,32 @@ const SEVEN_BRIDGES_WALK = createMap({
     water: "#357a8a",
   },
   solidRegions: [
-    { x: 9, y: 3, width: 5, height: 8 },
-    { x: 9, y: 17, width: 5, height: 8 },
-    { x: 20, y: 8, width: 5, height: 12 },
-    { x: 31, y: 3, width: 5, height: 8 },
-    { x: 31, y: 17, width: 5, height: 8 },
+    // Banda de agua superior, ancho completo del cauce (por encima de
+    // cualquier pilar/puente): filas 2-7, columnas 9-35.
+    { x: 9, y: 2, width: 27, height: 6 },
+    // Agua entre orilla oeste y bridge-west, y entre bridge-west y
+    // pier-center, a la altura de pier-west/pier-center (filas 8-9, antes
+    // de que arranque el corredor de puentes en la fila 10).
+    { x: 14, y: 8, width: 6, height: 2 },
+    { x: 25, y: 8, width: 6, height: 2 },
+    // Mismo par de huecos de agua, ya por debajo del corredor de puentes
+    // (filas 13-15), entre pier-west/pier-center y pier-center/pier-east.
+    { x: 14, y: 13, width: 6, height: 3 },
+    { x: 25, y: 13, width: 6, height: 3 },
+    // Agua bajo pier-west y pier-east (que terminan en la fila 15) y a los
+    // lados de pier-center (que sigue hasta la fila 19): filas 16-17.
+    { x: 9, y: 16, width: 11, height: 2 },
+    { x: 25, y: 16, width: 11, height: 2 },
+    // Filas 18-19: agua a ambos lados de pier-center, salvo el hueco del
+    // embarcadero (columnas 32-37) en el lado este, todavía transitable.
+    { x: 9, y: 18, width: 11, height: 2 },
+    { x: 25, y: 18, width: 7, height: 2 },
+    // Fila 20: pier-center ya terminó (fila 19); el hueco del embarcadero
+    // sigue libre en el lado este.
+    { x: 9, y: 20, width: 23, height: 1 },
+    // Banda de agua inferior, ancho completo del cauce (por debajo de
+    // pier-center y del embarcadero): filas 21-25.
+    { x: 9, y: 21, width: 27, height: 5 },
   ],
   objects: [
     {
@@ -743,33 +788,34 @@ const SEVEN_BRIDGES_WALK = createMap({
     },
   ],
   decorations: [
+    // "river": capa de fondo (renderBackgroundDecorations, se pinta antes
+    // que solidTiles) que cubre el cauce completo (ver comentario de
+    // solidRegions más arriba). Se acortó de 448 a 432px de ancho respecto
+    // a la ronda anterior para que la orilla este empiece exactamente en
+    // x576 (columna 36), fuera del cauce -- antes se extendía 16px de más
+    // sobre lo que ahora es tierra firme transitable.
     {
       id: "river",
       type: "river",
       x: 144,
       y: 32,
-      width: 448,
+      width: 432,
       height: 384,
     },
     /*
-     * "pier" restyle visual de los 5 solidRegions ya existentes (mismas
-     * coordenadas y tamaño en px exactos que su solidRegion, ver arriba):
-     * decoración pura, no altera solidTiles/colisión, solo sustituye el
-     * relleno gris genérico de renderSolidTiles() por piedra indexada.
+     * "pier": ahora representa la isla/plataforma de piedra REALMENTE
+     * transitable (ya no un restyle de solidRegions bloqueados). Tres
+     * piezas -- dos orillas de piedra intermedias (oeste/este) y la isla
+     * central, más ancha -- cuyo footprint en px cae siempre FUERA de
+     * solidRegions (ver arriba). drawPier() en WorldScene.js distingue la
+     * variante por tamaño exacto: 80x128 (lateral) o 80x192 (central), así
+     * que estas tres piezas deben conservar esos dos tamaños exactos.
      */
     {
-      id: "pier-left-top",
+      id: "pier-west",
       type: "pier",
       x: 144,
-      y: 48,
-      width: 80,
-      height: 128,
-    },
-    {
-      id: "pier-left-bottom",
-      type: "pier",
-      x: 144,
-      y: 272,
+      y: 128,
       width: 80,
       height: 128,
     },
@@ -782,34 +828,19 @@ const SEVEN_BRIDGES_WALK = createMap({
       height: 192,
     },
     {
-      id: "pier-right-top",
+      id: "pier-east",
       type: "pier",
       x: 496,
-      y: 48,
+      y: 128,
       width: 80,
       height: 128,
     },
-    {
-      id: "pier-right-bottom",
-      type: "pier",
-      x: 496,
-      y: 272,
-      width: 80,
-      height: 128,
-    },
-    /*
-     * "embarcadero" (dock) se dibuja DESPUÉS de los 5 "pier" a propósito
-     * (renderForegroundDecorations pinta cada decoración en el orden de
-     * este array, y el sprite de "pier" es totalmente opaco): el muelle
-     * de madera se apoya sobre "pier-right-bottom" (mismo solape que ya
-     * tenían embarcadero y el solidRegion original, ver más arriba -- el
-     * pilar y el muelle SÍ deben tocarse), así que el muelle tiene que
-     * quedar pintado por encima para no desaparecer bajo la piedra. Antes
-     * de que "pier" existiera como decoración esto no importaba (la capa
-     * de solidTiles siempre se pinta antes que cualquier decoración de
-     * primer plano); ahora sí. Ver el test de orden de capas en
-     * WorldMaps.test.js.
-     */
+    // "embarcadero" (dock): plataforma de madera transitable de la orilla
+    // este, apoyada en el hueco de agua libre que dejan solidRegions en
+    // columnas 32-37 (ver arriba) -- ya no se apoya sobre ningún "pier"
+    // (pier-east ahora termina en la fila 15, el embarcadero empieza en la
+    // 18), así que el orden de capas frente a "pier" ya no importa como
+    // importaba en la ronda anterior.
     {
       id: "embarcadero",
       type: "dock",
@@ -818,20 +849,19 @@ const SEVEN_BRIDGES_WALK = createMap({
       width: 96,
       height: 48,
     },
-    // "bridge": tablero de madera nuevo sobre tramos de río ya transitables
-    // (las decoraciones nunca alimentan solidTiles), en los huecos reales
-    // entre columnas de pilares -- da lectura de cruce donde antes solo
-    // había agua. bridge-west cubre exactamente el canal entre
-    // pier-left-* (termina en x=224) y pier-center (empieza en x=320);
-    // bridge-east cubre exactamente el canal entre pier-center (termina
-    // en x=400) y pier-right-* (empieza en x=496) -- ambos canales miden
-    // 96px, igual que BRIDGE_PIXEL_WIDTH, así que el tablero encaja borde
-    // con borde sin solapar ningún pilar ni dejar agua sin cubrir.
+    // "bridge": tablero de madera transitable sobre el corredor de piedra
+    // (filas 10-12, y160-208), en los huecos reales entre columnas de
+    // pilares -- da lectura de cruce real. bridge-west cubre exactamente
+    // el canal entre pier-west (termina en x=224) y pier-center (empieza
+    // en x=320); bridge-east cubre exactamente el canal entre pier-center
+    // (termina en x=400) y pier-east (empieza en x=496) -- ambos canales
+    // miden 96px, igual que BRIDGE_PIXEL_WIDTH, así que el tablero encaja
+    // borde con borde sin solapar ningún pilar ni dejar agua sin cubrir.
     {
       id: "bridge-west",
       type: "bridge",
       x: 224,
-      y: 200,
+      y: 160,
       width: 96,
       height: 48,
     },
@@ -839,18 +869,34 @@ const SEVEN_BRIDGES_WALK = createMap({
       id: "bridge-east",
       type: "bridge",
       x: 400,
-      y: 200,
+      y: 160,
       width: 96,
       height: 48,
     },
+    // "boat": decoración nueva, puramente cosmética, colocada dentro de
+    // agua REALMENTE bloqueada (fila 21-22, banda inferior del cauce,
+    // dentro del solidRegion x9,y21,w27,h5) cerca del embarcadero, para
+    // reforzar la lectura de "esto es agua" -- nunca añade colisión ni
+    // interacción (ver drawBoat() en WorldScene.js).
+    {
+      id: "boat-dock",
+      type: "boat",
+      x: 440,
+      y: 344,
+      width: 32,
+      height: 18,
+    },
     // "path-sign": señalética ambiental junto al tablero del puzle P2 y
     // junto al embarcadero/nota -- no solapa ningún interactuable ni
-    // cambia su id/posición/radio de interacción.
+    // cambia su id/radio de interacción. sign-p2-board se reubicó (antes
+    // y90, sobre lo que ahora es la banda de agua superior bloqueada) para
+    // quedar apoyada sobre pier-center, tierra firme real, en vez de
+    // flotar sobre agua.
     {
       id: "sign-p2-board",
       type: "path-sign",
       x: 366,
-      y: 90,
+      y: 150,
       width: 16,
       height: 30,
     },
