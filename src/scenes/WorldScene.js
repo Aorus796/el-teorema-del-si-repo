@@ -117,6 +117,37 @@ import {
   BOAT_TRANSPARENT,
 } from "../content/boatPixelArt.js";
 import {
+  LIBRARY_SHELF_NARROW_PIXEL_HEIGHT,
+  LIBRARY_SHELF_NARROW_PIXEL_WIDTH,
+  LIBRARY_SHELF_NARROW_PIXELS,
+  LIBRARY_SHELF_PALETTE,
+  LIBRARY_SHELF_TRANSPARENT,
+  LIBRARY_SHELF_WIDE_PIXEL_HEIGHT,
+  LIBRARY_SHELF_WIDE_PIXEL_WIDTH,
+  LIBRARY_SHELF_WIDE_PIXELS,
+} from "../content/libraryShelfPixelArt.js";
+import {
+  LIBRARY_READING_TABLE_PALETTE,
+  LIBRARY_READING_TABLE_PIXEL_HEIGHT,
+  LIBRARY_READING_TABLE_PIXEL_WIDTH,
+  LIBRARY_READING_TABLE_PIXELS,
+  LIBRARY_READING_TABLE_TRANSPARENT,
+} from "../content/libraryReadingTablePixelArt.js";
+import {
+  LIBRARY_LADDER_PALETTE,
+  LIBRARY_LADDER_PIXEL_HEIGHT,
+  LIBRARY_LADDER_PIXEL_WIDTH,
+  LIBRARY_LADDER_PIXELS,
+  LIBRARY_LADDER_TRANSPARENT,
+} from "../content/libraryLadderPixelArt.js";
+import {
+  LIBRARY_EMBLEM_PALETTE,
+  LIBRARY_EMBLEM_PIXEL_HEIGHT,
+  LIBRARY_EMBLEM_PIXEL_WIDTH,
+  LIBRARY_EMBLEM_PIXELS,
+  LIBRARY_EMBLEM_TRANSPARENT,
+} from "../content/libraryEmblemPixelArt.js";
+import {
   PARTNER_NAME,
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
@@ -1350,6 +1381,30 @@ function renderForegroundDecorations(context, camera, map) {
       continue;
     }
 
+    // "library-shelf"/"library-reading-table"/"library-ladder"/
+    // "library-emblem": mobiliario exclusivo de library (Biblioteca del
+    // Margen -- Visual Polish, v1.1), no comparte rama con "tables" a
+    // propósito -- ver el comentario de la rama de arriba.
+    if (decoration.type === "library-shelf") {
+      drawLibraryShelf(context, x, y, decoration.width, decoration.height);
+      continue;
+    }
+
+    if (decoration.type === "library-reading-table") {
+      drawLibraryReadingTable(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "library-ladder") {
+      drawLibraryLadder(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "library-emblem") {
+      drawLibraryEmblem(context, x, y);
+      continue;
+    }
+
     // "wedding-table" (mesas redondas con manteles, centro floral y
     // sillas): tipo exclusivo de axiom-plaza, no comparte rama con
     // "tables" a propósito -- ver el comentario de arriba.
@@ -2068,6 +2123,129 @@ function drawBoat(context, x, y) {
     BOAT_PIXEL_WIDTH,
     BOAT_PIXEL_HEIGHT,
     drawBoatIndexedSprite,
+  );
+}
+
+/*
+ * "library-shelf": migración de las 6 estanterías de library, que antes
+ * usaban la rama compartida "tables" (ver más arriba), a un tipo
+ * exclusivo con lectura clara de libros/lomos (Biblioteca del Margen --
+ * Visual Polish, v1.1). Mismo patrón que drawPier(): library tiene solo
+ * dos tamaños reales (144x32 para las estanterías noroeste/noreste,
+ * 112x32 para las otras cuatro, ver worldMaps.js), así que basta
+ * distinguir por tamaño con dos sprites cacheados distintos bajo un
+ * único type. library no tiene dawnPalette, así que a diferencia de
+ * drawFountain() no hace falta memoizar por paleta.
+ */
+const drawLibraryShelfWideIndexedSprite = createIndexedPixelSprite({
+  width: LIBRARY_SHELF_WIDE_PIXEL_WIDTH,
+  height: LIBRARY_SHELF_WIDE_PIXEL_HEIGHT,
+  palette: LIBRARY_SHELF_PALETTE,
+  pixels: LIBRARY_SHELF_WIDE_PIXELS,
+  transparent: LIBRARY_SHELF_TRANSPARENT,
+});
+
+const drawLibraryShelfNarrowIndexedSprite = createIndexedPixelSprite({
+  width: LIBRARY_SHELF_NARROW_PIXEL_WIDTH,
+  height: LIBRARY_SHELF_NARROW_PIXEL_HEIGHT,
+  palette: LIBRARY_SHELF_PALETTE,
+  pixels: LIBRARY_SHELF_NARROW_PIXELS,
+  transparent: LIBRARY_SHELF_TRANSPARENT,
+});
+
+function drawLibraryShelf(context, x, y, width, height) {
+  if (
+    width === LIBRARY_SHELF_WIDE_PIXEL_WIDTH &&
+    height === LIBRARY_SHELF_WIDE_PIXEL_HEIGHT
+  ) {
+    drawCachedProp(
+      context,
+      "library-shelf-wide-indexed",
+      x,
+      y,
+      LIBRARY_SHELF_WIDE_PIXEL_WIDTH,
+      LIBRARY_SHELF_WIDE_PIXEL_HEIGHT,
+      drawLibraryShelfWideIndexedSprite,
+    );
+    return;
+  }
+
+  drawCachedProp(
+    context,
+    "library-shelf-narrow-indexed",
+    x,
+    y,
+    LIBRARY_SHELF_NARROW_PIXEL_WIDTH,
+    LIBRARY_SHELF_NARROW_PIXEL_HEIGHT,
+    drawLibraryShelfNarrowIndexedSprite,
+  );
+}
+
+// "library-reading-table": mesa de lectura con banco integrado, único
+// tamaño real en library, mismo patrón que drawWeddingArch()/
+// drawFlowerPlanter().
+const drawLibraryReadingTableIndexedSprite = createIndexedPixelSprite({
+  width: LIBRARY_READING_TABLE_PIXEL_WIDTH,
+  height: LIBRARY_READING_TABLE_PIXEL_HEIGHT,
+  palette: LIBRARY_READING_TABLE_PALETTE,
+  pixels: LIBRARY_READING_TABLE_PIXELS,
+  transparent: LIBRARY_READING_TABLE_TRANSPARENT,
+});
+
+function drawLibraryReadingTable(context, x, y) {
+  drawCachedProp(
+    context,
+    "library-reading-table-indexed",
+    x,
+    y,
+    LIBRARY_READING_TABLE_PIXEL_WIDTH,
+    LIBRARY_READING_TABLE_PIXEL_HEIGHT,
+    drawLibraryReadingTableIndexedSprite,
+  );
+}
+
+// "library-ladder": escalera pequeña de biblioteca, único tamaño real.
+const drawLibraryLadderIndexedSprite = createIndexedPixelSprite({
+  width: LIBRARY_LADDER_PIXEL_WIDTH,
+  height: LIBRARY_LADDER_PIXEL_HEIGHT,
+  palette: LIBRARY_LADDER_PALETTE,
+  pixels: LIBRARY_LADDER_PIXELS,
+  transparent: LIBRARY_LADDER_TRANSPARENT,
+});
+
+function drawLibraryLadder(context, x, y) {
+  drawCachedProp(
+    context,
+    "library-ladder-indexed",
+    x,
+    y,
+    LIBRARY_LADDER_PIXEL_WIDTH,
+    LIBRARY_LADDER_PIXEL_HEIGHT,
+    drawLibraryLadderIndexedSprite,
+  );
+}
+
+// "library-emblem": motivo institucional abstracto de suelo en el centro
+// de la sala, único tamaño real. Decoración de suelo deliberadamente
+// sobre el corredor caminable: el jugador se dibuja siempre encima (ver
+// render() más abajo), así que no bloquea nada.
+const drawLibraryEmblemIndexedSprite = createIndexedPixelSprite({
+  width: LIBRARY_EMBLEM_PIXEL_WIDTH,
+  height: LIBRARY_EMBLEM_PIXEL_HEIGHT,
+  palette: LIBRARY_EMBLEM_PALETTE,
+  pixels: LIBRARY_EMBLEM_PIXELS,
+  transparent: LIBRARY_EMBLEM_TRANSPARENT,
+});
+
+function drawLibraryEmblem(context, x, y) {
+  drawCachedProp(
+    context,
+    "library-emblem-indexed",
+    x,
+    y,
+    LIBRARY_EMBLEM_PIXEL_WIDTH,
+    LIBRARY_EMBLEM_PIXEL_HEIGHT,
+    drawLibraryEmblemIndexedSprite,
   );
 }
 

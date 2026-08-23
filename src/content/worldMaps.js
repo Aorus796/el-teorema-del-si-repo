@@ -1080,10 +1080,35 @@ const LIBRARY = createMap({
       },
     },
   ],
+  /*
+   * Cobertura de "Biblioteca del Margen -- Visual Polish" (v1.1, solo
+   * library): pase puramente visual, sin NPCs y sin tocar colisión --
+   * decorations nunca alimenta solidTiles (ver createMap() más arriba).
+   * Las 6 estanterías originales migran de "tables" (rama compartida,
+   * sigue sirviendo a ARCHIVE sin cambios) a "library-shelf" (tipo
+   * exclusivo con lectura clara de libros/lomos, ver
+   * libraryShelfPixelArt.js y drawLibraryShelf() en WorldScene.js);
+   * conservan exactamente su id/x/y/width/height original. Se añade
+   * mobiliario nuevo puramente decorativo: 4 mesas de lectura (una por
+   * cada hueco entre estanterías, con banco a ambos lados del tablero --
+   * ver libraryReadingTablePixelArt.js) y 1 escalera, más 1 emblema
+   * central que ocupa el corredor caminable a propósito (es una
+   * decoración de suelo, el jugador se dibuja siempre por encima, ver
+   * render() en WorldScene.js -- no bloquea nada).
+   *
+   * Ronda de composición (misma PR): `library-ladder` se solapa a
+   * propósito 8px (y152-y160) con `library-shelves-west-upper` para
+   * leerse como apoyada SOBRE la estantería en vez de solo tocando su
+   * borde -- se pinta después en `decorations`, así que el orden de
+   * pintado ya la deja por delante sin cambios adicionales en
+   * renderForegroundDecorations(). Es la única excepción de solape
+   * intencional de todo el mapa (ver el test dedicado en
+   * tests/content/WorldMaps.test.js).
+   */
   decorations: [
     {
       id: "library-shelves-northwest",
-      type: "tables",
+      type: "library-shelf",
       x: 48,
       y: 48,
       width: 144,
@@ -1091,7 +1116,7 @@ const LIBRARY = createMap({
     },
     {
       id: "library-shelves-northeast",
-      type: "tables",
+      type: "library-shelf",
       x: 288,
       y: 48,
       width: 144,
@@ -1099,7 +1124,7 @@ const LIBRARY = createMap({
     },
     {
       id: "library-shelves-west-upper",
-      type: "tables",
+      type: "library-shelf",
       x: 48,
       y: 128,
       width: 112,
@@ -1107,7 +1132,7 @@ const LIBRARY = createMap({
     },
     {
       id: "library-shelves-east-upper",
-      type: "tables",
+      type: "library-shelf",
       x: 320,
       y: 128,
       width: 112,
@@ -1115,7 +1140,7 @@ const LIBRARY = createMap({
     },
     {
       id: "library-shelves-west-lower",
-      type: "tables",
+      type: "library-shelf",
       x: 48,
       y: 208,
       width: 112,
@@ -1123,11 +1148,59 @@ const LIBRARY = createMap({
     },
     {
       id: "library-shelves-east-lower",
-      type: "tables",
+      type: "library-shelf",
       x: 320,
       y: 208,
       width: 112,
       height: 32,
+    },
+    {
+      id: "library-reading-table-northwest",
+      type: "library-reading-table",
+      x: 64,
+      y: 84,
+      width: 64,
+      height: 40,
+    },
+    {
+      id: "library-reading-table-northeast",
+      type: "library-reading-table",
+      x: 352,
+      y: 84,
+      width: 64,
+      height: 40,
+    },
+    {
+      id: "library-reading-table-south",
+      type: "library-reading-table",
+      x: 352,
+      y: 248,
+      width: 64,
+      height: 40,
+    },
+    {
+      id: "library-reading-table-southwest",
+      type: "library-reading-table",
+      x: 80,
+      y: 248,
+      width: 64,
+      height: 40,
+    },
+    {
+      id: "library-ladder",
+      type: "library-ladder",
+      x: 140,
+      y: 152,
+      width: 16,
+      height: 36,
+    },
+    {
+      id: "library-emblem",
+      type: "library-emblem",
+      x: 200,
+      y: 176,
+      width: 80,
+      height: 40,
     },
   ],
 });
