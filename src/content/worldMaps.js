@@ -1293,10 +1293,39 @@ const ARCHIVE = createMap({
       },
     },
   ],
+  /*
+   * Cobertura de "Archivo -- Visual Polish" (v1.1, solo archive): pase
+   * puramente visual, sin NPCs y sin tocar colisión -- decorations nunca
+   * alimenta solidTiles (ver createMap() más arriba), cero solidRegions
+   * nuevas. Las 4 estanterías/cajas existentes migran del tipo compartido
+   * "tables" (rama que ahora solo sirve a axiom-plaza, ver el comentario
+   * de esa rama en WorldScene.js) a dos tipos exclusivos que se
+   * distinguen entre sí: "archive-shelf" (estanterías de libros, ver
+   * archiveShelfPixelArt.js) para las dos del norte, y "archive-crates"
+   * (cajas/documentos apilados con etiqueta, ver archiveCratesPixelArt.js)
+   * para las dos del centro -- conservan exactamente su id/x/y/
+   * width/height original. Se añaden 2 mesas de consulta puramente
+   * decorativas ("archive-consultation-table", ver
+   * archiveConsultationTablePixelArt.js -- mismo patrón que
+   * library-reading-table, con banco a ambos lados y documentos sobre el
+   * tablero), una a cada lado del escritorio central
+   * (archive-criteria-table, que conserva su geometría/interacción
+   * exactas y recibe un tratamiento visual propio por-id en
+   * renderObjects(), ver WorldScene.js y archiveDeskPixelArt.js).
+   *
+   * Geometría verificada sin solapes (ver tests/content/WorldMaps.test.js):
+   * archive-table-west (x108-164,y124-164) deja 12px de margen frente a
+   * archive-boxes-west (x32-96) y 12px frente al hitbox del escritorio
+   * (x176-208); archive-table-east (x220-276,y124-164) deja el mismo
+   * margen simétrico frente al escritorio y 12px frente a
+   * archive-boxes-east (x288-352). Ninguna de las dos toca el spawn por
+   * defecto (192,192), el punto de interacción real del escritorio
+   * (192,145) ni la salida a Biblioteca (x176-208,y224-240).
+   */
   decorations: [
     {
       id: "archive-shelves-northwest",
-      type: "tables",
+      type: "archive-shelf",
       x: 32,
       y: 48,
       width: 80,
@@ -1304,7 +1333,7 @@ const ARCHIVE = createMap({
     },
     {
       id: "archive-shelves-northeast",
-      type: "tables",
+      type: "archive-shelf",
       x: 272,
       y: 48,
       width: 80,
@@ -1312,7 +1341,7 @@ const ARCHIVE = createMap({
     },
     {
       id: "archive-boxes-west",
-      type: "tables",
+      type: "archive-crates",
       x: 32,
       y: 128,
       width: 64,
@@ -1320,11 +1349,27 @@ const ARCHIVE = createMap({
     },
     {
       id: "archive-boxes-east",
-      type: "tables",
+      type: "archive-crates",
       x: 288,
       y: 128,
       width: 64,
       height: 32,
+    },
+    {
+      id: "archive-table-west",
+      type: "archive-consultation-table",
+      x: 108,
+      y: 124,
+      width: 56,
+      height: 40,
+    },
+    {
+      id: "archive-table-east",
+      type: "archive-consultation-table",
+      x: 220,
+      y: 124,
+      width: 56,
+      height: 40,
     },
   ],
 });

@@ -132,7 +132,7 @@
 - [ ] Jardín.
 - [ ] Molino.
 - [ ] Observatorio.
-- [ ] Archivo.
+- [x] Archivo.
 - [ ] Epílogo.
 - [ ] Metapuzle.
 

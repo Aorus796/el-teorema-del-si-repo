@@ -148,6 +148,34 @@ import {
   LIBRARY_EMBLEM_TRANSPARENT,
 } from "../content/libraryEmblemPixelArt.js";
 import {
+  ARCHIVE_SHELF_PALETTE,
+  ARCHIVE_SHELF_PIXEL_HEIGHT,
+  ARCHIVE_SHELF_PIXEL_WIDTH,
+  ARCHIVE_SHELF_PIXELS,
+  ARCHIVE_SHELF_TRANSPARENT,
+} from "../content/archiveShelfPixelArt.js";
+import {
+  ARCHIVE_CRATES_PALETTE,
+  ARCHIVE_CRATES_PIXEL_HEIGHT,
+  ARCHIVE_CRATES_PIXEL_WIDTH,
+  ARCHIVE_CRATES_PIXELS,
+  ARCHIVE_CRATES_TRANSPARENT,
+} from "../content/archiveCratesPixelArt.js";
+import {
+  ARCHIVE_CONSULTATION_TABLE_PALETTE,
+  ARCHIVE_CONSULTATION_TABLE_PIXEL_HEIGHT,
+  ARCHIVE_CONSULTATION_TABLE_PIXEL_WIDTH,
+  ARCHIVE_CONSULTATION_TABLE_PIXELS,
+  ARCHIVE_CONSULTATION_TABLE_TRANSPARENT,
+} from "../content/archiveConsultationTablePixelArt.js";
+import {
+  ARCHIVE_DESK_PALETTE,
+  ARCHIVE_DESK_PIXEL_HEIGHT,
+  ARCHIVE_DESK_PIXEL_WIDTH,
+  ARCHIVE_DESK_PIXELS,
+  ARCHIVE_DESK_TRANSPARENT,
+} from "../content/archiveDeskPixelArt.js";
+import {
   PARTNER_NAME,
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
@@ -1392,9 +1420,13 @@ function renderForegroundDecorations(context, camera, map) {
       continue;
     }
 
-    // "tables" (mesas rectangulares de banquete): sigue usándose tal cual
-    // en library/archive -- NO tocar esta rama para no afectar esos dos
-    // mapas, fuera de alcance de esta tarea (solo axiom-plaza).
+    // "tables" (mesas rectangulares de banquete): tras "Archivo -- Visual
+    // Polish" (v1.1) ya solo la usa axiom-plaza -- library migró sus 6
+    // estanterías a "library-shelf" en #67, y archive migra sus 4
+    // estanterías/cajas a "archive-shelf"/"archive-crates" más abajo en
+    // esta misma tarea. Se conserva la rama sin tocar (ni el nombre) por
+    // si un mapa futuro la reutiliza -- ver los comentarios de esos dos
+    // tipos exclusivos.
     if (decoration.type === "tables") {
       context.fillStyle = "#7c5134";
 
@@ -1432,6 +1464,26 @@ function renderForegroundDecorations(context, camera, map) {
 
     if (decoration.type === "library-emblem") {
       drawLibraryEmblem(context, x, y);
+      continue;
+    }
+
+    // "archive-shelf"/"archive-crates"/"archive-consultation-table":
+    // mobiliario exclusivo de archive (Archivo -- Visual Polish, v1.1),
+    // no comparte rama con "tables" ni con los tipos de library, mismo
+    // patrón createIndexedPixelSprite()+drawCachedProp() que el resto de
+    // props migrados/nuevos.
+    if (decoration.type === "archive-shelf") {
+      drawArchiveShelf(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "archive-crates") {
+      drawArchiveCrates(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "archive-consultation-table") {
+      drawArchiveConsultationTable(context, x, y);
       continue;
     }
 
@@ -2279,6 +2331,135 @@ function drawLibraryEmblem(context, x, y) {
   );
 }
 
+/*
+ * "archive-shelf": migración de las 2 estanterías del norte de archive,
+ * que antes usaban el tipo compartido "tables" (ver más arriba), a un tipo
+ * exclusivo con lectura clara de libros/lomos (Archivo -- Visual Polish,
+ * v1.1). A diferencia de library-shelf, archive solo tiene un tamaño real
+ * (80x32, ambas decoraciones -- noroeste y noreste -- comparten esas
+ * dimensiones exactas, ver worldMaps.js), así que basta un único sprite
+ * cacheado.
+ */
+const drawArchiveShelfIndexedSprite = createIndexedPixelSprite({
+  width: ARCHIVE_SHELF_PIXEL_WIDTH,
+  height: ARCHIVE_SHELF_PIXEL_HEIGHT,
+  palette: ARCHIVE_SHELF_PALETTE,
+  pixels: ARCHIVE_SHELF_PIXELS,
+  transparent: ARCHIVE_SHELF_TRANSPARENT,
+});
+
+function drawArchiveShelf(context, x, y) {
+  drawCachedProp(
+    context,
+    "archive-shelf-indexed",
+    x,
+    y,
+    ARCHIVE_SHELF_PIXEL_WIDTH,
+    ARCHIVE_SHELF_PIXEL_HEIGHT,
+    drawArchiveShelfIndexedSprite,
+  );
+}
+
+// "archive-crates": migración de las 2 cajas del centro de archive, que
+// antes usaban el tipo compartido "tables", a un tipo exclusivo
+// deliberadamente distinto de "archive-shelf" -- cajas grandes con
+// etiqueta y cinta en vez de lomos finos en fila (ver
+// archiveCratesPixelArt.js). Único tamaño real en archive (64x32, ambas
+// decoraciones -- oeste y este -- comparten esas dimensiones exactas).
+const drawArchiveCratesIndexedSprite = createIndexedPixelSprite({
+  width: ARCHIVE_CRATES_PIXEL_WIDTH,
+  height: ARCHIVE_CRATES_PIXEL_HEIGHT,
+  palette: ARCHIVE_CRATES_PALETTE,
+  pixels: ARCHIVE_CRATES_PIXELS,
+  transparent: ARCHIVE_CRATES_TRANSPARENT,
+});
+
+function drawArchiveCrates(context, x, y) {
+  drawCachedProp(
+    context,
+    "archive-crates-indexed",
+    x,
+    y,
+    ARCHIVE_CRATES_PIXEL_WIDTH,
+    ARCHIVE_CRATES_PIXEL_HEIGHT,
+    drawArchiveCratesIndexedSprite,
+  );
+}
+
+// "archive-consultation-table": mesa de consulta con banco integrado a
+// ambos lados del tablero y documentos apoyados, mismo patrón que
+// library-reading-table (ver archiveConsultationTablePixelArt.js). Único
+// tamaño real en archive (56x40, las dos instancias -- oeste y este --
+// comparten exactamente esas dimensiones, mismo sprite sin reflejo porque
+// el diseño ya es simétrico).
+const drawArchiveConsultationTableIndexedSprite = createIndexedPixelSprite({
+  width: ARCHIVE_CONSULTATION_TABLE_PIXEL_WIDTH,
+  height: ARCHIVE_CONSULTATION_TABLE_PIXEL_HEIGHT,
+  palette: ARCHIVE_CONSULTATION_TABLE_PALETTE,
+  pixels: ARCHIVE_CONSULTATION_TABLE_PIXELS,
+  transparent: ARCHIVE_CONSULTATION_TABLE_TRANSPARENT,
+});
+
+function drawArchiveConsultationTable(context, x, y) {
+  drawCachedProp(
+    context,
+    "archive-consultation-table-indexed",
+    x,
+    y,
+    ARCHIVE_CONSULTATION_TABLE_PIXEL_WIDTH,
+    ARCHIVE_CONSULTATION_TABLE_PIXEL_HEIGHT,
+    drawArchiveConsultationTableIndexedSprite,
+  );
+}
+
+/*
+ * "archive-criteria-table" (archive-desk): tratamiento visual propio por
+ * ID, no por type -- es la primera vez que este archivo usa este patrón
+ * de excepción en vez de una rama por `type` (ver el caso especial
+ * dedicado en renderObjects() más abajo, justo antes de la rama
+ * compartida "table"). Escritorio ornamentado con lámpara, libro/registro
+ * abierto, silla detrás y alfombra con dos macetas flanqueando (ver
+ * archiveDeskPixelArt.js). El sprite (48x48) desborda a propósito el
+ * hitbox real del objeto (32x24) hacia arriba, a los lados y hacia abajo
+ * -- mismo precedente que library-ladder sobre library-shelves-west-upper:
+ * solape visual intencional, sin afectar colisión ni interacción real.
+ */
+const drawArchiveDeskIndexedSprite = createIndexedPixelSprite({
+  width: ARCHIVE_DESK_PIXEL_WIDTH,
+  height: ARCHIVE_DESK_PIXEL_HEIGHT,
+  palette: ARCHIVE_DESK_PALETTE,
+  pixels: ARCHIVE_DESK_PIXELS,
+  transparent: ARCHIVE_DESK_TRANSPARENT,
+});
+
+/*
+ * El `solidRegion` real de este mueble (worldMaps.js, 32x32) es 8px más
+ * alto que el hitbox interactivo del `object` (32x24): sin compensar,
+ * el sprite (anclado al fondo del hitbox) dejaría 8px de tile suelto
+ * expuestos bajo el escritorio. ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW resta
+ * esas 8 filas extra del cálculo de offsetY para que el sprite se
+ * extienda 8px más abajo del hitbox (alfombra), sin mover la silla de
+ * donde estaba -- el mismo desborde visual documentado en
+ * archiveDeskPixelArt.js, sin tocar el `solidRegion` ni el hitbox reales.
+ */
+const ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW = 8;
+
+function drawArchiveDesk(context, x, y, width, height) {
+  const offsetX = (ARCHIVE_DESK_PIXEL_WIDTH - width) / 2;
+  const offsetY =
+    ARCHIVE_DESK_PIXEL_HEIGHT - ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW - height;
+
+  drawCachedProp(
+    context,
+    "archive-desk-indexed",
+    x - offsetX,
+    y - offsetY,
+    ARCHIVE_DESK_PIXEL_WIDTH,
+    ARCHIVE_DESK_PIXEL_HEIGHT,
+    drawArchiveDeskIndexedSprite,
+  );
+}
+
 function renderObjects(context, camera, objects, state) {
   for (const object of objects) {
     if (object.requiresFlag && !state.flags[object.requiresFlag]) {
@@ -2328,6 +2509,17 @@ function renderObjects(context, camera, objects, state) {
       context.fillRect(x + 3, y + 7, object.width - 9, 2);
       context.fillStyle = "#e8b7c8";
       context.fillRect(x + object.width - 6, y - 1, 4, 4);
+      continue;
+    }
+
+    // Excepción por-id (no por type), primera de este archivo: solo
+    // "archive-criteria-table" recibe este tratamiento visual dedicado
+    // (Archivo -- Visual Polish, v1.1); cualquier otro objeto de type
+    // "table" -- hoy únicamente epilogue-gift-mechanism en axiom-plaza --
+    // sigue cayendo en la rama genérica de abajo, sin cambios. Debe ir
+    // ANTES de esa rama genérica para interceptar solo este id.
+    if (object.id === "archive-criteria-table") {
+      drawArchiveDesk(context, x, y, object.width, object.height);
       continue;
     }
 
