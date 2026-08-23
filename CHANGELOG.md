@@ -6,6 +6,37 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Añadido
 
+- Biblioteca del Margen -- Visual Polish (`library`, v1.1): pase
+  puramente visual sobre `src/content/worldMaps.js`, sin NPCs y sin
+  tocar colisión, gameplay ni `archive`. Las 6 estanterías existentes
+  migran del tipo compartido `"tables"` (un simple bloque marrón +
+  "mantel" claro, ver la rama de `WorldScene.js` que sigue sirviendo tal
+  cual a `archive`, sin ningún cambio) a un tipo exclusivo
+  `"library-shelf"` con lectura clara de libros/lomos: marco de madera,
+  baldas horizontales y filas de lomos con 5 tonos distintos y hueco
+  oscuro tras los libros más bajos para dar volumen (dos variantes de
+  tamaño, 144x32 y 112x32, mismo patrón que `pierPixelArt.js`),
+  conservando exactamente su id/x/y/width/height original. Se añade
+  mobiliario nuevo puramente decorativo: 3 mesas de lectura con banco
+  integrado y dos libros apoyados sobre el tablero
+  (`library-reading-table`), 1 escalera de biblioteca
+  (`library-ladder`) y 1 emblema institucional abstracto de suelo en el
+  centro de la sala (`library-emblem`, sello geométrico circular sin
+  texto ni lore nuevo). Cuatro datasets nuevos con el mismo formato que
+  `pierPixelArt.js`: `libraryShelfPixelArt.js`,
+  `libraryReadingTablePixelArt.js`, `libraryLadderPixelArt.js` y
+  `libraryEmblemPixelArt.js`, dibujados en `WorldScene.js` con la misma
+  infraestructura ya existente
+  (`createIndexedPixelSprite()`/`drawCachedProp()`/`propSpriteCache`).
+  Ninguna decoración nueva ni migrada solapa ningún objeto interactuable,
+  ninguna otra decoración, ni el rectángulo de aparición del jugador;
+  `library-silogio`/`library-to-seven-bridges`/`library-to-archive`
+  siguen siendo alcanzables a pie desde el punto de aparición por
+  defecto y desde la entrada real llegando desde Archivo. Nuevos tests:
+  ampliación de `tests/content/WorldMaps.test.js` (migración de tipo,
+  geometría idéntica, ausencia de solapes, alcanzabilidad) y
+  `tests/scenes/LibraryVisualPolishPixelArtCache.test.js` (cache de
+  sprites, incluidas las dos variantes de `library-shelf`).
 - Diseño visual personalizado de Gonzalo y Elena (pelo, silueta y paleta
   propias aprobados en el Visual Style Lock) en `src/world/Player.js`,
   `src/scenes/WorldScene.js` y `src/scenes/CreditsScene.js`, y preparación

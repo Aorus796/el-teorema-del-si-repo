@@ -302,19 +302,266 @@ test("axiom-plaza tiene entre 3 y 5 mesas de boda redondas ('wedding-table')", (
   );
 });
 
-test("library y archive conservan su decoración 'tables' original (rama compartida, no tocada por Plaza Visual Polish)", () => {
-  for (const mapId of ["library", "archive"]) {
-    const map = getWorldMap(mapId);
-    const tables = map.decorations.filter(
-      (decoration) => decoration.type === "tables",
+test("archive conserva sus 4 decoraciones 'tables' originales sin ningún cambio (rama compartida, no tocada por Library Visual Polish)", () => {
+  const map = getWorldMap("archive");
+
+  assert.deepEqual(
+    map.decorations,
+    [
+      {
+        id: "archive-shelves-northwest",
+        type: "tables",
+        x: 32,
+        y: 48,
+        width: 80,
+        height: 32,
+      },
+      {
+        id: "archive-shelves-northeast",
+        type: "tables",
+        x: 272,
+        y: 48,
+        width: 80,
+        height: 32,
+      },
+      {
+        id: "archive-boxes-west",
+        type: "tables",
+        x: 32,
+        y: 128,
+        width: 64,
+        height: 32,
+      },
+      {
+        id: "archive-boxes-east",
+        type: "tables",
+        x: 288,
+        y: 128,
+        width: 64,
+        height: 32,
+      },
+    ],
+  );
+});
+
+/*
+ * Cobertura de "Biblioteca del Margen -- Visual Polish" (v1.1, solo
+ * library): pase puramente visual -- decorations nunca alimenta
+ * solidTiles (ver createMap() en worldMaps.js) -- que migra las 6
+ * estanterías existentes del tipo compartido "tables" (que archive
+ * conserva sin cambios, ver el test de arriba) a un tipo exclusivo
+ * "library-shelf", y añade mobiliario nuevo puramente decorativo: 3
+ * mesas de lectura, 1 escalera y 1 emblema central. Sin NPCs, sin tocar
+ * colisión/gameplay/archive.
+ */
+const LIBRARY_ORIGINAL_SHELF_GEOMETRY = [
+  {
+    id: "library-shelves-northwest",
+    x: 48,
+    y: 48,
+    width: 144,
+    height: 32,
+  },
+  {
+    id: "library-shelves-northeast",
+    x: 288,
+    y: 48,
+    width: 144,
+    height: 32,
+  },
+  {
+    id: "library-shelves-west-upper",
+    x: 48,
+    y: 128,
+    width: 112,
+    height: 32,
+  },
+  {
+    id: "library-shelves-east-upper",
+    x: 320,
+    y: 128,
+    width: 112,
+    height: 32,
+  },
+  {
+    id: "library-shelves-west-lower",
+    x: 48,
+    y: 208,
+    width: 112,
+    height: 32,
+  },
+  {
+    id: "library-shelves-east-lower",
+    x: 320,
+    y: 208,
+    width: 112,
+    height: 32,
+  },
+];
+
+test("library ya no tiene ninguna decoración 'tables': las 6 estanterías migran a 'library-shelf' conservando id/x/y/width/height exactos", () => {
+  const map = getWorldMap("library");
+
+  assert.equal(
+    map.decorations.some((decoration) => decoration.type === "tables"),
+    false,
+    "library no debería tener ninguna decoración 'tables' tras la migración",
+  );
+
+  for (const original of LIBRARY_ORIGINAL_SHELF_GEOMETRY) {
+    const migrated = map.decorations.find(
+      (decoration) => decoration.id === original.id,
     );
 
-    assert.ok(
-      tables.length > 0,
-      `${mapId} debería seguir teniendo decoraciones "tables"`,
+    assert.ok(migrated, `falta la estantería migrada ${original.id}`);
+    assert.deepEqual(migrated, { ...original, type: "library-shelf" });
+  }
+});
+
+test("library.solidTiles no cambia con el mobiliario nuevo (96 tiles de borde + 6 solidRegions ya existentes, sin ningún solidRegion nuevo)", () => {
+  const map = getWorldMap("library");
+
+  // 30x20 -> borde = 2*30 + 2*20 - 4 = 96 tiles, más los 6 solidRegions
+  // declarados en worldMaps.js (9x2, 9x2, 7x2, 7x2, 7x2, 7x2 = 18+18+14+
+  // 14+14+14 = 92 tiles, sin solapes entre sí ni con el borde) = 188.
+  assert.equal(map.solidTiles.length, 188);
+});
+
+test("library.objects sigue con exactamente 3 entradas, sin cambios (Library Visual Polish es puramente visual)", () => {
+  const map = getWorldMap("library");
+
+  assert.deepEqual(map.objects, [
+    {
+      id: "library-silogio",
+      type: "npc",
+      x: 233,
+      y: 128,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Silogio",
+    },
+    {
+      id: "library-to-seven-bridges",
+      type: "exit",
+      x: 224,
+      y: 288,
+      width: 32,
+      height: 16,
+      interactionRadius: 30,
+      label: "Paseo de los Siete Puentes",
+      targetMapId: "seven-bridges-walk",
+      targetPlayerState: { x: 624, y: 304, facing: "left" },
+    },
+    {
+      id: "library-to-archive",
+      type: "exit",
+      x: 448,
+      y: 144,
+      width: 16,
+      height: 64,
+      interactionRadius: 30,
+      label: "Archivo",
+      targetMapId: "archive",
+      targetPlayerState: { x: 192, y: 192, facing: "up" },
+    },
+  ]);
+});
+
+test("library tiene exactamente 3 mesas de lectura, 1 escalera y 1 emblema nuevos, además de las 6 estanterías migradas", () => {
+  const map = getWorldMap("library");
+
+  assert.equal(map.decorations.length, 11);
+  assert.equal(
+    map.decorations.filter((decoration) => decoration.type === "library-shelf")
+      .length,
+    6,
+  );
+  assert.equal(
+    map.decorations.filter(
+      (decoration) => decoration.type === "library-reading-table",
+    ).length,
+    3,
+  );
+  assert.equal(
+    map.decorations.filter((decoration) => decoration.type === "library-ladder")
+      .length,
+    1,
+  );
+  assert.equal(
+    map.decorations.filter((decoration) => decoration.type === "library-emblem")
+      .length,
+    1,
+  );
+});
+
+test("ninguna decoración de library (migradas + nuevas) solapa ningún objeto interactuable", () => {
+  const map = getWorldMap("library");
+
+  for (const decoration of map.decorations) {
+    for (const object of map.objects) {
+      assert.equal(
+        rectanglesOverlap(decoration, object),
+        false,
+        `la decoración ${decoration.id} solapa el objeto ${object.id}`,
+      );
+    }
+  }
+});
+
+test("ninguna decoración de library solapa ninguna otra decoración", () => {
+  const map = getWorldMap("library");
+
+  for (let i = 0; i < map.decorations.length; i += 1) {
+    for (let j = i + 1; j < map.decorations.length; j += 1) {
+      const first = map.decorations[i];
+      const second = map.decorations[j];
+
+      assert.equal(
+        rectanglesOverlap(first, second),
+        false,
+        `la decoración ${first.id} solapa la decoración ${second.id}`,
+      );
+    }
+  }
+});
+
+test("ninguna decoración de library solapa el rectángulo de aparición por defecto del jugador", () => {
+  const map = getWorldMap("library");
+  const playerState = new GameState().getPlayerState("library");
+  const spawnBounds = {
+    x: playerState.x - 5,
+    y: playerState.y - 7,
+    width: 10,
+    height: 14,
+  };
+
+  for (const decoration of map.decorations) {
+    assert.equal(
+      rectanglesOverlap(spawnBounds, decoration),
+      false,
+      `la decoración ${decoration.id} solapa la aparición del jugador`,
     );
   }
 });
+
+for (const objectId of [
+  "library-silogio",
+  "library-to-seven-bridges",
+  "library-to-archive",
+]) {
+  test(`${objectId} es alcanzable a pie desde el spawn por defecto de library`, () => {
+    assertObjectIsReachable("library", objectId);
+  });
+
+  test(`${objectId} es alcanzable a pie desde el punto de entrada real llegando desde Archivo (416,176)`, () => {
+    // Ver el exit de archive hacia library en worldMaps.js
+    // (targetPlayerState: {x:416,y:176}) -- punto de entrada real
+    // distinto del spawn por defecto (240,256, llegando desde Siete
+    // Puentes).
+    assertObjectIsReachable("library", objectId, { x: 416, y: 176 });
+  });
+}
 
 test("ninguna decoración de axiom-plaza solapa ningún objeto interactuable, con o sin giftCodeSolved", () => {
   const map = getWorldMap("axiom-plaza");
