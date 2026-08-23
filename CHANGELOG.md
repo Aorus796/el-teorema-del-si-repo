@@ -6,6 +6,20 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Añadido
 
+- Biblioteca del Margen -- NPCs ambientales (`library`, v1.1): 3 NPCs
+  estáticos sin nombre propio (`ambient-library-reader`,
+  `ambient-library-assistant`, `ambient-library-researcher`) que reutilizan
+  exactamente el mecanismo ambiental ya cerrado en Plaza del Axioma y
+  Seven Bridges Walk (`renderNpc()`/`drawGenericNpc*()` en
+  `src/scenes/WorldScene.js`, `NAMED_NPC_PALETTES` en
+  `src/content/characterPalettes.js`, diálogo de un único turno vía
+  `this.ui.beginDialogue()`, sin flags ni cambios de estado). El lector
+  añade un pequeño libro sostenido (dos `fillRect`, páginas + lomo) como
+  única diferencia de prop; ordenanza e investigadora se distinguen solo
+  por paleta/`hairStyle`/`silhouetteVariant`. No se toca geometría de
+  `solidRegions`/`decorations`/los 3 `objects` ya existentes de `library`
+  (estanterías, mesas, banco, escalera, emblema, Silogio, ambos exits);
+  sin progresión, sin colisión ni cambios al puzzle del catálogo.
 - Biblioteca del Margen -- Visual Polish (`library`, v1.1): pase
   puramente visual sobre `src/content/worldMaps.js`, sin NPCs y sin
   tocar colisión, gameplay ni `archive`. Las 6 estanterías existentes

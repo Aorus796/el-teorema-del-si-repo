@@ -1079,6 +1079,47 @@ const LIBRARY = createMap({
         facing: "up",
       },
     },
+    /*
+     * NPCs ambientales de Biblioteca del Margen (v1.1, sin nombre propio,
+     * sin requiresFlag ni diálogo con estado): reutilizan exactamente el
+     * mecanismo ya cerrado en Plaza/Seven Bridges (renderNpc/
+     * drawGenericNpc* en WorldScene.js, NAMED_NPC_PALETTES en
+     * characterPalettes.js). Posiciones verificadas contra solidTiles
+     * reales (no solo solidRegions), el resto de objects (incluido
+     * library-silogio) y todas las decorations, alcanzables a pie desde el
+     * spawn por defecto (240,256) y desde el punto de entrada real llegando
+     * desde Archivo (416,176) -- ver tests/content/WorldMaps.test.js.
+     */
+    {
+      id: "ambient-library-reader",
+      type: "npc",
+      x: 136,
+      y: 96,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona leyendo",
+    },
+    {
+      id: "ambient-library-assistant",
+      type: "npc",
+      x: 170,
+      y: 190,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona ordenando las estanterías",
+    },
+    {
+      id: "ambient-library-researcher",
+      type: "npc",
+      x: 330,
+      y: 254,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona consultando el catálogo",
+    },
   ],
   /*
    * Cobertura de "Biblioteca del Margen -- Visual Polish" (v1.1, solo
