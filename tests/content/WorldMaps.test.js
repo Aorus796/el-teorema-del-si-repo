@@ -350,9 +350,9 @@ test("archive conserva sus 4 decoraciones 'tables' originales sin ningún cambio
  * solidTiles (ver createMap() en worldMaps.js) -- que migra las 6
  * estanterías existentes del tipo compartido "tables" (que archive
  * conserva sin cambios, ver el test de arriba) a un tipo exclusivo
- * "library-shelf", y añade mobiliario nuevo puramente decorativo: 3
- * mesas de lectura, 1 escalera y 1 emblema central. Sin NPCs, sin tocar
- * colisión/gameplay/archive.
+ * "library-shelf", y añade mobiliario nuevo puramente decorativo: 4
+ * mesas de lectura (con banco a ambos lados del tablero), 1 escalera y 1
+ * emblema central. Sin NPCs, sin tocar colisión/gameplay/archive.
  */
 const LIBRARY_ORIGINAL_SHELF_GEOMETRY = [
   {
@@ -468,10 +468,10 @@ test("library.objects sigue con exactamente 3 entradas, sin cambios (Library Vis
   ]);
 });
 
-test("library tiene exactamente 3 mesas de lectura, 1 escalera y 1 emblema nuevos, además de las 6 estanterías migradas", () => {
+test("library tiene exactamente 4 mesas de lectura, 1 escalera y 1 emblema nuevos, además de las 6 estanterías migradas", () => {
   const map = getWorldMap("library");
 
-  assert.equal(map.decorations.length, 11);
+  assert.equal(map.decorations.length, 12);
   assert.equal(
     map.decorations.filter((decoration) => decoration.type === "library-shelf")
       .length,
@@ -481,7 +481,7 @@ test("library tiene exactamente 3 mesas de lectura, 1 escalera y 1 emblema nuevo
     map.decorations.filter(
       (decoration) => decoration.type === "library-reading-table",
     ).length,
-    3,
+    4,
   );
   assert.equal(
     map.decorations.filter((decoration) => decoration.type === "library-ladder")
@@ -509,13 +509,44 @@ test("ninguna decoración de library (migradas + nuevas) solapa ningún objeto i
   }
 });
 
-test("ninguna decoración de library solapa ninguna otra decoración", () => {
+/*
+ * Única excepción de solape intencional de todo el mapa: `library-ladder`
+ * se dibuja apoyada SOBRE `library-shelves-west-upper` (solape real de
+ * 8px, y152-y160, ver el comentario junto a `library-ladder` en
+ * worldMaps.js), no solo tocando su borde. `library-ladder` se pinta
+ * después de las 6 estanterías en `decorations`, así que
+ * renderForegroundDecorations() ya la deja por delante sin cambios
+ * adicionales. Todos los demás pares de decoraciones de library,
+ * incluidas las 4 mesas de lectura entre sí y contra estanterías/emblema,
+ * deben seguir sin solaparse.
+ */
+const LIBRARY_INTENTIONAL_DECORATION_OVERLAP_PAIRS = [
+  ["library-ladder", "library-shelves-west-upper"],
+];
+
+function isIntentionalLibraryDecorationOverlap(firstId, secondId) {
+  return LIBRARY_INTENTIONAL_DECORATION_OVERLAP_PAIRS.some(
+    ([a, b]) =>
+      (firstId === a && secondId === b) || (firstId === b && secondId === a),
+  );
+}
+
+test("ninguna decoración de library solapa ninguna otra decoración, salvo la excepción intencional escalera/estantería documentada", () => {
   const map = getWorldMap("library");
 
   for (let i = 0; i < map.decorations.length; i += 1) {
     for (let j = i + 1; j < map.decorations.length; j += 1) {
       const first = map.decorations[i];
       const second = map.decorations[j];
+
+      if (isIntentionalLibraryDecorationOverlap(first.id, second.id)) {
+        assert.equal(
+          rectanglesOverlap(first, second),
+          true,
+          `se esperaba el solape intencional entre ${first.id} y ${second.id}`,
+        );
+        continue;
+      }
 
       assert.equal(
         rectanglesOverlap(first, second),

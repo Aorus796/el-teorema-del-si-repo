@@ -17,26 +17,31 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   oscuro tras los libros más bajos para dar volumen (dos variantes de
   tamaño, 144x32 y 112x32, mismo patrón que `pierPixelArt.js`),
   conservando exactamente su id/x/y/width/height original. Se añade
-  mobiliario nuevo puramente decorativo: 3 mesas de lectura con banco
-  integrado y dos libros apoyados sobre el tablero
-  (`library-reading-table`), 1 escalera de biblioteca
-  (`library-ladder`) y 1 emblema institucional abstracto de suelo en el
-  centro de la sala (`library-emblem`, sello geométrico circular sin
-  texto ni lore nuevo). Cuatro datasets nuevos con el mismo formato que
-  `pierPixelArt.js`: `libraryShelfPixelArt.js`,
-  `libraryReadingTablePixelArt.js`, `libraryLadderPixelArt.js` y
-  `libraryEmblemPixelArt.js`, dibujados en `WorldScene.js` con la misma
-  infraestructura ya existente
+  mobiliario nuevo puramente decorativo: 4 mesas de lectura, una por
+  cada hueco entre estanterías, con banco a AMBOS lados del tablero
+  (lectura banco/mesa/banco, mismo lenguaje visual en los dos bancos) y
+  dos libros apoyados sobre el tablero (`library-reading-table`), 1
+  escalera de biblioteca (`library-ladder`) y 1 emblema institucional
+  abstracto de suelo en el centro de la sala (`library-emblem`, sello
+  geométrico circular sin texto ni lore nuevo). Ronda de composición
+  posterior en la misma PR: la escalera se solapa a propósito 8px
+  (y152-y160) con la estantería `library-shelves-west-upper` para leerse
+  como apoyada SOBRE ella en vez de solo tocando su borde. Cuatro
+  datasets nuevos con el mismo formato que `pierPixelArt.js`:
+  `libraryShelfPixelArt.js`, `libraryReadingTablePixelArt.js`,
+  `libraryLadderPixelArt.js` y `libraryEmblemPixelArt.js`, dibujados en
+  `WorldScene.js` con la misma infraestructura ya existente
   (`createIndexedPixelSprite()`/`drawCachedProp()`/`propSpriteCache`).
-  Ninguna decoración nueva ni migrada solapa ningún objeto interactuable,
-  ninguna otra decoración, ni el rectángulo de aparición del jugador;
+  Ninguna decoración nueva ni migrada solapa ningún objeto interactuable
+  ni el rectángulo de aparición del jugador, ni ninguna otra decoración
+  salvo la excepción intencional documentada escalera/estantería;
   `library-silogio`/`library-to-seven-bridges`/`library-to-archive`
   siguen siendo alcanzables a pie desde el punto de aparición por
   defecto y desde la entrada real llegando desde Archivo. Nuevos tests:
   ampliación de `tests/content/WorldMaps.test.js` (migración de tipo,
-  geometría idéntica, ausencia de solapes, alcanzabilidad) y
-  `tests/scenes/LibraryVisualPolishPixelArtCache.test.js` (cache de
-  sprites, incluidas las dos variantes de `library-shelf`).
+  geometría, excepción de solape intencional nombrada y documentada,
+  alcanzabilidad) y `tests/scenes/LibraryVisualPolishPixelArtCache.test.js`
+  (cache de sprites, incluidas las dos variantes de `library-shelf`).
 - Diseño visual personalizado de Gonzalo y Elena (pelo, silueta y paleta
   propias aprobados en el Visual Style Lock) en `src/world/Player.js`,
   `src/scenes/WorldScene.js` y `src/scenes/CreditsScene.js`, y preparación
