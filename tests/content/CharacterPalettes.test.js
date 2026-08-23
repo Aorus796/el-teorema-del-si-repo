@@ -44,10 +44,13 @@ test("NPC_SILHOUETTE conserva el valor ya usado por WorldScene.renderNpc", () =>
   assert.equal(NPC_SILHOUETTE, "#302637");
 });
 
-test("NAMED_NPC_PALETTES conserva plaza-worker y los 4 NPC ambientales de Plaza del Axioma; mayor-corolaria y bride-father tienen renderers dedicados", () => {
+test("NAMED_NPC_PALETTES conserva plaza-worker, los 4 NPC ambientales de Plaza del Axioma y los 3 de Seven Bridges Walk; mayor-corolaria y bride-father tienen renderers dedicados", () => {
   assert.deepEqual(Object.keys(NAMED_NPC_PALETTES).sort(), [
+    "ambient-bench-watcher",
+    "ambient-fisher-dock",
     "ambient-florist-altar",
     "ambient-guest-bench",
+    "ambient-riverside-stroller",
     "ambient-setup-helper",
     "ambient-waiter-tables",
     "plaza-worker",
@@ -103,15 +106,48 @@ test("NAMED_NPC_PALETTES conserva plaza-worker y los 4 NPC ambientales de Plaza 
     hairStyle: "medium",
     silhouetteVariant: "formal",
   });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-fisher-dock"], {
+    body: "#3a4d73",
+    accent: "#c2a366",
+    eyes: true,
+    hair: "#8a8577",
+    hairShadow: "#6e6a5c",
+    bodyShadow: "#2f3f5c",
+    hairStyle: "short",
+    silhouetteVariant: "practical",
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-riverside-stroller"], {
+    body: "#9c6b4a",
+    accent: "#e0cba8",
+    eyes: true,
+    hair: "#5e4632",
+    hairShadow: "#4a3627",
+    bodyShadow: "#7d5539",
+    hairStyle: "fringe",
+    silhouetteVariant: "practical",
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-bench-watcher"], {
+    body: "#7a5555",
+    accent: "#c9b28a",
+    eyes: true,
+    hair: "#6e5540",
+    hairShadow: "#584331",
+    bodyShadow: "#614343",
+    hairStyle: "side",
+    silhouetteVariant: "formal",
+  });
   assert.equal(Object.isFrozen(NAMED_NPC_PALETTES), true);
 });
 
-test("las paletas de los 4 NPC ambientales nuevos no colisionan de color (body/accent/hair) entre sí ni con las demás paletas del archivo", () => {
+test("las paletas de los 4 NPC ambientales de Plaza y los 3 de Seven Bridges Walk no colisionan de color (body/accent/hair) entre sí ni con las demás paletas del archivo", () => {
   const ambientPalettes = [
     NAMED_NPC_PALETTES["ambient-florist-altar"],
     NAMED_NPC_PALETTES["ambient-setup-helper"],
     NAMED_NPC_PALETTES["ambient-waiter-tables"],
     NAMED_NPC_PALETTES["ambient-guest-bench"],
+    NAMED_NPC_PALETTES["ambient-fisher-dock"],
+    NAMED_NPC_PALETTES["ambient-riverside-stroller"],
+    NAMED_NPC_PALETTES["ambient-bench-watcher"],
   ];
   // flowerAccent es opcional (solo ambient-florist-altar lo define hoy):
   // se filtran los `undefined` de las otras tres paletas para que no

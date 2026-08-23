@@ -146,6 +146,40 @@ export const NAMED_NPC_PALETTES = Object.freeze({
     hairStyle: "medium",
     silhouetteVariant: "formal",
   }),
+  // Paletas de los 3 NPC ambientales de Seven Bridges Walk (v1.1): mismo
+  // patrón que los 4 de Plaza del Axioma de arriba, ninguno usa
+  // silhouetteVariant "light" (esa variante está acoplada a
+  // palette.flowerAccent, que solo define ambient-florist-altar).
+  "ambient-fisher-dock": Object.freeze({
+    body: "#3a4d73",
+    accent: "#c2a366",
+    eyes: true,
+    hair: "#8a8577",
+    hairShadow: "#6e6a5c",
+    bodyShadow: "#2f3f5c",
+    hairStyle: "short",
+    silhouetteVariant: "practical",
+  }),
+  "ambient-riverside-stroller": Object.freeze({
+    body: "#9c6b4a",
+    accent: "#e0cba8",
+    eyes: true,
+    hair: "#5e4632",
+    hairShadow: "#4a3627",
+    bodyShadow: "#7d5539",
+    hairStyle: "fringe",
+    silhouetteVariant: "practical",
+  }),
+  "ambient-bench-watcher": Object.freeze({
+    body: "#7a5555",
+    accent: "#c9b28a",
+    eyes: true,
+    hair: "#6e5540",
+    hairShadow: "#584331",
+    bodyShadow: "#614343",
+    hairStyle: "side",
+    silhouetteVariant: "formal",
+  }),
 });
 
 // Paleta usada por cualquier NPC sin entrada explícita en

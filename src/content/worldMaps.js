@@ -786,6 +786,44 @@ const SEVEN_BRIDGES_WALK = createMap({
       interactionRadius: 30,
       label: "Camino del molino",
     },
+    /*
+     * NPCs ambientales de Seven Bridges Walk (v1.1, sin nombre propio, sin
+     * requiresFlag ni diálogo con estado): reutilizan exactamente el
+     * mecanismo ya cerrado en Plaza (renderNpc/drawGenericNpc* en
+     * WorldScene.js, NAMED_NPC_PALETTES en characterPalettes.js). Posiciones
+     * verificadas contra solidTiles reales (no solo solidRegions), el resto
+     * de objects y todas las decorations (ver tests/content/WorldMaps.test.js).
+     */
+    {
+      id: "ambient-fisher-dock",
+      type: "npc",
+      x: 516,
+      y: 302,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona pescando",
+    },
+    {
+      id: "ambient-riverside-stroller",
+      type: "npc",
+      x: 100,
+      y: 220,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona paseando",
+    },
+    {
+      id: "ambient-bench-watcher",
+      type: "npc",
+      x: 636,
+      y: 320,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona contemplando el río",
+    },
   ],
   decorations: [
     // "river": capa de fondo (renderBackgroundDecorations, se pinta antes
