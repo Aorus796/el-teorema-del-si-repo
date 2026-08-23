@@ -558,6 +558,36 @@ export class WorldScene {
       return;
     }
 
+    if (object.id === "ambient-library-reader") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Cuando encuentro un libro que me atrapa, pierdo la noción del tiempo.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-library-assistant") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Ordenar estas estanterías lleva más tiempo del que parece: cada libro tiene su sitio.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-library-researcher") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Vengo buscando una referencia concreta, pero aquí es fácil perderse entre los márgenes de los libros.",
+        ],
+      });
+      return;
+    }
+
     if (object.id === "library-silogio") {
       this.interactWithSilogio();
       return;
@@ -2525,6 +2555,23 @@ function drawGenericNpcApron(context, x, y, object) {
     context.fillStyle = GENERIC_NPC_ROD_COLOR;
     context.fillRect(x + 1, y + 9, 2, 14);
     context.fillRect(x - 6, y + 21, 8, 2);
+    return;
+  }
+
+  // Libro sostenido de ambient-library-reader (Biblioteca del Margen,
+  // v1.1): páginas en GENERIC_NPC_APRON_COLOR (mismo blanco crudo que el
+  // delantal/peto del resto de NPC genéricos) con un lomo estrecho en el
+  // hairShadow propio de este NPC -- exclusivo de este id, ningún otro NPC
+  // genérico lleva prop. ambient-library-assistant y
+  // ambient-library-researcher no tienen rama aquí: su diferenciación viene
+  // solo de paleta/hairStyle/silhouetteVariant, mismo criterio ya usado con
+  // 2 de los 3 NPC de Seven Bridges.
+  if (object.id === "ambient-library-reader") {
+    context.fillStyle = GENERIC_NPC_APRON_COLOR;
+    context.fillRect(x + 9, y + 11, 4, 3);
+
+    context.fillStyle = NAMED_NPC_PALETTES["ambient-library-reader"].hairShadow;
+    context.fillRect(x + 9, y + 11, 1, 3);
   }
 }
 

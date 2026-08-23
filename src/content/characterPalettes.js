@@ -180,6 +180,40 @@ export const NAMED_NPC_PALETTES = Object.freeze({
     hairStyle: "side",
     silhouetteVariant: "formal",
   }),
+  // Paletas de los 3 NPC ambientales de la Biblioteca del Margen (v1.1):
+  // mismo patrón que los de Plaza/Seven Bridges de arriba, ninguno usa
+  // silhouetteVariant "light" (esa variante está acoplada a
+  // palette.flowerAccent, que solo define ambient-florist-altar).
+  "ambient-library-reader": Object.freeze({
+    body: "#3d6b5e",
+    accent: "#d7c49a",
+    eyes: true,
+    hair: "#2b2118",
+    hairShadow: "#201810",
+    bodyShadow: "#2f5347",
+    hairStyle: "medium",
+    silhouetteVariant: "practical",
+  }),
+  "ambient-library-assistant": Object.freeze({
+    body: "#5f4a6b",
+    accent: "#b8a888",
+    eyes: true,
+    hair: "#766655",
+    hairShadow: "#5c4f41",
+    bodyShadow: "#4a3a54",
+    hairStyle: "bun",
+    silhouetteVariant: "practical",
+  }),
+  "ambient-library-researcher": Object.freeze({
+    body: "#7a5a3a",
+    accent: "#b8945a",
+    eyes: true,
+    hair: "#4f3c2a",
+    hairShadow: "#3d2e20",
+    bodyShadow: "#5e4630",
+    hairStyle: "side",
+    silhouetteVariant: "formal",
+  }),
 });
 
 // Paleta usada por cualquier NPC sin entrada explícita en

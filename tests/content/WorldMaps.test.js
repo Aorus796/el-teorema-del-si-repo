@@ -427,10 +427,24 @@ test("library.solidTiles no cambia con el mobiliario nuevo (96 tiles de borde + 
   assert.equal(map.solidTiles.length, 188);
 });
 
-test("library.objects sigue con exactamente 3 entradas, sin cambios (Library Visual Polish es puramente visual)", () => {
+test("library.objects tiene exactamente 6 entradas: los 3 originales más los 3 NPC ambientales nuevos (v1.1)", () => {
   const map = getWorldMap("library");
 
-  assert.deepEqual(map.objects, [
+  assert.equal(map.objects.length, 6);
+});
+
+/*
+ * Regresión directa del contrato de #67 (Library Visual Polish): los 3
+ * objects originales conservan id/type/x/y/width/height/label/
+ * targetMapId/targetPlayerState exactos tras añadir los 3 NPC ambientales
+ * nuevos al final de la lista, mismo patrón que ya se usó para el test
+ * equivalente de Seven Bridges (#58).
+ */
+test("los 3 objetos originales de library (#67) conservan su geometría, label y destino exactos", () => {
+  const map = getWorldMap("library");
+
+  assert.deepEqual(
+    map.objects.find((object) => object.id === "library-silogio"),
     {
       id: "library-silogio",
       type: "npc",
@@ -441,6 +455,9 @@ test("library.objects sigue con exactamente 3 entradas, sin cambios (Library Vis
       interactionRadius: 28,
       label: "Silogio",
     },
+  );
+  assert.deepEqual(
+    map.objects.find((object) => object.id === "library-to-seven-bridges"),
     {
       id: "library-to-seven-bridges",
       type: "exit",
@@ -453,6 +470,9 @@ test("library.objects sigue con exactamente 3 entradas, sin cambios (Library Vis
       targetMapId: "seven-bridges-walk",
       targetPlayerState: { x: 624, y: 304, facing: "left" },
     },
+  );
+  assert.deepEqual(
+    map.objects.find((object) => object.id === "library-to-archive"),
     {
       id: "library-to-archive",
       type: "exit",
@@ -465,8 +485,100 @@ test("library.objects sigue con exactamente 3 entradas, sin cambios (Library Vis
       targetMapId: "archive",
       targetPlayerState: { x: 192, y: 192, facing: "up" },
     },
-  ]);
+  );
 });
+
+/*
+ * Cobertura de los 3 NPC ambientales de la Biblioteca del Margen (v1.1),
+ * mismo mecanismo que los 4 de Plaza del Axioma y los 3 de Seven Bridges
+ * Walk: sin requiresFlag, sin colisión contra solidTiles reales, sin
+ * solape con ningún otro object del mapa (incluido library-silogio y los
+ * otros dos NPC nuevos entre sí) ni ninguna decoration existente.
+ */
+const LIBRARY_AMBIENT_NPC_IDS = [
+  "ambient-library-reader",
+  "ambient-library-assistant",
+  "ambient-library-researcher",
+];
+
+test("los 3 NPC ambientales nuevos de library no tienen requiresFlag, son ids únicos de tipo npc y no colisionan con solidTiles reales", () => {
+  const map = getWorldMap("library");
+  const collisionMap = new CollisionMap({
+    width: map.width,
+    height: map.height,
+    tileSize: map.tileSize,
+    solidTiles: map.solidTiles,
+  });
+
+  const ambientObjects = LIBRARY_AMBIENT_NPC_IDS.map((id) =>
+    map.objects.find((object) => object.id === id),
+  );
+
+  for (const object of ambientObjects) {
+    assert.ok(object, "falta uno de los NPCs ambientales nuevos");
+    assert.equal(object.type, "npc");
+    assert.equal(object.requiresFlag, undefined);
+    assert.equal(
+      collisionMap.collides({
+        x: object.x,
+        y: object.y,
+        width: object.width,
+        height: object.height,
+      }),
+      false,
+      `${object.id} colisiona con solidTiles reales`,
+    );
+  }
+
+  const ids = ambientObjects.map((object) => object.id);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("los 3 NPC ambientales nuevos de library no solapan ningún otro object del mapa, entre sí incluidos", () => {
+  const map = getWorldMap("library");
+
+  for (const objectId of LIBRARY_AMBIENT_NPC_IDS) {
+    const object = map.objects.find((entry) => entry.id === objectId);
+
+    for (const other of map.objects) {
+      if (other.id === objectId) {
+        continue;
+      }
+
+      assert.equal(
+        rectanglesOverlap(object, other),
+        false,
+        `${objectId} solapa el objeto ${other.id}`,
+      );
+    }
+  }
+});
+
+test("los 3 NPC ambientales nuevos de library no solapan ninguna decoration del mapa", () => {
+  const map = getWorldMap("library");
+
+  for (const objectId of LIBRARY_AMBIENT_NPC_IDS) {
+    const object = map.objects.find((entry) => entry.id === objectId);
+
+    for (const decoration of map.decorations) {
+      assert.equal(
+        rectanglesOverlap(object, decoration),
+        false,
+        `${objectId} solapa la decoración ${decoration.id}`,
+      );
+    }
+  }
+});
+
+for (const objectId of LIBRARY_AMBIENT_NPC_IDS) {
+  test(`${objectId} es alcanzable a pie desde el spawn por defecto de library`, () => {
+    assertObjectIsReachable("library", objectId);
+  });
+
+  test(`${objectId} es alcanzable a pie desde el punto de entrada real llegando desde Archivo (416,176)`, () => {
+    assertObjectIsReachable("library", objectId, { x: 416, y: 176 });
+  });
+}
 
 test("library tiene exactamente 4 mesas de lectura, 1 escalera y 1 emblema nuevos, además de las 6 estanterías migradas", () => {
   const map = getWorldMap("library");

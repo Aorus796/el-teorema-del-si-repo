@@ -2178,6 +2178,242 @@ test("ningún otro NPC (los 3 nuevos de Seven Bridges Walk ni los 5 de Plaza del
 });
 
 /*
+ * NPC ambientales de la Biblioteca del Margen (v1.1): mismo mecanismo
+ * exacto que los 4 de Plaza del Axioma y los 3 de Seven Bridges Walk de
+ * arriba (renderNpc/drawGenericNpc*, NAMED_NPC_PALETTES), reutilizando el
+ * mismo patrón de test render/interacción para cada uno.
+ */
+const LIBRARY_AMBIENT_NPC_IDS = [
+  "ambient-library-reader",
+  "ambient-library-assistant",
+  "ambient-library-researcher",
+];
+
+for (const npcId of LIBRARY_AMBIENT_NPC_IDS) {
+  test(`${npcId} se dibuja con su propio body/accent de NAMED_NPC_PALETTES, anclado en su posición real de pantalla`, () => {
+    const setup = createWorldAt("library");
+    const object = findObject("library", npcId);
+    const palette = NAMED_NPC_PALETTES[npcId];
+
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    const shouldersVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        rect.x === screenX + 1 &&
+        rect.y === screenY + 7 &&
+        rect.width === 12 &&
+        rect.height === 2,
+    );
+    const torsoVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY + 9 &&
+        rect.width === 10 &&
+        rect.height === 5,
+    );
+    const accentVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.accent &&
+        rect.x === screenX + 5 &&
+        rect.y === screenY + 9 &&
+        rect.width === 4 &&
+        rect.height === 2,
+    );
+
+    assert.equal(shouldersVisible, true, `${npcId} no dibuja sus hombros`);
+    assert.equal(torsoVisible, true, `${npcId} no dibuja su torso`);
+    assert.equal(accentVisible, true, `${npcId} no dibuja su palette.accent`);
+
+    const hairShadowVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.hairShadow &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY - 2 &&
+        rect.width === 10 &&
+        rect.height === 4,
+    );
+    const hairFrontVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.hair &&
+        rect.x === screenX + 3 &&
+        rect.y === screenY - 1 &&
+        rect.width === 8 &&
+        rect.height === 3,
+    );
+
+    assert.equal(
+      hairShadowVisible,
+      true,
+      `${npcId} no dibuja su palette.hairShadow`,
+    );
+    assert.equal(hairFrontVisible, true, `${npcId} no dibuja su palette.hair`);
+
+    if (palette.eyes) {
+      const eyeRects = context.fillRects.filter(
+        (rect) =>
+          rect.fillStyle === "#302637" &&
+          rect.width === 1 &&
+          rect.height === 1 &&
+          rect.y === screenY + 2 &&
+          (rect.x === screenX + 5 || rect.x === screenX + 9),
+      );
+
+      assert.equal(eyeRects.length, 2, `${npcId} no dibuja sus dos ojos`);
+    }
+  });
+
+  test(`interactuar con ${npcId} abre un diálogo de un único turno con su label como speaker, sin tocar GameState`, () => {
+    const setup = createWorldAt("library");
+    const object = findObject("library", npcId);
+    setup.scene.player.x = object.x + object.width / 2;
+    setup.scene.player.y = object.y + object.height / 2;
+    setup.input.press("interact");
+
+    const stateBefore = structuredClone(setup.state.toSaveData());
+    delete stateBefore.savedAt;
+
+    setup.scene.update(0);
+
+    const stateAfter = structuredClone(setup.state.toSaveData());
+    delete stateAfter.savedAt;
+
+    assert.ok(setup.ui.dialogue !== null);
+    assert.equal(setup.ui.dialogue.speaker, object.label);
+    assert.equal(setup.ui.dialogue.lines.length, 1);
+    assert.deepEqual(stateAfter, stateBefore);
+  });
+}
+
+/*
+ * Libro de ambient-library-reader (drawGenericNpcApron, rama nueva al
+ * final): páginas en GENERIC_NPC_APRON_COLOR ("#e6ded0", ya usado por
+ * ambient-setup-helper/ambient-waiter-tables) y lomo en
+ * NAMED_NPC_PALETTES["ambient-library-reader"].hairShadow
+ * ("#201810") -- combinación exclusiva de este NPC, ningún otro debería
+ * dibujar con ese color de lomo en esas coordenadas relativas.
+ */
+test("ambient-library-reader dibuja las páginas y el lomo de su libro en las coordenadas relativas esperadas", () => {
+  const setup = createWorldAt("library");
+  const object = findObject("library", "ambient-library-reader");
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const pagesVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#e6ded0" &&
+      rect.x === screenX + 9 &&
+      rect.y === screenY + 11 &&
+      rect.width === 4 &&
+      rect.height === 3,
+  );
+  const spineVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#201810" &&
+      rect.x === screenX + 9 &&
+      rect.y === screenY + 11 &&
+      rect.width === 1 &&
+      rect.height === 3,
+  );
+
+  assert.equal(pagesVisible, true, "ambient-library-reader no dibuja las páginas del libro");
+  assert.equal(spineVisible, true, "ambient-library-reader no dibuja el lomo del libro");
+});
+
+test("ningún otro NPC (los otros 2 nuevos de library, los 3 de Seven Bridges Walk ni los 5 de Plaza del Axioma) dibuja con el lomo del libro de ambient-library-reader", () => {
+  const otherLibraryIds = LIBRARY_AMBIENT_NPC_IDS.filter(
+    (id) => id !== "ambient-library-reader",
+  );
+
+  for (const npcId of otherLibraryIds) {
+    const setup = createWorldAt("library");
+    const object = findObject("library", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    const spineRects = context.fillRects.filter(
+      (rect) =>
+        rect.fillStyle === "#201810" &&
+        rect.x === screenX + 9 &&
+        rect.y === screenY + 11 &&
+        rect.width === 1 &&
+        rect.height === 3,
+    );
+
+    assert.equal(
+      spineRects.length,
+      0,
+      `${npcId} no debería dibujar con el lomo del libro de ambient-library-reader`,
+    );
+  }
+
+  for (const npcId of SEVEN_BRIDGES_AMBIENT_NPC_IDS) {
+    const setup = createWorldAt("seven-bridges-walk");
+    const object = findObject("seven-bridges-walk", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const spineRects = context.fillRects.filter(
+      (rect) => rect.fillStyle === "#201810",
+    );
+
+    assert.equal(
+      spineRects.length,
+      0,
+      `${npcId} no debería dibujar con el lomo del libro de ambient-library-reader`,
+    );
+  }
+
+  for (const npcId of ["plaza-worker", ...AMBIENT_NPC_IDS]) {
+    const setup = createWorldAt("axiom-plaza");
+    const object = findObject("axiom-plaza", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const spineRects = context.fillRects.filter(
+      (rect) => rect.fillStyle === "#201810",
+    );
+
+    assert.equal(
+      spineRects.length,
+      0,
+      `${npcId} no debería dibujar con el lomo del libro de ambient-library-reader`,
+    );
+  }
+});
+
+/*
  * plaza-worker: cobertura dedicada del pulido visual (ojos + pelo +
  * hombros/torso/accent) que ahora recibe el mismo render genérico
  * (renderNpc) que los 4 NPC ambientales, sin que cambie su posición,
