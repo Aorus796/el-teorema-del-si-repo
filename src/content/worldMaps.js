@@ -1314,13 +1314,26 @@ const ARCHIVE = createMap({
    * renderObjects(), ver WorldScene.js y archiveDeskPixelArt.js).
    *
    * Geometría verificada sin solapes (ver tests/content/WorldMaps.test.js):
-   * archive-table-west (x108-164,y124-164) deja 12px de margen frente a
-   * archive-boxes-west (x32-96) y 12px frente al hitbox del escritorio
-   * (x176-208); archive-table-east (x220-276,y124-164) deja el mismo
-   * margen simétrico frente al escritorio y 12px frente a
-   * archive-boxes-east (x288-352). Ninguna de las dos toca el spawn por
-   * defecto (192,192), el punto de interacción real del escritorio
-   * (192,145) ni la salida a Biblioteca (x176-208,y224-240).
+   * archive-table-west (x108-156,y124-164) deja 12px de margen frente a
+   * archive-boxes-west (x32-96) y archive-table-east (x228-276,y124-164)
+   * deja 12px de margen frente a archive-boxes-east (x288-352).
+   *
+   * IMPORTANTE -- el margen relevante frente al escritorio central NO se
+   * mide contra el hitbox declarado de archive-criteria-table (x176-208):
+   * su sprite visual (ver archiveDeskPixelArt.js, ARCHIVE_DESK_PIXEL_WIDTH
+   * = 48) desborda 8px por lado ese hitbox de 32px de ancho
+   * (offsetX = (48-32)/2 = 8, ver drawArchiveDesk() en WorldScene.js), así
+   * que el escritorio ocupa visualmente x168-216, no x176-208. Razonar el
+   * margen solo sobre el hitbox declarado (12px) escondía que el margen
+   * visual real era de apenas 4px, y las mesas se veían encajonadas contra
+   * el escritorio pese a que las coordenadas "cuadraban" sobre el papel.
+   * Con las anchuras actuales (48px por mesa, antes 56px), archive-table-west
+   * deja 12px frente al borde visual izquierdo del escritorio (168-156) y
+   * archive-table-east deja 12px frente a su borde visual derecho
+   * (228-216) -- margen real, no solo declarado, en los 4 puntos de
+   * contacto. Ninguna de las dos toca el spawn por defecto (192,192), el
+   * punto de interacción real del escritorio (192,145) ni la salida a
+   * Biblioteca (x176-208,y224-240).
    */
   decorations: [
     {
@@ -1360,15 +1373,15 @@ const ARCHIVE = createMap({
       type: "archive-consultation-table",
       x: 108,
       y: 124,
-      width: 56,
+      width: 48,
       height: 40,
     },
     {
       id: "archive-table-east",
       type: "archive-consultation-table",
-      x: 220,
+      x: 228,
       y: 124,
-      width: 56,
+      width: 48,
       height: 40,
     },
   ],

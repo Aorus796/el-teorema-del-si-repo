@@ -51,10 +51,11 @@
  * la escalera de Biblioteca: desborde visual intencional sin tocar el
  * `solidRegion` ni el hitbox real.
  *
- * Verificado contra las mesas de consulta nuevas
+ * Verificado contra las mesas de consulta
  * (`archive-table-west`/`archive-table-east`, ver worldMaps.js): el
  * sprite ocupa x168-216 en coordenadas de mundo (176-8 a 208+8), que no
- * solapa ninguna de las dos mesas (x108-164 y x220-276).
+ * solapa ninguna de las dos mesas (x108-156 y x228-276) y deja 12px de
+ * margen visual real frente a cada una.
  *
  * Generado (ver scratch-generate-archive-desk-v2.mjs, script de un solo
  * uso, no forma parte del repositorio) para garantizar las dimensiones

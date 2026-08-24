@@ -5,6 +5,7 @@ import {
   getWorldMap,
 } from "../../src/content/worldMaps.js";
 import { PARTNER_NAME } from "../../src/content/personalizationConfig.js";
+import { ARCHIVE_DESK_PIXEL_WIDTH } from "../../src/content/archiveDeskPixelArt.js";
 import { GameState } from "../../src/state/GameState.js";
 import { CollisionMap } from "../../src/world/CollisionMap.js";
 import { Player } from "../../src/world/Player.js";
@@ -514,6 +515,92 @@ test("epilogue-gift-mechanism (axiom-plaza) sigue siendo el único otro objeto d
 
     assert.equal(tables.length, 0, `${map.id} no debería tener objetos "table"`);
   }
+});
+
+/*
+ * Corrección de encajonamiento de las mesas de consulta de archive (misma
+ * PR de "Archivo -- Visual Polish"): las mesas nacieron con 56px de ancho
+ * dejando solo 4px de margen visual real frente al escritorio central,
+ * porque su sprite (ver ARCHIVE_DESK_PIXEL_WIDTH en archiveDeskPixelArt.js)
+ * desborda 8px por lado su hitbox declarado (offsetX = (48-32)/2 = 8, ver
+ * drawArchiveDesk() en WorldScene.js). Se fija aquí la geometría exacta
+ * corregida (48px de ancho) y se deriva el borde visual real del escritorio
+ * del mismo cálculo que usa el motor de render, en vez de hardcodear
+ * 168/216 como números mágicos.
+ */
+test("archive-table-west/archive-table-east tienen la geometría exacta corregida (48x40, sin encajonamiento)", () => {
+  const map = getWorldMap("archive");
+
+  assert.deepEqual(
+    map.decorations.find((decoration) => decoration.id === "archive-table-west"),
+    {
+      id: "archive-table-west",
+      type: "archive-consultation-table",
+      x: 108,
+      y: 124,
+      width: 48,
+      height: 40,
+    },
+  );
+  assert.deepEqual(
+    map.decorations.find((decoration) => decoration.id === "archive-table-east"),
+    {
+      id: "archive-table-east",
+      type: "archive-consultation-table",
+      x: 228,
+      y: 124,
+      width: 48,
+      height: 40,
+    },
+  );
+});
+
+test("archive-table-west/archive-table-east dejan 12px de margen real en los 4 puntos de contacto (cajas y borde VISUAL del escritorio, no su hitbox declarado)", () => {
+  const map = getWorldMap("archive");
+  const desk = map.objects.find(
+    (object) => object.id === "archive-criteria-table",
+  );
+  const boxesWest = map.decorations.find(
+    (decoration) => decoration.id === "archive-boxes-west",
+  );
+  const boxesEast = map.decorations.find(
+    (decoration) => decoration.id === "archive-boxes-east",
+  );
+  const tableWest = map.decorations.find(
+    (decoration) => decoration.id === "archive-table-west",
+  );
+  const tableEast = map.decorations.find(
+    (decoration) => decoration.id === "archive-table-east",
+  );
+
+  assert.ok(desk && boxesWest && boxesEast && tableWest && tableEast);
+
+  // Mismo cálculo que drawArchiveDesk() (WorldScene.js): el sprite del
+  // escritorio desborda su hitbox declarado por igual a ambos lados.
+  const deskVisualOffsetX = (ARCHIVE_DESK_PIXEL_WIDTH - desk.width) / 2;
+  const deskVisualLeft = desk.x - deskVisualOffsetX;
+  const deskVisualRight = desk.x + desk.width + deskVisualOffsetX;
+
+  assert.equal(
+    tableWest.x - (boxesWest.x + boxesWest.width),
+    12,
+    "margen mesa-oeste <-> archive-boxes-west",
+  );
+  assert.equal(
+    deskVisualLeft - (tableWest.x + tableWest.width),
+    12,
+    "margen mesa-oeste <-> borde visual izquierdo del escritorio",
+  );
+  assert.equal(
+    tableEast.x - deskVisualRight,
+    12,
+    "margen mesa-este <-> borde visual derecho del escritorio",
+  );
+  assert.equal(
+    boxesEast.x - (tableEast.x + tableEast.width),
+    12,
+    "margen mesa-este <-> archive-boxes-east",
+  );
 });
 
 /*

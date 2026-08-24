@@ -18,10 +18,18 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   distinto de la estantería, ver `archiveCratesPixelArt.js`) para las dos
   del centro -- conservan exactamente su id/x/y/width/height original. Se
   añaden 2 mesas de consulta nuevas puramente decorativas
-  (`"archive-consultation-table"`, 56x40, con banco a AMBOS lados del
+  (`"archive-consultation-table"`, 48x40, con banco a AMBOS lados del
   tablero y documentos apoyados, mismo patrón que
   `library-reading-table`, ver `archiveConsultationTablePixelArt.js`),
-  una a cada lado del escritorio central. El escritorio central
+  una a cada lado del escritorio central. Corrección de encajonamiento
+  (misma PR): la primera versión (56x40) dejaba solo 4px de margen visual
+  real frente al escritorio, porque su sprite desborda 8px por lado su
+  hitbox declarado (`ARCHIVE_DESK_PIXEL_WIDTH` 48 vs hitbox 32); se
+  recortaron 4px por lado (56x40 -> 48x40, con las patas centrales del
+  banco desplazadas 2px hacia el interior en las 3 filas donde ese recorte
+  las habría cercenado) para dejar 12px de margen real en los 4 puntos de
+  contacto (mesa-oeste/cajas-oeste, mesa-oeste/borde visual del escritorio,
+  mesa-este/borde visual del escritorio, mesa-este/cajas-este). El escritorio central
   (`archive-criteria-table`, que abre el tercer puzle) recibe un
   tratamiento visual dedicado -- escritorio ornamentado con lámpara de pie
   (tallo+cúpula, claramente distinta del libro), libro/registro abierto
@@ -50,7 +58,10 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   objetos originales siguen siendo alcanzables a pie desde el punto de
   aparición por defecto. Nuevos tests: ampliación de
   `tests/content/WorldMaps.test.js` (migración de tipo, geometría, cero
-  solidRegions nuevas, alcanzabilidad, regresión de `objects`) y
+  solidRegions nuevas, alcanzabilidad, regresión de `objects`, geometría
+  exacta corregida de las 2 mesas de consulta y los 4 márgenes reales de
+  12px frente a cajas y borde visual del escritorio, derivado del mismo
+  cálculo que usa `WorldScene.js` en vez de hardcodear coordenadas) y
   `tests/scenes/ArchiveVisualPolishPixelArtCache.test.js` (cache de
   sprites, incluida la regresión explícita de que
   `epilogue-gift-mechanism` no activa el caso especial del escritorio).
