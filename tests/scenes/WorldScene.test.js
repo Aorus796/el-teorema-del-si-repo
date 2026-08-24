@@ -2414,6 +2414,405 @@ test("ningún otro NPC (los otros 2 nuevos de library, los 3 de Seven Bridges Wa
 });
 
 /*
+ * NPC ambientales del Archivo (v1.1): mismo mecanismo exacto que los de
+ * Plaza del Axioma/Seven Bridges Walk/Biblioteca de arriba
+ * (renderNpc/drawGenericNpc*, NAMED_NPC_PALETTES), reutilizando el mismo
+ * patrón de test render/interacción para cada uno.
+ */
+const ARCHIVE_AMBIENT_NPC_IDS = [
+  "ambient-archive-clerk",
+  "ambient-archive-researcher",
+];
+
+for (const npcId of ARCHIVE_AMBIENT_NPC_IDS) {
+  test(`${npcId} se dibuja con su propio body/accent de NAMED_NPC_PALETTES, anclado en su posición real de pantalla`, () => {
+    const setup = createWorldAt("archive");
+    const object = findObject("archive", npcId);
+    const palette = NAMED_NPC_PALETTES[npcId];
+
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    const shouldersVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        rect.x === screenX + 1 &&
+        rect.y === screenY + 7 &&
+        rect.width === 12 &&
+        rect.height === 2,
+    );
+    const torsoVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.body &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY + 9 &&
+        rect.width === 10 &&
+        rect.height === 5,
+    );
+    const accentVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.accent &&
+        rect.x === screenX + 5 &&
+        rect.y === screenY + 9 &&
+        rect.width === 4 &&
+        rect.height === 2,
+    );
+
+    assert.equal(shouldersVisible, true, `${npcId} no dibuja sus hombros`);
+    assert.equal(torsoVisible, true, `${npcId} no dibuja su torso`);
+    assert.equal(accentVisible, true, `${npcId} no dibuja su palette.accent`);
+
+    const hairShadowVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.hairShadow &&
+        rect.x === screenX + 2 &&
+        rect.y === screenY - 2 &&
+        rect.width === 10 &&
+        rect.height === 4,
+    );
+    const hairFrontVisible = context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === palette.hair &&
+        rect.x === screenX + 3 &&
+        rect.y === screenY - 1 &&
+        rect.width === 8 &&
+        rect.height === 3,
+    );
+
+    assert.equal(
+      hairShadowVisible,
+      true,
+      `${npcId} no dibuja su palette.hairShadow`,
+    );
+    assert.equal(hairFrontVisible, true, `${npcId} no dibuja su palette.hair`);
+
+    if (palette.eyes) {
+      const eyeRects = context.fillRects.filter(
+        (rect) =>
+          rect.fillStyle === "#302637" &&
+          rect.width === 1 &&
+          rect.height === 1 &&
+          rect.y === screenY + 2 &&
+          (rect.x === screenX + 5 || rect.x === screenX + 9),
+      );
+
+      assert.equal(eyeRects.length, 2, `${npcId} no dibuja sus dos ojos`);
+    }
+  });
+
+  test(`interactuar con ${npcId} abre un diálogo de un único turno con su label como speaker, sin tocar GameState`, () => {
+    const setup = createWorldAt("archive");
+    const object = findObject("archive", npcId);
+    setup.scene.player.x = object.x + object.width / 2;
+    setup.scene.player.y = object.y + object.height / 2;
+    setup.input.press("interact");
+
+    const stateBefore = structuredClone(setup.state.toSaveData());
+    delete stateBefore.savedAt;
+
+    setup.scene.update(0);
+
+    const stateAfter = structuredClone(setup.state.toSaveData());
+    delete stateAfter.savedAt;
+
+    assert.ok(setup.ui.dialogue !== null);
+    assert.equal(setup.ui.dialogue.speaker, object.label);
+    assert.equal(setup.ui.dialogue.lines.length, 1);
+    assert.deepEqual(stateAfter, stateBefore);
+  });
+}
+
+/*
+ * Carpeta/expediente de ambient-archive-clerk (drawGenericNpcApron, rama
+ * nueva al final): GENERIC_NPC_MANILA_COLOR ("#b5915a", no exportado -- se
+ * referencia por su valor literal, mismo patrón ya usado para
+ * GENERIC_NPC_APRON_COLOR/GENERIC_NPC_ROD_COLOR en los tests de arriba) es
+ * exclusivo de este NPC.
+ */
+test("ambient-archive-clerk dibuja su carpeta con GENERIC_NPC_MANILA_COLOR", () => {
+  const setup = createWorldAt("archive");
+  const object = findObject("archive", "ambient-archive-clerk");
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const folderRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === "#b5915a",
+  );
+
+  assert.ok(
+    folderRects.length > 0,
+    "ambient-archive-clerk no dibuja ningún rect con el color de la carpeta",
+  );
+});
+
+test("ningún otro NPC (el otro nuevo de archive, los 3 de Biblioteca, los 3 de Seven Bridges Walk ni los 5 de Plaza del Axioma) dibuja con el color de la carpeta de ambient-archive-clerk", () => {
+  const otherArchiveIds = ARCHIVE_AMBIENT_NPC_IDS.filter(
+    (id) => id !== "ambient-archive-clerk",
+  );
+
+  // Nota: dentro de "archive" ambos NPC ambientales caben en el mismo
+  // viewport, así que render() dibuja a los dos en el mismo frame -- el
+  // color de la carpeta de ambient-archive-clerk sigue apareciendo
+  // legítimamente en SU PROPIA posición de pantalla aunque el jugador esté
+  // junto a ambient-archive-researcher. Por eso este bucle (a diferencia de
+  // los de abajo, en mapas donde ningún otro NPC del mismo mapa reutiliza
+  // este color) comprueba las coordenadas relativas exactas de la carpeta
+  // (screenX+1..6/screenY+12..16) en vez de contar cualquier aparición del
+  // color en todo el canvas.
+  for (const npcId of otherArchiveIds) {
+    const setup = createWorldAt("archive");
+    const object = findObject("archive", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    const folderRects = context.fillRects.filter(
+      (rect) =>
+        rect.fillStyle === "#b5915a" &&
+        ((rect.x === screenX + 1 &&
+          rect.y === screenY + 13 &&
+          rect.width === 5 &&
+          rect.height === 3) ||
+          (rect.x === screenX + 2 &&
+            rect.y === screenY + 12 &&
+            rect.width === 3 &&
+            rect.height === 1)),
+    );
+
+    assert.equal(
+      folderRects.length,
+      0,
+      `${npcId} no debería dibujar con el color de la carpeta de ambient-archive-clerk en sus propias coordenadas`,
+    );
+  }
+
+  for (const npcId of LIBRARY_AMBIENT_NPC_IDS) {
+    const setup = createWorldAt("library");
+    const object = findObject("library", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const folderRects = context.fillRects.filter(
+      (rect) => rect.fillStyle === "#b5915a",
+    );
+
+    assert.equal(
+      folderRects.length,
+      0,
+      `${npcId} no debería dibujar con el color de la carpeta de ambient-archive-clerk`,
+    );
+  }
+
+  for (const npcId of SEVEN_BRIDGES_AMBIENT_NPC_IDS) {
+    const setup = createWorldAt("seven-bridges-walk");
+    const object = findObject("seven-bridges-walk", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const folderRects = context.fillRects.filter(
+      (rect) => rect.fillStyle === "#b5915a",
+    );
+
+    assert.equal(
+      folderRects.length,
+      0,
+      `${npcId} no debería dibujar con el color de la carpeta de ambient-archive-clerk`,
+    );
+  }
+
+  for (const npcId of ["plaza-worker", ...AMBIENT_NPC_IDS]) {
+    const setup = createWorldAt("axiom-plaza");
+    const object = findObject("axiom-plaza", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const folderRects = context.fillRects.filter(
+      (rect) => rect.fillStyle === "#b5915a",
+    );
+
+    assert.equal(
+      folderRects.length,
+      0,
+      `${npcId} no debería dibujar con el color de la carpeta de ambient-archive-clerk`,
+    );
+  }
+});
+
+/*
+ * Papeles/dossier de ambient-archive-researcher (drawGenericNpcApron, rama
+ * nueva al final): sostenidos a la altura del pecho, en su propio
+ * palette.accent ("#8a95a8") -- posición y orientación distintas del libro
+ * de ambient-library-reader (cadera, x+9/y+11), ver el comentario junto a
+ * la rama en WorldScene.js.
+ */
+test("ambient-archive-researcher dibuja su dossier en las coordenadas relativas esperadas, distintas del libro de ambient-library-reader", () => {
+  const setup = createWorldAt("archive");
+  const object = findObject("archive", "ambient-archive-researcher");
+  setup.scene.player.x = object.x;
+  setup.scene.player.y = object.y;
+  setup.scene.update(0);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const screenX = Math.round(object.x - setup.scene.camera.x);
+  const screenY = Math.round(object.y - setup.scene.camera.y);
+
+  const papersVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#8a95a8" &&
+      rect.x === screenX + 1 &&
+      rect.y === screenY + 8 &&
+      rect.width === 4 &&
+      rect.height === 3,
+  );
+  const bindingVisible = context.fillRects.some(
+    (rect) =>
+      rect.fillStyle === "#392f3f" &&
+      rect.x === screenX + 1 &&
+      rect.y === screenY + 8 &&
+      rect.width === 4 &&
+      rect.height === 1,
+  );
+
+  assert.equal(
+    papersVisible,
+    true,
+    "ambient-archive-researcher no dibuja los papeles del dossier",
+  );
+  assert.equal(
+    bindingVisible,
+    true,
+    "ambient-archive-researcher no dibuja la línea de encuadernación del dossier",
+  );
+});
+
+test("ningún otro NPC dibuja con la línea de encuadernación del dossier de ambient-archive-researcher en sus coordenadas relativas", () => {
+  const otherArchiveIds = ARCHIVE_AMBIENT_NPC_IDS.filter(
+    (id) => id !== "ambient-archive-researcher",
+  );
+
+  const matchesBinding = (context, screenX, screenY) =>
+    context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === "#392f3f" &&
+        rect.x === screenX + 1 &&
+        rect.y === screenY + 8 &&
+        rect.width === 4 &&
+        rect.height === 1,
+    );
+
+  for (const npcId of otherArchiveIds) {
+    const setup = createWorldAt("archive");
+    const object = findObject("archive", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    assert.equal(
+      matchesBinding(context, screenX, screenY),
+      false,
+      `${npcId} no debería dibujar con la línea de encuadernación del dossier de ambient-archive-researcher`,
+    );
+  }
+
+  for (const npcId of LIBRARY_AMBIENT_NPC_IDS) {
+    const setup = createWorldAt("library");
+    const object = findObject("library", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    assert.equal(
+      matchesBinding(context, screenX, screenY),
+      false,
+      `${npcId} no debería dibujar con la línea de encuadernación del dossier de ambient-archive-researcher`,
+    );
+  }
+
+  for (const npcId of SEVEN_BRIDGES_AMBIENT_NPC_IDS) {
+    const setup = createWorldAt("seven-bridges-walk");
+    const object = findObject("seven-bridges-walk", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    assert.equal(
+      matchesBinding(context, screenX, screenY),
+      false,
+      `${npcId} no debería dibujar con la línea de encuadernación del dossier de ambient-archive-researcher`,
+    );
+  }
+
+  for (const npcId of ["plaza-worker", ...AMBIENT_NPC_IDS]) {
+    const setup = createWorldAt("axiom-plaza");
+    const object = findObject("axiom-plaza", npcId);
+    setup.scene.player.x = object.x;
+    setup.scene.player.y = object.y;
+    setup.scene.update(0);
+
+    const context = new FakeCanvasContext();
+    setup.scene.render(context);
+
+    const screenX = Math.round(object.x - setup.scene.camera.x);
+    const screenY = Math.round(object.y - setup.scene.camera.y);
+
+    assert.equal(
+      matchesBinding(context, screenX, screenY),
+      false,
+      `${npcId} no debería dibujar con la línea de encuadernación del dossier de ambient-archive-researcher`,
+    );
+  }
+});
+
+/*
  * plaza-worker: cobertura dedicada del pulido visual (ojos + pelo +
  * hombros/torso/accent) que ahora recibe el mismo render genérico
  * (renderNpc) que los 4 NPC ambientales, sin que cambie su posición,

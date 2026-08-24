@@ -616,6 +616,26 @@ export class WorldScene {
       return;
     }
 
+    if (object.id === "ambient-archive-clerk") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Aquí cada expediente lleva su fecha y su procedencia: sin eso, no hay manera de clasificarlo.",
+        ],
+      });
+      return;
+    }
+
+    if (object.id === "ambient-archive-researcher") {
+      this.ui.beginDialogue({
+        speaker: object.label,
+        lines: [
+          "Repaso estos documentos una y otra vez, buscando qué se puede demostrar con lo que hay escrito.",
+        ],
+      });
+      return;
+    }
+
     if (object.id === "library-silogio") {
       this.interactWithSilogio();
       return;
@@ -2442,7 +2462,7 @@ const drawArchiveDeskIndexedSprite = createIndexedPixelSprite({
  * donde estaba -- el mismo desborde visual documentado en
  * archiveDeskPixelArt.js, sin tocar el `solidRegion` ni el hitbox reales.
  */
-const ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW = 8;
+export const ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW = 8;
 
 function drawArchiveDesk(context, x, y, width, height) {
   const offsetX = (ARCHIVE_DESK_PIXEL_WIDTH - width) / 2;
@@ -2589,6 +2609,12 @@ const GENERIC_NPC_APRON_COLOR = "#e6ded0";
 // v1.1) -- marrón madera, análogo a GENERIC_NPC_APRON_COLOR pero exclusivo
 // de este NPC (ningún otro id lo usa, ver drawGenericNpcApron() más abajo).
 const GENERIC_NPC_ROD_COLOR = "#5a4632";
+
+// Color de la carpeta/expediente de ambient-archive-clerk (Archivo, v1.1)
+// -- tono manila, distinto tanto de GENERIC_NPC_APRON_COLOR (blanco crudo)
+// como de GENERIC_NPC_ROD_COLOR (marrón oscuro), exclusivo de este NPC
+// (ver drawGenericNpcApron() más abajo).
+const GENERIC_NPC_MANILA_COLOR = "#b5915a";
 
 function drawGenericNpcOutline(context, x, y) {
   context.fillStyle = NPC_SILHOUETTE;
@@ -2764,6 +2790,36 @@ function drawGenericNpcApron(context, x, y, object) {
 
     context.fillStyle = NAMED_NPC_PALETTES["ambient-library-reader"].hairShadow;
     context.fillRect(x + 9, y + 11, 1, 3);
+    return;
+  }
+
+  // Carpeta/expediente de ambient-archive-clerk (Archivo, v1.1): sostenida
+  // a la altura de la cadera, en GENERIC_NPC_MANILA_COLOR (tono manila,
+  // exclusivo de este NPC) con una pestaña sobresaliendo arriba y una línea
+  // de sombra de contacto en su propio hairShadow.
+  if (object.id === "ambient-archive-clerk") {
+    context.fillStyle = GENERIC_NPC_MANILA_COLOR;
+    context.fillRect(x + 1, y + 13, 5, 3);
+    context.fillRect(x + 2, y + 12, 3, 1);
+
+    context.fillStyle = NAMED_NPC_PALETTES["ambient-archive-clerk"].hairShadow;
+    context.fillRect(x + 1, y + 15, 5, 1);
+    return;
+  }
+
+  // Papeles/dossier de ambient-archive-researcher (Archivo, v1.1):
+  // sostenidos a la altura del pecho, en el lado izquierdo -- posición y
+  // orientación deliberadamente distintas del libro de
+  // ambient-library-reader (cadera, lado derecho, x+9..13/y+11..14) para no
+  // confundir ambos NPC entre mapas. Papeles en su propio palette.accent,
+  // con una línea de encuadernación en su propio hairShadow.
+  if (object.id === "ambient-archive-researcher") {
+    context.fillStyle = NAMED_NPC_PALETTES["ambient-archive-researcher"].accent;
+    context.fillRect(x + 1, y + 8, 4, 3);
+
+    context.fillStyle =
+      NAMED_NPC_PALETTES["ambient-archive-researcher"].hairShadow;
+    context.fillRect(x + 1, y + 8, 4, 1);
   }
 }
 
