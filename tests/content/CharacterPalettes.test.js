@@ -44,8 +44,10 @@ test("NPC_SILHOUETTE conserva el valor ya usado por WorldScene.renderNpc", () =>
   assert.equal(NPC_SILHOUETTE, "#302637");
 });
 
-test("NAMED_NPC_PALETTES conserva plaza-worker, los 4 NPC ambientales de Plaza del Axioma, los 3 de Seven Bridges Walk y los 3 de la Biblioteca del Margen; mayor-corolaria y bride-father tienen renderers dedicados", () => {
+test("NAMED_NPC_PALETTES conserva plaza-worker, los 4 NPC ambientales de Plaza del Axioma, los 3 de Seven Bridges Walk, los 3 de la Biblioteca del Margen y los 2 del Archivo; mayor-corolaria y bride-father tienen renderers dedicados", () => {
   assert.deepEqual(Object.keys(NAMED_NPC_PALETTES).sort(), [
+    "ambient-archive-clerk",
+    "ambient-archive-researcher",
     "ambient-bench-watcher",
     "ambient-fisher-dock",
     "ambient-florist-altar",
@@ -169,10 +171,30 @@ test("NAMED_NPC_PALETTES conserva plaza-worker, los 4 NPC ambientales de Plaza d
     hairStyle: "side",
     silhouetteVariant: "formal",
   });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-archive-clerk"], {
+    body: "#556070",
+    accent: "#a8b0ba",
+    eyes: true,
+    hair: "#3a332c",
+    hairShadow: "#2c2721",
+    bodyShadow: "#3f4854",
+    hairStyle: "short",
+    silhouetteVariant: "practical",
+  });
+  assert.deepEqual(NAMED_NPC_PALETTES["ambient-archive-researcher"], {
+    body: "#6b3f42",
+    accent: "#8a95a8",
+    eyes: true,
+    hair: "#4a3f52",
+    hairShadow: "#392f3f",
+    bodyShadow: "#542f32",
+    hairStyle: "medium",
+    silhouetteVariant: "formal",
+  });
   assert.equal(Object.isFrozen(NAMED_NPC_PALETTES), true);
 });
 
-test("las paletas de los 4 NPC ambientales de Plaza, los 3 de Seven Bridges Walk y los 3 de la Biblioteca del Margen no colisionan de color (body/accent/hair) entre sí ni con las demás paletas del archivo", () => {
+test("las paletas de los 4 NPC ambientales de Plaza, los 3 de Seven Bridges Walk, los 3 de la Biblioteca del Margen y los 2 del Archivo no colisionan de color (body/accent/hair) entre sí ni con las demás paletas del archivo", () => {
   const ambientPalettes = [
     NAMED_NPC_PALETTES["ambient-florist-altar"],
     NAMED_NPC_PALETTES["ambient-setup-helper"],
@@ -184,6 +206,8 @@ test("las paletas de los 4 NPC ambientales de Plaza, los 3 de Seven Bridges Walk
     NAMED_NPC_PALETTES["ambient-library-reader"],
     NAMED_NPC_PALETTES["ambient-library-assistant"],
     NAMED_NPC_PALETTES["ambient-library-researcher"],
+    NAMED_NPC_PALETTES["ambient-archive-clerk"],
+    NAMED_NPC_PALETTES["ambient-archive-researcher"],
   ];
   // flowerAccent es opcional (solo ambient-florist-altar lo define hoy):
   // se filtran los `undefined` de las otras tres paletas para que no

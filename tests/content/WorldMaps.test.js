@@ -5,7 +5,11 @@ import {
   getWorldMap,
 } from "../../src/content/worldMaps.js";
 import { PARTNER_NAME } from "../../src/content/personalizationConfig.js";
-import { ARCHIVE_DESK_PIXEL_WIDTH } from "../../src/content/archiveDeskPixelArt.js";
+import {
+  ARCHIVE_DESK_PIXEL_HEIGHT,
+  ARCHIVE_DESK_PIXEL_WIDTH,
+} from "../../src/content/archiveDeskPixelArt.js";
+import { ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
 import { CollisionMap } from "../../src/world/CollisionMap.js";
 import { Player } from "../../src/world/Player.js";
@@ -601,6 +605,115 @@ test("archive-table-west/archive-table-east dejan 12px de margen real en los 4 p
     12,
     "margen mesa-este <-> archive-boxes-east",
   );
+});
+
+/*
+ * Cobertura de "Archivo -- Environmental NPC Pass" (v1.1, tras el visual
+ * polish de arriba): 2 NPC ambientales estáticos sin nombre propio, mismo
+ * mecanismo ya cerrado en Plaza/Seven Bridges Walk/Biblioteca. archive.objects
+ * pasa de 2 a 4 -- los 2 originales conservan su geometría exacta (ver el
+ * test de arriba), sin tocar ninguna solidRegion ni ninguna decoration.
+ */
+const ARCHIVE_AMBIENT_NPC_IDS = [
+  "ambient-archive-clerk",
+  "ambient-archive-researcher",
+];
+
+test("archive tiene ahora 4 objects: los 2 originales más los 2 NPC ambientales nuevos", () => {
+  const map = getWorldMap("archive");
+
+  assert.equal(map.objects.length, 4);
+  assert.deepEqual(
+    map.objects.map((object) => object.id).sort(),
+    [
+      "ambient-archive-clerk",
+      "ambient-archive-researcher",
+      "archive-criteria-table",
+      "archive-to-library",
+    ],
+  );
+});
+
+test("los 2 NPC ambientales nuevos de archive tienen type 'npc', sin requiresFlag", () => {
+  const map = getWorldMap("archive");
+
+  for (const npcId of ARCHIVE_AMBIENT_NPC_IDS) {
+    const object = map.objects.find((entry) => entry.id === npcId);
+
+    assert.ok(object, `No existe ${npcId} en archive`);
+    assert.equal(object.type, "npc");
+    assert.equal(object.requiresFlag, undefined);
+    assert.equal(typeof object.label, "string");
+    assert.ok(object.label.length > 0);
+  }
+});
+
+test("los 2 NPC ambientales nuevos de archive no colisionan con solidTiles ni solapan ningún otro object/decoration", () => {
+  for (const npcId of ARCHIVE_AMBIENT_NPC_IDS) {
+    assertObjectIsClear("archive", npcId);
+  }
+});
+
+test("los 2 NPC ambientales nuevos de archive son alcanzables a pie desde el spawn por defecto de archive", () => {
+  for (const npcId of ARCHIVE_AMBIENT_NPC_IDS) {
+    assertObjectIsReachable("archive", npcId);
+  }
+});
+
+/*
+ * Verificación dedicada del footprint VISUAL real del escritorio central
+ * (archive-criteria-table): drawArchiveDesk() (WorldScene.js) ancla el
+ * sprite (ARCHIVE_DESK_PIXEL_WIDTH x ARCHIVE_DESK_PIXEL_HEIGHT) restando el
+ * mismo offsetX/offsetY que usa el motor de render, en vez de hardcodear
+ * x168-216,y96-144 como números mágicos -- mismo criterio que el test de
+ * margen de las mesas de consulta de arriba, extendido a la coordenada Y
+ * (ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW, exportada desde WorldScene.js para
+ * este cálculo).
+ */
+test("ninguno de los 2 NPC ambientales nuevos de archive solapa el footprint visual real del escritorio central (no solo su hitbox declarado)", () => {
+  const map = getWorldMap("archive");
+  const desk = map.objects.find(
+    (object) => object.id === "archive-criteria-table",
+  );
+
+  assert.ok(desk);
+
+  const deskVisualOffsetX = (ARCHIVE_DESK_PIXEL_WIDTH - desk.width) / 2;
+  const deskVisualOffsetY =
+    ARCHIVE_DESK_PIXEL_HEIGHT -
+    ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW -
+    desk.height;
+  const deskVisualBounds = {
+    x: desk.x - deskVisualOffsetX,
+    y: desk.y - deskVisualOffsetY,
+    width: ARCHIVE_DESK_PIXEL_WIDTH,
+    height: ARCHIVE_DESK_PIXEL_HEIGHT,
+  };
+
+  // Confirma el footprint verificado por el planner antes de comprobar
+  // los NPC contra él, para que un cambio futuro del sprite/hitbox del
+  // escritorio no deje esta prueba comprobando un rectángulo obsoleto en
+  // silencio.
+  assert.deepEqual(deskVisualBounds, { x: 168, y: 96, width: 48, height: 48 });
+
+  for (const npcId of ARCHIVE_AMBIENT_NPC_IDS) {
+    const object = map.objects.find((entry) => entry.id === npcId);
+
+    assert.equal(
+      rectanglesOverlap(object, deskVisualBounds),
+      false,
+      `${npcId} solapa el footprint visual real del escritorio central`,
+    );
+  }
+});
+
+test("los 2 NPC ambientales nuevos de archive no se solapan entre sí", () => {
+  const map = getWorldMap("archive");
+  const [first, second] = ARCHIVE_AMBIENT_NPC_IDS.map((npcId) =>
+    map.objects.find((object) => object.id === npcId),
+  );
+
+  assert.equal(rectanglesOverlap(first, second), false);
 });
 
 /*

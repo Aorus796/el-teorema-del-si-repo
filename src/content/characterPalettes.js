@@ -214,6 +214,30 @@ export const NAMED_NPC_PALETTES = Object.freeze({
     hairStyle: "side",
     silhouetteVariant: "formal",
   }),
+  // Paletas de los 2 NPC ambientales del Archivo (v1.1): mismo patrón que
+  // los de Plaza/Seven Bridges/Biblioteca de arriba, ninguno usa
+  // silhouetteVariant "light" (esa variante está acoplada a
+  // palette.flowerAccent, que solo define ambient-florist-altar).
+  "ambient-archive-clerk": Object.freeze({
+    body: "#556070",
+    accent: "#a8b0ba",
+    eyes: true,
+    hair: "#3a332c",
+    hairShadow: "#2c2721",
+    bodyShadow: "#3f4854",
+    hairStyle: "short",
+    silhouetteVariant: "practical",
+  }),
+  "ambient-archive-researcher": Object.freeze({
+    body: "#6b3f42",
+    accent: "#8a95a8",
+    eyes: true,
+    hair: "#4a3f52",
+    hairShadow: "#392f3f",
+    bodyShadow: "#542f32",
+    hairStyle: "medium",
+    silhouetteVariant: "formal",
+  }),
 });
 
 // Paleta usada por cualquier NPC sin entrada explícita en

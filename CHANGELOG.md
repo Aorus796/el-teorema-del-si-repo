@@ -6,6 +6,23 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Añadido
 
+- Archivo -- NPCs ambientales (`archive`, v1.1): 2 NPCs estáticos sin
+  nombre propio (`ambient-archive-clerk`, `ambient-archive-researcher`)
+  que reutilizan exactamente el mecanismo ambiental ya cerrado en Plaza
+  del Axioma, Seven Bridges Walk y Biblioteca del Margen
+  (`renderNpc()`/`drawGenericNpc*()` en `src/scenes/WorldScene.js`,
+  `NAMED_NPC_PALETTES` en `src/content/characterPalettes.js`, diálogo de
+  un único turno vía `this.ui.beginDialogue()`, sin flags ni cambios de
+  estado). El primero añade una carpeta/expediente sostenida a la altura
+  de la cadera (tono manila exclusivo); el segundo, un dossier de papeles
+  a la altura del pecho, en coordenadas y orientación distintas del libro
+  de `ambient-library-reader`. No se toca geometría de
+  `solidRegions`/`decorations`/los 2 `objects` ya existentes de `archive`
+  (estanterías, cajas, mesas de consulta, escritorio, exit); ninguno de
+  los 2 NPC nuevos solapa el footprint visual real del escritorio central
+  (`archive-criteria-table`, x168-216,y96-144, distinto de su hitbox
+  declarado), verificado con un test dedicado; sin progresión, sin
+  colisión ni cambios al puzzle de criterios.
 - Archivo -- Visual Polish (`archive`, v1.1): pase puramente visual sobre
   `src/content/worldMaps.js`, sin NPCs y sin tocar colisión, gameplay ni
   los 2 `objects` originales (`archive-criteria-table`,

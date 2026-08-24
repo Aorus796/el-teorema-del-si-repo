@@ -1292,12 +1292,32 @@ const ARCHIVE = createMap({
         facing: "left",
       },
     },
+    {
+      id: "ambient-archive-clerk",
+      type: "npc",
+      x: 40,
+      y: 180,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona ordenando expedientes",
+    },
+    {
+      id: "ambient-archive-researcher",
+      type: "npc",
+      x: 245,
+      y: 168,
+      width: 14,
+      height: 18,
+      interactionRadius: 28,
+      label: "Persona revisando documentos",
+    },
   ],
   /*
    * Cobertura de "Archivo -- Visual Polish" (v1.1, solo archive): pase
-   * puramente visual, sin NPCs y sin tocar colisión -- decorations nunca
-   * alimenta solidTiles (ver createMap() más arriba), cero solidRegions
-   * nuevas. Las 4 estanterías/cajas existentes migran del tipo compartido
+   * puramente visual, sin tocar colisión -- decorations nunca alimenta
+   * solidTiles (ver createMap() más arriba), cero solidRegions nuevas. Las
+   * 4 estanterías/cajas existentes migran del tipo compartido
    * "tables" (rama que ahora solo sirve a axiom-plaza, ver el comentario
    * de esa rama en WorldScene.js) a dos tipos exclusivos que se
    * distinguen entre sí: "archive-shelf" (estanterías de libros, ver
@@ -1334,6 +1354,19 @@ const ARCHIVE = createMap({
    * contacto. Ninguna de las dos toca el spawn por defecto (192,192), el
    * punto de interacción real del escritorio (192,145) ni la salida a
    * Biblioteca (x176-208,y224-240).
+   *
+   * "Archivo -- Environmental NPC Pass" (v1.1, tras el visual polish de
+   * arriba): se añaden 2 NPC ambientales estáticos sin nombre propio
+   * ("ambient-archive-clerk" junto a las cajas oeste, "ambient-archive-
+   * researcher" junto a la mesa de consulta este), mismo mecanismo ya
+   * cerrado en Plaza/Seven Bridges Walk/Biblioteca (renderNpc()/
+   * drawGenericNpc* en WorldScene.js, NAMED_NPC_PALETTES en
+   * characterPalettes.js). Ninguna de las dos toca solidRegions/
+   * decorations/los 2 objects preexistentes -- ver
+   * tests/content/WorldMaps.test.js para la verificación exhaustiva de
+   * no-solape (incluido, de forma explícita, contra el footprint visual
+   * real del escritorio central x168-216,y96-144, no solo su hitbox
+   * declarado).
    */
   decorations: [
     {
