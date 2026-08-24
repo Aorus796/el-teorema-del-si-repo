@@ -5,6 +5,7 @@ import {
   getWorldMap,
 } from "../../src/content/worldMaps.js";
 import { PARTNER_NAME } from "../../src/content/personalizationConfig.js";
+import { ARCHIVE_DESK_PIXEL_WIDTH } from "../../src/content/archiveDeskPixelArt.js";
 import { GameState } from "../../src/state/GameState.js";
 import { CollisionMap } from "../../src/world/CollisionMap.js";
 import { Player } from "../../src/world/Player.js";
@@ -302,45 +303,303 @@ test("axiom-plaza tiene entre 3 y 5 mesas de boda redondas ('wedding-table')", (
   );
 });
 
-test("archive conserva sus 4 decoraciones 'tables' originales sin ningún cambio (rama compartida, no tocada por Library Visual Polish)", () => {
+/*
+ * Cobertura de "Archivo -- Visual Polish" (v1.1, solo archive): pase
+ * puramente visual -- decorations nunca alimenta solidTiles (ver
+ * createMap() en worldMaps.js) -- que migra las 4 estanterías/cajas
+ * existentes del tipo compartido "tables" (que ahora solo usa axiom-plaza,
+ * ver el test equivalente de #67 sobre library más abajo) a dos tipos
+ * exclusivos ("archive-shelf" para las 2 del norte, "archive-crates" para
+ * las 2 del centro), y añade 2 mesas de consulta nuevas puramente
+ * decorativas. Sin NPCs, sin tocar colisión/gameplay/los 2 `objects`
+ * originales.
+ */
+const ARCHIVE_ORIGINAL_SHELF_AND_CRATES_GEOMETRY = [
+  {
+    id: "archive-shelves-northwest",
+    x: 32,
+    y: 48,
+    width: 80,
+    height: 32,
+    migratedType: "archive-shelf",
+  },
+  {
+    id: "archive-shelves-northeast",
+    x: 272,
+    y: 48,
+    width: 80,
+    height: 32,
+    migratedType: "archive-shelf",
+  },
+  {
+    id: "archive-boxes-west",
+    x: 32,
+    y: 128,
+    width: 64,
+    height: 32,
+    migratedType: "archive-crates",
+  },
+  {
+    id: "archive-boxes-east",
+    x: 288,
+    y: 128,
+    width: 64,
+    height: 32,
+    migratedType: "archive-crates",
+  },
+];
+
+test("archive ya no tiene ninguna decoración 'tables': las 2 estanterías migran a 'archive-shelf' y las 2 cajas a 'archive-crates', conservando id/x/y/width/height exactos", () => {
+  const map = getWorldMap("archive");
+
+  assert.equal(
+    map.decorations.some((decoration) => decoration.type === "tables"),
+    false,
+    "archive no debería tener ninguna decoración 'tables' tras la migración",
+  );
+
+  for (const original of ARCHIVE_ORIGINAL_SHELF_AND_CRATES_GEOMETRY) {
+    const migrated = map.decorations.find(
+      (decoration) => decoration.id === original.id,
+    );
+
+    assert.ok(migrated, `falta la decoración migrada ${original.id}`);
+    assert.deepEqual(migrated, {
+      id: original.id,
+      type: original.migratedType,
+      x: original.x,
+      y: original.y,
+      width: original.width,
+      height: original.height,
+    });
+  }
+});
+
+test("archive tiene exactamente 2 mesas de consulta nuevas, además de las 4 estanterías/cajas migradas", () => {
+  const map = getWorldMap("archive");
+
+  assert.equal(map.decorations.length, 6);
+  assert.equal(
+    map.decorations.filter((decoration) => decoration.type === "archive-shelf")
+      .length,
+    2,
+  );
+  assert.equal(
+    map.decorations.filter(
+      (decoration) => decoration.type === "archive-crates",
+    ).length,
+    2,
+  );
+  assert.equal(
+    map.decorations.filter(
+      (decoration) => decoration.type === "archive-consultation-table",
+    ).length,
+    2,
+  );
+});
+
+test("archive.solidTiles no cambia con el mobiliario nuevo (cero solidRegions nuevas)", () => {
+  const map = getWorldMap("archive");
+
+  // 24x16 -> borde = 2*24 + 2*16 - 4 = 76 tiles, más los 5 solidRegions ya
+  // existentes (5x2, 5x2, 4x2, 4x2, 2x2 = 10+10+8+8+4 = 40 tiles, sin
+  // solapes entre sí ni con el borde) = 116, sin cambios respecto a antes
+  // de esta tarea.
+  assert.equal(map.solidTiles.length, 116);
+});
+
+test("los 2 objects originales de archive conservan su geometría, label y destino exactos", () => {
   const map = getWorldMap("archive");
 
   assert.deepEqual(
-    map.decorations,
-    [
-      {
-        id: "archive-shelves-northwest",
-        type: "tables",
-        x: 32,
-        y: 48,
-        width: 80,
-        height: 32,
-      },
-      {
-        id: "archive-shelves-northeast",
-        type: "tables",
-        x: 272,
-        y: 48,
-        width: 80,
-        height: 32,
-      },
-      {
-        id: "archive-boxes-west",
-        type: "tables",
-        x: 32,
-        y: 128,
-        width: 64,
-        height: 32,
-      },
-      {
-        id: "archive-boxes-east",
-        type: "tables",
-        x: 288,
-        y: 128,
-        width: 64,
-        height: 32,
-      },
-    ],
+    map.objects.find((object) => object.id === "archive-criteria-table"),
+    {
+      id: "archive-criteria-table",
+      type: "table",
+      x: 176,
+      y: 112,
+      width: 32,
+      height: 24,
+      interactionRadius: 30,
+      label: "Mesa de criterios",
+    },
+  );
+  assert.deepEqual(
+    map.objects.find((object) => object.id === "archive-to-library"),
+    {
+      id: "archive-to-library",
+      type: "exit",
+      x: 176,
+      y: 224,
+      width: 32,
+      height: 16,
+      interactionRadius: 30,
+      label: "Biblioteca",
+      targetMapId: "library",
+      targetPlayerState: { x: 416, y: 176, facing: "left" },
+    },
+  );
+});
+
+test("ninguna decoración de archive (migradas + nuevas) solapa ningún objeto interactuable", () => {
+  const map = getWorldMap("archive");
+
+  for (const decoration of map.decorations) {
+    for (const object of map.objects) {
+      assert.equal(
+        rectanglesOverlap(decoration, object),
+        false,
+        `la decoración ${decoration.id} solapa el objeto ${object.id}`,
+      );
+    }
+  }
+});
+
+test("ninguna decoración de archive solapa ninguna otra decoración", () => {
+  const map = getWorldMap("archive");
+
+  for (let i = 0; i < map.decorations.length; i += 1) {
+    for (let j = i + 1; j < map.decorations.length; j += 1) {
+      assert.equal(
+        rectanglesOverlap(map.decorations[i], map.decorations[j]),
+        false,
+        `la decoración ${map.decorations[i].id} solapa la decoración ${map.decorations[j].id}`,
+      );
+    }
+  }
+});
+
+test("ninguna decoración de archive solapa el rectángulo de aparición por defecto del jugador", () => {
+  const map = getWorldMap("archive");
+  const playerState = new GameState().getPlayerState("archive");
+  const spawnBounds = {
+    x: playerState.x - 5,
+    y: playerState.y - 7,
+    width: 10,
+    height: 14,
+  };
+
+  for (const decoration of map.decorations) {
+    assert.equal(
+      rectanglesOverlap(spawnBounds, decoration),
+      false,
+      `la decoración ${decoration.id} solapa la aparición del jugador`,
+    );
+  }
+});
+
+test("archive-criteria-table y archive-to-library siguen siendo alcanzables a pie desde el spawn por defecto de archive", () => {
+  assertObjectIsReachable("archive", "archive-criteria-table");
+  assertObjectIsReachable("archive", "archive-to-library");
+});
+
+test("epilogue-gift-mechanism (axiom-plaza) sigue siendo el único otro objeto de type 'table' del juego, ajeno a la migración de archive", () => {
+  for (const map of Object.values(WORLD_MAPS)) {
+    const tables = map.objects.filter((object) => object.type === "table");
+
+    if (map.id === "axiom-plaza") {
+      assert.deepEqual(
+        tables.map((object) => object.id),
+        ["epilogue-gift-mechanism"],
+      );
+      continue;
+    }
+
+    if (map.id === "archive") {
+      assert.deepEqual(
+        tables.map((object) => object.id),
+        ["archive-criteria-table"],
+      );
+      continue;
+    }
+
+    assert.equal(tables.length, 0, `${map.id} no debería tener objetos "table"`);
+  }
+});
+
+/*
+ * Corrección de encajonamiento de las mesas de consulta de archive (misma
+ * PR de "Archivo -- Visual Polish"): las mesas nacieron con 56px de ancho
+ * dejando solo 4px de margen visual real frente al escritorio central,
+ * porque su sprite (ver ARCHIVE_DESK_PIXEL_WIDTH en archiveDeskPixelArt.js)
+ * desborda 8px por lado su hitbox declarado (offsetX = (48-32)/2 = 8, ver
+ * drawArchiveDesk() en WorldScene.js). Se fija aquí la geometría exacta
+ * corregida (48px de ancho) y se deriva el borde visual real del escritorio
+ * del mismo cálculo que usa el motor de render, en vez de hardcodear
+ * 168/216 como números mágicos.
+ */
+test("archive-table-west/archive-table-east tienen la geometría exacta corregida (48x40, sin encajonamiento)", () => {
+  const map = getWorldMap("archive");
+
+  assert.deepEqual(
+    map.decorations.find((decoration) => decoration.id === "archive-table-west"),
+    {
+      id: "archive-table-west",
+      type: "archive-consultation-table",
+      x: 108,
+      y: 124,
+      width: 48,
+      height: 40,
+    },
+  );
+  assert.deepEqual(
+    map.decorations.find((decoration) => decoration.id === "archive-table-east"),
+    {
+      id: "archive-table-east",
+      type: "archive-consultation-table",
+      x: 228,
+      y: 124,
+      width: 48,
+      height: 40,
+    },
+  );
+});
+
+test("archive-table-west/archive-table-east dejan 12px de margen real en los 4 puntos de contacto (cajas y borde VISUAL del escritorio, no su hitbox declarado)", () => {
+  const map = getWorldMap("archive");
+  const desk = map.objects.find(
+    (object) => object.id === "archive-criteria-table",
+  );
+  const boxesWest = map.decorations.find(
+    (decoration) => decoration.id === "archive-boxes-west",
+  );
+  const boxesEast = map.decorations.find(
+    (decoration) => decoration.id === "archive-boxes-east",
+  );
+  const tableWest = map.decorations.find(
+    (decoration) => decoration.id === "archive-table-west",
+  );
+  const tableEast = map.decorations.find(
+    (decoration) => decoration.id === "archive-table-east",
+  );
+
+  assert.ok(desk && boxesWest && boxesEast && tableWest && tableEast);
+
+  // Mismo cálculo que drawArchiveDesk() (WorldScene.js): el sprite del
+  // escritorio desborda su hitbox declarado por igual a ambos lados.
+  const deskVisualOffsetX = (ARCHIVE_DESK_PIXEL_WIDTH - desk.width) / 2;
+  const deskVisualLeft = desk.x - deskVisualOffsetX;
+  const deskVisualRight = desk.x + desk.width + deskVisualOffsetX;
+
+  assert.equal(
+    tableWest.x - (boxesWest.x + boxesWest.width),
+    12,
+    "margen mesa-oeste <-> archive-boxes-west",
+  );
+  assert.equal(
+    deskVisualLeft - (tableWest.x + tableWest.width),
+    12,
+    "margen mesa-oeste <-> borde visual izquierdo del escritorio",
+  );
+  assert.equal(
+    tableEast.x - deskVisualRight,
+    12,
+    "margen mesa-este <-> borde visual derecho del escritorio",
+  );
+  assert.equal(
+    boxesEast.x - (tableEast.x + tableEast.width),
+    12,
+    "margen mesa-este <-> archive-boxes-east",
   );
 });
 

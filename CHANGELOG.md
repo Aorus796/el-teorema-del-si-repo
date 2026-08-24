@@ -6,6 +6,65 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Añadido
 
+- Archivo -- Visual Polish (`archive`, v1.1): pase puramente visual sobre
+  `src/content/worldMaps.js`, sin NPCs y sin tocar colisión, gameplay ni
+  los 2 `objects` originales (`archive-criteria-table`,
+  `archive-to-library`). Las 4 estanterías/cajas existentes migran del
+  tipo compartido `"tables"` (que ahora solo sirve a `axiom-plaza`, sin
+  ningún cambio) a dos tipos exclusivos que se distinguen entre sí:
+  `"archive-shelf"` (estanterías de libros, 80x32, ver
+  `archiveShelfPixelArt.js`) para las dos del norte, y `"archive-crates"`
+  (cajas/documentos apiladas con etiqueta y cinta, 64x32, deliberadamente
+  distinto de la estantería, ver `archiveCratesPixelArt.js`) para las dos
+  del centro -- conservan exactamente su id/x/y/width/height original. Se
+  añaden 2 mesas de consulta nuevas puramente decorativas
+  (`"archive-consultation-table"`, 48x40, con banco a AMBOS lados del
+  tablero y documentos apoyados, mismo patrón que
+  `library-reading-table`, ver `archiveConsultationTablePixelArt.js`),
+  una a cada lado del escritorio central. Corrección de encajonamiento
+  (misma PR): la primera versión (56x40) dejaba solo 4px de margen visual
+  real frente al escritorio, porque su sprite desborda 8px por lado su
+  hitbox declarado (`ARCHIVE_DESK_PIXEL_WIDTH` 48 vs hitbox 32); se
+  recortaron 4px por lado (56x40 -> 48x40, con las patas centrales del
+  banco desplazadas 2px hacia el interior en las 3 filas donde ese recorte
+  las habría cercenado) para dejar 12px de margen real en los 4 puntos de
+  contacto (mesa-oeste/cajas-oeste, mesa-oeste/borde visual del escritorio,
+  mesa-este/borde visual del escritorio, mesa-este/cajas-este). El escritorio central
+  (`archive-criteria-table`, que abre el tercer puzle) recibe un
+  tratamiento visual dedicado -- escritorio ornamentado con lámpara de pie
+  (tallo+cúpula, claramente distinta del libro), libro/registro abierto
+  como bloque plano separado, silla con respaldo/asiento diferenciados, y
+  alfombra con fleco/marco decorativo y dos macetas grandes flanqueando,
+  ver `archiveDeskPixelArt.js` (48x48) -- mediante la primera excepción
+  por-id (no por type) de `renderObjects()` en `WorldScene.js`: solo
+  `archive-criteria-table` recibe este tratamiento; el único otro objeto
+  de tipo `"table"` del juego, `epilogue-gift-mechanism` en
+  `axiom-plaza`, sigue usando la rama genérica sin ningún cambio. El
+  sprite del escritorio desborda a propósito su hitbox real (32x24) hacia
+  arriba, a los lados, y 8px hacia abajo (`ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW`
+  en `WorldScene.js`) para que la alfombra cubra también el borde inferior
+  del `solidRegion` ya existente de esa pieza -- mismo precedente que
+  `library-ladder` sobre `library-shelves-west-upper` en Biblioteca del
+  Margen: solape visual intencional, sin afectar colisión ni interacción
+  real (el hitbox/`interactionRadius` reales del objeto no cambian).
+  El diseño del escritorio pasó por una ronda de corrección tras una
+  verificación visual a escala real de juego: la primera versión (48x40)
+  dibujaba lámpara y libro como dos formas ovaladas contiguas que se leían
+  como una cara, y el frente del mueble como una rejilla que se leía como
+  panel de control -- la versión final separa espacialmente lámpara y
+  libro y sustituye la rejilla por paneles de puerta con tirador. Ninguna
+  decoración nueva ni migrada solapa ningún objeto interactuable, ni el
+  rectángulo de aparición del jugador, ni ninguna otra decoración; ambos
+  objetos originales siguen siendo alcanzables a pie desde el punto de
+  aparición por defecto. Nuevos tests: ampliación de
+  `tests/content/WorldMaps.test.js` (migración de tipo, geometría, cero
+  solidRegions nuevas, alcanzabilidad, regresión de `objects`, geometría
+  exacta corregida de las 2 mesas de consulta y los 4 márgenes reales de
+  12px frente a cajas y borde visual del escritorio, derivado del mismo
+  cálculo que usa `WorldScene.js` en vez de hardcodear coordenadas) y
+  `tests/scenes/ArchiveVisualPolishPixelArtCache.test.js` (cache de
+  sprites, incluida la regresión explícita de que
+  `epilogue-gift-mechanism` no activa el caso especial del escritorio).
 - Biblioteca del Margen -- NPCs ambientales (`library`, v1.1): 3 NPCs
   estáticos sin nombre propio (`ambient-library-reader`,
   `ambient-library-assistant`, `ambient-library-researcher`) que reutilizan
