@@ -6,6 +6,26 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Añadido
 
+- Cobertura de regresión de compatibilidad con guardados de v1.0.0
+  (`tests/state/GameStateV1SaveCompatibility.test.js`, más dos tests
+  nuevos y dos comentarios de referencia cruzada en
+  `tests/e2e/game.spec.js`): tres fixtures que reproducen, campo a
+  campo, la forma exacta de guardado (`formatVersion: 4`) que la build
+  publicada de v1.0.0 (tag `v1.0.0`, commit
+  `ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733`) podía producir en tres
+  puntos reales de una partida -- justo tras leer el tablón de
+  preparativos, a mitad del primer puzle de los Siete Puentes, y con los
+  tres puzles y el código del regalo del epílogo resueltos (epílogo sin
+  completar) -- y confirman que el runtime actual, tras la integración
+  completa de v1.1 (Max, NPCs ambientales, mapas rediseñados, personajes
+  en pixel-art), sigue restaurando exactamente esos guardados: mapa,
+  posición por mapa, banderas, objetivo, cuaderno y el estado exacto de
+  los tres puzles. No es una migración nueva ni un cambio de formato:
+  `src/state/GameState.js` no se modifica (confirmado con
+  `git diff v1.0.0 HEAD -- src/state/GameState.js`, sin diferencias) y
+  `SAVE_FORMAT_VERSION` permanece en `4`; es evidencia explícita de que
+  la integración de v1.1 no rompió la compatibilidad con guardados
+  históricos reales.
 - Archivo -- NPCs ambientales (`archive`, v1.1): 2 NPCs estáticos sin
   nombre propio (`ambient-archive-clerk`, `ambient-archive-researcher`)
   que reutilizan exactamente el mecanismo ambiental ya cerrado en Plaza

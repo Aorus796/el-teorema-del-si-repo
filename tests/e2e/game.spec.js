@@ -7,9 +7,13 @@ import {
   INTERACT_SFX_PATH,
   PUZZLE_SUCCESS_SFX_PATH,
 } from "../../src/content/sfxAudioConfig.js";
-import { GIFT_CODE_DIGITS } from "../../src/content/epilogueConfig.js";
+import {
+  GIFT_CODE_CLUE_LINES,
+  GIFT_CODE_DIGITS,
+} from "../../src/content/epilogueConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
+import { PARTNER_NAME } from "../../src/content/personalizationConfig.js";
 
 function collectJavaScriptErrors(page) {
   const errors = [];
@@ -1519,6 +1523,10 @@ test("restaura un intento fallido del catálogo de la Biblioteca tras recargar l
   expect(errors).toEqual([]);
 });
 
+// También sirve como regresión de compatibilidad con guardados reales de
+// v1.0.0 (tag `v1.0.0`) para el Caso B de
+// tests/state/GameStateV1SaveCompatibility.test.js: mismo punto de
+// progreso (P2 a medias, `traversing`, B1 cerrado, un paso registrado).
 test("restaura un intento a medias del primer puzle de los Siete Puentes tras recargar la página", async ({
   page,
 }) => {
@@ -1787,6 +1795,136 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
   expect(secondSave.puzzles.p2.lifecycle.status).toBe("active");
   expect(secondSave.puzzles.p2.lifecycle.attemptCount).toBe(1);
   expect(secondSave.puzzles.p2.failureCode).toBe(null);
+
+  expect(errors).toEqual([]);
+});
+
+/*
+ * Compatibilidad con guardados reales de v1.0.0 (tag `v1.0.0`, commit
+ * ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733), Caso A de
+ * tests/state/GameStateV1SaveCompatibility.test.js: un guardado con la
+ * forma exacta que produciría GameState.toSaveData() justo tras leer el
+ * tablón de preparativos (preparationsBoardRead:true, resto de banderas
+ * en false). Comprueba en el navegador real, no solo a nivel unitario,
+ * que esa bandera restaurada cambia de verdad el diálogo real de
+ * Corolaria (WorldScene.interactWithCorolaria()), no solo el dato en
+ * memoria.
+ */
+test("Caso A de compatibilidad con guardados de v1.0.0: preparationsBoardRead restaurado cambia el diálogo real de Corolaria", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: "2026-08-11T00:00:00.000Z",
+    scene: "world",
+    player: { x: 240, y: 192, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 192, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: false,
+      preparationsBoardRead: true,
+      brideNoteReceived: false,
+      sevenBridgesUnlocked: false,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "speak-to-corolaria",
+    notebook: [],
+    puzzles: {
+      p2: {
+        lifecycle: { id: "p2-bridges", status: "ready", attemptCount: 0 },
+        phase: "planning",
+        closedBridgeId: null,
+        currentNode: "E",
+        route: ["E"],
+        usedBridgeIds: [],
+        hintsRead: [],
+        failureCode: null,
+      },
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await disableAudioPlayback(page);
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueSpeaker = page.locator("#dialogue-speaker");
+  const dialogueText = page.locator("#dialogue-text");
+
+  const titleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+  await page.keyboard.press("KeyL");
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(titleFrame);
+
+  /*
+   * El jugador ya restaura dentro del radio de interacción de
+   * mayor-corolaria (x:256 y:176 width:14 height:18 interactionRadius:28
+   * en src/content/worldMaps.js, centro en x:263 y:185; distancia desde
+   * el spawn restaurado x:240 y:192 es ~24.04, menor que 28) -- no hace
+   * falta caminar para comprobar la interacción real.
+   */
+  await page.keyboard.press("KeyE");
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueSpeaker).toHaveText("Alcaldesa Corolaria");
+  await expect(dialogueText).toHaveText(
+    "Bien. Ya conoces las normas básicas de esta operación.",
+  );
+
+  const firstLine = await dialogueText.textContent();
+  expect(firstLine).not.toContain(
+    "revisa el tablón de preparativos",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect(dialogueText).toHaveText(
+    "Ahora necesito que hables con el padre de la novia.",
+  );
 
   expect(errors).toEqual([]);
 });
@@ -2577,6 +2715,11 @@ function buildEpilogueReadySaveData() {
   return seedState.toSaveData();
 }
 
+// También sirve como regresión de compatibilidad con guardados reales de
+// v1.0.0 (tag `v1.0.0`) para el Caso C de
+// tests/state/GameStateV1SaveCompatibility.test.js: mismo punto de
+// progreso (los tres puzles resueltos), aunque este recorrido parte de
+// antes de resolver el código del regalo.
 test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta volver al título", async ({
   page,
 }) => {
@@ -2993,6 +3136,177 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
 
     void worldFrameBeforeMechanism;
   });
+
+  expect(errors).toEqual([]);
+});
+
+/*
+ * Compatibilidad con guardados reales de v1.0.0 (tag `v1.0.0`, commit
+ * ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733), Caso C de
+ * tests/state/GameStateV1SaveCompatibility.test.js: un guardado con la
+ * forma exacta que produciría GameState.toSaveData() con los tres
+ * puzles y el código del regalo ya resueltos (giftCodeSolved:true) pero
+ * el epílogo sin completar. No recorre el diálogo completo ni los
+ * créditos -- eso ya lo cubre el test anterior de este archivo -- solo
+ * confirma que, tras restaurar ese guardado histórico en el runtime
+ * v1.1 (mapas y NPCs ambientales rediseñados), `bride-epilogue` sigue
+ * siendo alcanzable: requiresFlag:"giftCodeSolved" se evalúa
+ * correctamente y el prompt de interacción real muestra el nombre de la
+ * novia.
+ */
+test("Caso C de compatibilidad con guardados de v1.0.0: giftCodeSolved restaurado hace alcanzable a la novia en la Plaza", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: "2026-08-11T00:00:00.000Z",
+    scene: "world",
+    player: { x: 576, y: 325, facing: "up" },
+    world: {
+      currentMapId: "axiom-plaza",
+      playerByMap: {
+        "axiom-plaza": { x: 576, y: 325, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        // (224,176) en vez de (192,145): la última posición colisiona con
+        // archive-criteria-table tanto hoy como en v1.0.0 (ver
+        // tests/state/GameStateV1SaveCompatibility.test.js,
+        // buildCaseCFixture()) -- este dato es inerte en este test concreto
+        // (currentMapId sigue en axiom-plaza), pero se alinea con el
+        // fixture unitario para que la misma "instantánea" de guardado no
+        // quede representada con una posición físicamente imposible aquí y
+        // corregida allí.
+        archive: { x: 224, y: 176, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: true,
+      epilogueUnlocked: true,
+      epilogueStarted: true,
+      giftCodeSolved: true,
+      epilogueCompleted: false,
+    },
+    objectiveId: "epilogue-meet-bride",
+    notebook: [
+      {
+        id: "bride-note",
+        title: "Nota encontrada en la habitación",
+        text:
+          "Antes de mañana tengo que comprobar una cosa. Si no he vuelto al anochecer, sigue el camino de los siete puentes. No confíes en el mapa completo: uno de ellos nunca estuvo abierto.",
+      },
+      {
+        id: "library-clue",
+        title: "La marca de la biblioteca",
+        text:
+          "La anotación encontrada junto al embarcadero contiene dos arcos entrelazados y una referencia al archivo de mapas de la Biblioteca del Margen.",
+      },
+      {
+        id: "p2-bridges-solution",
+        title: "El paseo imposible",
+        text:
+          "No era necesario cruzar los siete puentes. Al reconocer cuál estaba cerrado, los seis restantes formaban un recorrido posible desde la entrada hasta el molino.",
+      },
+      {
+        id: "library-catalogue-solution",
+        title: "El catálogo perfecto",
+        text:
+          "El orden A-D-R-C-M ha restaurado el catálogo y revelado el acceso al Archivo.",
+      },
+      {
+        id: "archive-final-evidence",
+        title: "La pregunta correcta",
+        text:
+          "El Archivo conserva dos declaraciones presentes coincidentes y confirma que no dispone de observaciones futuras.",
+      },
+      {
+        id: "epilogue-combination-clue",
+        title: "La combinación del candado",
+        text: GIFT_CODE_CLUE_LINES.join("\n"),
+      },
+    ],
+    puzzles: {
+      p2: {
+        lifecycle: { id: "p2-bridges", status: "solved", attemptCount: 1 },
+        phase: "solved",
+        closedBridgeId: "B1",
+        currentNode: "L",
+        route: ["E", "R", "N", "L", "R", "M", "L"],
+        usedBridgeIds: ["B2", "B3", "B6", "B7", "B4", "B5"],
+        hintsRead: [1],
+        failureCode: null,
+      },
+      libraryCatalogue: {
+        order: ["A", "D", "R", "C", "M"],
+        phase: "solved",
+        hintsRead: [1],
+        attemptCount: 1,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": "confirmed",
+          "followed-trail": "confirmed",
+          "never-disagreed": "contradicted",
+          "someone-refuses-now": "contradicted",
+          "present-choice": "confirmed",
+          "universal-future": "undecidable",
+        },
+        phase: "solved",
+        hintsRead: [1],
+        attemptCount: 1,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await disableAudioPlayback(page);
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const interactionPrompt = page.locator("#interaction-prompt");
+
+  const titleFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+  await page.keyboard.press("KeyL");
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(titleFrame);
+
+  /*
+   * Misma posición y misma combinación de movimiento (KeyD+KeyW
+   * mantenidas) que ya usa con éxito, en este mismo archivo, el test
+   * "recorre el epílogo completo..." para alcanzar bride-epilogue
+   * (x:650 y:260 interactionRadius:28 en src/content/worldMaps.js) desde
+   * axiom-plaza x:576 y:325 -- reutilizar un recorrido ya probado en el
+   * runtime v1.1 actual reduce el riesgo de que este test dependa de una
+   * ruta de colisión inventada sin verificar.
+   */
+  await page.keyboard.down("KeyD");
+  await page.keyboard.down("KeyW");
+
+  await expect(interactionPrompt).toHaveText(
+    `[E] Hablar con ${PARTNER_NAME}`,
+    { timeout: 10_000 },
+  );
+
+  await page.keyboard.up("KeyD");
+  await page.keyboard.up("KeyW");
 
   expect(errors).toEqual([]);
 });
