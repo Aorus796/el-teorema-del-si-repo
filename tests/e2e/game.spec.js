@@ -121,9 +121,7 @@ test("carga la pantalla de título sin errores", async ({ page }) => {
   await disableAudioPlayback(page);
   await page.goto("/");
 
-  await expect(page).toHaveTitle(
-    "El Teorema del Si - Prototipo tecnico",
-  );
+  await expect(page).toHaveTitle("El Teorema del Sí");
 
   const canvas = page.locator("#game-canvas");
 
@@ -2946,29 +2944,29 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
   });
 
   await test.step("recorre los cinco turnos exactos del diálogo final", async () => {
-    await expect(dialogueSpeaker).toHaveText("Novia");
+    await expect(dialogueSpeaker).toHaveText("Elena");
     await expect(dialogueText).toHaveText(
       "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
     );
 
     await page.keyboard.press("KeyE");
-    await expect(dialogueSpeaker).toHaveText("Protagonista");
+    await expect(dialogueSpeaker).toHaveText("Gonzalo");
     await expect(dialogueText).toHaveText("Y aun así he venido.");
 
     await page.keyboard.press("KeyE");
-    await expect(dialogueSpeaker).toHaveText("Novia");
+    await expect(dialogueSpeaker).toHaveText("Elena");
     await expect(dialogueText).toHaveText(
       "Entonces dime qué demuestra el teorema.",
     );
 
     await page.keyboard.press("KeyE");
-    await expect(dialogueSpeaker).toHaveText("Protagonista");
+    await expect(dialogueSpeaker).toHaveText("Gonzalo");
     await expect(dialogueText).toHaveText(
       "Que ningún sí vale para siempre solo porque se pronunció una vez. Vale porque, pudiendo decir que no, hoy volvemos a elegirlo.",
     );
 
     await page.keyboard.press("KeyE");
-    await expect(dialogueSpeaker).toHaveText("Novia");
+    await expect(dialogueSpeaker).toHaveText("Elena");
     await expect(dialogueText).toHaveText(
       "Eso era lo único que necesitaba comprobar antes de mañana.",
     );
@@ -3021,11 +3019,13 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
   await test.step("confirma la tarjeta final y comprueba el guardado tras volver al título", async () => {
     await clearRenderedTexts();
     await page.keyboard.press("KeyE");
-    // "EL TEOREMA DEL SI" (sin tilde) es el texto literal de TitleScene.js,
-    // deliberadamente distinto de "EL TEOREMA DEL SÍ" (con tilde) del paso 2
-    // de créditos -- confirma sin ambigüedad que se llegó al título real,
-    // no a una reaparición del paso de créditos.
-    await waitForRenderedText("EL TEOREMA DEL SI");
+    // El título principal "EL TEOREMA DEL SÍ" ahora coincide literalmente
+    // entre TitleScene.js y el paso 2 de créditos, así que ya no sirve por
+    // sí solo para distinguir ambas escenas. "Un regalo de boda" es el
+    // subtítulo exclusivo de TitleScene.js (CreditsScene nunca lo dibuja),
+    // así que confirma sin ambigüedad que se llegó al título real, no a una
+    // reaparición del paso de créditos.
+    await waitForRenderedText("Un regalo de boda");
 
     const savedRaw = await page.evaluate(() =>
       localStorage.getItem("el-teorema-del-si.save.v1"),
@@ -4013,12 +4013,14 @@ test("cargar desde el título una partida con el epílogo ya completado no deja 
       await expect.poll(currentFrame).not.toBe(frameBeforeStep);
     }
 
-    // "EL TEOREMA DEL SI" (sin tilde) es el texto literal de
-    // TitleScene.js, deliberadamente distinto de "EL TEOREMA DEL SÍ" (con
-    // tilde) del paso de título de CreditsScene -- confirma sin
-    // ambigüedad que confirmFinalCard() completó el guardado real y
-    // volvió al título real, no que se quedó en algún paso de créditos.
-    await waitForRenderedText("EL TEOREMA DEL SI");
+    // El título principal "EL TEOREMA DEL SÍ" ahora coincide literalmente
+    // entre TitleScene.js y el paso de título de CreditsScene, así que ya
+    // no sirve por sí solo para distinguir ambas escenas. "Un regalo de
+    // boda" es el subtítulo exclusivo de TitleScene.js (CreditsScene nunca
+    // lo dibuja), así que confirma sin ambigüedad que confirmFinalCard()
+    // completó el guardado real y volvió al título real, no que se quedó
+    // en algún paso de créditos.
+    await waitForRenderedText("Un regalo de boda");
 
     const savedRaw = await page.evaluate(() =>
       localStorage.getItem("el-teorema-del-si.save.v1"),

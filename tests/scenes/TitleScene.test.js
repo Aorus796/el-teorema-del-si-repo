@@ -321,6 +321,16 @@ test("render() sin partida guardada no dibuja \"Gonzalo\", \"Elena\" ni el subt�
   );
 });
 
+test("render() dibuja el título canónico \"EL TEOREMA DEL SÍ\" con tilde, nunca sin tilde", () => {
+  const setup = createScene({ hasSave: false });
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  assert.ok(context.texts.includes("EL TEOREMA DEL SÍ"));
+  assert.ok(!context.texts.includes("EL TEOREMA DEL SI"));
+});
+
 test("render() con partida guardada tampoco dibuja \"Gonzalo\", \"Elena\" ni el subtítulo heredado del vertical slice", () => {
   const setup = createScene({
     hasSave: true,

@@ -63,7 +63,7 @@ export class TitleScene {
     context.fillStyle = "#efe2bf";
     context.font = "bold 22px monospace";
     context.textAlign = "center";
-    context.fillText("EL TEOREMA DEL SI", 240, 70);
+    context.fillText("EL TEOREMA DEL SÍ", 240, 70);
 
     context.fillStyle = "#71d5c6";
     context.font = "11px monospace";

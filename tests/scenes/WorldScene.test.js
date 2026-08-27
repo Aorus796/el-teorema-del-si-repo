@@ -229,7 +229,7 @@ test("el acceso bloqueado no cambia progreso ni mapa", () => {
   assert.deepEqual(setup.state.notebook, notebookBefore);
   assert.equal(
     setup.ui.dialogue.lines[0],
-    "Todavía no tengo ningún motivo para ir a la Biblioteca.",
+    "Todavía no tengo ningún motivo para ir a la Biblioteca del Margen.",
   );
 });
 
@@ -663,7 +663,7 @@ test("bride-epilogue con la cadena válida sincroniza al jugador y abre el prime
     250,
   );
   assert.ok(setup.ui.dialogue !== null);
-  assert.equal(setup.ui.dialogue.speaker, "Novia");
+  assert.equal(setup.ui.dialogue.speaker, PARTNER_NAME);
   assert.deepEqual(setup.ui.dialogue.lines, [
     "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
   ]);
@@ -680,24 +680,24 @@ test("el diálogo de bride-epilogue reproduce exactamente los cinco turnos aprob
 
   const expectedTurns = [
     {
-      speaker: "Novia",
+      speaker: PARTNER_NAME,
       lines: [
         "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
       ],
     },
-    { speaker: "Protagonista", lines: ["Y aun así he venido."] },
+    { speaker: PROTAGONIST_NAME, lines: ["Y aun así he venido."] },
     {
-      speaker: "Novia",
+      speaker: PARTNER_NAME,
       lines: ["Entonces dime qué demuestra el teorema."],
     },
     {
-      speaker: "Protagonista",
+      speaker: PROTAGONIST_NAME,
       lines: [
         "Que ningún sí vale para siempre solo porque se pronunció una vez. Vale porque, pudiendo decir que no, hoy volvemos a elegirlo.",
       ],
     },
     {
-      speaker: "Novia",
+      speaker: PARTNER_NAME,
       lines: [
         "Eso era lo único que necesitaba comprobar antes de mañana.",
       ],
