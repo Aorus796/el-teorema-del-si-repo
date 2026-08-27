@@ -6,6 +6,29 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Añadido
 
+- CreditsScene -- consistencia de renderer de Gonzalo: corrección focalizada
+  que cierra el último render geométrico legado de un personaje humano.
+  `src/scenes/CreditsScene.js` seguía dibujando a Gonzalo en el plano de
+  cierre (`renderClosingShot()`) con su función interna `drawGonzalo()`
+  (`PROTAGONIST_PALETTE` en bloques de `fillRect`), pese a que
+  `GonzaloRenderer.js`/`gonzaloPixelArt.js` (pixel-art indexado ya
+  aprobado y en uso en gameplay, vía `Player.js`) llevaban tiempo siendo
+  la fuente canónica de su apariencia -- misma inconsistencia que ya se
+  había corregido antes para Elena en este mismo archivo. `drawGonzalo()`
+  se elimina y su llamada pasa a delegar en
+  `renderGonzalo(context, x, y, "down")` de `GonzaloRenderer.js`, sin
+  ningún ajuste de posición o escala (mismo anclaje esquina-superior-
+  izquierda, 14x22, que ya usaba el render geométrico anterior). No es un
+  rediseño de Gonzalo: su pixel-art no cambia en absoluto, solo el punto
+  de la escena de créditos que lo dibuja. `Elena` y `Max` no se tocan.
+  `PROTAGONIST_PALETTE` deja de re-exportarse desde `CreditsScene.js` (ya
+  no tiene consumidores reales ahí). `tests/scenes/CreditsScene.test.js`
+  se actualiza con el mismo patrón de conteo derivado de los datos
+  (`GONZALO_PALETTE`/`GONZALO_FRONT_PIXELS`) ya usado para Elena,
+  incluyendo el contorno píxel a píxel (1x1) con la cantidad exacta de
+  símbolos "O", y un filtro explícito por posición X para separar los
+  píxeles de piel de Gonzalo de los de Elena, que comparten literalmente
+  el mismo color (`SKIN_TONE`).
 - Cobertura de regresión de compatibilidad con guardados de v1.0.0
   (`tests/state/GameStateV1SaveCompatibility.test.js`, más dos tests
   nuevos y dos comentarios de referencia cruzada en
