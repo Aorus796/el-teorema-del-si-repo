@@ -38,8 +38,11 @@ export const MAX_PALETTE = Object.freeze({
   collar: "#26201d",
 });
 
-// Paleta propia de la Alcaldesa Corolaria. Consumida por
-// WorldScene.renderCorolaria, que no consulta NAMED_NPC_PALETTES.
+// Paleta propia de la Alcaldesa Corolaria. Ya no la consume WorldScene:
+// WorldScene.renderCorolaria delega en render/CorolariaRenderer.js
+// (corolariaPixelArt.js), que trae su propia paleta indexada. Se conserva
+// como referencia histórica de color, consumida hoy por
+// tests/content/CorolariaPixelArt.test.js.
 export const MAYOR_PALETTE = Object.freeze({
   silhouette: "#4a2e42",
   head: SKIN_TONE,
@@ -48,8 +51,11 @@ export const MAYOR_PALETTE = Object.freeze({
   bodyAccent: "#d6b65f",
 });
 
-// Paleta propia del Padre de la novia. Consumida por
-// WorldScene.renderBrideFather, que no consulta NAMED_NPC_PALETTES.
+// Paleta propia del Padre de la novia. Ya no la consume WorldScene:
+// WorldScene.renderBrideFather delega en render/BrideFatherRenderer.js
+// (brideFatherPixelArt.js), que trae su propia paleta indexada. Se
+// conserva como referencia histórica de color, consumida hoy por
+// tests/content/BrideFatherPixelArt.test.js.
 export const BRIDE_FATHER_PALETTE = Object.freeze({
   silhouette: "#241f1c",
   head: SKIN_TONE,
@@ -58,8 +64,11 @@ export const BRIDE_FATHER_PALETTE = Object.freeze({
   bodyAccent: "#efe2bf",
 });
 
-// Paleta propia de Silogio. Consumida por WorldScene.renderSilogio, que no
-// consulta NAMED_NPC_PALETTES ni DEFAULT_NPC_PALETTE.
+// Paleta propia de Silogio. Ya no la consume WorldScene:
+// WorldScene.renderSilogio delega en render/SilogioRenderer.js
+// (silogioPixelArt.js), que trae su propia paleta indexada. Se conserva
+// como referencia histórica de color, consumida hoy por
+// tests/content/SilogioPixelArt.test.js.
 export const SILOGIO_PALETTE = Object.freeze({
   silhouette: "#22303a",
   head: SKIN_TONE,

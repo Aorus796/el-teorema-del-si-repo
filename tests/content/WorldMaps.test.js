@@ -91,7 +91,7 @@ test("las salidas apuntan a mapas registrados", () => {
 test("library es un mapa compacto con salida y Silogio", () => {
   const map = getWorldMap("library");
 
-  assert.equal(map.name, "Biblioteca");
+  assert.equal(map.name, "Biblioteca del Margen");
   assert.equal(map.width, 30);
   assert.equal(map.height, 20);
   assert.ok(map.solidTiles.length > 0);
@@ -438,7 +438,7 @@ test("los 2 objects originales de archive conservan su geometr√≠a, label y desti
       width: 32,
       height: 16,
       interactionRadius: 30,
-      label: "Biblioteca",
+      label: "Biblioteca del Margen",
       targetMapId: "library",
       targetPlayerState: { x: 416, y: 176, facing: "left" },
     },
@@ -1263,7 +1263,7 @@ test("los 5 objetos originales de seven-bridges-walk (#58) conservan su geometr√
       width: 16,
       height: 64,
       interactionRadius: 30,
-      label: "Biblioteca",
+      label: "Biblioteca del Margen",
       targetMapId: "library",
       targetPlayerState: { x: 240, y: 256, facing: "up" },
     },

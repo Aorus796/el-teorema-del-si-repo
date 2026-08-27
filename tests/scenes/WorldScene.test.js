@@ -264,7 +264,7 @@ test("el acceso permitido conserva el Paseo y aparece fuera del portal", () => {
     setup.state.getPlayerState(),
     findObject("library", "library-to-seven-bridges"),
   );
-  assert.equal(setup.ui.toasts.at(-1), "Biblioteca");
+  assert.equal(setup.ui.toasts.at(-1), "Biblioteca del Margen");
 });
 
 test("la salida conserva la Biblioteca y evita el portal de regreso", () => {

@@ -768,7 +768,7 @@ const SEVEN_BRIDGES_WALK = createMap({
       width: 16,
       height: 64,
       interactionRadius: 30,
-      label: "Biblioteca",
+      label: "Biblioteca del Margen",
       targetMapId: "library",
       targetPlayerState: {
         x: 240,
@@ -1018,7 +1018,7 @@ const SEVEN_BRIDGES_WALK = createMap({
 
 const LIBRARY = createMap({
   id: "library",
-  name: "Biblioteca",
+  name: "Biblioteca del Margen",
   width: 30,
   height: 20,
   palette: {
@@ -1284,7 +1284,7 @@ const ARCHIVE = createMap({
       width: 32,
       height: 16,
       interactionRadius: 30,
-      label: "Biblioteca",
+      label: "Biblioteca del Margen",
       targetMapId: "library",
       targetPlayerState: {
         x: 416,
