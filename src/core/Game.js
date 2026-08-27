@@ -62,7 +62,7 @@ export class Game {
     context.fillRect(0, 0, this.canvas.width, this.canvas.height);
     context.fillStyle = "#ffdfdf";
     context.font = "12px monospace";
-    context.fillText("El prototipo ha encontrado un error.", 24, 48);
+    context.fillText("El juego ha encontrado un error.", 24, 48);
     context.fillText("Consulta la consola del navegador.", 24, 68);
 
     if (error instanceof Error) {
