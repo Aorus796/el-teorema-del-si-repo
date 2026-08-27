@@ -1,13 +1,11 @@
 import { getWorldMap } from "../content/worldMaps.js";
 import { COUPLE_DEDICATION } from "../content/personalizationConfig.js";
-import {
-  BRIDE_PALETTE,
-  PROTAGONIST_PALETTE,
-} from "../content/characterPalettes.js";
+import { BRIDE_PALETTE } from "../content/characterPalettes.js";
 import { renderMax } from "../render/MaxRenderer.js";
 import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
+import { renderGonzalo } from "../render/GonzaloRenderer.js";
 
-export { BRIDE_PALETTE, PROTAGONIST_PALETTE };
+export { BRIDE_PALETTE };
 
 export const CREDITS_STEP = Object.freeze({
   CLOSING_SHOT: "closing-shot",
@@ -151,41 +149,14 @@ export function wrapTextToLines(text, maxCharsPerLine) {
   return lines;
 }
 
-function drawGonzalo(context, x, y) {
-  context.fillStyle = PROTAGONIST_PALETTE.silhouette;
-  context.fillRect(x + 2, y, 10, 3);
-  context.fillRect(x + 1, y + 3, 12, 7);
-  context.fillRect(x, y + 10, 14, 6);
-  context.fillRect(x + 3, y + 16, 8, 6);
-
-  context.fillStyle = PROTAGONIST_PALETTE.hair;
-  context.fillRect(x + 3, y + 1, 8, 2);
-
-  context.fillStyle = PROTAGONIST_PALETTE.head;
-  context.fillRect(x + 3, y + 3, 8, 6);
-
-  context.fillStyle = PROTAGONIST_PALETTE.hair;
-  context.fillRect(x + 10, y + 3, 2, 3);
-
-  context.fillStyle = PROTAGONIST_PALETTE.head;
-  context.fillRect(x + 1, y + 10, 2, 6);
-  context.fillRect(x + 11, y + 10, 2, 6);
-
-  context.fillStyle = PROTAGONIST_PALETTE.body;
-  context.fillRect(x + 3, y + 10, 8, 6);
-
-  context.fillStyle = PROTAGONIST_PALETTE.bodyAccent;
-  context.fillRect(x + 4, y + 17, 2, 5);
-  context.fillRect(x + 8, y + 17, 2, 5);
-}
-
-// Elena Character Pixel-Art: migra del render geométrico anterior (arriba
-// en el historial de este archivo) al mismo sprite indexado cacheado de
-// ElenaRenderer.js ya usado en WorldScene.renderElena() -- mismo (x,y) de
+// Gonzalo y Elena Character Pixel-Art: ambos migraron del render
+// geométrico anterior de este archivo (historial de este mismo archivo) al
+// sprite indexado cacheado de su renderer correspondiente
+// (GonzaloRenderer.js / ElenaRenderer.js), ya usados en el mundo de juego
+// (Player.js y WorldScene.renderElena() respectivamente) -- mismo (x,y) de
 // anclaje (esquina superior izquierda) que el render geométrico anterior
-// usaba, así que no hace falta ningún ajuste de posición/escala. Gonzalo
-// (drawGonzalo, justo arriba) se deja intacto a propósito: esta corrección
-// es exclusiva de Elena.
+// usaba en ambos casos, así que no hace falta ningún ajuste de
+// posición/escala.
 function drawElena(context, x, y) {
   renderElenaSprite(context, x, y, "down");
 }
@@ -199,7 +170,7 @@ function renderClosingShot(context) {
   context.fillStyle = dawnPalette.groundB;
   context.fillRect(0, 190, 480, 80);
 
-  drawGonzalo(context, 208, 188);
+  renderGonzalo(context, 208, 188, "down");
   drawElena(context, 230, 188);
   renderMax(context, 180, 190);
 

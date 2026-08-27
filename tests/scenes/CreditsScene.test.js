@@ -3,7 +3,6 @@ import test from "node:test";
 import {
   CreditsScene,
   CREDITS_STEP,
-  PROTAGONIST_PALETTE,
   BRIDE_PALETTE,
   wrapTextToLines,
 } from "../../src/scenes/CreditsScene.js";
@@ -13,9 +12,21 @@ import { GameState } from "../../src/state/GameState.js";
 import { COUPLE_DEDICATION } from "../../src/content/personalizationConfig.js";
 import { ELENA_FRONT_PIXELS } from "../../src/content/elenaPixelArt.js";
 import {
+  GONZALO_FRONT_PIXELS,
+  GONZALO_PALETTE,
+} from "../../src/content/gonzaloPixelArt.js";
+import {
   MAX_PIXEL_PALETTE,
   MAX_SIDE_PIXELS,
 } from "../../src/content/maxPixelArt.js";
+
+// Gonzalo se dibuja en x=208 (ancho 14, ocupa columnas 208-221) y Elena en
+// x=230 (ancho 14, ocupa columnas 230-243): no se solapan en X.
+// GONZALO_PALETTE.k (piel de Gonzalo) y ELENA_PALETTE.k/BRIDE_PALETTE.head
+// (piel de Elena) son literalmente el mismo color (SKIN_TONE compartido),
+// así que los rects de color piel deben filtrarse también por posición X
+// para no mezclar los conteos de ambos personajes.
+const GONZALO_MAX_X = 222;
 
 const TITLE_TEXT = "EL TEOREMA DEL SÍ";
 const CREDITS_LINE_1 = "CREADO CON CARIÑO";
@@ -204,7 +215,7 @@ test("wrapTextToLines envuelve la dedicatoria aprobada en líneas dentro del lí
   assert.equal(lines.join(" "), COUPLE_DEDICATION);
 });
 
-test("el paso 1 dibuja dos personajes con las paletas reutilizadas del jugador y la novia, sobre el amanecer de axiom-plaza", () => {
+test("el paso 1 dibuja dos personajes con las paletas indexadas de Gonzalo y la novia, sobre el amanecer de axiom-plaza", () => {
   const { scene } = createScene();
   scene.enter();
 
@@ -216,18 +227,18 @@ test("el paso 1 dibuja dos personajes con las paletas reutilizadas del jugador y
 
   assert.ok(fillStyles.includes(dawnPalette.groundA));
   assert.ok(fillStyles.includes(dawnPalette.groundB));
-  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.silhouette));
-  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.head));
-  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.body));
+  assert.ok(fillStyles.includes(GONZALO_PALETTE.O));
+  assert.ok(fillStyles.includes(GONZALO_PALETTE.k));
+  assert.ok(fillStyles.includes(GONZALO_PALETTE.b));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.silhouette));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.body));
-  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.hair));
+  assert.ok(fillStyles.includes(GONZALO_PALETTE.d));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.hair));
-  assert.ok(fillStyles.includes(PROTAGONIST_PALETTE.bodyAccent));
+  assert.ok(fillStyles.includes(GONZALO_PALETTE.L));
   assert.ok(fillStyles.includes(BRIDE_PALETTE.bodyAccent));
 });
 
-test("el paso 1 dibuja el pelo, la cabeza, los brazos y el cuerpo de Gonzalo en las posiciones geométricas esperadas, y las mismas zonas de Elena con la cantidad de píxeles que declara ElenaRenderer", () => {
+test("el paso 1 dibuja el pelo, la cabeza, los brazos y el cuerpo de Gonzalo y Elena con la cantidad de píxeles que declaran sus respectivos pixel-art indexados", () => {
   const { scene } = createScene();
   scene.enter();
 
@@ -237,43 +248,64 @@ test("el paso 1 dibuja el pelo, la cabeza, los brazos y el cuerpo de Gonzalo en 
   const byColor = (color) =>
     context.fillRects.filter((rect) => rect.fillStyle === color);
 
-  assert.deepEqual(byColor(PROTAGONIST_PALETTE.hair), [
-    { x: 211, y: 189, width: 8, height: 2, fillStyle: PROTAGONIST_PALETTE.hair },
-    { x: 218, y: 191, width: 2, height: 3, fillStyle: PROTAGONIST_PALETTE.hair },
-  ]);
-
-  // PROTAGONIST_PALETTE.head y BRIDE_PALETTE.head son literalmente el
-  // mismo valor (SKIN_TONE compartido). Gonzalo sigue con el renderer
-  // geométrico antiguo (rects grandes, width/height > 1); Elena ahora usa
-  // ElenaRenderer, que rasteriza píxel a píxel (rects 1x1) -- así que se
-  // separan por tamaño de rect en vez de por posición exacta.
-  assert.equal(PROTAGONIST_PALETTE.head, BRIDE_PALETTE.head);
-  const headRects = byColor(PROTAGONIST_PALETTE.head);
-  const gonzaloHeadRects = headRects.filter(
-    (rect) => rect.width > 1 || rect.height > 1,
-  );
-  const elenaSkinPixels = headRects.filter(
-    (rect) => rect.width === 1 && rect.height === 1,
-  );
-
-  assert.deepEqual(gonzaloHeadRects, [
-    { x: 211, y: 191, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
-    { x: 209, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
-    { x: 219, y: 198, width: 2, height: 6, fillStyle: PROTAGONIST_PALETTE.head },
-  ]);
+  // GONZALO_PALETTE.d (pelo) no colisiona con ningún color de Elena
+  // (ELENA_PALETTE.d tiene un valor distinto), así que estos rects son
+  // exclusivamente de Gonzalo. Todos deben ser 1x1 (GonzaloRenderer), y su
+  // cantidad debe coincidir con el símbolo "d" de GONZALO_FRONT_PIXELS.
+  const gonzaloHairRects = byColor(GONZALO_PALETTE.d);
   assert.equal(
-    elenaSkinPixels.length,
+    gonzaloHairRects.length,
+    countSymbolInPixels(GONZALO_FRONT_PIXELS, "d"),
+  );
+  assert.ok(
+    gonzaloHairRects.every((rect) => rect.width === 1 && rect.height === 1),
+  );
+
+  // GONZALO_PALETTE.k (piel de Gonzalo) y ELENA_PALETTE.k/BRIDE_PALETTE.head
+  // (piel de Elena) son literalmente el mismo valor (SKIN_TONE compartido).
+  // Gonzalo se dibuja en x 208-221 y Elena en x 230-243: no se solapan, así
+  // que se separan por posición X en vez de por color.
+  assert.equal(GONZALO_PALETTE.k, BRIDE_PALETTE.head);
+  const skinRects = byColor(GONZALO_PALETTE.k);
+  const gonzaloSkinRects = skinRects.filter((rect) => rect.x <= GONZALO_MAX_X);
+  const elenaSkinRects = skinRects.filter((rect) => rect.x > GONZALO_MAX_X);
+
+  assert.equal(
+    gonzaloSkinRects.length,
+    countSymbolInPixels(GONZALO_FRONT_PIXELS, "k"),
+    "la cantidad de píxeles de piel de Gonzalo debe coincidir con el símbolo 'k' de GONZALO_FRONT_PIXELS",
+  );
+  assert.ok(
+    gonzaloSkinRects.every((rect) => rect.width === 1 && rect.height === 1),
+  );
+  assert.equal(
+    elenaSkinRects.length,
     countSymbolInPixels(ELENA_FRONT_PIXELS, "k"),
     "la cantidad de píxeles de piel de Elena debe coincidir con el símbolo 'k' de ELENA_FRONT_PIXELS",
   );
+  assert.ok(
+    elenaSkinRects.every((rect) => rect.width === 1 && rect.height === 1),
+  );
 
-  assert.deepEqual(byColor(PROTAGONIST_PALETTE.body), [
-    { x: 211, y: 198, width: 8, height: 6, fillStyle: PROTAGONIST_PALETTE.body },
-  ]);
-  assert.deepEqual(byColor(PROTAGONIST_PALETTE.bodyAccent), [
-    { x: 212, y: 205, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
-    { x: 216, y: 205, width: 2, height: 5, fillStyle: PROTAGONIST_PALETTE.bodyAccent },
-  ]);
+  // GONZALO_PALETTE.b (camisa) y GONZALO_PALETTE.L (pantalón) no colisionan
+  // con ningún color de Elena.
+  const gonzaloBodyRects = byColor(GONZALO_PALETTE.b);
+  assert.equal(
+    gonzaloBodyRects.length,
+    countSymbolInPixels(GONZALO_FRONT_PIXELS, "b"),
+  );
+  assert.ok(
+    gonzaloBodyRects.every((rect) => rect.width === 1 && rect.height === 1),
+  );
+
+  const gonzaloBodyAccentRects = byColor(GONZALO_PALETTE.L);
+  assert.equal(
+    gonzaloBodyAccentRects.length,
+    countSymbolInPixels(GONZALO_FRONT_PIXELS, "L"),
+  );
+  assert.ok(
+    gonzaloBodyAccentRects.every((rect) => rect.width === 1 && rect.height === 1),
+  );
 
   // Elena: BRIDE_PALETTE.hair/.body/.bodyAccent no colisionan con ningún
   // color de Gonzalo, así que estos rects son exclusivamente suyos. Todos
@@ -304,7 +336,7 @@ test("el paso 1 dibuja el pelo, la cabeza, los brazos y el cuerpo de Gonzalo en 
   );
 });
 
-test("el paso 1 dibuja el contorno de Gonzalo como varias piezas estrechas, no como un bloque de fondo grande", () => {
+test("el paso 1 dibuja el contorno de Gonzalo píxel a píxel con GonzaloRenderer (no el bloque geométrico antiguo de PROTAGONIST_PALETTE)", () => {
   const { scene } = createScene();
   scene.enter();
 
@@ -312,18 +344,20 @@ test("el paso 1 dibuja el contorno de Gonzalo como varias piezas estrechas, no c
   scene.render(context);
 
   const silhouetteRects = context.fillRects.filter(
-    (rect) => rect.fillStyle === PROTAGONIST_PALETTE.silhouette,
+    (rect) => rect.fillStyle === GONZALO_PALETTE.O,
   );
 
-  assert.ok(
-    silhouetteRects.length >= 2,
-    `el contorno debe tener varias piezas, no un único rectángulo de fondo (encontradas: ${silhouetteRects.length})`,
+  // El renderer geométrico antiguo dibujaba el contorno de Gonzalo en solo
+  // 4 rects grandes. GonzaloRenderer rasteriza un fillRect 1x1 por símbolo
+  // "O" de GONZALO_FRONT_PIXELS: la cantidad exacta y el tamaño uniforme
+  // 1x1 son la prueba de que ya no se usa el renderer antiguo.
+  assert.equal(
+    silhouetteRects.length,
+    countSymbolInPixels(GONZALO_FRONT_PIXELS, "O"),
   );
-
-  const widths = silhouetteRects.map((rect) => rect.width);
   assert.ok(
-    Math.min(...widths) < Math.max(...widths),
-    "las piezas de contorno deben variar de ancho (más estrechas donde el cuerpo es más estrecho), no ser todas iguales a un único ancho de fondo",
+    silhouetteRects.every((rect) => rect.width === 1 && rect.height === 1),
+    "GonzaloRenderer dibuja el contorno píxel a píxel (1x1), no como bloques grandes",
   );
 });
 
