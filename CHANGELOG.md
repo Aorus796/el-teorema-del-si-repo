@@ -1636,6 +1636,63 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   de los 5 `objects` ya existentes de este mapa, ni ningún personaje con
   nombre propio, progresión o colisión del puzle de los siete puentes.
 
+### Cambiado
+
+- Housekeeping de cierre de v1.1, sin cambios de mecánica, dificultad ni
+  narrativa nueva.
+  - Normalización de "Biblioteca del Margen": el mapa `library`
+    (`src/content/worldMaps.js`) tenía el nombre corto "Biblioteca" en
+    `name`, mientras que su propio cartel de entrada (`blocked-library`)
+    ya usaba "Biblioteca del Margen". Se corrige `name` y los dos labels
+    de salida que apuntaban a este mapa (`seven-bridges-to-library` en
+    Paseo de los Siete Puentes, `archive-to-library` en el Archivo) para
+    que los tres coincidan con "Biblioteca del Margen". No se toca el
+    diálogo narrativo de `WorldScene.js` ("Todavía no tengo ningún motivo
+    para ir a la Biblioteca."), que usa la forma corta dentro de una
+    frase de forma deliberada.
+  - Comentarios desactualizados en `src/content/characterPalettes.js`:
+    `MAYOR_PALETTE`, `BRIDE_FATHER_PALETTE` y `SILOGIO_PALETTE`
+    documentaban ser consumidas directamente por
+    `WorldScene.renderCorolaria`/`renderBrideFather`/`renderSilogio`, pero
+    esas funciones hoy son wrappers finos que delegan en
+    `CorolariaRenderer.js`, `BrideFatherRenderer.js` y
+    `SilogioRenderer.js` respectivamente (cada uno con su propia paleta
+    indexada de pixel-art). Se corrige el comentario de las tres
+    constantes para reflejar que se conservan como referencia histórica
+    de color, consumidas hoy solo por sus tests de regresión
+    (`tests/content/CorolariaPixelArt.test.js`,
+    `tests/content/BrideFatherPixelArt.test.js`,
+    `tests/content/SilogioPixelArt.test.js`). Ningún valor de color,
+    export ni `Object.freeze` cambia.
+  - Auditoría de cierre: cuatro puntos evaluados y cerrados como "riesgo
+    bajo aceptado, sin cambio necesario", para que no vuelvan a
+    re-auditarse sin motivo:
+    - `ACTIVATE_SFX_PATH` (`src/content/sfxAudioConfig.js`): su alcance
+      actual, limitado al mecanismo del regalo del epílogo, es
+      intencional -- no existe otro evento "activate/inspect" del juego
+      que haya quedado fuera por error.
+    - `WEDDING_DATE`/`WEDDING_CITY`
+      (`src/content/personalizationConfig.js`): configuración reservada
+      para personalización futura, documentada explícitamente en
+      `docs/production/V1_1_PERSONALIZATION_SPEC.md` como "sin
+      consumidor identificado, no se clasifica todavía"; no es código
+      muerto accidental.
+    - Discrepancia cosmética entre el `solidRegion` del altar y las
+      mesas de boda en `axiom-plaza`: no reproduce ningún softlock ni
+      ruta bloqueada, y es consistente con que la mayoría del mobiliario
+      decorativo del juego no alimenta `solidTiles`. No requiere cambio
+      de geometría.
+    - Re-resolución de puzles ya resueltos tras recargar el guardado: ya
+      existe cobertura equivalente y completa en
+      `tests/scenes/LibraryCatalogueScene.test.js`,
+      `tests/scenes/ArchiveCriteriaScene.test.js`,
+      `tests/scenes/P2BridgesScene.test.js`,
+      `tests/scenes/EpilogueGiftCodeScene.test.js`, a nivel e2e
+      (`tests/e2e/game.spec.js`) y a nivel de guardado
+      (`tests/state/GameStateV1SaveCompatibility.test.js`); no hay
+      duplicación de progreso ni de efectos de sonido. No se añade
+      ningún test nuevo para este punto.
+
 ## [1.0.0] - 2026-08-11
 
 Primera versión estable: recorrido narrativo completo de principio a fin
