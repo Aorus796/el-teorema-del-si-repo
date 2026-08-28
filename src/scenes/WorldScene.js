@@ -224,27 +224,27 @@ const LIBRARY_CLUE_ENTRY = {
 
 const BRIDE_EPILOGUE_DIALOGUE_TURNS = [
   {
-    speaker: "Novia",
+    speaker: PARTNER_NAME,
     lines: [
       "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
     ],
   },
   {
-    speaker: "Protagonista",
+    speaker: PROTAGONIST_NAME,
     lines: ["Y aun así he venido."],
   },
   {
-    speaker: "Novia",
+    speaker: PARTNER_NAME,
     lines: ["Entonces dime qué demuestra el teorema."],
   },
   {
-    speaker: "Protagonista",
+    speaker: PROTAGONIST_NAME,
     lines: [
       "Que ningún sí vale para siempre solo porque se pronunció una vez. Vale porque, pudiendo decir que no, hoy volvemos a elegirlo.",
     ],
   },
   {
-    speaker: "Novia",
+    speaker: PARTNER_NAME,
     lines: ["Eso era lo único que necesitaba comprobar antes de mañana."],
   },
 ];
@@ -809,7 +809,7 @@ export class WorldScene {
       this.ui.beginDialogue({
         speaker: "Camino de la biblioteca",
         lines: [
-          "Todavía no tengo ningún motivo para ir a la Biblioteca.",
+          "Todavía no tengo ningún motivo para ir a la Biblioteca del Margen.",
         ],
       });
       return;

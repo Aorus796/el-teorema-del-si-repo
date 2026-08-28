@@ -1646,10 +1646,12 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
     ya usaba "Biblioteca del Margen". Se corrige `name` y los dos labels
     de salida que apuntaban a este mapa (`seven-bridges-to-library` en
     Paseo de los Siete Puentes, `archive-to-library` en el Archivo) para
-    que los tres coincidan con "Biblioteca del Margen". No se toca el
-    diálogo narrativo de `WorldScene.js` ("Todavía no tengo ningún motivo
-    para ir a la Biblioteca."), que usa la forma corta dentro de una
-    frase de forma deliberada.
+    que los tres coincidan con "Biblioteca del Margen". El diálogo
+    narrativo de `WorldScene.js` ("Todavía no tengo ningún motivo para ir
+    a la Biblioteca.") mantuvo entonces la forma corta deliberadamente;
+    una ronda posterior de QA de cierre lo normalizó también a
+    "Biblioteca del Margen" (ver el cierre de hallazgos de QA final más
+    abajo).
   - Comentarios desactualizados en `src/content/characterPalettes.js`:
     `MAYOR_PALETTE`, `BRIDE_FATHER_PALETTE` y `SILOGIO_PALETTE`
     documentaban ser consumidas directamente por
@@ -1692,6 +1694,33 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
       (`tests/state/GameStateV1SaveCompatibility.test.js`); no hay
       duplicación de progreso ni de efectos de sonido. No se añade
       ningún test nuevo para este punto.
+  - Cierre de cuatro hallazgos de un Final Release QA de cara a la
+    publicación, sin abrir ninguna decisión de diseño nueva:
+    - Título canónico "EL TEOREMA DEL SÍ" (con tilde): `TitleScene.js`
+      dibujaba "EL TEOREMA DEL SI" (sin tilde) en su pantalla de título,
+      inconsistente con `CreditsScene.js` (`TITLE_TEXT`), que ya usaba la
+      forma correcta. Se corrige el literal en `TitleScene.js` para que
+      ambas pantallas coincidan.
+    - Copy de `index.html`: se corrigen tildes faltantes (`descripcion`,
+      `Cuaderno de investigación`, `Área de juego`) y se elimina el
+      framing de "prototipo técnico" (meta `description`, `<title>`,
+      `aria-label` de `<main>`, mensaje de `<noscript>`), ya que el juego
+      es un producto entregable publicado (v1.0.0), no un prototipo. El
+      identificador técnico `id="prototype-help"` no se toca por ser
+      interno, no texto visible.
+    - Normalización final de "Biblioteca del Margen": el único punto
+      narrativo restante que aún usaba la forma corta ("Todavía no tengo
+      ningún motivo para ir a la Biblioteca.") pasa a "...ir a la
+      Biblioteca del Margen.", en línea con el resto de referencias al
+      lugar en `WorldScene.js`.
+    - Etiquetas de hablante del diálogo climático del epílogo: los cinco
+      turnos de `BRIDE_EPILOGUE_DIALOGUE_TURNS` en `WorldScene.js`
+      usaban los placeholders genéricos `"Novia"`/`"Protagonista"` como
+      `speaker`, en vez de los nombres ya definidos en
+      `personalizationConfig.js` (`PARTNER_NAME`/`PROTAGONIST_NAME`, ya
+      usados en otros diálogos del mismo archivo). Se sustituyen las
+      cinco etiquetas por esas constantes; el contenido de las líneas no
+      cambia.
 
 ## [1.0.0] - 2026-08-11
 
