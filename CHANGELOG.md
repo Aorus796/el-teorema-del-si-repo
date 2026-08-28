@@ -4,6 +4,23 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ## [No publicado]
 
+## [1.1.0] - 2026-08-28
+
+Ampliación de personalización y presentación visual sobre la base estable
+de v1.0.0: Max se incorpora como compañero visual del jugador, y los
+personajes principales (Gonzalo, Elena, Corolaria y el resto de personajes
+con nombre propio) migran de figuras geométricas a pixel-art indexado. Los
+cuatro mapas del recorrido (Plaza del Axioma, Paseo de los Siete Puentes,
+Biblioteca del Margen, Archivo) suman NPCs ambientales con diálogo propio y
+un pase de "visual polish" en pixel-art indexado sobre su atrezo y
+decoración. Se completa además la pasada de personalización narrativa que
+revela los nombres reales de los personajes. Ver
+[`docs/production/V1_1_PERSONALIZATION_SPEC.md`](docs/production/V1_1_PERSONALIZATION_SPEC.md)
+para el detalle del alcance ampliado aprobado. El formato de guardado se
+mantiene compatible con v1.0.0 (`SAVE_FORMAT_VERSION` sin cambios), y esta
+publicación cierra los hallazgos de un Release QA final previo al
+lanzamiento.
+
 ### Añadido
 
 - CreditsScene -- consistencia de renderer de Gonzalo: corrección focalizada
