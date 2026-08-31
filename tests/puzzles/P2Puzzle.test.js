@@ -11,6 +11,7 @@ import {
   P2_PHASE,
   P2State,
 } from "../../src/puzzles/p2-bridges/P2State.js";
+import { P2_VALIDATION_CODE } from "../../src/puzzles/p2-bridges/P2Validator.js";
 
 function createStartedPuzzle(closedBridgeId = "B1") {
   const puzzle = new P2Puzzle();
@@ -139,6 +140,30 @@ test("detecta un callejon sin salida con un puente incorrecto", () => {
   assert.equal(result.code, P2_MOVE_CODE.DEAD_END);
   assert.equal(puzzle.state.phase, P2_PHASE.FAILED);
   assert.deepEqual(result.remainingBridgeIds, ["B7"]);
+});
+
+test("detecta un recorrido completo que termina fuera del lugar correcto", () => {
+  const puzzle = createStartedPuzzle("B6");
+
+  const route = ["N", "R", "M", "L", "R", "E"];
+  let result;
+
+  for (const nodeId of route) {
+    result = puzzle.moveTo(nodeId);
+  }
+
+  assert.equal(result.code, P2_MOVE_CODE.DEAD_END);
+  assert.equal(puzzle.state.phase, P2_PHASE.FAILED);
+  assert.equal(puzzle.state.failureCode, P2_VALIDATION_CODE.INVALID_END);
+  assert.deepEqual(puzzle.state.route, [
+    "E",
+    "N",
+    "R",
+    "M",
+    "L",
+    "R",
+    "E",
+  ]);
 });
 
 test("reiniciar un fallo conserva el puente y las reflexiones", () => {

@@ -3,8 +3,16 @@ import assert from "node:assert/strict";
 import { P2BridgesScene } from "../../src/scenes/P2BridgesScene.js";
 import { P2Puzzle } from "../../src/puzzles/p2-bridges/P2Puzzle.js";
 import { P2_PHASE, P2State } from "../../src/puzzles/p2-bridges/P2State.js";
+import { P2_VALIDATION_CODE } from "../../src/puzzles/p2-bridges/P2Validator.js";
 import { PUZZLE_SUCCESS_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
 import { GameState } from "../../src/state/GameState.js";
+
+const INCOMPLETE_ROUTE_MESSAGE =
+  "Te has quedado sin puentes disponibles antes de cruzarlos todos. Pulsa R para reiniciar.";
+const INVALID_END_MESSAGE =
+  "Cruzaste todos los puentes, pero no terminaste en el lugar correcto. Pulsa R para reiniciar.";
+const RESTART_MESSAGE =
+  "Intento reiniciado. Puedes cambiar el puente cerrado.";
 
 class FakeInput {
   constructor() {
@@ -138,6 +146,50 @@ function driveToDeadEndWithRealControls(scene, input) {
   }
 }
 
+/*
+ * Recorrido que agota los seis puentes abiertos (cerrando B6 y cruzando
+ * N, R, M, L, R, E) pero termina en E en vez de L, el mismo caso
+ * verificado a nivel de puzle puro en tests/puzzles/P2Puzzle.test.js
+ * ("detecta un recorrido completo que termina fuera del lugar
+ * correcto"). El puente cerrado (B6) es el sexto de P2_GRAPH.bridges,
+ * así que planificar requiere cinco moveRight antes de seleccionarlo.
+ */
+const INVALID_END_MOVE_RIGHT_COUNTS = [0, 0, 1, 0, 0, 0];
+
+function driveToInvalidEndWithRealControls(scene, input) {
+  for (let i = 0; i < 5; i += 1) {
+    press(scene, input, "moveRight"); // resalta B6
+  }
+
+  press(scene, input, "selectPuzzleOption"); // cierra B6
+  press(scene, input, "startPuzzleAttempt");
+
+  for (const moveRightCount of INVALID_END_MOVE_RIGHT_COUNTS) {
+    for (let i = 0; i < moveRightCount; i += 1) {
+      press(scene, input, "moveRight");
+    }
+
+    press(scene, input, "selectPuzzleOption");
+  }
+}
+
+function buildFailedP2SaveData({ closedBridgeId, route }) {
+  const puzzle = new P2Puzzle();
+
+  puzzle.selectClosedBridge(closedBridgeId);
+  puzzle.startTraversal();
+
+  let result;
+
+  for (const nodeId of route) {
+    result = puzzle.moveTo(nodeId);
+  }
+
+  assert.equal(puzzle.state.phase, P2_PHASE.FAILED);
+
+  return { saveData: puzzle.toSaveData(), lastResult: result };
+}
+
 function buildSolvedP2SaveData() {
   const puzzle = new P2Puzzle();
 
@@ -183,6 +235,179 @@ test("un recorrido que termina en callejón sin salida no dispara ningún SFX", 
 
   assert.equal(scene.puzzle.state.phase, P2_PHASE.FAILED);
   assert.deepEqual(audio.playSfxCalls, []);
+});
+
+test("un callejón sin salida por agotar puentes muestra el mensaje de puentes agotados", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  driveToDeadEndWithRealControls(scene, input);
+
+  assert.equal(scene.puzzle.state.phase, P2_PHASE.FAILED);
+  assert.equal(
+    scene.puzzle.state.failureCode,
+    P2_VALIDATION_CODE.INCOMPLETE_ROUTE,
+  );
+  assert.equal(scene.statusMessage, INCOMPLETE_ROUTE_MESSAGE);
+});
+
+test("leer una pista tras fallar y luego reiniciar limpia la pista y muestra el mensaje de reinicio", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  driveToDeadEndWithRealControls(scene, input);
+  assert.equal(scene.puzzle.state.phase, P2_PHASE.FAILED);
+
+  press(scene, input, "nextPuzzleHint");
+  assert.equal(scene.visibleHintLevel, 1);
+
+  press(scene, input, "restartPuzzleAttempt");
+
+  assert.equal(scene.visibleHintLevel, null);
+  assert.equal(scene.statusMessage, RESTART_MESSAGE);
+});
+
+test("leer una pista en PLANNING y mover el cursor de puente limpia la pista", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  press(scene, input, "nextPuzzleHint");
+  assert.equal(scene.visibleHintLevel, 1);
+
+  press(scene, input, "moveRight");
+
+  assert.equal(scene.visibleHintLevel, null);
+  assert.equal(scene.statusMessage, "Seleccionado B2.");
+});
+
+test("leer una pista en PLANNING y cerrar un puente limpia la pista", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  press(scene, input, "nextPuzzleHint");
+  assert.equal(scene.visibleHintLevel, 1);
+
+  press(scene, input, "selectPuzzleOption");
+
+  assert.equal(scene.visibleHintLevel, null);
+  assert.equal(scene.statusMessage, "Puente B1 marcado como cerrado.");
+});
+
+test("leer una pista tras cerrar un puente e iniciar el recorrido limpia la pista", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  press(scene, input, "selectPuzzleOption"); // cierra B1
+  press(scene, input, "nextPuzzleHint");
+  assert.equal(scene.visibleHintLevel, 1);
+
+  press(scene, input, "startPuzzleAttempt");
+
+  assert.equal(scene.puzzle.state.phase, P2_PHASE.TRAVERSING);
+  assert.equal(scene.visibleHintLevel, null);
+  assert.equal(
+    scene.statusMessage,
+    "Recorrido iniciado. Selecciona una salida y pulsa E.",
+  );
+});
+
+test("leer una pista en TRAVERSING y mover el cursor de salida limpia la pista", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  press(scene, input, "selectPuzzleOption"); // cierra B1
+  press(scene, input, "startPuzzleAttempt");
+
+  press(scene, input, "nextPuzzleHint");
+  assert.equal(scene.visibleHintLevel, 1);
+
+  press(scene, input, "moveRight");
+
+  assert.equal(scene.visibleHintLevel, null);
+  assert.notEqual(scene.statusMessage, "");
+});
+
+test("reentrar a mitad de travesía tras haber leído una pista en una sesión anterior no hereda la pista", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  press(scene, input, "selectPuzzleOption"); // cierra B1
+  press(scene, input, "startPuzzleAttempt");
+  press(scene, input, "nextPuzzleHint");
+  assert.equal(scene.visibleHintLevel, 1);
+
+  const savedState = new P2State(scene.puzzle.toSaveData());
+  assert.equal(savedState.phase, P2_PHASE.TRAVERSING);
+
+  const { scene: reenteredScene } = createScene(savedState);
+  reenteredScene.enter();
+
+  assert.equal(reenteredScene.visibleHintLevel, null);
+  assert.equal(
+    reenteredScene.statusMessage,
+    `Recorrido reanudado desde ${savedState.currentNode}.`,
+  );
+});
+
+test("un recorrido completo que termina fuera de lugar muestra el mensaje de destino incorrecto", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  driveToInvalidEndWithRealControls(scene, input);
+
+  assert.equal(scene.puzzle.state.phase, P2_PHASE.FAILED);
+  assert.equal(
+    scene.puzzle.state.failureCode,
+    P2_VALIDATION_CODE.INVALID_END,
+  );
+  assert.equal(scene.statusMessage, INVALID_END_MESSAGE);
+});
+
+test("reingresar a la escena con un intento fallido guardado muestra el mensaje diferenciado correcto", () => {
+  const incompleteRouteCase = buildFailedP2SaveData({
+    closedBridgeId: "B2",
+    route: ["N", "R", "M", "L", "N"],
+  });
+
+  assert.equal(
+    incompleteRouteCase.saveData.failureCode,
+    P2_VALIDATION_CODE.INCOMPLETE_ROUTE,
+  );
+
+  const { scene: incompleteScene } = createScene(
+    new P2State(incompleteRouteCase.saveData),
+  );
+
+  incompleteScene.enter();
+
+  assert.equal(incompleteScene.statusMessage, INCOMPLETE_ROUTE_MESSAGE);
+
+  const invalidEndCase = buildFailedP2SaveData({
+    closedBridgeId: "B6",
+    route: ["N", "R", "M", "L", "R", "E"],
+  });
+
+  assert.equal(
+    invalidEndCase.saveData.failureCode,
+    P2_VALIDATION_CODE.INVALID_END,
+  );
+
+  const { scene: invalidEndScene } = createScene(
+    new P2State(invalidEndCase.saveData),
+  );
+
+  invalidEndScene.enter();
+
+  assert.equal(invalidEndScene.statusMessage, INVALID_END_MESSAGE);
+});
+
+test("los mensajes de fallo diferenciados son distintos entre sí y del mensaje genérico anterior", () => {
+  const GENERIC_MESSAGE =
+    "Intento fallido. Pulsa R para volver a planificar.";
+
+  assert.notEqual(INCOMPLETE_ROUTE_MESSAGE, INVALID_END_MESSAGE);
+  assert.notEqual(INCOMPLETE_ROUTE_MESSAGE, GENERIC_MESSAGE);
+  assert.notEqual(INVALID_END_MESSAGE, GENERIC_MESSAGE);
 });
 
 test("una vez resuelto, ninguna secuencia de teclas dentro de la escena vuelve a disparar el SFX", () => {

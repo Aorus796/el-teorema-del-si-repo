@@ -862,6 +862,240 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
   expect(errors).toEqual([]);
 });
 
+// Regresión de dos hallazgos de QA/reviewer sobre P2BridgesScene:
+// (1) la pista de nivel 2 corregida (más larga que la anterior) debe verse
+// completa, envuelta en varias líneas, sin desbordar el canvas de 480px; y
+// (2) leer una pista antes de fallar no debe seguir tapando el mensaje de
+// fallo diferenciado tras el fallo real. Usa el mismo patrón de parche de
+// fillText que "recorre el epílogo completo..." más abajo en este archivo,
+// para leer el texto real dibujado en el canvas sin tocar src/.
+test("la pista de nivel 2 de P2 se lee completa sin cortarse y ya no tapa el mensaje de fallo tras leerla", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+
+  await page.addInitScript(() => {
+    window.__renderedTexts = [];
+
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function patchedFillText(
+      text,
+      x,
+      y,
+      maxWidth,
+    ) {
+      window.__renderedTexts.push(String(text));
+      return originalFillText.call(this, text, x, y, maxWidth);
+    };
+  });
+
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 348, y: 145, facing: "down" },
+    world: {
+      currentMapId: "seven-bridges-walk",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 348, y: 145, facing: "down" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await disableAudioPlayback(page);
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+
+  const currentFrame = () => canvas.evaluate((element) => element.toDataURL());
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await currentFrame();
+
+    await page.keyboard.press(key);
+
+    await expect.poll(currentFrame).not.toBe(previousFrame);
+  };
+  const clearRenderedTexts = () =>
+    page.evaluate(() => {
+      window.__renderedTexts.length = 0;
+    });
+  const waitForRenderedText = (text) =>
+    expect
+      .poll(() =>
+        page.evaluate(
+          (needle) => window.__renderedTexts.includes(needle),
+          text,
+        ),
+      )
+      .toBe(true);
+  const measureTextWidth = (text, font) =>
+    page.evaluate(
+      ({ text, font }) => {
+        const context = document
+          .querySelector("#game-canvas")
+          .getContext("2d");
+
+        context.font = font;
+        return context.measureText(text).width;
+      },
+      { text, font },
+    );
+
+  const titleFrame = await currentFrame();
+
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  const worldFrame = await currentFrame();
+
+  await page.keyboard.press("KeyE");
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect(dialogueText).toHaveText(
+    "Elena marcó que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect.poll(currentFrame).not.toBe(worldFrame);
+
+  // El cuadro de estado ocupa de x=10 a x=470 (460px de ancho), centrado en
+  // x=240: cada línea individual debe caber holgadamente en esa mitad de
+  // ancho disponible (230px) a cada lado del centro, o se saldría del
+  // cuadro/canvas.
+  const STATUS_BOX_HALF_WIDTH = 230;
+
+  await test.step("la pista de nivel 1 se lee completa, sin envolver", async () => {
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyQ");
+
+    const level1Text =
+      "R1/3: Empieza por los lugares con un número impar de puentes disponibles.";
+
+    await waitForRenderedText(level1Text);
+
+    const width = await measureTextWidth(level1Text, "7px monospace");
+    expect(width).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
+  });
+
+  const level2Line1 =
+    "R2/3: Antes de cerrar nada, cuenta las conexiones de cada lugar. El puente correcto es el";
+  const level2Line2 =
+    "que deja el inicio y el final como los únicos dos con un número impar de conexiones.";
+
+  await test.step("la pista de nivel 2 (más larga, con el criterio corregido) se envuelve en dos líneas completas, sin cortes", async () => {
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyQ");
+
+    await waitForRenderedText(level2Line1);
+    await waitForRenderedText(level2Line2);
+
+    // Ninguna línea individual debe seguir conteniendo la pista completa sin
+    // envolver: si esto fallara, significaría que wrapText() dejó de
+    // aplicarse y el texto largo volvería a desbordarse como antes.
+    const renderedTexts = await page.evaluate(() => window.__renderedTexts);
+
+    expect(
+      renderedTexts.some((text) => text.startsWith("R2/3:") && text.includes("conexiones.") && text.length > 100),
+    ).toBe(false);
+
+    const width1 = await measureTextWidth(level2Line1, "7px monospace");
+    const width2 = await measureTextWidth(level2Line2, "7px monospace");
+
+    expect(width1).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
+    expect(width2).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
+  });
+
+  await test.step("tras leer la pista, un intento fallido muestra el mensaje diferenciado, no la pista antigua", async () => {
+    const incompleteRouteMessage =
+      "Te has quedado sin puentes disponibles antes de cruzarlos todos. Pulsa R para reiniciar.";
+
+    // Cierra B2 (segundo puente del grafo: un ArrowRight lo resalta) y
+    // recorre N, R, M, L, N -- mismo caso ya cubierto a nivel de unidad en
+    // tests/scenes/P2BridgesScene.test.js ("un callejón sin salida por
+    // agotar puentes muestra el mensaje de puentes agotados"), aquí
+    // reproducido con teclado real.
+    await pressAndWaitForFrameChange("ArrowRight");
+    await pressAndWaitForFrameChange("KeyE");
+    await pressAndWaitForFrameChange("Enter");
+
+    for (let i = 0; i < 4; i += 1) {
+      await pressAndWaitForFrameChange("KeyE");
+    }
+
+    await clearRenderedTexts();
+    await pressAndWaitForFrameChange("KeyE");
+
+    await waitForRenderedText(incompleteRouteMessage);
+
+    const textsAfterFailure = await page.evaluate(
+      () => window.__renderedTexts,
+    );
+
+    expect(
+      textsAfterFailure.some((text) => text.startsWith("R2/3:")),
+    ).toBe(false);
+  });
+
+  expect(errors).toEqual([]);
+});
+
 test("cambia de mapa desde una salida ya desbloqueada sin errores de consola", async ({
   page,
 }) => {

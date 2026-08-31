@@ -4,6 +4,33 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ## [No publicado]
 
+### Cambiado
+
+- Primeras mejoras de dificultad v1.2 (contenido/presentación, sin cambios
+  de lógica ni de solución): la pista de nivel 3 de la Biblioteca del
+  Margen ya no entrega el orden final de los cinco documentos, sino una
+  restricción parcial derivable combinando reglas ya visibles
+  (`LibraryCatalogueHints.js`). La pista de nivel 2 del Paseo de los Siete
+  Puentes deja de casi regalar el criterio de paridad completo y en su
+  lugar orienta a contar las conexiones de cada lugar y reconocer cuáles
+  quedan como las únicas con un número impar tras cerrar el puente
+  correcto -- redactada así tras una corrección de reviewer que detectó
+  que la versión anterior de este mismo cambio afirmaba, contra el grafo
+  real, que el puente correcto altera esa cuenta a la vez en el lugar de
+  inicio y en el de fin, cuando ningún puente conecta esos dos lugares
+  directamente (`P2Hints.js`; su pista de nivel 3 no se toca en esta
+  tarea). Además, el fallo del Paseo de los Siete Puentes ahora distingue
+  en el mensaje mostrado si el intento se quedó sin puentes disponibles o
+  si completó todos los puentes pero terminó en el lugar incorrecto
+  (`P2BridgesScene.js`), tanto al fallar en vivo como al recargar una
+  partida guardada en esa fase; ese mensaje diferenciado ya no queda tapado
+  por una pista leída previamente (antes, leer cualquier pista antes de
+  fallar ocultaba permanentemente el mensaje de fallo), y el texto de
+  pista/estado ahora se envuelve en varias líneas dentro del cuadro de
+  estado en vez de cortarse cuando es más largo que el ancho del canvas.
+  La solución real de ambos puzles (Biblioteca del Margen y Paseo de los
+  Siete Puentes) no cambia.
+
 ## [1.1.0] - 2026-08-28
 
 Ampliación de personalización y presentación visual sobre la base estable

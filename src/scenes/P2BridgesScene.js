@@ -7,6 +7,7 @@ import {
 } from "../puzzles/p2-bridges/P2Puzzle.js";
 import { getP2Hint } from "../puzzles/p2-bridges/P2Hints.js";
 import { P2_PHASE } from "../puzzles/p2-bridges/P2State.js";
+import { P2_VALIDATION_CODE } from "../puzzles/p2-bridges/P2Validator.js";
 import { HINT_PROGRESS_CODE } from "../puzzles/core/HintProgress.js";
 import { PUZZLE_SUCCESS_SFX_PATH } from "../content/sfxAudioConfig.js";
 
@@ -34,9 +35,18 @@ export class P2BridgesScene {
     this.syncViewFromState();
   }
 
+  // Único punto autorizado para cambiar el mensaje de estado visible: al
+  // pasar siempre por aquí, es estructuralmente imposible que un mensaje
+  // nuevo quede tapado por una pista leída antes (mismo objetivo que
+  // LibraryCatalogueScene.applyResult(), adaptado a que P2BridgesScene no
+  // tiene un único punto de entrada de acciones sino varios).
+  setStatusMessage(text) {
+    this.statusMessage = text;
+    this.visibleHintLevel = null;
+  }
+
   syncViewFromState() {
     const state = this.puzzle.state;
-    this.visibleHintLevel = state.hintsRead.at(-1) ?? null;
 
     if (state.closedBridgeId !== null) {
       const bridgeIndex = P2_GRAPH.bridges.findIndex(
@@ -48,29 +58,34 @@ export class P2BridgesScene {
       }
     }
 
+    // Reentrar a la escena nunca debe heredar una pista leída en una
+    // sesión anterior, sea cual sea la fase guardada: setStatusMessage()
+    // limpia visibleHintLevel en cada rama de abajo.
     if (state.phase === P2_PHASE.PLANNING) {
-      this.statusMessage =
+      this.setStatusMessage(
         state.closedBridgeId === null
           ? "Elige el puente que estaba cerrado."
-          : `Puente ${state.closedBridgeId} marcado como cerrado.`;
+          : `Puente ${state.closedBridgeId} marcado como cerrado.`,
+      );
       return;
     }
 
     if (state.phase === P2_PHASE.TRAVERSING) {
       this.syncHighlightedBridgeToMove();
-      this.statusMessage =
-        `Recorrido reanudado desde ${state.currentNode}.`;
+      this.setStatusMessage(
+        `Recorrido reanudado desde ${state.currentNode}.`,
+      );
       return;
     }
 
     if (state.phase === P2_PHASE.FAILED) {
-      this.statusMessage =
-        "Intento fallido. Pulsa R para volver a planificar.";
+      this.setStatusMessage(getP2FailureMessage(state.failureCode));
       return;
     }
 
-    this.statusMessage =
-      "Recorrido completo. Has utilizado todos los puentes.";
+    this.setStatusMessage(
+      "Recorrido completo. Has utilizado todos los puentes.",
+    );
   }
 
   update() {
@@ -100,8 +115,9 @@ export class P2BridgesScene {
     ) {
       this.puzzle.restartTraversal();
       this.selectedMoveIndex = 0;
-      this.statusMessage =
-        "Intento reiniciado. Puedes cambiar el puente cerrado.";
+      this.setStatusMessage(
+        "Intento reiniciado. Puedes cambiar el puente cerrado.",
+      );
     }
   }
 
@@ -118,22 +134,25 @@ export class P2BridgesScene {
       const selectedBridge = this.getHighlightedBridge();
 
       this.puzzle.selectClosedBridge(selectedBridge.id);
-      this.statusMessage =
-        `Puente ${selectedBridge.id} marcado como cerrado.`;
+      this.setStatusMessage(
+        `Puente ${selectedBridge.id} marcado como cerrado.`,
+      );
     }
 
     if (this.input.wasPressed("startPuzzleAttempt")) {
       if (this.puzzle.state.closedBridgeId === null) {
-        this.statusMessage =
-          "Primero debes marcar un puente como cerrado.";
+        this.setStatusMessage(
+          "Primero debes marcar un puente como cerrado.",
+        );
         return;
       }
 
       this.puzzle.startTraversal();
       this.selectedMoveIndex = 0;
       this.syncHighlightedBridgeToMove();
-      this.statusMessage =
-        "Recorrido iniciado. Selecciona una salida y pulsa E.";
+      this.setStatusMessage(
+        "Recorrido iniciado. Selecciona una salida y pulsa E.",
+      );
     }
   }
 
@@ -169,7 +188,7 @@ export class P2BridgesScene {
     }
 
     if (result.code === P2_HINT_CODE.PUZZLE_SOLVED) {
-      this.statusMessage = "El Paseo ya está resuelto.";
+      this.setStatusMessage("El Paseo ya está resuelto.");
     }
   }
 
@@ -180,8 +199,9 @@ export class P2BridgesScene {
       (this.selectedBridgeIndex + direction + bridgeCount) %
       bridgeCount;
 
-    this.statusMessage =
-      `Seleccionado ${this.getHighlightedBridge().id}.`;
+    this.setStatusMessage(
+      `Seleccionado ${this.getHighlightedBridge().id}.`,
+    );
   }
 
   moveTraversalSelection(direction) {
@@ -199,15 +219,16 @@ export class P2BridgesScene {
 
     const selectedMove = availableMoves[this.selectedMoveIndex];
 
-    this.statusMessage =
-      `Destino ${selectedMove.destinationNode} por ${selectedMove.bridgeId}.`;
+    this.setStatusMessage(
+      `Destino ${selectedMove.destinationNode} por ${selectedMove.bridgeId}.`,
+    );
   }
 
   crossSelectedBridge() {
     const availableMoves = this.puzzle.getAvailableMoves();
 
     if (availableMoves.length === 0) {
-      this.statusMessage = "No quedan salidas disponibles.";
+      this.setStatusMessage("No quedan salidas disponibles.");
       return;
     }
 
@@ -225,8 +246,9 @@ export class P2BridgesScene {
 
   handleMoveResult(result, selectedMove) {
     if (result.code === P2_MOVE_CODE.MOVED) {
-      this.statusMessage =
-        `Cruzado ${selectedMove.bridgeId}. Estás en ${result.currentNode}.`;
+      this.setStatusMessage(
+        `Cruzado ${selectedMove.bridgeId}. Estás en ${result.currentNode}.`,
+      );
 
       this.selectedMoveIndex = 0;
       this.syncHighlightedBridgeToMove();
@@ -238,8 +260,9 @@ export class P2BridgesScene {
 
       const wasAdded = this.state.registerP2Solution();
 
-      this.statusMessage =
-        "Recorrido completo. Has utilizado todos los puentes.";
+      this.setStatusMessage(
+        "Recorrido completo. Has utilizado todos los puentes.",
+      );
 
       if (wasAdded) {
         this.ui.showToast("Nueva observacion registrada");
@@ -249,22 +272,23 @@ export class P2BridgesScene {
     }
 
     if (result.code === P2_MOVE_CODE.DEAD_END) {
-      this.statusMessage =
-        "Callejón sin salida. Pulsa R para reiniciar.";
+      this.setStatusMessage(
+        getP2FailureMessage(this.puzzle.state.failureCode),
+      );
       return;
     }
 
     if (result.code === P2_MOVE_CODE.CLOSED_BRIDGE) {
-      this.statusMessage = "Ese puente está cerrado.";
+      this.setStatusMessage("Ese puente está cerrado.");
       return;
     }
 
     if (result.code === P2_MOVE_CODE.REPEATED_BRIDGE) {
-      this.statusMessage = "Ese puente ya ha sido utilizado.";
+      this.setStatusMessage("Ese puente ya ha sido utilizado.");
       return;
     }
 
-    this.statusMessage = "Ese movimiento no es válido.";
+    this.setStatusMessage("Ese movimiento no es válido.");
   }
 
   syncHighlightedBridgeToMove() {
@@ -305,6 +329,18 @@ export class P2BridgesScene {
     drawFooter(context, this.puzzle.state.phase);
   }
 }
+function getP2FailureMessage(failureCode) {
+  if (failureCode === P2_VALIDATION_CODE.INCOMPLETE_ROUTE) {
+    return "Te has quedado sin puentes disponibles antes de cruzarlos todos. Pulsa R para reiniciar.";
+  }
+
+  if (failureCode === P2_VALIDATION_CODE.INVALID_END) {
+    return "Cruzaste todos los puentes, pero no terminaste en el lugar correcto. Pulsa R para reiniciar.";
+  }
+
+  return "Intento fallido. Pulsa R para volver a planificar.";
+}
+
 function drawBackground(context) {
   context.fillStyle = "#16313d";
   context.fillRect(0, 0, 480, 270);
@@ -494,7 +530,7 @@ function drawNodes(context, currentNodeId) {
 
 function drawStatus(context, scene) {
   context.fillStyle = "rgb(15 28 35 / 88%)";
-  context.fillRect(10, 207, 460, 34);
+  context.fillRect(10, 203, 460, 40);
 
   context.fillStyle = "#fff7df";
   context.font = "8px monospace";
@@ -523,18 +559,47 @@ function drawStatus(context, scene) {
       `P2 resuelto | Puentes: ${usedBridgeCount}/${usableBridgeCount}`;
   }
 
-  context.fillText(summaryText, 240, 220);
+  context.fillText(summaryText, 240, 214);
 
   context.fillStyle = "#b9d8d2";
-  context.fillText(
-    visibleHint
-      ? `R${visibleHint.level}/3: ${visibleHint.text}`
-      : scene.statusMessage,
-    240,
-    234,
-  );
+  context.font = "7px monospace";
+
+  const messageText = visibleHint
+    ? `R${visibleHint.level}/3: ${visibleHint.text}`
+    : scene.statusMessage;
+  const messageLines = wrapText(messageText, 92);
+
+  messageLines.slice(0, 2).forEach((line, index) => {
+    context.fillText(line, 240, 225 + index * 9);
+  });
 
   context.textAlign = "left";
+}
+
+function wrapText(text, maximumCharacters) {
+  const words = text.split(" ");
+  const lines = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+
+    if (
+      candidate.length > maximumCharacters &&
+      currentLine.length > 0
+    ) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = candidate;
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
 }
 
 function drawFooter(context, phase) {

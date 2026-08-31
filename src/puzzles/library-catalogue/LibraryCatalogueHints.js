@@ -12,7 +12,7 @@ export const LIBRARY_CATALOGUE_HINTS = Object.freeze([
   Object.freeze({
     level: 3,
     text:
-      "Coloca A-D en las dos primeras posiciones; los huecos restantes quedan como R-C-M.",
+      "El Catálogo de la Criba no puede ocupar la segunda posición: si lo intentas ahí, el Registro quedaría obligado a un extremo, y eso rompe una regla ya conocida.",
   }),
 ]);
 
