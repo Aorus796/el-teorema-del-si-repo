@@ -226,7 +226,7 @@ function buildProgressedState() {
   seed.puzzles.p2.startTraversal();
   seed.puzzles.p2.registerStep({
     nodeId: "R",
-    bridgeId: "B2",
+    bridgeId: "B7",
   });
 
   const saved = seed.toSaveData();
@@ -321,7 +321,7 @@ test("GameState guarda y restaura el progreso de P2", () => {
   originalState.puzzles.p2.startTraversal();
   originalState.puzzles.p2.registerStep({
     nodeId: "R",
-    bridgeId: "B2",
+    bridgeId: "B7",
   });
 
   const restoredState = new GameState();
@@ -334,7 +334,7 @@ test("GameState guarda y restaura el progreso de P2", () => {
   assert.equal(restoredState.puzzles.p2.closedBridgeId, "B1");
   assert.equal(restoredState.puzzles.p2.currentNode, "R");
   assert.deepEqual(restoredState.puzzles.p2.route, ["E", "R"]);
-  assert.deepEqual(restoredState.puzzles.p2.usedBridgeIds, ["B2"]);
+  assert.deepEqual(restoredState.puzzles.p2.usedBridgeIds, ["B7"]);
 });
 
 test("GameState no duplica la entrada de cuaderno de P2", () => {
@@ -550,7 +550,7 @@ test("GameState migra explícitamente los formatos 1 y 2", () => {
   p2.startTraversal();
   p2.registerStep({
     nodeId: "R",
-    bridgeId: "B2",
+    bridgeId: "B7",
   });
   const p2Data = p2.toSaveData();
 

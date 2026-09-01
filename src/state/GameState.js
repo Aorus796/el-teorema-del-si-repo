@@ -1,4 +1,6 @@
-import { P2State } from "../puzzles/p2-bridges/P2State.js";
+import { P2_PHASE, P2State } from "../puzzles/p2-bridges/P2State.js";
+import { P2_END_NODE, P2_GRAPH } from "../puzzles/p2-bridges/P2Graph.js";
+import { findBridge } from "../puzzles/p2-bridges/P2Validator.js";
 import {
   LibraryCatalogueState,
 } from "../puzzles/library-catalogue/LibraryCatalogueState.js";
@@ -329,7 +331,7 @@ export class GameState {
       : [];
 
     const puzzles = {
-      p2: new P2State(data.puzzles?.p2 ?? {}),
+      p2: restoreP2(data),
       libraryCatalogue: restoreLibraryCatalogue(data),
       archiveCriteria: restoreArchiveCriteria(data),
     };
@@ -436,6 +438,122 @@ function restoreWorldState(data, giftCodeSolved) {
     currentMapId,
     playerByMap,
   };
+}
+
+/*
+ * P2 no cambia de formato de guardado: los siete identificadores de puente
+ * y los cinco nodos siguen existiendo, así que `P2State` acepta sin error
+ * cualquier partida anterior. Lo que sí puede haber cambiado es la
+ * topología lógica del grafo (qué dos lugares une un puente concreto), y
+ * `P2State.validate()` solo comprueba longitudes e identificadores
+ * conocidos: nunca revalida que dos nodos consecutivos de la ruta estén
+ * realmente unidos por un puente abierto. Un recorrido a medias guardado
+ * con la topología antigua puede por tanto restaurarse como historial
+ * "semánticamente falso".
+ *
+ * Regla acotada, sin tocar SAVE_FORMAT_VERSION:
+ * - TRAVERSING o FAILED: si el recorrido guardado ya no es coherente con
+ *   el grafo actual, se vuelve a la planificación conservando las pistas
+ *   leídas (las pistas no dependen de la topología) y el número de intentos
+ *   ya realizados, exactamente igual que hace el reinicio dentro del juego
+ *   (`P2State.restartTraversal()`, que devuelve el ciclo de vida a "ready"
+ *   sin borrar `attemptCount`).
+ * - PLANNING: se restaura tal cual. Un `closedBridgeId` que ya no sea la
+ *   solución es inocuo: el jugador lo ve marcado y puede cambiarlo.
+ * - SOLVED: nunca se toca. Un puzle ya resuelto por un jugador real
+ *   permanece resuelto.
+ */
+function restoreP2(data) {
+  const state = new P2State(data.puzzles?.p2 ?? {});
+
+  if (state.phase !== P2_PHASE.TRAVERSING && state.phase !== P2_PHASE.FAILED) {
+    return state;
+  }
+
+  if (isCoherentP2Traversal(state) && !isStuckP2Traversal(state)) {
+    return state;
+  }
+
+  return new P2State({
+    lifecycle: { attemptCount: state.lifecycle.attemptCount },
+    hintsRead: state.hintsRead,
+  });
+}
+
+function isCoherentP2Traversal(state) {
+  if (state.route[0] !== P2_GRAPH.startNode) {
+    return false;
+  }
+
+  for (let index = 0; index < state.route.length - 1; index += 1) {
+    const fromNode = state.route[index];
+    const toNode = state.route[index + 1];
+    const bridge = findBridge(P2_GRAPH, fromNode, toNode);
+
+    if (!bridge || bridge.id === state.closedBridgeId) {
+      return false;
+    }
+
+    if (bridge.id !== state.usedBridgeIds[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/*
+ * Un recorrido guardado puede seguir estando formado por aristas reales del
+ * grafo nuevo y aun así dejar al jugador en un lugar sin ningún puente
+ * abierto por cruzar. Callejones sin salida ha habido siempre: en cualquier
+ * versión, cerrar un puente que no fuera el correcto podía dejar al jugador
+ * atascado. Lo que cambia con la topología nueva es que también pueden
+ * aparecer CON el cierre correcto, que en la topología anterior garantizaba
+ * llegar a la solución siguiera el orden que siguiera. Durante el recorrido,
+ * quedarse sin salidas es una partida bloqueada: la escena solo atiende
+ * girar y avanzar mientras se recorre, y reiniciar pertenece a la fase de
+ * fallo, así que el jugador no podría terminar nunca P2 ni desbloquear la
+ * Biblioteca. La excepción es el recorrido ya terminado con éxito bajo la
+ * topología nueva: no tiene salidas simplemente porque no le queda ningún
+ * puente, y es coherente.
+ *
+ * La comprobación se limita a la fase de recorrido a propósito: quedarse sin
+ * salidas es justamente lo que define un fallo, y en esa fase la escena ya
+ * ofrece reiniciar, así que aplicarla también allí reiniciaría partidas de
+ * fallo perfectamente legítimas.
+ */
+function isStuckP2Traversal(state) {
+  if (state.phase !== P2_PHASE.TRAVERSING) {
+    return false;
+  }
+
+  if (countAvailableP2Moves(state) > 0) {
+    return false;
+  }
+
+  return !isCompleteP2Traversal(state);
+}
+
+/*
+ * Mismo criterio que P2Puzzle.getAvailableMoves(): puentes del lugar actual
+ * que no sean el cerrado ni estén ya usados.
+ */
+function countAvailableP2Moves(state) {
+  return P2_GRAPH.bridges.filter(
+    (bridge) =>
+      bridge.id !== state.closedBridgeId &&
+      !state.usedBridgeIds.includes(bridge.id) &&
+      bridge.nodes.includes(state.currentNode),
+  ).length;
+}
+
+function isCompleteP2Traversal(state) {
+  const openBridgeCount = P2_GRAPH.bridges.length - 1;
+
+  return (
+    state.usedBridgeIds.length === openBridgeCount &&
+    state.currentNode === P2_END_NODE
+  );
 }
 
 function restoreLibraryCatalogue(data) {

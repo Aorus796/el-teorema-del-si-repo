@@ -129,13 +129,13 @@ Nodos:
 
 Puentes:
 
-- E-N
-- E-R
-- N-R
-- R-M
-- M-L
-- N-L
-- R-L
+- B1: E-N
+- B2: R-L
+- B3: N-R
+- B4: R-M
+- B5: E-M
+- B6: N-L
+- B7: E-R
 
 ### Objetivo
 
@@ -143,15 +143,17 @@ Determinar qué puente estaba cerrado y realizar un recorrido válido.
 
 ### Idea central
 
-Para utilizar cada arista una sola vez y empezar en E y terminar en L, únicamente E y L deben tener grado impar. Con todos los puentes, los impares son N y L. Cerrar E-N cambia la paridad de E y N y deja E y L como únicos impares.
+Para utilizar cada arista una sola vez y empezar en E y terminar en L, únicamente E y L deben tener grado impar. Con los siete puentes abiertos los grados son E=3, N=3, R=4, M=2 y L=2, así que los impares son E y N. Cerrar un puente cambia la paridad de sus dos extremos a la vez, de modo que el único cierre capaz de volver par a N y dejar impar a L es el puente que los une, B6. Con B6 cerrado los grados pasan a E=3, N=2, R=4, M=2 y L=1: la entrada y el molino quedan como los únicos impares.
+
+Acertar el cierre no basta para completar el paseo. Entre los seis puentes restantes hay puntos de decisión donde una salida legal en ese momento deja el recorrido encallado antes de haber cruzado todos los puentes.
 
 ### Solución
 
-Cerrar **E-N**.
+Cerrar **B6 (N-L)**.
 
 Un recorrido válido es:
 
-**E -> R -> N -> L -> R -> M -> L**
+**E -> N -> R -> E -> M -> R -> L**
 
 El validador aceptará cualquier recorrido que cumpla las propiedades.
 

@@ -30,6 +30,59 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   estado en vez de cortarse cuando es más largo que el ancho del canvas.
   La solución real de ambos puzles (Biblioteca del Margen y Paseo de los
   Siete Puentes) no cambia.
+- Rediseño estructural de la topología del Paseo de los Siete Puentes: un
+  único puente se recablea (B5 pasa de unir Mercado-Molino a unir
+  Entrada-Mercado, `P2Graph.js`), con el ajuste de posición del nodo de la
+  Isla del Reloj que ese trazado necesita para no solaparse con su etiqueta
+  (`P2Layout.js`). El concepto del puzle no cambia: se sigue cerrando un
+  puente y recorriendo los demás una sola vez, con el mismo planteamiento
+  de Königsberg/Euler, los mismos cinco lugares y los mismos siete puentes
+  con sus identificadores de siempre. Lo que cambia es que en la topología
+  anterior dos cierres permitían cruzar los seis puentes restantes, pero
+  solo uno de ellos (el que de hecho era la solución) terminaba en el
+  lugar correcto -- y, una vez acertado ese cierre, cualquier paseo
+  llegaba al final sin posibilidad de equivocarse: no existía ningún punto
+  de la travesía en el que una continuación válida pudiera arruinar el
+  intento. Con la topología nueva hay tres cierres que dejan cruzar los
+  seis puentes y solo uno de ellos termina en el lugar correcto, y tras
+  acertarlo el recorrido conserva decisiones reales en las que una salida
+  localmente legal arruina el intento. La pista de nivel 3 se actualiza al
+  puente y la ruta que ahora resuelven el puzle (`P2Hints.js`); las pistas
+  de nivel 1 y 2 siguen siendo literalmente ciertas y no se tocan. La
+  compatibilidad con los guardados de v1.1 se mantiene sin cambiar
+  `SAVE_FORMAT_VERSION`: `GameState.restore()` añade una comprobación
+  acotada que devuelve a la fase de planificación (conservando las pistas
+  leídas y el número de intentos ya realizados) los recorridos a medias
+  cuyos pasos ya no corresponden a puentes reales del grafo nuevo, o que
+  dejarían al jugador en un lugar sin ningún puente abierto por cruzar sin
+  haber completado el paseo -- callejones sin salida ha habido siempre, en
+  cualquier versión, en cuanto se cerraba un puente que no fuera el
+  correcto; lo que cambia es que la topología nueva también los tiene con
+  el cierre correcto, que en la anterior garantizaba llegar a la solución.
+  Un guardado de v1.1 puede además haber quedado parado en una posición que
+  solo es un callejón sin salida con el grafo nuevo, algo que el motor de
+  aquella versión nunca pudo detectar como fallo. Un puzle ya resuelto
+  nunca se revalida ni se reinicia.
+- Corrección del rediseño anterior tras validación humana del Paseo de los
+  Siete Puentes: aunque la topología nueva sí introducía decisiones con
+  trampa real, esa trampa no era alcanzable por la ruta más probable de un
+  jugador -- pulsar la tecla de confirmar repetidamente sin girar nunca el
+  cursor de salida, que toma siempre el puente disponible de menor
+  identificador. Con el etiquetado anterior esa ráfaga de seis
+  confirmaciones resolvía el puzle entero sin razonar el orden del
+  recorrido. El grafo en sí ya era la topología óptima posible (se
+  comprobaron de forma exhaustiva las 120 topologías simples de cinco
+  lugares y siete puentes: ninguna permite que la primera decisión tras el
+  cierre correcto tenga una opción trampa, y ninguna otra mejora la
+  profundidad de fallo a menor distancia de v1.1), así que la corrección no
+  toca ninguna arista: intercambia qué conexión física llevan los
+  identificadores B2 y B7 (`P2Graph.js`, ahora B2 es Reloj-Molino y B7 es
+  Entrada-Reloj). Mismo grafo, mismos cinco lugares, mismo cierre correcto
+  (B6), misma dificultad estructural ya validada y mismas pistas; lo único
+  que cambia es que la ruta por defecto de "confirmar sin mirar" ahora entra
+  en la trampa y se queda sin puentes tras solo tres cruces. La geometría
+  dibujada es idéntica: solo se intercambian dos etiquetas de puente sobre
+  el mismo trazado.
 
 ## [1.1.0] - 2026-08-28
 

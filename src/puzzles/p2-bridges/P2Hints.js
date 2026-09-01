@@ -9,7 +9,7 @@ export const P2_HINTS = Object.freeze([
   }),
   Object.freeze({
     level: 3,
-    text: "Cierra B1 y prueba E-R-N-L-R-M-L: ningún puente se repite.",
+    text: "Cierra B6 y prueba E-N-R-E-M-R-L: ningún puente se repite.",
   }),
 ]);
 
