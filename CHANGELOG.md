@@ -30,6 +30,36 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   estado en vez de cortarse cuando es más largo que el ancho del canvas.
   La solución real de ambos puzles (Biblioteca del Margen y Paseo de los
   Siete Puentes) no cambia.
+- Rediseño estructural de la topología del Paseo de los Siete Puentes: un
+  único puente se recablea (B5 pasa de unir Mercado-Molino a unir
+  Entrada-Mercado, `P2Graph.js`), con el ajuste de posición del nodo de la
+  Isla del Reloj que ese trazado necesita para no solaparse con su etiqueta
+  (`P2Layout.js`). El concepto del puzle no cambia: se sigue cerrando un
+  puente y recorriendo los demás una sola vez, con el mismo planteamiento
+  de Königsberg/Euler, los mismos cinco lugares y los mismos siete puentes
+  con sus identificadores de siempre. Lo que cambia es que en la topología
+  anterior dos cierres permitían cruzar los seis puentes restantes, pero
+  solo uno de ellos (el que de hecho era la solución) terminaba en el
+  lugar correcto -- y, una vez acertado ese cierre, cualquier paseo
+  llegaba al final sin posibilidad de equivocarse: no existía ningún punto
+  de la travesía en el que una continuación válida pudiera arruinar el
+  intento. Con la topología nueva hay tres cierres que dejan cruzar los
+  seis puentes y solo uno de ellos termina en el lugar correcto, y tras
+  acertarlo el recorrido conserva decisiones reales en las que una salida
+  localmente legal arruina el intento. La pista de nivel 3 se actualiza al
+  puente y la ruta que ahora resuelven el puzle (`P2Hints.js`); las pistas
+  de nivel 1 y 2 siguen siendo literalmente ciertas y no se tocan. La
+  compatibilidad con los guardados de v1.1 se mantiene sin cambiar
+  `SAVE_FORMAT_VERSION`: `GameState.restore()` añade una comprobación
+  acotada que devuelve a la fase de planificación (conservando las pistas
+  leídas y el número de intentos ya realizados) los recorridos a medias
+  cuyos pasos ya no corresponden a puentes reales del grafo nuevo, o que
+  dejarían al jugador en un lugar sin ningún puente abierto por cruzar sin
+  haber completado el paseo -- la topología nueva sí tiene callejones sin
+  salida que la anterior no tenía, así que un guardado de v1.1 podía
+  quedar parado en uno de ellos sin que el motor de esa versión lo hubiera
+  detectado nunca como un fallo. Un puzle ya resuelto nunca se revalida ni
+  se reinicia.
 
 ## [1.1.0] - 2026-08-28
 

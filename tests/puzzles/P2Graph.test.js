@@ -40,10 +40,10 @@ test("los grados iniciales coinciden con el diseño", () => {
   }
 
   assert.deepEqual(degrees, {
-    E: 2,
+    E: 3,
     N: 3,
     R: 4,
     M: 2,
-    L: 3,
+    L: 2,
   });
 });

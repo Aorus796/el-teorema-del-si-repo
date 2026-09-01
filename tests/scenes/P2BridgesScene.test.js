@@ -97,7 +97,7 @@ class FakeCanvasContext {
 }
 
 /*
- * Recorrido completo real (cerrando B1 y cruzando R, N, L, R, M, L, en ese
+ * Recorrido completo real (cerrando B6 y cruzando N, R, E, M, R, L, en ese
  * orden) que resuelve el puzle -- el mismo recorrido principal ya cubierto
  * a nivel de puzle puro en tests/puzzles/P2Puzzle.test.js
  * ("resuelve el recorrido principal completo"). Cada paso se expresa como
@@ -105,22 +105,28 @@ class FakeCanvasContext {
  * cursor de movimiento disponible hasta el destino deseado antes de
  * confirmar con selectPuzzleOption -- derivado directamente del orden real
  * de P2Puzzle.getAvailableMoves() (que sigue el orden de P2_GRAPH.bridges)
- * en cada paso de este recorrido concreto, no inventado.
+ * en cada paso de este recorrido concreto, no inventado. El puente cerrado
+ * (B6) es el sexto de P2_GRAPH.bridges, así que planificar requiere cinco
+ * moveRight antes de seleccionarlo.
  */
-const SOLVING_ROUTE_MOVE_RIGHT_COUNTS = [0, 0, 0, 1, 0, 0];
+const SOLVING_ROUTE_MOVE_RIGHT_COUNTS = [0, 0, 0, 0, 0, 0];
 
 /*
  * Recorrido que termina en un callejón sin salida (cerrando B2 y cruzando
- * N, R, M, L, N), el mismo caso ya cubierto a nivel de puzle puro en
+ * N, R, M, E), el mismo caso ya cubierto a nivel de puzle puro en
  * tests/puzzles/P2Puzzle.test.js ("detecta un callejon sin salida con un
  * puente incorrecto"). El puente cerrado (B2) es el segundo de
  * P2_GRAPH.bridges, así que planificar requiere un moveRight antes de
  * seleccionarlo.
  */
-const DEAD_END_MOVE_RIGHT_COUNTS = [0, 0, 0, 0, 0];
+const DEAD_END_MOVE_RIGHT_COUNTS = [0, 0, 0, 0];
 
 function solvePuzzleWithRealControls(scene, input) {
-  press(scene, input, "selectPuzzleOption"); // cierra B1 (ya resaltado)
+  for (let i = 0; i < 5; i += 1) {
+    press(scene, input, "moveRight"); // resalta B6
+  }
+
+  press(scene, input, "selectPuzzleOption"); // cierra B6
   press(scene, input, "startPuzzleAttempt");
 
   for (const moveRightCount of SOLVING_ROUTE_MOVE_RIGHT_COUNTS) {
@@ -147,21 +153,17 @@ function driveToDeadEndWithRealControls(scene, input) {
 }
 
 /*
- * Recorrido que agota los seis puentes abiertos (cerrando B6 y cruzando
- * N, R, M, L, R, E) pero termina en E en vez de L, el mismo caso
+ * Recorrido que agota los seis puentes abiertos (cerrando B1 y cruzando
+ * R, N, L, R, M, E) pero termina en E en vez de L, el mismo caso
  * verificado a nivel de puzle puro en tests/puzzles/P2Puzzle.test.js
  * ("detecta un recorrido completo que termina fuera del lugar
- * correcto"). El puente cerrado (B6) es el sexto de P2_GRAPH.bridges,
- * así que planificar requiere cinco moveRight antes de seleccionarlo.
+ * correcto"). El puente cerrado (B1) es el primero de P2_GRAPH.bridges,
+ * así que ya está resaltado al entrar y no hace falta ningún moveRight.
  */
-const INVALID_END_MOVE_RIGHT_COUNTS = [0, 0, 1, 0, 0, 0];
+const INVALID_END_MOVE_RIGHT_COUNTS = [0, 0, 0, 0, 0, 0];
 
 function driveToInvalidEndWithRealControls(scene, input) {
-  for (let i = 0; i < 5; i += 1) {
-    press(scene, input, "moveRight"); // resalta B6
-  }
-
-  press(scene, input, "selectPuzzleOption"); // cierra B6
+  press(scene, input, "selectPuzzleOption"); // cierra B1 (ya resaltado)
   press(scene, input, "startPuzzleAttempt");
 
   for (const moveRightCount of INVALID_END_MOVE_RIGHT_COUNTS) {
@@ -193,10 +195,10 @@ function buildFailedP2SaveData({ closedBridgeId, route }) {
 function buildSolvedP2SaveData() {
   const puzzle = new P2Puzzle();
 
-  puzzle.selectClosedBridge("B1");
+  puzzle.selectClosedBridge("B6");
   puzzle.startTraversal();
 
-  for (const nodeId of ["R", "N", "L", "R", "M", "L"]) {
+  for (const nodeId of ["N", "R", "E", "M", "R", "L"]) {
     puzzle.moveTo(nodeId);
   }
 
@@ -366,7 +368,7 @@ test("un recorrido completo que termina fuera de lugar muestra el mensaje de des
 test("reingresar a la escena con un intento fallido guardado muestra el mensaje diferenciado correcto", () => {
   const incompleteRouteCase = buildFailedP2SaveData({
     closedBridgeId: "B2",
-    route: ["N", "R", "M", "L", "N"],
+    route: ["N", "R", "M", "E"],
   });
 
   assert.equal(
@@ -383,8 +385,8 @@ test("reingresar a la escena con un intento fallido guardado muestra el mensaje 
   assert.equal(incompleteScene.statusMessage, INCOMPLETE_ROUTE_MESSAGE);
 
   const invalidEndCase = buildFailedP2SaveData({
-    closedBridgeId: "B6",
-    route: ["N", "R", "M", "L", "R", "E"],
+    closedBridgeId: "B1",
+    route: ["R", "N", "L", "R", "M", "E"],
   });
 
   assert.equal(

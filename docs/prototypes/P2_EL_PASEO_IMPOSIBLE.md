@@ -51,6 +51,16 @@ El jugador deberá determinar cuál era y reconstruir un recorrido posible.
 
 ## 4. Mapa lógico
 
+> **Nota histórica.** La topología concreta, los grados y la solución que se
+> describen de aquí en adelante corresponden al prototipo original, vigente en
+> `v1.0.0` y `v1.1.0`. En `v1.2` el puzle se recableó (B5 dejó de unir
+> Mercado-Molino para unir Entrada-Mercado), con lo que la solución pasó a ser
+> cerrar B6 (N-L) y los recorridos de ejemplo de este documento dejaron de ser
+> válidos. Este documento se conserva como registro del prototipo y no se
+> actualiza cifra a cifra: la topología vigente es la de
+> `src/puzzles/p2-bridges/P2Graph.js`, descrita en el GDD (§7.5), y el motivo
+> del cambio está en el `CHANGELOG.md`.
+
 ### Nodos
 
 | ID | Localización      | Función                   |

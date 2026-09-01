@@ -775,13 +775,24 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
     .poll(() => canvas.evaluate((element) => element.toDataURL()))
     .not.toBe(worldFrame);
 
+  /*
+   * B6 es el sexto puente de P2_GRAPH.bridges, así que hacen falta cinco
+   * ArrowRight para resaltarlo antes de cerrarlo con KeyE. Tras Enter, el
+   * cursor de salida arranca siempre en 0 y se reinicia a 0 tras cada
+   * cruce: seis KeyE seguidos recorren E-N-R-E-M-R-L, una de las seis
+   * rutas válidas con B6 cerrado.
+   */
   const solutionKeys = [
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
     "KeyE",
     "Enter",
     "KeyE",
     "KeyE",
     "KeyE",
-    "ArrowRight",
     "KeyE",
     "KeyE",
     "KeyE",
@@ -816,24 +827,24 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
   const savedData = JSON.parse(savedRaw);
 
   expect(savedData.puzzles.p2.phase).toBe("solved");
-  expect(savedData.puzzles.p2.closedBridgeId).toBe("B1");
+  expect(savedData.puzzles.p2.closedBridgeId).toBe("B6");
   expect(savedData.puzzles.p2.currentNode).toBe("L");
   expect(savedData.puzzles.p2.route).toEqual([
     "E",
-    "R",
     "N",
-    "L",
     "R",
+    "E",
     "M",
+    "R",
     "L",
   ]);
   expect(savedData.puzzles.p2.usedBridgeIds).toEqual([
-    "B2",
+    "B1",
     "B3",
-    "B6",
-    "B7",
-    "B4",
+    "B2",
     "B5",
+    "B4",
+    "B7",
   ]);
   expect(savedData.puzzles.p2.lifecycle.status).toBe("solved");
   expect(savedData.puzzles.p2.lifecycle.attemptCount).toBe(1);
@@ -1067,15 +1078,16 @@ test("la pista de nivel 2 de P2 se lee completa sin cortarse y ya no tapa el men
       "Te has quedado sin puentes disponibles antes de cruzarlos todos. Pulsa R para reiniciar.";
 
     // Cierra B2 (segundo puente del grafo: un ArrowRight lo resalta) y
-    // recorre N, R, M, L, N -- mismo caso ya cubierto a nivel de unidad en
+    // recorre N, R, M, E -- mismo caso ya cubierto a nivel de unidad en
     // tests/scenes/P2BridgesScene.test.js ("un callejón sin salida por
     // agotar puentes muestra el mensaje de puentes agotados"), aquí
-    // reproducido con teclado real.
+    // reproducido con teclado real. Al volver a la Entrada quedan B6 y B7
+    // sin cruzar y ninguna salida disponible.
     await pressAndWaitForFrameChange("ArrowRight");
     await pressAndWaitForFrameChange("KeyE");
     await pressAndWaitForFrameChange("Enter");
 
-    for (let i = 0; i < 4; i += 1) {
+    for (let i = 0; i < 3; i += 1) {
       await pressAndWaitForFrameChange("KeyE");
     }
 
@@ -1316,13 +1328,22 @@ test("Max reacciona de forma autónoma, sin pulsar ninguna tecla, tras resolver 
     .poll(() => canvas.evaluate((element) => element.toDataURL()))
     .not.toBe(worldFrame);
 
+  /*
+   * Cinco ArrowRight resaltan B6 (sexto puente de P2_GRAPH.bridges), KeyE
+   * lo cierra y seis KeyE seguidos recorren E-N-R-E-M-R-L, una de las seis
+   * rutas válidas con ese cierre.
+   */
   const solutionKeys = [
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
     "KeyE",
     "Enter",
     "KeyE",
     "KeyE",
     "KeyE",
-    "ArrowRight",
     "KeyE",
     "KeyE",
     "KeyE",
