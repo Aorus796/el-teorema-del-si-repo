@@ -5,11 +5,11 @@ export const P2_HINTS = Object.freeze([
   }),
   Object.freeze({
     level: 2,
-    text: "Al cerrar el puente correcto, solo la Entrada y el Molino quedan impares.",
+    text: "Antes de cerrar nada, cuenta las conexiones de cada lugar. El puente correcto es el que deja el inicio y el final como los únicos dos con un número impar de conexiones.",
   }),
   Object.freeze({
     level: 3,
-    text: "Cierra B1 y prueba E-R-N-L-R-M-L: ningún puente se repite.",
+    text: "Cierra B6 y prueba E-N-R-E-M-R-L: ningún puente se repite.",
   }),
 ]);
 

@@ -11,6 +11,7 @@ import {
   P2_PHASE,
   P2State,
 } from "../../src/puzzles/p2-bridges/P2State.js";
+import { P2_VALIDATION_CODE } from "../../src/puzzles/p2-bridges/P2Validator.js";
 
 function createStartedPuzzle(closedBridgeId = "B1") {
   const puzzle = new P2Puzzle();
@@ -27,12 +28,35 @@ test("no ofrece movimientos antes de iniciar el recorrido", () => {
   assert.deepEqual(puzzle.getAvailableMoves(), []);
 });
 
-test("con B1 cerrado el unico movimiento inicial es E hacia R", () => {
+test("con B6 cerrado la Entrada ofrece tres salidas iniciales", () => {
+  const puzzle = createStartedPuzzle("B6");
+
+  assert.deepEqual(puzzle.getAvailableMoves(), [
+    {
+      bridgeId: "B1",
+      destinationNode: "N",
+    },
+    {
+      bridgeId: "B5",
+      destinationNode: "M",
+    },
+    {
+      bridgeId: "B7",
+      destinationNode: "R",
+    },
+  ]);
+});
+
+test("con B1 cerrado la Entrada ofrece dos salidas iniciales", () => {
   const puzzle = createStartedPuzzle("B1");
 
   assert.deepEqual(puzzle.getAvailableMoves(), [
     {
-      bridgeId: "B2",
+      bridgeId: "B5",
+      destinationNode: "M",
+    },
+    {
+      bridgeId: "B7",
       destinationNode: "R",
     },
   ]);
@@ -59,11 +83,11 @@ test("rechaza nodos inexistentes sin modificar el estado", () => {
 test("rechaza movimientos entre nodos no conectados", () => {
   const puzzle = createStartedPuzzle();
 
-  const result = puzzle.moveTo("M");
+  const result = puzzle.moveTo("L");
 
   assert.equal(result.code, P2_MOVE_CODE.INVALID_STEP);
   assert.equal(result.fromNode, "E");
-  assert.equal(result.toNode, "M");
+  assert.equal(result.toNode, "L");
 });
 
 test("impide utilizar el puente seleccionado como cerrado", () => {
@@ -84,14 +108,14 @@ test("impide utilizar dos veces el mismo puente", () => {
 
   assert.equal(firstMove.code, P2_MOVE_CODE.MOVED);
   assert.equal(repeatedMove.code, P2_MOVE_CODE.REPEATED_BRIDGE);
-  assert.equal(repeatedMove.bridgeId, "B2");
+  assert.equal(repeatedMove.bridgeId, "B7");
   assert.equal(puzzle.state.currentNode, "R");
 });
 
 test("resuelve el recorrido principal completo", () => {
-  const puzzle = createStartedPuzzle("B1");
+  const puzzle = createStartedPuzzle("B6");
 
-  const route = ["R", "N", "L", "R", "M", "L"];
+  const route = ["N", "R", "E", "M", "R", "L"];
   let result;
 
   for (const nodeId of route) {
@@ -103,19 +127,19 @@ test("resuelve el recorrido principal completo", () => {
   assert.equal(puzzle.state.lifecycle.isSolved(), true);
   assert.deepEqual(puzzle.state.route, [
     "E",
-    "R",
     "N",
-    "L",
     "R",
+    "E",
     "M",
+    "R",
     "L",
   ]);
 });
 
 test("acepta un recorrido completo alternativo", () => {
-  const puzzle = createStartedPuzzle("B1");
+  const puzzle = createStartedPuzzle("B6");
 
-  const route = ["R", "M", "L", "N", "R", "L"];
+  const route = ["M", "R", "N", "E", "R", "L"];
   let result;
 
   for (const nodeId of route) {
@@ -126,35 +150,63 @@ test("acepta un recorrido completo alternativo", () => {
   assert.equal(puzzle.state.phase, P2_PHASE.SOLVED);
 });
 
+// B7 es el puente E-R: cerrarlo deja la Entrada con solo dos salidas y el
+// paseo E-N-R-M-E agota ambas antes de cruzar los seis puentes abiertos.
 test("detecta un callejon sin salida con un puente incorrecto", () => {
-  const puzzle = createStartedPuzzle("B2");
+  const puzzle = createStartedPuzzle("B7");
 
   assert.equal(puzzle.moveTo("N").code, P2_MOVE_CODE.MOVED);
   assert.equal(puzzle.moveTo("R").code, P2_MOVE_CODE.MOVED);
   assert.equal(puzzle.moveTo("M").code, P2_MOVE_CODE.MOVED);
-  assert.equal(puzzle.moveTo("L").code, P2_MOVE_CODE.MOVED);
 
-  const result = puzzle.moveTo("N");
+  const result = puzzle.moveTo("E");
 
   assert.equal(result.code, P2_MOVE_CODE.DEAD_END);
   assert.equal(puzzle.state.phase, P2_PHASE.FAILED);
-  assert.deepEqual(result.remainingBridgeIds, ["B7"]);
+  assert.equal(
+    puzzle.state.failureCode,
+    P2_VALIDATION_CODE.INCOMPLETE_ROUTE,
+  );
+  assert.deepEqual(result.remainingBridgeIds, ["B2", "B6"]);
+});
+
+test("detecta un recorrido completo que termina fuera del lugar correcto", () => {
+  const puzzle = createStartedPuzzle("B1");
+
+  const route = ["R", "N", "L", "R", "M", "E"];
+  let result;
+
+  for (const nodeId of route) {
+    result = puzzle.moveTo(nodeId);
+  }
+
+  assert.equal(result.code, P2_MOVE_CODE.DEAD_END);
+  assert.equal(puzzle.state.phase, P2_PHASE.FAILED);
+  assert.equal(puzzle.state.failureCode, P2_VALIDATION_CODE.INVALID_END);
+  assert.deepEqual(puzzle.state.route, [
+    "E",
+    "R",
+    "N",
+    "L",
+    "R",
+    "M",
+    "E",
+  ]);
 });
 
 test("reiniciar un fallo conserva el puente y las reflexiones", () => {
-  const puzzle = createStartedPuzzle("B2");
+  const puzzle = createStartedPuzzle("B7");
 
   puzzle.revealNextHint();
   puzzle.moveTo("N");
   puzzle.moveTo("R");
   puzzle.moveTo("M");
-  puzzle.moveTo("L");
-  puzzle.moveTo("N");
+  puzzle.moveTo("E");
 
   puzzle.restartTraversal();
 
   assert.equal(puzzle.state.phase, P2_PHASE.PLANNING);
-  assert.equal(puzzle.state.closedBridgeId, "B2");
+  assert.equal(puzzle.state.closedBridgeId, "B7");
   assert.deepEqual(puzzle.state.hintsRead, [1]);
   assert.deepEqual(puzzle.state.route, ["E"]);
   assert.deepEqual(puzzle.state.usedBridgeIds, []);

@@ -55,7 +55,7 @@ test("registra los pasos y puentes utilizados", () => {
   state.startTraversal();
   state.registerStep({
     nodeId: "R",
-    bridgeId: "B2",
+    bridgeId: "B7",
   });
   state.registerStep({
     nodeId: "N",
@@ -64,7 +64,7 @@ test("registra los pasos y puentes utilizados", () => {
 
   assert.equal(state.currentNode, "N");
   assert.deepEqual(state.route, ["E", "R", "N"]);
-  assert.deepEqual(state.usedBridgeIds, ["B2", "B3"]);
+  assert.deepEqual(state.usedBridgeIds, ["B7", "B3"]);
 });
 
 test("rechaza registrar dos veces el mismo puente", () => {
@@ -74,14 +74,14 @@ test("rechaza registrar dos veces el mismo puente", () => {
   state.startTraversal();
   state.registerStep({
     nodeId: "R",
-    bridgeId: "B2",
+    bridgeId: "B7",
   });
 
   assert.throws(
     () =>
       state.registerStep({
         nodeId: "E",
-        bridgeId: "B2",
+        bridgeId: "B7",
       }),
     /ya fue utilizado/,
   );
@@ -95,7 +95,7 @@ test("un intento fallido puede reiniciarse conservando la planificacion", () => 
   state.startTraversal();
   state.registerStep({
     nodeId: "R",
-    bridgeId: "B2",
+    bridgeId: "B7",
   });
   state.markFailed("incomplete_route");
   state.restartTraversal();
@@ -142,7 +142,7 @@ test("el estado puede guardarse y restaurarse sin perder progreso", () => {
   original.startTraversal();
   original.registerStep({
     nodeId: "R",
-    bridgeId: "B2",
+    bridgeId: "B7",
   });
   original.registerStep({
     nodeId: "N",
@@ -168,7 +168,7 @@ test("rechaza datos persistidos incoherentes", () => {
       new P2State({
         currentNode: "N",
         route: ["E", "R"],
-        usedBridgeIds: ["B2"],
+        usedBridgeIds: ["B7"],
       }),
     /ultimo nodo de la ruta/,
   );
@@ -178,7 +178,7 @@ test("rechaza datos persistidos incoherentes", () => {
       new P2State({
         currentNode: "E",
         route: ["E", "R", "E"],
-        usedBridgeIds: ["B2", "B2"],
+        usedBridgeIds: ["B7", "B7"],
       }),
     /puentes utilizados repetidos/,
   );

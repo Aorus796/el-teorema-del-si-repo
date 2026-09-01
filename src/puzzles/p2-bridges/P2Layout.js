@@ -11,7 +11,7 @@ export const P2_NODE_LAYOUT = Object.freeze({
   }),
   R: Object.freeze({
     x: 245,
-    y: 145,
+    y: 135,
     label: "Isla del Reloj",
   }),
   M: Object.freeze({

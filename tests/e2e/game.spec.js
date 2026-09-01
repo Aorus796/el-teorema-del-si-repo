@@ -775,13 +775,28 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
     .poll(() => canvas.evaluate((element) => element.toDataURL()))
     .not.toBe(worldFrame);
 
+  /*
+   * B6 es el sexto puente de P2_GRAPH.bridges, así que hacen falta cinco
+   * ArrowRight para resaltarlo antes de cerrarlo con KeyE. Tras Enter, el
+   * cursor de salida arranca en 0 y se reinicia a 0 tras cada cruce, pero
+   * confirmar seis veces seguidas ya NO resuelve el puzle: en la Isla del
+   * Reloj la primera salida disponible es B2 (Reloj-Molino) y es la trampa
+   * del grafo. Para completar E-N-R-E-M-R-L hay que girar el cursor dos
+   * posiciones en ese tercer paso y cruzar B7 (Entrada-Reloj) en su lugar.
+   */
   const solutionKeys = [
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
     "KeyE",
     "Enter",
     "KeyE",
     "KeyE",
-    "KeyE",
     "ArrowRight",
+    "ArrowRight",
+    "KeyE",
     "KeyE",
     "KeyE",
     "KeyE",
@@ -816,24 +831,24 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
   const savedData = JSON.parse(savedRaw);
 
   expect(savedData.puzzles.p2.phase).toBe("solved");
-  expect(savedData.puzzles.p2.closedBridgeId).toBe("B1");
+  expect(savedData.puzzles.p2.closedBridgeId).toBe("B6");
   expect(savedData.puzzles.p2.currentNode).toBe("L");
   expect(savedData.puzzles.p2.route).toEqual([
     "E",
-    "R",
     "N",
-    "L",
     "R",
+    "E",
     "M",
+    "R",
     "L",
   ]);
   expect(savedData.puzzles.p2.usedBridgeIds).toEqual([
-    "B2",
+    "B1",
     "B3",
-    "B6",
     "B7",
-    "B4",
     "B5",
+    "B4",
+    "B2",
   ]);
   expect(savedData.puzzles.p2.lifecycle.status).toBe("solved");
   expect(savedData.puzzles.p2.lifecycle.attemptCount).toBe(1);
@@ -858,6 +873,433 @@ test("resuelve el primer puzle de los Siete Puentes con teclado", async ({
 
   await page.keyboard.press("KeyQ");
   await expect(notebook).toBeHidden();
+
+  expect(errors).toEqual([]);
+});
+
+/*
+ * Regresión de la validación humana de PR #77: con el etiquetado anterior,
+ * acertar el puente cerrado y luego pulsar la tecla de confirmar seis veces
+ * seguidas -- sin girar nunca el cursor de salida -- resolvía el puzle
+ * entero sin razonar el orden del recorrido. Este test comprueba con
+ * teclado real que esa estrategia ya termina en fallo tras solo tres
+ * cruces, dejando puentes sin usar.
+ */
+test("confirmar sin girar el cursor ya no resuelve el puzle de los Siete Puentes", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+
+  await page.addInitScript(() => {
+    window.__renderedTexts = [];
+
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function patchedFillText(
+      text,
+      x,
+      y,
+      maxWidth,
+    ) {
+      window.__renderedTexts.push(String(text));
+      return originalFillText.call(this, text, x, y, maxWidth);
+    };
+  });
+
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 348, y: 145, facing: "down" },
+    world: {
+      currentMapId: "seven-bridges-walk",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 348, y: 145, facing: "down" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await disableAudioPlayback(page);
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+  const toast = page.locator("#toast");
+
+  const currentFrame = () => canvas.evaluate((element) => element.toDataURL());
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await currentFrame();
+
+    await page.keyboard.press(key);
+
+    await expect.poll(currentFrame).not.toBe(previousFrame);
+  };
+
+  const titleFrame = await currentFrame();
+
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  const worldFrame = await currentFrame();
+
+  await page.keyboard.press("KeyE");
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect(dialogueText).toHaveText(
+    "Elena marcó que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect.poll(currentFrame).not.toBe(worldFrame);
+
+  // Cierra B6, el puente correcto (sexto de P2_GRAPH.bridges), y arranca.
+  for (let i = 0; i < 5; i += 1) {
+    await pressAndWaitForFrameChange("ArrowRight");
+  }
+
+  await pressAndWaitForFrameChange("KeyE");
+  await pressAndWaitForFrameChange("Enter");
+
+  // Tres confirmaciones seguidas: E-N, N-R y, ya en la trampa, R-L. La
+  // tercera deja al jugador en el Molino sin ninguna salida abierta.
+  for (let i = 0; i < 3; i += 1) {
+    await pressAndWaitForFrameChange("KeyE");
+  }
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.__renderedTexts.includes(
+          "Te has quedado sin puentes disponibles antes de cruzarlos todos. Pulsa R para reiniciar.",
+        ),
+      ),
+    )
+    .toBe(true);
+
+  // Las tres confirmaciones restantes de la ráfaga ya no hacen nada: en fase
+  // de fallo la escena solo atiende reiniciar.
+  const failedFrame = await currentFrame();
+
+  for (let i = 0; i < 3; i += 1) {
+    await page.keyboard.press("KeyE");
+  }
+
+  await expect.poll(currentFrame).toBe(failedFrame);
+  await expect(toast).toBeEmpty();
+
+  await page.keyboard.press("Escape");
+  await expect.poll(currentFrame).not.toBe(failedFrame);
+
+  await page.keyboard.press("KeyK");
+  await expect(toast).toHaveText("Partida guardada");
+
+  const savedRaw = await page.evaluate(() =>
+    localStorage.getItem("el-teorema-del-si.save.v1"),
+  );
+  const savedData = JSON.parse(savedRaw);
+
+  expect(savedData.puzzles.p2.phase).toBe("failed");
+  expect(savedData.puzzles.p2.failureCode).toBe("incomplete_route");
+  expect(savedData.puzzles.p2.closedBridgeId).toBe("B6");
+  expect(savedData.puzzles.p2.route).toEqual(["E", "N", "R", "L"]);
+  expect(savedData.puzzles.p2.usedBridgeIds).toEqual(["B1", "B3", "B2"]);
+  expect(savedData.puzzles.p2.lifecycle.status).not.toBe("solved");
+  expect(savedData.flags.p2EvidenceFound).toBe(false);
+  expect(
+    savedData.notebook.some(
+      (entry) => entry.id === "p2-bridges-solution",
+    ),
+  ).toBe(false);
+
+  expect(errors).toEqual([]);
+});
+
+// Regresión de dos hallazgos de QA/reviewer sobre P2BridgesScene:
+// (1) la pista de nivel 2 corregida (más larga que la anterior) debe verse
+// completa, envuelta en varias líneas, sin desbordar el canvas de 480px; y
+// (2) leer una pista antes de fallar no debe seguir tapando el mensaje de
+// fallo diferenciado tras el fallo real. Usa el mismo patrón de parche de
+// fillText que "recorre el epílogo completo..." más abajo en este archivo,
+// para leer el texto real dibujado en el canvas sin tocar src/.
+test("la pista de nivel 2 de P2 se lee completa sin cortarse y ya no tapa el mensaje de fallo tras leerla", async ({
+  page,
+}) => {
+  const errors = collectJavaScriptErrors(page);
+
+  await page.addInitScript(() => {
+    window.__renderedTexts = [];
+
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function patchedFillText(
+      text,
+      x,
+      y,
+      maxWidth,
+    ) {
+      window.__renderedTexts.push(String(text));
+      return originalFillText.call(this, text, x, y, maxWidth);
+    };
+  });
+
+  const savedGame = {
+    formatVersion: 4,
+    savedAt: new Date(0).toISOString(),
+    scene: "world",
+    player: { x: 348, y: 145, facing: "down" },
+    world: {
+      currentMapId: "seven-bridges-walk",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 348, y: 145, facing: "down" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: false,
+      libraryObjectiveUnlocked: false,
+      archiveUnlocked: false,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+    },
+    objectiveId: "investigate-seven-bridges",
+    notebook: [],
+    puzzles: {
+      libraryCatalogue: {
+        order: ["C", "M", "A", "R", "D"],
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": null,
+          "followed-trail": null,
+          "never-disagreed": null,
+          "someone-refuses-now": null,
+          "present-choice": null,
+          "universal-future": null,
+        },
+        phase: "ready",
+        hintsRead: [],
+        attemptCount: 0,
+        failureCode: null,
+      },
+    },
+  };
+
+  await page.addInitScript((data) => {
+    localStorage.setItem(
+      "el-teorema-del-si.save.v1",
+      JSON.stringify(data),
+    );
+  }, savedGame);
+
+  await disableAudioPlayback(page);
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueText = page.locator("#dialogue-text");
+
+  const currentFrame = () => canvas.evaluate((element) => element.toDataURL());
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await currentFrame();
+
+    await page.keyboard.press(key);
+
+    await expect.poll(currentFrame).not.toBe(previousFrame);
+  };
+  const clearRenderedTexts = () =>
+    page.evaluate(() => {
+      window.__renderedTexts.length = 0;
+    });
+  const waitForRenderedText = (text) =>
+    expect
+      .poll(() =>
+        page.evaluate(
+          (needle) => window.__renderedTexts.includes(needle),
+          text,
+        ),
+      )
+      .toBe(true);
+  const measureTextWidth = (text, font) =>
+    page.evaluate(
+      ({ text, font }) => {
+        const context = document
+          .querySelector("#game-canvas")
+          .getContext("2d");
+
+        context.font = font;
+        return context.measureText(text).width;
+      },
+      { text, font },
+    );
+
+  const titleFrame = await currentFrame();
+
+  await page.keyboard.press("KeyL");
+  await expect.poll(currentFrame).not.toBe(titleFrame);
+
+  const worldFrame = await currentFrame();
+
+  await page.keyboard.press("KeyE");
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect(dialogueText).toHaveText(
+    "Elena marcó que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+  await expect.poll(currentFrame).not.toBe(worldFrame);
+
+  // El cuadro de estado ocupa de x=10 a x=470 (460px de ancho), centrado en
+  // x=240: cada línea individual debe caber holgadamente en esa mitad de
+  // ancho disponible (230px) a cada lado del centro, o se saldría del
+  // cuadro/canvas.
+  const STATUS_BOX_HALF_WIDTH = 230;
+
+  await test.step("la pista de nivel 1 se lee completa, sin envolver", async () => {
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyQ");
+
+    const level1Text =
+      "R1/3: Empieza por los lugares con un número impar de puentes disponibles.";
+
+    await waitForRenderedText(level1Text);
+
+    const width = await measureTextWidth(level1Text, "7px monospace");
+    expect(width).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
+  });
+
+  const level2Line1 =
+    "R2/3: Antes de cerrar nada, cuenta las conexiones de cada lugar. El puente correcto es el";
+  const level2Line2 =
+    "que deja el inicio y el final como los únicos dos con un número impar de conexiones.";
+
+  await test.step("la pista de nivel 2 (más larga, con el criterio corregido) se envuelve en dos líneas completas, sin cortes", async () => {
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyQ");
+
+    await waitForRenderedText(level2Line1);
+    await waitForRenderedText(level2Line2);
+
+    // Ninguna línea individual debe seguir conteniendo la pista completa sin
+    // envolver: si esto fallara, significaría que wrapText() dejó de
+    // aplicarse y el texto largo volvería a desbordarse como antes.
+    const renderedTexts = await page.evaluate(() => window.__renderedTexts);
+
+    expect(
+      renderedTexts.some((text) => text.startsWith("R2/3:") && text.includes("conexiones.") && text.length > 100),
+    ).toBe(false);
+
+    const width1 = await measureTextWidth(level2Line1, "7px monospace");
+    const width2 = await measureTextWidth(level2Line2, "7px monospace");
+
+    expect(width1).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
+    expect(width2).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
+  });
+
+  await test.step("tras leer la pista, un intento fallido muestra el mensaje diferenciado, no la pista antigua", async () => {
+    const incompleteRouteMessage =
+      "Te has quedado sin puentes disponibles antes de cruzarlos todos. Pulsa R para reiniciar.";
+
+    // Cierra B2 (segundo puente del grafo: un ArrowRight lo resalta) y
+    // recorre N, R, M, E, R -- mismo caso ya cubierto a nivel de unidad en
+    // tests/scenes/P2BridgesScene.test.js ("un callejón sin salida por
+    // agotar puentes muestra el mensaje de puentes agotados"), aquí
+    // reproducido con teclado real. Al volver a la Isla del Reloj quedan B2
+    // (cerrado) y B6 sin cruzar y ninguna salida disponible.
+    await pressAndWaitForFrameChange("ArrowRight");
+    await pressAndWaitForFrameChange("KeyE");
+    await pressAndWaitForFrameChange("Enter");
+
+    for (let i = 0; i < 4; i += 1) {
+      await pressAndWaitForFrameChange("KeyE");
+    }
+
+    await clearRenderedTexts();
+    await pressAndWaitForFrameChange("KeyE");
+
+    await waitForRenderedText(incompleteRouteMessage);
+
+    const textsAfterFailure = await page.evaluate(
+      () => window.__renderedTexts,
+    );
+
+    expect(
+      textsAfterFailure.some((text) => text.startsWith("R2/3:")),
+    ).toBe(false);
+  });
 
   expect(errors).toEqual([]);
 });
@@ -1082,13 +1524,25 @@ test("Max reacciona de forma autónoma, sin pulsar ninguna tecla, tras resolver 
     .poll(() => canvas.evaluate((element) => element.toDataURL()))
     .not.toBe(worldFrame);
 
+  /*
+   * Cinco ArrowRight resaltan B6 (sexto puente de P2_GRAPH.bridges) y KeyE
+   * lo cierra. El recorrido E-N-R-E-M-R-L necesita girar el cursor dos
+   * posiciones en la Isla del Reloj (la primera salida disponible allí es
+   * B2, la trampa del grafo): confirmar seis veces seguidas no resuelve.
+   */
   const solutionKeys = [
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
+    "ArrowRight",
     "KeyE",
     "Enter",
     "KeyE",
     "KeyE",
-    "KeyE",
     "ArrowRight",
+    "ArrowRight",
+    "KeyE",
     "KeyE",
     "KeyE",
     "KeyE",
@@ -1524,7 +1978,7 @@ test("restaura un intento fallido del catálogo de la Biblioteca tras recargar l
 // También sirve como regresión de compatibilidad con guardados reales de
 // v1.0.0 (tag `v1.0.0`) para el Caso B de
 // tests/state/GameStateV1SaveCompatibility.test.js: mismo punto de
-// progreso (P2 a medias, `traversing`, B1 cerrado, un paso registrado).
+// progreso (P2 a medias, `traversing`, B2 cerrado, dos pasos registrados).
 test("restaura un intento a medias del primer puzle de los Siete Puentes tras recargar la página", async ({
   page,
 }) => {
@@ -1559,10 +2013,10 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
     puzzles: {
       p2: {
         phase: "traversing",
-        closedBridgeId: "B1",
+        closedBridgeId: "B2",
         currentNode: "R",
-        route: ["E", "R"],
-        usedBridgeIds: ["B2"],
+        route: ["E", "N", "R"],
+        usedBridgeIds: ["B1", "B3"],
         hintsRead: [],
         failureCode: null,
         lifecycle: { status: "active", attemptCount: 1 },
@@ -1675,10 +2129,10 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
     .poll(() => canvas.evaluate((element) => element.toDataURL()))
     .not.toBe(worldFrame);
 
-  // Cruza B3 (R -> N): en R hay tres salidas disponibles tras excluir B1
-  // (cerrado) y B2 (usado) -- B3, B4 y B7 -- pero selectedMoveIndex
-  // arranca en 0 y B3 es la primera en el orden de P2_GRAPH.bridges, así
-  // que un solo KeyE (sin ArrowLeft/ArrowRight) la selecciona y la cruza.
+  // Cruza B4 (R -> M): en R hay dos salidas disponibles tras excluir B2
+  // (cerrado) y B3 (usado) -- B4 y B7 -- pero selectedMoveIndex arranca en
+  // 0 y B4 es la primera en el orden de P2_GRAPH.bridges, así que un solo
+  // KeyE (sin ArrowLeft/ArrowRight) la selecciona y la cruza.
   await pressAndWaitForFrameChange("KeyE");
 
   const puzzleSceneFrame = await canvas.evaluate((element) =>
@@ -1698,10 +2152,10 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
   const firstSave = await readSave();
 
   expect(firstSave.puzzles.p2.phase).toBe("traversing");
-  expect(firstSave.puzzles.p2.closedBridgeId).toBe("B1");
-  expect(firstSave.puzzles.p2.currentNode).toBe("N");
-  expect(firstSave.puzzles.p2.route).toEqual(["E", "R", "N"]);
-  expect(firstSave.puzzles.p2.usedBridgeIds).toEqual(["B2", "B3"]);
+  expect(firstSave.puzzles.p2.closedBridgeId).toBe("B2");
+  expect(firstSave.puzzles.p2.currentNode).toBe("M");
+  expect(firstSave.puzzles.p2.route).toEqual(["E", "N", "R", "M"]);
+  expect(firstSave.puzzles.p2.usedBridgeIds).toEqual(["B1", "B3", "B4"]);
   expect(firstSave.puzzles.p2.lifecycle.status).toBe("active");
   expect(firstSave.puzzles.p2.lifecycle.attemptCount).toBe(1);
   expect(firstSave.puzzles.p2.failureCode).toBe(null);
@@ -1749,11 +2203,11 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
     .not.toBe(reloadedWorldFrame);
 
   /*
-   * Cruza B6 (N -> L): única salida disponible en N tras excluir B1
-   * (cerrado) y B3 (usado). Este movimiento solo produce el resultado
-   * esperado si el recorrido se restauró de verdad en currentNode "N";
-   * de lo contrario el puzle habría reanudado en otro nodo y esta acción
-   * fallaría o produciría un resultado distinto.
+   * Cruza B5 (M -> E): única salida disponible en M tras excluir B4
+   * (usado). Este movimiento solo produce el resultado esperado si el
+   * recorrido se restauró de verdad en currentNode "M"; de lo contrario el
+   * puzle habría reanudado en otro nodo y esta acción fallaría o
+   * produciría un resultado distinto.
    */
   await pressAndWaitForFrameChange("KeyE");
 
@@ -1782,13 +2236,14 @@ test("restaura un intento a medias del primer puzle de los Siete Puentes tras re
   const secondSave = await readSave();
 
   expect(secondSave.puzzles.p2.phase).toBe("traversing");
-  expect(secondSave.puzzles.p2.closedBridgeId).toBe("B1");
-  expect(secondSave.puzzles.p2.currentNode).toBe("L");
-  expect(secondSave.puzzles.p2.route).toEqual(["E", "R", "N", "L"]);
+  expect(secondSave.puzzles.p2.closedBridgeId).toBe("B2");
+  expect(secondSave.puzzles.p2.currentNode).toBe("E");
+  expect(secondSave.puzzles.p2.route).toEqual(["E", "N", "R", "M", "E"]);
   expect(secondSave.puzzles.p2.usedBridgeIds).toEqual([
-    "B2",
+    "B1",
     "B3",
-    "B6",
+    "B4",
+    "B5",
   ]);
   expect(secondSave.puzzles.p2.lifecycle.status).toBe("active");
   expect(secondSave.puzzles.p2.lifecycle.attemptCount).toBe(1);
@@ -2379,13 +2834,21 @@ test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado"
       },
     ],
     puzzles: {
+      /*
+       * B1 (Entrada-Isla del Nodo) y B6 (Isla del Nodo-Molino) son dos de
+       * los cuatro puentes que nunca se han recableado (los otros son B3 y
+       * B4), así que este recorrido a medias significa exactamente lo mismo
+       * en el formato 1 que con la topología vigente: es un guardado que un
+       * jugador real de aquella versión pudo producir y que sigue siendo
+       * coherente hoy.
+       */
       p2: {
         lifecycle: { status: "active", attemptCount: 1 },
         phase: "traversing",
-        closedBridgeId: "B1",
-        currentNode: "R",
-        route: ["E", "R"],
-        usedBridgeIds: ["B2"],
+        closedBridgeId: "B6",
+        currentNode: "N",
+        route: ["E", "N"],
+        usedBridgeIds: ["B1"],
         hintsRead: [1],
         failureCode: null,
       },
@@ -2467,11 +2930,9 @@ test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado"
     .poll(() => canvas.evaluate((element) => element.toDataURL()))
     .not.toBe(worldFrame);
 
-  // Cruza B3 (R -> N): en R hay tres movimientos disponibles tras excluir
-  // B2 (usado) -- B3, B4 y B7 (B1 conecta E-N y no toca R, así que no
-  // afecta a las opciones desde aquí) -- pero selectedMoveIndex arranca
-  // en 0 y B3 es la primera en el orden de P2_GRAPH.bridges, así que un
-  // solo KeyE (sin ArrowLeft/ArrowRight) la selecciona y la cruza.
+  // Cruza B3 (N -> R): desde la Isla del Nodo, tras excluir B1 (usado) y
+  // B6 (cerrado), B3 es la única salida disponible, así que un solo KeyE
+  // (sin ArrowLeft/ArrowRight) la selecciona y la cruza.
   await pressAndWaitForFrameChange("KeyE");
 
   const puzzleSceneFrame = await canvas.evaluate((element) =>
@@ -2495,10 +2956,10 @@ test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado"
 
   expect(savedData.formatVersion).toBe(4);
   expect(savedData.puzzles.p2.phase).toBe("traversing");
-  expect(savedData.puzzles.p2.closedBridgeId).toBe("B1");
-  expect(savedData.puzzles.p2.currentNode).toBe("N");
-  expect(savedData.puzzles.p2.route).toEqual(["E", "R", "N"]);
-  expect(savedData.puzzles.p2.usedBridgeIds).toEqual(["B2", "B3"]);
+  expect(savedData.puzzles.p2.closedBridgeId).toBe("B6");
+  expect(savedData.puzzles.p2.currentNode).toBe("R");
+  expect(savedData.puzzles.p2.route).toEqual(["E", "N", "R"]);
+  expect(savedData.puzzles.p2.usedBridgeIds).toEqual(["B1", "B3"]);
   expect(savedData.puzzles.p2.lifecycle.status).toBe("active");
   expect(savedData.puzzles.p2.lifecycle.attemptCount).toBe(1);
   expect(savedData.puzzles.p2.failureCode).toBe(null);
@@ -2524,6 +2985,96 @@ test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado"
   expect(savedData.flags.archiveUnlocked).toBe(false);
   expect(savedData.flags.investigationComplete).toBe(false);
   expect(savedData.flags.epilogueUnlocked).toBe(false);
+
+  /*
+   * El recorrido migrado no solo continúa: termina de verdad. Se vuelve al
+   * mapa de los puentes y se completa el paseo desde la Isla del Reloj con
+   * la topología vigente (E-N-R-M-E-R-L, con B6 cerrado).
+   */
+  await page.keyboard.press("KeyE");
+
+  await expect(dialoguePanel).toBeVisible();
+  await expect(dialogueText).toHaveText(
+    "Cinco lugares aparecen unidos por siete puentes.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "Elena marcó que uno de ellos estaba cerrado.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect(dialogueText).toHaveText(
+    "Encuentra un recorrido que cruce todos los demás una sola vez.",
+  );
+
+  await page.keyboard.press("KeyE");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(worldFrame);
+
+  /*
+   * Desde la Isla del Reloj quedan tres salidas (B2 a Molino, B4 a Mercado
+   * y B7 a Entrada, en el orden de P2_GRAPH.bridges) y el cursor arranca en
+   * 0: hay que girarlo una posición para cruzar B4 en vez de la trampa B2.
+   * Después, cada lugar deja una única salida abierta, así que basta con
+   * confirmar: M-E por B5, E-R por B7 y R-L por B2.
+   */
+  const remainingSolutionKeys = [
+    "ArrowRight",
+    "KeyE",
+    "KeyE",
+    "KeyE",
+    "KeyE",
+  ];
+
+  for (const key of remainingSolutionKeys) {
+    await pressAndWaitForFrameChange(key);
+  }
+
+  await expect(toast).toHaveText("Nueva observacion registrada");
+
+  const solvedSceneFrame = await canvas.evaluate((element) =>
+    element.toDataURL(),
+  );
+
+  await page.keyboard.press("Escape");
+
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL()))
+    .not.toBe(solvedSceneFrame);
+
+  await page.keyboard.press("KeyK");
+
+  await expect(toast).toHaveText("Partida guardada");
+
+  const solvedRaw = await page.evaluate(() =>
+    localStorage.getItem("el-teorema-del-si.save.v1"),
+  );
+  const solvedData = JSON.parse(solvedRaw);
+
+  expect(solvedData.puzzles.p2.phase).toBe("solved");
+  expect(solvedData.puzzles.p2.closedBridgeId).toBe("B6");
+  expect(solvedData.puzzles.p2.route).toEqual([
+    "E",
+    "N",
+    "R",
+    "M",
+    "E",
+    "R",
+    "L",
+  ]);
+  expect(solvedData.puzzles.p2.usedBridgeIds).toEqual([
+    "B1",
+    "B3",
+    "B4",
+    "B5",
+    "B7",
+    "B2",
+  ]);
 
   expect(errors).toEqual([]);
 });
