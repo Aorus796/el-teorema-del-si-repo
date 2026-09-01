@@ -55,11 +55,34 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   leídas y el número de intentos ya realizados) los recorridos a medias
   cuyos pasos ya no corresponden a puentes reales del grafo nuevo, o que
   dejarían al jugador en un lugar sin ningún puente abierto por cruzar sin
-  haber completado el paseo -- la topología nueva sí tiene callejones sin
-  salida que la anterior no tenía, así que un guardado de v1.1 podía
-  quedar parado en uno de ellos sin que el motor de esa versión lo hubiera
-  detectado nunca como un fallo. Un puzle ya resuelto nunca se revalida ni
-  se reinicia.
+  haber completado el paseo -- callejones sin salida ha habido siempre, en
+  cualquier versión, en cuanto se cerraba un puente que no fuera el
+  correcto; lo que cambia es que la topología nueva también los tiene con
+  el cierre correcto, que en la anterior garantizaba llegar a la solución.
+  Un guardado de v1.1 puede además haber quedado parado en una posición que
+  solo es un callejón sin salida con el grafo nuevo, algo que el motor de
+  aquella versión nunca pudo detectar como fallo. Un puzle ya resuelto
+  nunca se revalida ni se reinicia.
+- Corrección del rediseño anterior tras validación humana del Paseo de los
+  Siete Puentes: aunque la topología nueva sí introducía decisiones con
+  trampa real, esa trampa no era alcanzable por la ruta más probable de un
+  jugador -- pulsar la tecla de confirmar repetidamente sin girar nunca el
+  cursor de salida, que toma siempre el puente disponible de menor
+  identificador. Con el etiquetado anterior esa ráfaga de seis
+  confirmaciones resolvía el puzle entero sin razonar el orden del
+  recorrido. El grafo en sí ya era la topología óptima posible (se
+  comprobaron de forma exhaustiva las 120 topologías simples de cinco
+  lugares y siete puentes: ninguna permite que la primera decisión tras el
+  cierre correcto tenga una opción trampa, y ninguna otra mejora la
+  profundidad de fallo a menor distancia de v1.1), así que la corrección no
+  toca ninguna arista: intercambia qué conexión física llevan los
+  identificadores B2 y B7 (`P2Graph.js`, ahora B2 es Reloj-Molino y B7 es
+  Entrada-Reloj). Mismo grafo, mismos cinco lugares, mismo cierre correcto
+  (B6), misma dificultad estructural ya validada y mismas pistas; lo único
+  que cambia es que la ruta por defecto de "confirmar sin mirar" ahora entra
+  en la trampa y se queda sin puentes tras solo tres cruces. La geometría
+  dibujada es idéntica: solo se intercambian dos etiquetas de puente sobre
+  el mismo trazado.
 
 ## [1.1.0] - 2026-08-28
 

@@ -269,14 +269,189 @@ test("ninguna ruta completa es válida con un cierre distinto de B6", () => {
   }
 });
 
+// Clasifica cada salida disponible desde `node` (con `used` ya cruzados) en
+// segura -- existe al menos una continuación que cruza todos los puentes
+// abiertos restantes y acaba en el Molino -- o trampa.
+function classifyMoves(closedBridgeId, node, used) {
+  const openBridges = P2_GRAPH.bridges.filter(
+    (bridge) => bridge.id !== closedBridgeId,
+  );
+
+  function completesFrom(currentNode, usedIds) {
+    if (usedIds.size === openBridges.length) {
+      return currentNode === P2_END_NODE;
+    }
+
+    for (const bridge of openBridges) {
+      if (usedIds.has(bridge.id)) {
+        continue;
+      }
+
+      const [nodeA, nodeB] = bridge.nodes;
+
+      if (nodeA !== currentNode && nodeB !== currentNode) {
+        continue;
+      }
+
+      usedIds.add(bridge.id);
+      const solvable = completesFrom(
+        nodeA === currentNode ? nodeB : nodeA,
+        usedIds,
+      );
+      usedIds.delete(bridge.id);
+
+      if (solvable) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  const usedIds = new Set(used);
+
+  return openBridges
+    .filter(
+      (bridge) => !usedIds.has(bridge.id) && bridge.nodes.includes(node),
+    )
+    .map((bridge) => {
+      const [nodeA, nodeB] = bridge.nodes;
+      const destinationNode = nodeA === node ? nodeB : nodeA;
+
+      usedIds.add(bridge.id);
+      const safe = completesFrom(destinationNode, usedIds);
+      usedIds.delete(bridge.id);
+
+      return { bridgeId: bridge.id, destinationNode, safe };
+    });
+}
+
+/*
+ * Primera decisión tras acertar el cierre: las tres salidas de la Entrada
+ * son seguras (solvableFirstMoves = 3, deadFirstMoves = 0), y eso NO es un
+ * defecto de esta topología concreta sino una propiedad demostrada del
+ * espacio de diseño completo (5 nodos, 7 puentes simples).
+ *
+ * Demostración: para que el puzle tenga una única solución de cierre y el
+ * recorrido vaya del inicio al final, tras cerrar el puente correcto el
+ * grafo debe ser un camino euleriano de E a L, es decir E y L los dos
+ * únicos nodos de grado impar. Una trampa en la PRIMERA arista exigiría que
+ * alguna salida de E dejase el resto sin recorrido euleriano completo; con
+ * 6 aristas abiertas sobre 5 nodos, eso solo puede ocurrir si el nodo final
+ * tiene grado 1 (cruzar hacia él antes de tiempo lo deja aislado), y
+ * entonces la paridad de Euler fuerza que E tenga grado 3 y que ninguna de
+ * sus tres salidas toque L. Cada una de esas tres salidas conserva el
+ * camino euleriano restante, así que todas completan. Por eso la trampa
+ * real de este grafo vive en la SEGUNDA decisión (ver más abajo), y por eso
+ * este test afirma deadFirstMoves === 0 en vez de exigir lo imposible.
+ */
+test("con B6 cerrado, las tres salidas de la Entrada son todas seguras", () => {
+  const firstMoves = classifyMoves("B6", P2_START_NODE, []);
+  const solvableFirstMoves = firstMoves.filter((move) => move.safe);
+  const deadFirstMoves = firstMoves.filter((move) => !move.safe);
+
+  assert.equal(solvableFirstMoves.length, 3);
+  assert.equal(deadFirstMoves.length, 0);
+
+  const puzzle = new P2Puzzle();
+
+  puzzle.selectClosedBridge("B6");
+  puzzle.startTraversal();
+
+  assert.deepEqual(
+    puzzle.getAvailableMoves(),
+    firstMoves.map(({ bridgeId, destinationNode }) => ({
+      bridgeId,
+      destinationNode,
+    })),
+  );
+});
+
+/*
+ * Regresión de la validación humana de PR #77: confirmar sin girar el
+ * cursor resolvía el puzle entero. El cursor de salida arranca en 0 y
+ * vuelve a 0 tras cada cruce (P2BridgesScene.handleMoveResult), así que esa
+ * estrategia equivale exactamente a tomar siempre getAvailableMoves()[0].
+ * Con el etiquetado actual esa ruta por defecto entra en la trampa y muere.
+ */
+test("confirmar siempre la primera salida disponible ya no resuelve el puzle", () => {
+  const puzzle = new P2Puzzle();
+
+  puzzle.selectClosedBridge("B6");
+  puzzle.startTraversal();
+
+  let result = null;
+  let crossedBridges = 0;
+
+  while (puzzle.getAvailableMoves().length > 0) {
+    const [firstMove] = puzzle.getAvailableMoves();
+
+    result = puzzle.moveTo(firstMove.destinationNode);
+    crossedBridges += 1;
+
+    if (result.code !== P2_MOVE_CODE.MOVED) {
+      break;
+    }
+  }
+
+  assert.notEqual(result.code, P2_MOVE_CODE.SOLVED);
+  assert.equal(result.code, P2_MOVE_CODE.DEAD_END);
+  assert.equal(puzzle.state.phase, P2_PHASE.FAILED);
+  assert.equal(
+    puzzle.state.failureCode,
+    P2_VALIDATION_CODE.INCOMPLETE_ROUTE,
+  );
+  assert.equal(crossedBridges, 3);
+  assert.deepEqual(puzzle.state.route, ["E", "N", "R", "L"]);
+  assert.deepEqual(puzzle.state.usedBridgeIds, ["B1", "B3", "B2"]);
+  assert.deepEqual(puzzle.getRemainingBridgeIds(), ["B4", "B5", "B7"]);
+});
+
 /*
  * Punto de decisión real: con el puente correcto ya cerrado, el jugador
- * sigue teniendo que razonar. En la Isla del Reloj se abren tres salidas y
- * una de ellas -- localmente legal, y además la más tentadora porque lleva
- * directamente al Molino -- arruina el recorrido. Antes de recablear la
- * topología esto no existía: tras acertar el cierre, cualquier paseo
- * llegaba al final.
+ * sigue teniendo que razonar. Este test no da por supuesto en qué nodo
+ * ocurre: recorre por backtracking todos los estados alcanzables y busca
+ * los que ofrecen a la vez una salida segura y una trampa. Antes de
+ * recablear la topología no existía ninguno: tras acertar el cierre,
+ * cualquier paseo llegaba al final.
  */
+test("con B6 cerrado existen decisiones con salida segura y salida trampa", () => {
+  const mixedDecisions = [];
+
+  function explore(node, used) {
+    const moves = classifyMoves("B6", node, used);
+    const safeMoves = moves.filter((move) => move.safe);
+
+    if (moves.length >= 2 && safeMoves.length > 0 && safeMoves.length < moves.length) {
+      mixedDecisions.push({ node, moves });
+    }
+
+    for (const move of moves) {
+      explore(move.destinationNode, [...used, move.bridgeId]);
+    }
+  }
+
+  explore(P2_START_NODE, []);
+
+  assert.ok(
+    mixedDecisions.length > 0,
+    "el grafo debe ofrecer al menos una decisión con trampa real",
+  );
+
+  // La trampa siempre aparece en la segunda decisión, nunca en la primera.
+  for (const decision of mixedDecisions) {
+    assert.notEqual(decision.node, P2_START_NODE);
+  }
+
+  // Y la primera salida que ofrece el motor en esas decisiones es
+  // precisamente la trampa: por eso confirmar sin girar el cursor falla.
+  const trappedByDefault = mixedDecisions.filter(
+    (decision) => decision.moves[0].safe === false,
+  );
+
+  assert.ok(trappedByDefault.length > 0);
+});
+
 test("con B6 cerrado la Isla del Reloj abre tres salidas y una arruina el recorrido", () => {
   const puzzle = new P2Puzzle();
 
@@ -285,13 +460,21 @@ test("con B6 cerrado la Isla del Reloj abre tres salidas y una arruina el recorr
 
   assert.equal(puzzle.moveTo("R").code, P2_MOVE_CODE.MOVED);
   assert.deepEqual(puzzle.getAvailableMoves(), [
+    { bridgeId: "B2", destinationNode: "L" },
     { bridgeId: "B3", destinationNode: "N" },
     { bridgeId: "B4", destinationNode: "M" },
-    { bridgeId: "B7", destinationNode: "L" },
   ]);
+  assert.deepEqual(
+    classifyMoves("B6", "R", ["B7"]).map((move) => [move.bridgeId, move.safe]),
+    [
+      ["B2", false],
+      ["B3", true],
+      ["B4", true],
+    ],
+  );
 });
 
-test("con B6 cerrado, cruzar B7 desde la Isla del Reloj es un callejón sin salida", () => {
+test("con B6 cerrado, cruzar B2 desde la Isla del Reloj es un callejón sin salida", () => {
   const puzzle = new P2Puzzle();
 
   puzzle.selectClosedBridge("B6");

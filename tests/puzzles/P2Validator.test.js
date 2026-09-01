@@ -18,10 +18,10 @@ test("acepta el recorrido valido principal", () => {
   assert.deepEqual(result.usedBridgeIds, [
     "B1",
     "B3",
-    "B2",
+    "B7",
     "B5",
     "B4",
-    "B7",
+    "B2",
   ]);
   assert.deepEqual(result.remainingBridgeIds, []);
 });
@@ -103,7 +103,7 @@ test("rechaza un puente utilizado dos veces", () => {
 
   assert.equal(result.valid, false);
   assert.equal(result.code, P2_VALIDATION_CODE.REPEATED_BRIDGE);
-  assert.equal(result.bridgeId, "B2");
+  assert.equal(result.bridgeId, "B7");
 });
 
 test("rechaza un recorrido que deja puentes sin utilizar", () => {
@@ -114,7 +114,7 @@ test("rechaza un recorrido que deja puentes sin utilizar", () => {
 
   assert.equal(result.valid, false);
   assert.equal(result.code, P2_VALIDATION_CODE.INCOMPLETE_ROUTE);
-  assert.deepEqual(result.usedBridgeIds, ["B2", "B3"]);
+  assert.deepEqual(result.usedBridgeIds, ["B7", "B3"]);
   assert.equal(result.remainingBridgeIds.length, 4);
 });
 
@@ -134,8 +134,8 @@ test("rechaza un recorrido completo que termina fuera de L", () => {
 });
 
 test("findBridge encuentra conexiones en ambas direcciones", () => {
-  assert.equal(findBridge(P2_GRAPH, "E", "R")?.id, "B2");
-  assert.equal(findBridge(P2_GRAPH, "R", "E")?.id, "B2");
+  assert.equal(findBridge(P2_GRAPH, "E", "R")?.id, "B7");
+  assert.equal(findBridge(P2_GRAPH, "R", "E")?.id, "B7");
   assert.equal(findBridge(P2_GRAPH, "E", "M")?.id, "B5");
   assert.equal(findBridge(P2_GRAPH, "M", "E")?.id, "B5");
   assert.equal(findBridge(P2_GRAPH, "M", "L"), null);

@@ -505,13 +505,17 @@ function isCoherentP2Traversal(state) {
 /*
  * Un recorrido guardado puede seguir estando formado por aristas reales del
  * grafo nuevo y aun así dejar al jugador en un lugar sin ningún puente
- * abierto por cruzar (la topología nueva sí tiene callejones sin salida; la
- * anterior no). Durante el recorrido eso es una partida bloqueada: la escena
- * solo atiende girar y avanzar mientras se recorre, y reiniciar pertenece a
- * la fase de fallo, así que el jugador no podría terminar nunca P2 ni
- * desbloquear la Biblioteca. La excepción es el recorrido ya terminado con
- * éxito bajo la topología nueva: no tiene salidas simplemente porque no le
- * queda ningún puente, y es coherente.
+ * abierto por cruzar. Callejones sin salida ha habido siempre: en cualquier
+ * versión, cerrar un puente que no fuera el correcto podía dejar al jugador
+ * atascado. Lo que cambia con la topología nueva es que también pueden
+ * aparecer CON el cierre correcto, que en la topología anterior garantizaba
+ * llegar a la solución siguiera el orden que siguiera. Durante el recorrido,
+ * quedarse sin salidas es una partida bloqueada: la escena solo atiende
+ * girar y avanzar mientras se recorre, y reiniciar pertenece a la fase de
+ * fallo, así que el jugador no podría terminar nunca P2 ni desbloquear la
+ * Biblioteca. La excepción es el recorrido ya terminado con éxito bajo la
+ * topología nueva: no tiene salidas simplemente porque no le queda ningún
+ * puente, y es coherente.
  *
  * La comprobación se limita a la fase de recorrido a propósito: quedarse sin
  * salidas es justamente lo que define un fallo, y en esa fase la escena ya

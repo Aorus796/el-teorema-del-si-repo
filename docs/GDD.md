@@ -868,12 +868,12 @@ Nodos:
 Puentes:
 
 - B1: E-N
-- B2: E-R
+- B2: R-L
 - B3: N-R
 - B4: R-M
 - B5: E-M
 - B6: N-L
-- B7: R-L
+- B7: E-R
 
 ### Objetivo
 

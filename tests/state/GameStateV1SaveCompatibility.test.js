@@ -12,11 +12,16 @@ import {
 /*
  * Cobertura de compatibilidad con guardados reales de v1.0.0 (tag
  * `v1.0.0`, commit ff0c72b9cba30ec98cbccb7a5c32b70b5dfdd733) -- no una
- * prueba de migración. src/state/GameState.js no ha cambiado ni un byte
- * desde ese tag (confirmado con `git diff v1.0.0 HEAD --
- * src/state/GameState.js`, sin salida) y SAVE_FORMAT_VERSION ya era 4 en
- * el tag: v1.0.0 nunca llegó a producir guardados de los formatos legacy
- * 1/2/3, ya obsoletos en el momento del lanzamiento.
+ * prueba de migración. src/state/GameState.js fue idéntico al del tag
+ * hasta v1.1.0 incluida, y después sí ha cambiado: añade `restoreP2()` y
+ * sus auxiliares para que un recorrido a medias guardado con la topología
+ * anterior del Paseo de los Siete Puentes no deje la partida bloqueada.
+ * Lo que NO ha cambiado es el formato de guardado:
+ * `SAVE_FORMAT_VERSION` sigue siendo 4 y los campos serializados son los
+ * mismos, así que los guardados reales de v1.0.0 siguen siendo válidos --
+ * que es exactamente lo que demuestra este archivo. El tag ya publicaba
+ * `SAVE_FORMAT_VERSION` 4: v1.0.0 nunca llegó a producir guardados de los
+ * formatos legacy 1/2/3, ya obsoletos en el momento del lanzamiento.
  *
  * Estos tres fixtures reproducen, campo a campo, la forma exacta que
  * `GameState.toSaveData()` producía en la build publicada de v1.0.0 en
@@ -163,13 +168,19 @@ function buildCaseBFixture() {
       },
     ],
     puzzles: {
+      /*
+       * Recorrido a medias tal y como lo habría guardado v1.0.0: cerrar B2
+       * y cruzar E-N (B1) y N-R (B3). B1, B3, B4 y B6 nunca han cambiado de
+       * conexión entre v1.0.0 y la topología vigente, así que este historial
+       * sigue describiendo aristas reales y se restaura sin reiniciarse.
+       */
       p2: {
         lifecycle: { id: "p2-bridges", status: "active", attemptCount: 1 },
         phase: "traversing",
-        closedBridgeId: "B1",
+        closedBridgeId: "B2",
         currentNode: "R",
-        route: ["E", "R"],
-        usedBridgeIds: ["B2"],
+        route: ["E", "N", "R"],
+        usedBridgeIds: ["B1", "B3"],
         hintsRead: [],
         failureCode: null,
       },

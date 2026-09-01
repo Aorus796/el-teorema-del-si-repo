@@ -8,12 +8,14 @@ import { P2_PHASE } from "../../src/puzzles/p2-bridges/P2State.js";
 
 /*
  * Compatibilidad de los guardados de v1.1 con la topología recableada de
- * P2 (B5 dejó de unir Mercado-Molino para unir Entrada-Mercado). El formato
- * de guardado NO cambia: siguen existiendo los mismos siete puentes y los
- * mismos cinco lugares, así que ningún guardado anterior deja de cargar.
- * Lo que sí puede quedar obsoleto es el significado geométrico de un
- * recorrido a medias guardado con la topología antigua, y eso es lo que
- * comprueban estos cuatro casos.
+ * P2. Respecto a v1.1 cambian tres etiquetas: B5 dejó de unir
+ * Mercado-Molino para unir Entrada-Mercado, B2 pasó a ser Reloj-Molino y B7
+ * pasó a ser Entrada-Reloj. B1 (E-N), B3 (N-R), B4 (R-M) y B6 (N-L)
+ * conservan su conexión de siempre. El formato de guardado NO cambia:
+ * siguen existiendo los mismos siete puentes y los mismos cinco lugares,
+ * así que ningún guardado anterior deja de cargar. Lo que sí puede quedar
+ * obsoleto es el significado geométrico de un recorrido a medias guardado
+ * con la topología antigua, y eso es lo que comprueban estos casos.
  */
 
 const V1_1_SOLVED_ROUTE = ["E", "R", "N", "L", "R", "M", "L"];
@@ -119,75 +121,53 @@ test("un guardado de v1.1 a medias con pasos incoherentes vuelve a la planificac
 });
 
 /*
- * Recorridos guardados con la topología de v1.1 cuyos pasos siguen siendo
- * aristas reales del grafo nuevo, pero que bajo ese grafo terminan en un
+ * Recorrido guardado con la topología de v1.1 cuyos pasos siguen siendo
+ * aristas reales del grafo nuevo, pero que bajo ese grafo termina en un
  * lugar sin ningún puente abierto por cruzar. Sin reinicio, la partida
  * quedaría bloqueada para siempre: durante el recorrido la escena solo
  * atiende girar y avanzar, y reiniciar pertenece a la fase de fallo, así que
  * P2 no podría completarse nunca y la Biblioteca no se desbloquearía.
+ *
+ * Este es el ÚNICO caso posible. Enumerando con el motor real (P2Puzzle
+ * sobre el grafo de v1.1) los 105 estados en fase `traversing` que aquella
+ * versión podía llegar a guardar, solo este sigue formado por aristas reales
+ * del grafo nuevo y además se queda sin salidas bajo él. El resto o deja de
+ * ser coherente (y lo cubren los casos de "pasos incoherentes") o conserva
+ * salidas. Ojo al enumerar más casos a mano: un recorrido que en v1.1 se
+ * quedaba sin salidas nunca se guardaba en fase `traversing`, porque
+ * `P2Puzzle.moveTo()` llama a `markFailed(INCOMPLETE_ROUTE)` en ese mismo
+ * paso y el guardado real quedaba en fase `failed`.
  */
-const STUCK_V1_1_TRAVERSALS = [
-  {
-    closedBridgeId: "B6",
-    currentNode: "L",
-    route: ["E", "R", "L"],
-    usedBridgeIds: ["B2", "B7"],
-  },
-  {
-    closedBridgeId: "B6",
-    currentNode: "L",
-    route: ["E", "N", "R", "L"],
-    usedBridgeIds: ["B1", "B3", "B7"],
-  },
-  {
-    closedBridgeId: "B7",
+test("un guardado de v1.1 a medias que con la topología nueva se queda sin salidas vuelve a la planificación", () => {
+  // Cerró B2 (E-R en v1.1) y llegó al Molino por B1 y B6. Con la topología
+  // vigente B2 es Reloj-Molino, así que el Molino se queda sin salidas.
+  const p2SaveData = {
+    lifecycle: { id: "p2-bridges", status: "active", attemptCount: 2 },
+    phase: "traversing",
+    closedBridgeId: "B2",
     currentNode: "L",
     route: ["E", "N", "L"],
     usedBridgeIds: ["B1", "B6"],
-  },
-  {
-    closedBridgeId: "B7",
-    currentNode: "L",
-    route: ["E", "R", "N", "L"],
-    usedBridgeIds: ["B2", "B3", "B6"],
-  },
-];
+    hintsRead: [1, 2],
+    failureCode: null,
+  };
 
-for (const traversal of STUCK_V1_1_TRAVERSALS) {
-  const description =
-    `un guardado de v1.1 a medias que con la topología nueva se queda sin ` +
-    `salidas (cierra ${traversal.closedBridgeId}, ruta ` +
-    `${traversal.route.join("-")}) vuelve a la planificación`;
+  let state;
 
-  test(description, () => {
-    const p2SaveData = {
-      lifecycle: { id: "p2-bridges", status: "active", attemptCount: 2 },
-      phase: "traversing",
-      closedBridgeId: traversal.closedBridgeId,
-      currentNode: traversal.currentNode,
-      route: [...traversal.route],
-      usedBridgeIds: [...traversal.usedBridgeIds],
-      hintsRead: [1, 2],
-      failureCode: null,
-    };
-
-    let state;
-
-    assert.doesNotThrow(() => {
-      state = restoreWith(p2SaveData);
-    });
-
-    assert.equal(state.puzzles.p2.phase, P2_PHASE.PLANNING);
-    assert.equal(state.puzzles.p2.currentNode, "E");
-    assert.deepEqual(state.puzzles.p2.route, ["E"]);
-    assert.deepEqual(state.puzzles.p2.usedBridgeIds, []);
-    assert.equal(state.puzzles.p2.closedBridgeId, null);
-    assert.equal(state.puzzles.p2.failureCode, null);
-    assert.deepEqual(state.puzzles.p2.hintsRead, [1, 2]);
-    assert.equal(state.puzzles.p2.lifecycle.attemptCount, 2);
-    assert.equal(state.puzzles.p2.lifecycle.status, "ready");
+  assert.doesNotThrow(() => {
+    state = restoreWith(p2SaveData);
   });
-}
+
+  assert.equal(state.puzzles.p2.phase, P2_PHASE.PLANNING);
+  assert.equal(state.puzzles.p2.currentNode, "E");
+  assert.deepEqual(state.puzzles.p2.route, ["E"]);
+  assert.deepEqual(state.puzzles.p2.usedBridgeIds, []);
+  assert.equal(state.puzzles.p2.closedBridgeId, null);
+  assert.equal(state.puzzles.p2.failureCode, null);
+  assert.deepEqual(state.puzzles.p2.hintsRead, [1, 2]);
+  assert.equal(state.puzzles.p2.lifecycle.attemptCount, 2);
+  assert.equal(state.puzzles.p2.lifecycle.status, "ready");
+});
 
 test("un recorrido a medias que aún tiene salidas con la topología nueva no se reinicia", () => {
   // E-N por B1 y N-R por B3 siguen existiendo, y desde la Isla del Reloj
@@ -211,14 +191,14 @@ test("un recorrido a medias que aún tiene salidas con la topología nueva no se
 test("un recorrido en curso ya terminado con éxito bajo la topología nueva no se reinicia", () => {
   // Los seis puentes abiertos cruzados y el paseo termina en el molino: no
   // tiene salidas porque no le queda ningún puente, no porque esté encallado.
-  // E-N(B1), N-R(B3), R-M(B4), M-E(B5), E-R(B2) y R-L(B7), con B6 cerrado.
+  // E-N(B1), N-R(B3), R-M(B4), M-E(B5), E-R(B7) y R-L(B2), con B6 cerrado.
   const p2SaveData = {
     lifecycle: { id: "p2-bridges", status: "active", attemptCount: 1 },
     phase: "traversing",
     closedBridgeId: "B6",
     currentNode: "L",
     route: ["E", "N", "R", "M", "E", "R", "L"],
-    usedBridgeIds: ["B1", "B3", "B4", "B5", "B2", "B7"],
+    usedBridgeIds: ["B1", "B3", "B4", "B5", "B7", "B2"],
     hintsRead: [],
     failureCode: null,
   };
@@ -238,7 +218,7 @@ test("un fallo guardado con la topología nueva conserva la fase de fallo", () =
     closedBridgeId: "B6",
     currentNode: "L",
     route: ["E", "R", "L"],
-    usedBridgeIds: ["B2", "B7"],
+    usedBridgeIds: ["B7", "B2"],
     hintsRead: [1],
     failureCode: "incomplete_route",
   };
@@ -283,15 +263,17 @@ test("un fallo guardado de v1.1 con pasos incoherentes vuelve a la planificació
 });
 
 test("un guardado de v1.1 a medias con pasos que siguen siendo aristas reales se restaura tal cual", () => {
-  // E-R por B2 sigue existiendo con la topología nueva: no hay nada que
-  // reiniciar, y reiniciarlo perdería progreso real del jugador.
+  // E-N por B1 y N-L por B6 significan lo mismo en las dos topologías (B1,
+  // B3, B4 y B6 nunca se han recableado), y desde el Molino queda abierto
+  // B2: no hay nada que reiniciar, y reiniciarlo perdería progreso real del
+  // jugador.
   const p2SaveData = {
     lifecycle: { id: "p2-bridges", status: "active", attemptCount: 1 },
     phase: "traversing",
-    closedBridgeId: "B1",
-    currentNode: "R",
-    route: ["E", "R"],
-    usedBridgeIds: ["B2"],
+    closedBridgeId: "B3",
+    currentNode: "L",
+    route: ["E", "N", "L"],
+    usedBridgeIds: ["B1", "B6"],
     hintsRead: [1],
     failureCode: null,
   };
