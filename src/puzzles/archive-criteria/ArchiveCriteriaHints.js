@@ -7,12 +7,12 @@ export const ARCHIVE_CRITERIA_HINTS = Object.freeze([
   Object.freeze({
     level: 2,
     text:
-      "La entrada y el recorrido están registrados; una discrepancia contradice “nunca”; las dos declaraciones presentes coinciden.",
+      "Salvo el recorrido hasta el Archivo, ninguna otra afirmación se decide con un solo registro: mira de quién es cada anotación, en qué momento se hizo y si dos registros del mismo hecho pueden ser ciertos a la vez.",
   }),
   Object.freeze({
     level: 3,
     text:
-      "Las afirmaciones 1, 2 y 5 están confirmadas; 3 y 4 están contradichas; la afirmación 6 sobre todo el futuro no puede decidirse.",
+      "Un registro posterior no explica cómo empezó lo anterior; una corrección firmada no borra que hubo dos propuestas incompatibles; y una declaración de hoy no alcanza a mañana.",
   }),
 ]);
 

@@ -31,6 +31,9 @@ const INCOMPLETE_MESSAGE =
 const INCORRECT_MESSAGE =
   "Al menos un veredicto exige más —o menos— evidencia de la que contienen los registros.";
 const ALREADY_SOLVED_MESSAGE = "El criterio ya está registrado.";
+const CLASSIFY_INSTRUCTION = "Clasifica cada afirmación con arriba y abajo.";
+const INTRO_MESSAGE =
+  "El expediente solo admite lo que las pruebas permiten concluir: nada más, nada menos.";
 const SOLVED_MESSAGE = "Criterio aceptado.";
 const EPILOGUE_TOAST = "La investigación ha terminado";
 
@@ -225,7 +228,17 @@ function createStatusMessage(state) {
     return "Confirma la clasificación cuando termines de revisar el expediente.";
   }
 
-  return "Clasifica cada afirmación con arriba y abajo.";
+  /*
+   * Mientras el expediente siga intacto y no se haya consultado ninguna
+   * reflexión, se antepone la situación de partida a la instrucción de
+   * control. En cuanto el jugador conoce el contexto (ha clasificado algo,
+   * ha fallado o ha leído una pista) solo queda la instrucción.
+   */
+  if (state.hintsRead.length === 0) {
+    return `${INTRO_MESSAGE} ${CLASSIFY_INSTRUCTION}`;
+  }
+
+  return CLASSIFY_INSTRUCTION;
 }
 
 function messageForResult(code) {

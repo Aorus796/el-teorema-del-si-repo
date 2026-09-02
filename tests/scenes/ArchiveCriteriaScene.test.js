@@ -27,6 +27,22 @@ import {
 import { PUZZLE_SUCCESS_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
 import { GameState } from "../../src/state/GameState.js";
 
+const INTRO_SENTENCE =
+  "El expediente solo admite lo que las pruebas permiten concluir: nada más, nada menos.";
+const INTRO_STATUS_MESSAGE =
+  `${INTRO_SENTENCE} Clasifica cada afirmación con arriba y abajo.`;
+
+/*
+ * Presupuesto real de drawEvidence(): la banda empieza en y=92, cada
+ * registro consume 14 px fijos más 9 px por línea envuelta a 82 caracteres,
+ * y las cajas de veredicto empiezan en y=168.
+ */
+const EVIDENCE_BLOCK_START_Y = 92;
+const EVIDENCE_LINE_HEIGHT = 9;
+const EVIDENCE_BLOCK_PADDING = 5;
+const EVIDENCE_LAST_BASELINE_LIMIT = 160;
+const EVIDENCE_MAXIMUM_LINES = 2;
+
 class FakeInput {
   constructor() {
     this.pressedActions = new Set();
@@ -105,11 +121,83 @@ test("enter en ready reconstruye el estado transitorio sin modificar el persiste
 
   assert.equal(scene.focusedClaimIndex, 0);
   assert.equal(scene.visibleHintLevel, null);
+  assert.equal(scene.statusMessage, INTRO_STATUS_MESSAGE);
+  assert.deepEqual(state.puzzles.archiveCriteria.toSaveData(), before);
+});
+
+test("la intro solo acompaña a la instrucción mientras no se haya leído ninguna pista", () => {
+  const withHints = new ArchiveCriteriaState({ hintsRead: [1] });
+  const { scene } = createScene(withHints);
+
+  scene.enter();
+
   assert.equal(
     scene.statusMessage,
     "Clasifica cada afirmación con arriba y abajo.",
   );
-  assert.deepEqual(state.puzzles.archiveCriteria.toSaveData(), before);
+  assert.equal(scene.statusMessage.includes(INTRO_SENTENCE), false);
+});
+
+test("la intro no aparece en classifying, failed ni solved", () => {
+  const fixtures = [
+    new ArchiveCriteriaState({
+      verdicts: {
+        ...ARCHIVE_CRITERIA_INITIAL_VERDICTS,
+        "voluntary-entry": ARCHIVE_CRITERIA_VERDICT.CONFIRMED,
+      },
+      phase: ARCHIVE_CRITERIA_PHASE.CLASSIFYING,
+    }),
+    new ArchiveCriteriaState({
+      phase: ARCHIVE_CRITERIA_PHASE.FAILED,
+      failureCode: ARCHIVE_CRITERIA_FAILURE_CODE.INCOMPLETE_CLASSIFICATION,
+      attemptCount: 1,
+    }),
+    solvedState(),
+  ];
+
+  for (const fixture of fixtures) {
+    const { scene } = createScene(fixture);
+    scene.enter();
+
+    assert.equal(scene.statusMessage.includes(INTRO_SENTENCE), false);
+  }
+});
+
+test("la intro se muestra en el bloque de mensaje sin superar tres líneas", () => {
+  const { scene } = createScene();
+  scene.enter();
+
+  const rendered = renderScene(scene).texts.join(" ");
+
+  assert.equal(
+    rendered.includes("El expediente solo admite lo que las pruebas"),
+    true,
+  );
+  assert.ok(wrapText(INTRO_STATUS_MESSAGE, 92).length <= 3);
+});
+
+/*
+ * La intro es estrictamente funcional: explica el criterio de
+ * clasificación. No puede estrenar personajes ni una premisa de cautiverio
+ * que ningún texto jugable del juego publicado sostiene.
+ */
+test("la intro no introduce personajes ni premisas ajenas al juego publicado", () => {
+  const forbiddenLore = [
+    "custodio",
+    "contención",
+    "retiene",
+    "encierra",
+    "cautiv",
+    "no permite salir",
+  ];
+
+  for (const forbidden of forbiddenLore) {
+    assert.equal(
+      INTRO_STATUS_MESSAGE.toLowerCase().includes(forbidden),
+      false,
+      `la intro no debe mencionar "${forbidden}"`,
+    );
+  }
 });
 
 test("la navegación izquierda/derecha es circular y no altera el estado", () => {
@@ -603,20 +691,85 @@ test("los textos reales más largos respetan el límite de líneas por bloque", 
   assert.ok(wrapText(longestClaim.text, 78).length <= 3);
 
   for (const evidence of ARCHIVE_CRITERIA_EVIDENCE) {
-    assert.ok(wrapText(evidence.text, 82).length <= 3);
+    assert.ok(
+      wrapText(evidence.text, 82).length <= EVIDENCE_MAXIMUM_LINES,
+      `${evidence.id} no debe superar ${EVIDENCE_MAXIMUM_LINES} líneas`,
+    );
   }
 
   const candidateMessages = [
     "El expediente todavía contiene afirmaciones sin revisar.",
     "Al menos un veredicto exige más —o menos— evidencia de la que contienen los registros.",
+    INTRO_STATUS_MESSAGE,
     ...ARCHIVE_CRITERIA_HINTS.map(
       (hint) => `Reflexión ${hint.level}/3: ${hint.text}`,
     ),
   ];
-  const longestMessage = candidateMessages.reduce((a, b) =>
-    a.length >= b.length ? a : b,
+
+  for (const message of candidateMessages) {
+    assert.ok(
+      wrapText(message, 92).length <= 3,
+      `el mensaje "${message.slice(0, 24)}…" no debe superar tres líneas`,
+    );
+  }
+});
+
+test("las evidencias de cada afirmación caben antes de las cajas de veredicto", () => {
+  for (const claim of ARCHIVE_CRITERIA_CLAIMS) {
+    let y = EVIDENCE_BLOCK_START_Y;
+    let lastBaseline = 0;
+
+    for (const evidenceId of claim.evidenceIds) {
+      const evidence = ARCHIVE_CRITERIA_EVIDENCE.find(
+        (item) => item.id === evidenceId,
+      );
+
+      lastBaseline = y;
+      y += EVIDENCE_LINE_HEIGHT;
+
+      for (const _line of wrapText(evidence.text, 82)) {
+        lastBaseline = y;
+        y += EVIDENCE_LINE_HEIGHT;
+      }
+
+      y += EVIDENCE_BLOCK_PADDING;
+    }
+
+    assert.ok(
+      lastBaseline <= EVIDENCE_LAST_BASELINE_LIMIT,
+      `las evidencias de ${claim.id} terminan en y=${lastBaseline}, por encima de ${EVIDENCE_LAST_BASELINE_LIMIT}`,
+    );
+  }
+});
+
+test("render muestra las tres evidencias de una afirmación con distractor", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+
+  const rendered = renderScene(scene).texts.join(" ");
+
+  assert.equal(rendered.includes("E1 — Registro de acceso"), true);
+  assert.equal(rendered.includes("E7 — Aviso de revisión"), true);
+  assert.equal(rendered.includes("E8 — Anotación de propósito"), true);
+
+  press(scene, input, "moveRight");
+  press(scene, input, "moveRight");
+  press(scene, input, "moveRight");
+  const someoneRefusesNow = renderScene(scene).texts.join(" ");
+
+  assert.equal(someoneRefusesNow.includes("E3 — Acta de preparativos"), true);
+  assert.equal(
+    someoneRefusesNow.includes("E4 — Declaración del protagonista"),
+    true,
   );
-  assert.ok(wrapText(longestMessage, 92).length <= 3);
+  assert.equal(someoneRefusesNow.includes("E5 — Declaración de la novia"), true);
+
+  press(scene, input, "moveRight");
+  press(scene, input, "moveRight");
+  const universalFuture = renderScene(scene).texts.join(" ");
+
+  assert.equal(universalFuture.includes("E6 — Límite del Archivo"), true);
+  assert.equal(universalFuture.includes("E10 — Expediente anterior"), true);
 });
 
 test("tras solved se mantiene visible la clasificación final y permite navegar", () => {

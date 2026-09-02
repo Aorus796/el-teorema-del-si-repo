@@ -6,6 +6,37 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Cambiado
 
+- Aumento estructural de dificultad de La pregunta correcta (Archivo
+  compacto): el expediente pasa de seis a diez evidencias
+  (`ArchiveCriteriaData.js`), con una matriz de relevancia explícita
+  (`ARCHIVE_CRITERIA_EVIDENCE_RELEVANCE`) de la que se derivan las
+  evidencias mostradas por afirmación. Cinco de las seis afirmaciones dejan
+  de resolverse leyendo un solo registro y exigen cruzar al menos dos
+  (`followed-trail` se conserva a propósito como ancla de aprendizaje con
+  una sola evidencia), y se añaden tres distractores genuinos —relaciones
+  con papel `irrelevant`, las únicas que no intervienen en su veredicto—:
+  el aviso de revisión del acceso en `voluntary-entry`, el acta de
+  preparativos en `someone-refuses-now` y la enmienda de preparativos en
+  `present-choice`. Las evidencias `relevant-but-insufficient` no son
+  distractores sino portantes: `E6` y `E10` son precisamente las que
+  fundamentan el `undecidable` de `universal-future`, y la enmienda sí
+  contradice `never-disagreed` al leerse junto al acta. La pista de nivel 3
+  deja de dictar la clasificación completa y entrega en su lugar tres
+  criterios de descarte, sin nombrar afirmaciones ni veredictos
+  (`ArchiveCriteriaHints.js`); la de nivel 2 orienta a cruzar registros en
+  vez de resumir tres conclusiones, declarando expresamente la excepción del
+  recorrido hasta el Archivo para no negar el ancla de una sola evidencia.
+  La escena añade una intro funcional de una frase sobre el criterio de
+  clasificación antes de la instrucción de control, solo al abrir el
+  expediente por primera vez y sin pistas leídas
+  (`ArchiveCriteriaScene.js`); no introduce personajes ni premisas nuevas.
+  La evidencia final del cuaderno pasa a describir las dos declaraciones
+  presentes como «que mantienen la misma decisión», ya que sus textos dejan
+  de ser idénticos (`ArchiveCriteriaProgression.js`). **La solución final de
+  las seis afirmaciones no cambia** (confirmada, confirmada, contradicha,
+  contradicha, confirmada, no decidible) y **no hay cambio de formato de
+  guardado**: `SAVE_FORMAT_VERSION` sigue en 4 y los identificadores de
+  evidencia nunca se persisten.
 - Primeras mejoras de dificultad v1.2 (contenido/presentación, sin cambios
   de lógica ni de solución): la pista de nivel 3 de la Biblioteca del
   Margen ya no entrega el orden final de los cinco documentos, sino una

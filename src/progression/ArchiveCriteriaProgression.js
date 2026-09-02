@@ -9,7 +9,7 @@ export const ARCHIVE_FINAL_EVIDENCE_ENTRY = Object.freeze({
   id: "archive-final-evidence",
   title: "La pregunta correcta",
   text:
-    "El Archivo conserva dos declaraciones presentes coincidentes y confirma que no dispone de observaciones futuras.",
+    "El Archivo conserva dos declaraciones presentes que mantienen la misma decisión y confirma que no dispone de observaciones futuras.",
 });
 
 export const EPILOGUE_COMBINATION_CLUE_ENTRY = Object.freeze({

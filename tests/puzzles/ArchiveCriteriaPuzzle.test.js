@@ -6,6 +6,10 @@ import {
   getArchiveCriteriaHint,
 } from "../../src/puzzles/archive-criteria/ArchiveCriteriaHints.js";
 import {
+  ARCHIVE_CRITERIA_CLAIM_IDS,
+  ARCHIVE_CRITERIA_CLAIMS,
+  ARCHIVE_CRITERIA_EVIDENCE_RELEVANCE,
+  ARCHIVE_CRITERIA_EVIDENCE_ROLE,
   ARCHIVE_CRITERIA_INITIAL_VERDICTS,
   ARCHIVE_CRITERIA_SOLUTION,
   ARCHIVE_CRITERIA_VERDICT,
@@ -353,12 +357,12 @@ test("el contenido literal de las tres pistas coincide con ARCHIVE_CRITERIA_SPEC
     {
       level: 2,
       text:
-        "La entrada y el recorrido están registrados; una discrepancia contradice “nunca”; las dos declaraciones presentes coinciden.",
+        "Salvo el recorrido hasta el Archivo, ninguna otra afirmación se decide con un solo registro: mira de quién es cada anotación, en qué momento se hizo y si dos registros del mismo hecho pueden ser ciertos a la vez.",
     },
     {
       level: 3,
       text:
-        "Las afirmaciones 1, 2 y 5 están confirmadas; 3 y 4 están contradichas; la afirmación 6 sobre todo el futuro no puede decidirse.",
+        "Un registro posterior no explica cómo empezó lo anterior; una corrección firmada no borra que hubo dos propuestas incompatibles; y una declaración de hoy no alcanza a mañana.",
     },
   ]);
 });
@@ -375,12 +379,78 @@ test("getArchiveCriteriaHint devuelve la pista exacta de cada nivel y null fuera
   assert.equal(getArchiveCriteriaHint(undefined), null);
 });
 
-test("la tercera pista revela la clasificación completa", () => {
-  const thirdHint = ARCHIVE_CRITERIA_HINTS[2];
+/*
+ * `followed-trail` es, a propósito, la única afirmación que se decide con
+ * un solo registro (E2). La segunda pista no puede negar ese ancla con un
+ * cuantificador universal falso, porque llevaría a desconfiar de una
+ * evidencia que sí es suficiente.
+ */
+test("la segunda pista no niega el ancla de aprendizaje de una sola evidencia", () => {
+  const singleEvidenceClaims = ARCHIVE_CRITERIA_CLAIMS.filter(
+    (claim) => decisiveEvidenceIds(claim.id).length === 1,
+  ).map((claim) => claim.id);
 
-  assert.match(thirdHint.text, /confirmadas/);
-  assert.match(thirdHint.text, /contradichas/);
-  assert.match(thirdHint.text, /no puede decidirse/);
+  assert.deepEqual(singleEvidenceClaims, ["followed-trail"]);
+
+  const secondHint = ARCHIVE_CRITERIA_HINTS[1].text.toLowerCase();
+
+  assert.equal(
+    secondHint.includes("ninguna afirmación se decide con un solo registro"),
+    false,
+    "la pista 2 no puede afirmar que ninguna afirmación se decide con un solo registro",
+  );
+  assert.ok(
+    secondHint.startsWith("salvo "),
+    "la pista 2 debe acotar la excepción antes de generalizar",
+  );
+
+  for (const claimId of Object.values(ARCHIVE_CRITERIA_CLAIM_IDS)) {
+    assert.equal(ARCHIVE_CRITERIA_HINTS[1].text.includes(claimId), false);
+  }
+
+  for (const verdict of Object.values(ARCHIVE_CRITERIA_VERDICT)) {
+    assert.equal(ARCHIVE_CRITERIA_HINTS[1].text.includes(verdict), false);
+  }
+});
+
+test("la tercera pista ayuda sin revelar la clasificación completa", () => {
+  const thirdHint = ARCHIVE_CRITERIA_HINTS[2];
+  const forbiddenSubstrings = [
+    "confirmadas",
+    "contradichas",
+    "no puede decidirse",
+    "1, 2 y 5",
+    "3 y 4",
+  ];
+
+  for (const forbidden of forbiddenSubstrings) {
+    assert.equal(
+      thirdHint.text.toLowerCase().includes(forbidden.toLowerCase()),
+      false,
+      `La pista de nivel 3 no debe contener "${forbidden}"`,
+    );
+  }
+
+  assert.equal(
+    /\d/.test(thirdHint.text),
+    false,
+    "La pista de nivel 3 no debe numerar afirmaciones",
+  );
+
+  for (const claimId of Object.values(ARCHIVE_CRITERIA_CLAIM_IDS)) {
+    assert.equal(thirdHint.text.includes(claimId), false);
+  }
+
+  for (const verdict of Object.values(ARCHIVE_CRITERIA_VERDICT)) {
+    assert.equal(thirdHint.text.includes(verdict), false);
+  }
+});
+
+test("la tercera pista no repite las dos anteriores", () => {
+  const [first, second, third] = ARCHIVE_CRITERIA_HINTS;
+
+  assert.notEqual(third.text, first.text);
+  assert.notEqual(third.text, second.text);
 });
 
 test("el controlador no depende de Canvas, DOM ni localStorage", () => {
@@ -396,3 +466,9 @@ test("las funciones del controlador exigen un ArchiveCriteriaState válido", () 
     confirmArchiveCriteriaClassification({ state: null });
   });
 });
+
+function decisiveEvidenceIds(claimId) {
+  return Object.entries(ARCHIVE_CRITERIA_EVIDENCE_RELEVANCE[claimId])
+    .filter(([, role]) => role !== ARCHIVE_CRITERIA_EVIDENCE_ROLE.IRRELEVANT)
+    .map(([evidenceId]) => evidenceId);
+}
