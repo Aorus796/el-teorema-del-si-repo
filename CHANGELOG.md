@@ -83,6 +83,36 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   en la trampa y se queda sin puentes tras solo tres cruces. La geometría
   dibujada es idéntica: solo se intercambian dos etiquetas de puente sobre
   el mismo trazado.
+- Mecanismo del regalo final del epílogo -- Visual Polish
+  (`epilogue-gift-mechanism` en `axiom-plaza`, v1.2): pase puramente
+  visual, sin ningún cambio de lógica, de estado, de hitbox ni de la
+  solución del puzle del código. El objeto era el último que caía en la
+  rama genérica compartida de `type "table"` de `renderObjects()`
+  (`WorldScene.js`) y se dibujaba con dos `fillRect`: un cuerpo marrón
+  madera y una franja dorada de 6px que, sobre el suelo arenoso cálido de
+  la Plaza del Axioma, no se leían como ningún objeto reconocible. Pasa a
+  tener pixel-art indexado propio (`epilogueGiftMechanismPixelArt.js`,
+  40x40) mediante un caso especial por-id en `renderObjects()`, mismo
+  patrón exacto que el ya establecido para `archive-criteria-table`. El
+  diseño sigue literalmente el diálogo ya existente del objeto, que no se
+  toca ("Una pieza metálica descansa sobre un soporte de piedra, cerrada
+  con un mecanismo de anillos"): pedestal de piedra en tres piezas en gama
+  fría, cuerpo del mecanismo en metal oscuro con tapa y contorno definidos,
+  y aros concéntricos de bronce centrados en la cara frontal. El sprite
+  desborda a propósito el hitbox declarado (32x24) 4px por lado y 16px
+  hacia arriba -- mismo precedente documentado que `library-ladder` y
+  `archive-desk` --, anclado al borde inferior del hitbox y sin desborde
+  inferior, porque este objeto no tiene `solidRegion` propio que compensar.
+  Su `x`/`y`/`width`/`height`/`interactionRadius` en `worldMaps.js` no
+  cambian, ni `EpilogueGiftCodeScene.js`, ni `state.flags.giftCodeSolved`,
+  ni el formato de guardado. El culling por viewport de `renderObjects()`
+  pasa a medir, solo para este objeto, el footprint real del sprite en vez
+  del hitbox declarado: con el hitbox lo descartaba mientras sus 16px de
+  desborde superior seguían dentro de pantalla, y el mecanismo aparecía de
+  golpe al cruzar el borde inferior en el único mapa con scroll de cámara
+  que lo contiene. Con este cambio la rama genérica de `type "table"` se
+  queda sin ningún consumidor real en el juego y queda documentada como
+  respaldo del contrato de tipos de `worldMaps.js`.
 
 ## [1.1.0] - 2026-08-28
 

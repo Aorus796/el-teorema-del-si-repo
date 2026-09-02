@@ -4,9 +4,10 @@
  * ornamentado con lámpara y libro/registro abierto sobre el tablero,
  * silla detrás (más arriba, más lejos del jugador) y una alfombra con dos
  * macetas flanqueando. Caso especial por-id en renderObjects() de
- * WorldScene.js (ANTES de la rama compartida "table", que sigue sirviendo
- * tal cual a epilogue-gift-mechanism en axiom-plaza, único otro objeto de
- * tipo "table" del juego -- ver el comentario junto a ese caso especial).
+ * WorldScene.js (ANTES de la rama genérica "table"). El otro objeto de
+ * tipo "table" del juego, epilogue-gift-mechanism en axiom-plaza, tiene
+ * desde v1.2 su propio caso especial por-id junto a este (ver
+ * epilogueGiftMechanismPixelArt.js).
  *
  * Rediseño (corrección de un hallazgo de QA sobre el diseño original de
  * 48x40): a la escala real del juego, "lámpara + libro" como dos óvalos
