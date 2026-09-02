@@ -47,7 +47,7 @@ exactamente uno de tres veredictos:
 - `contradicted`;
 - `undecidable`.
 
-La clasificación debe basarse exclusivamente en las seis evidencias
+La clasificación debe basarse exclusivamente en las diez evidencias
 disponibles. El jugador confirma el conjunto completo y demuestra por qué el
 protocolo original no puede exigir certeza sobre hechos futuros todavía no
 observables.
@@ -108,16 +108,30 @@ Los IDs son estables y forman parte de los datos narrativos:
 
 | ID | Nombre | Contenido lógico |
 |---|---|---|
-| `E1` | Registro de acceso | La novia abrió el Archivo con su propia credencial y anotó que entraba para revisar el protocolo. |
+| `E1` | Registro de acceso | La credencial de la novia abrió el Archivo; no consta ninguna otra. |
 | `E2` | Registro del recorrido | El protagonista siguió la anotación del embarcadero, el catálogo y el acceso al Archivo. |
-| `E3` | Acta de preparativos | La pareja discrepó sobre una decisión de la ceremonia y acordó una corrección. |
-| `E4` | Declaración del protagonista | «Con lo que sé ahora, elijo avanzar contigo». |
-| `E5` | Declaración de la novia | «Con lo que sé ahora, elijo avanzar contigo». |
-| `E6` | Límite del Archivo | El sistema solo contiene observaciones realizadas hasta el presente y no puede observar hechos futuros. |
+| `E3` | Acta de preparativos | El acta de preparativos registra la propuesta de la novia: la ceremonia en el patio. |
+| `E4` | Declaración del protagonista | «Con lo que sé hoy, vuelvo a elegir lo mismo que elegí contigo». |
+| `E5` | Declaración de la novia | «Nada de lo que he leído aquí me hace cambiar de decisión». |
+| `E6` | Límite del Archivo | Todo asiento del Archivo cita la fecha en que se observó; no admite asientos sin observación. |
+| `E7` | Aviso de revisión | El acceso quedó bajo revisión después de la entrada de la novia; el aviso no dice cómo se produjo. |
+| `E8` | Anotación de propósito | Nota de la novia junto al acceso: «Entro a revisar el protocolo. Vuelvo pronto». |
+| `E9` | Enmienda de preparativos | El protagonista propuso celebrar la ceremonia en el embarcadero; después ambos firmaron una sola versión. |
+| `E10` | Expediente anterior | El sistema conserva otro caso del mismo tipo de afirmación, todavía sin resolver. |
 
-Cada afirmación muestra únicamente las evidencias necesarias para evaluarla.
-Los textos deben ser breves y no deben esconder información obligatoria en
-decoración, audio o animación.
+Cada afirmación muestra las evidencias que el expediente asocia a ese punto,
+que no son necesariamente solo las necesarias para evaluarla: parte del
+trabajo del jugador es descartar registros pertinentes en apariencia pero
+inertes para el veredicto (§6). Los textos deben ser breves y no deben
+esconder información obligatoria en decoración, audio o animación.
+
+Cada evidencia debe leerse de forma autónoma en cualquier afirmación donde
+se muestre: sin pronombres ni referencias que dependan de haber leído antes
+otra evidencia, porque el mismo registro aparece en pantallas distintas y con
+vecinos distintos (`E3` y `E9` son el caso claro). Los textos tampoco pueden
+estrenar personajes ni premisas que el juego publicado no muestre en ningún
+texto jugable: el Custodio y la retención de la novia pertenecen al material
+de diseño de §3, no al expediente en pantalla.
 
 ## 6. Afirmaciones y solución
 
@@ -130,7 +144,42 @@ decoración, audio o animación.
 | `present-choice` | Con la información actual, ambas personas eligen avanzar juntas. | `confirmed` |
 | `universal-future` | Permanecerán unidas bajo cualquier circunstancia futura. | `undecidable` |
 
-La correspondencia entre ID y veredicto es la única solución válida.
+La correspondencia entre ID y veredicto es la única solución válida y no ha
+cambiado desde `v1.0.0`.
+
+### Evidencias mostradas por afirmación
+
+`ARCHIVE_CRITERIA_EVIDENCE_RELEVANCE` declara, afirmación por afirmación, qué
+evidencias se muestran y qué papel juega cada una. `claim.evidenceIds` se
+deriva de esa matriz, en ese mismo orden de presentación, para que datos y
+presentación no puedan divergir.
+
+| Papel | Significado |
+|---|---|
+| `supports` | Aporta el apoyo decisivo de la afirmación. |
+| `contradicts` | Aporta la incompatibilidad decisiva con la afirmación. |
+| `relevant-but-insufficient` | Aporta información real, pero no decide nada sin cruzarla con otra evidencia de la misma afirmación. Es **portante**: el veredicto de esa afirmación no queda fundamentado sin ella. |
+| `irrelevant` | **Distractor genuino** y único papel distractor: se muestra, parece pertinente y no interviene en el veredicto. |
+
+Una evidencia `relevant-but-insufficient` nunca es un distractor. `E6` y
+`E10` en `universal-future` son el ejemplo claro: son exactamente las que
+fundamentan el `undecidable`, no ruido que descartar. Los distractores
+genuinos del expediente son tres relaciones: `E7` en `voluntary-entry`, `E3`
+en `someone-refuses-now` y `E9` en `present-choice`.
+
+«Decisivo» no significa «aislado». La única evidencia que decide su
+afirmación en solitario es `E2` en `followed-trail`; `E9` solo contradice
+`never-disagreed` leído junto a `E3`, que es precisamente lo que hace de
+`E3` una evidencia insuficiente y no una irrelevante en esa afirmación.
+
+| Afirmación | Evidencias mostradas | Papeles |
+|---|---|---|
+| `voluntary-entry` | `E1`, `E7`, `E8` | `E1` y `E8` insuficientes por separado y suficientes juntas; `E7` irrelevante (la revisión del acceso es posterior a la entrada y no explica cómo se produjo). |
+| `followed-trail` | `E2` | `E2` la establece directamente; es el ancla de aprendizaje del puzle y la única afirmación que se decide con un solo registro. |
+| `never-disagreed` | `E3`, `E9` | `E3` insuficiente por sí sola; junto a `E9` documenta dos propuestas incompatibles de la misma decisión, hechas por personas distintas, así que `E9` contradice el «nunca». La firma conjunta posterior corrige la decisión, no borra que hubo dos propuestas. |
+| `someone-refuses-now` | `E3`, `E4`, `E5` | `E4` y `E5` insuficientes por separado; juntas muestran que las dos personas eligen avanzar ahora, lo que contradice la afirmación. `E3` irrelevante (una propuesta pasada sobre la ceremonia no dice quién elige qué ahora). |
+| `present-choice` | `E4`, `E5`, `E9` | `E4` y `E5` insuficientes por separado y suficientes juntas; `E9` irrelevante (la enmienda es un acuerdo pasado sobre la ceremonia, no una elección presente). |
+| `universal-future` | `E6`, `E10` | Ambas insuficientes y ambas portantes: `E6` fija que el Archivo solo asienta lo observado y `E10` muestra un caso del mismo tipo todavía abierto. Juntas fundamentan un `undecidable` real, no una simple ausencia de registros. |
 
 ## 7. Reglas completas de clasificación
 
@@ -455,16 +504,24 @@ aviso breve de que el criterio ya fue registrado.
 
 1. **Diferencia entre veredictos:** «No poder confirmar una afirmación no
    significa haber demostrado lo contrario».
-2. **Lectura de los registros:** «La entrada y el recorrido están
-   registrados; una discrepancia contradice “nunca”; las dos declaraciones
-   presentes coinciden».
-3. **Clasificación completa:** «Las afirmaciones 1, 2 y 5 están confirmadas;
-   3 y 4 están contradichas; la afirmación 6 sobre todo el futuro no puede
-   decidirse».
+2. **Lectura de los registros:** «Salvo el recorrido hasta el Archivo,
+   ninguna otra afirmación se decide con un solo registro: mira de quién es
+   cada anotación, en qué momento se hizo y si dos registros del mismo hecho
+   pueden ser ciertos a la vez».
 
-La tercera reflexión revela expresamente la clasificación completa. Es una
-medida de accesibilidad y una protección contra el bloqueo del último tramo
-del juego.
+   La excepción es obligatoria: `followed-trail` sí se decide con `E2` sola,
+   así que la reflexión no puede negarlo con un cuantificador universal
+   falso.
+3. **Criterios de descarte:** «Un registro posterior no explica cómo empezó
+   lo anterior; una corrección firmada no borra que hubo dos propuestas
+   incompatibles; y una declaración de hoy no alcanza a mañana».
+
+La tercera reflexión ya no revela la clasificación completa. Entrega los tres
+criterios de descarte que resuelven los puntos duros del expediente
+(distractor posterior, corrección que no anula la discrepancia y límite
+temporal de las declaraciones) sin nombrar ninguna afirmación ni ningún
+veredicto: sigue siendo una medida de accesibilidad fuerte contra el bloqueo
+del último tramo, pero exige aplicar los criterios al expediente.
 
 Pulsar `Q` después de la tercera no cambia `hintsRead` y muestra que no quedan
 más reflexiones.
@@ -527,7 +584,7 @@ La primera transición a `solved` debe:
 
 Contenido recomendado para el cuaderno:
 
-> El Archivo conserva dos declaraciones presentes coincidentes y confirma que no dispone de observaciones futuras.
+> El Archivo conserva dos declaraciones presentes que mantienen la misma decisión y confirma que no dispone de observaciones futuras.
 
 La entrada registra evidencia observada, no escribe automáticamente la
 solución del puzle.
@@ -571,7 +628,9 @@ La escena muestra una afirmación cada vez:
 - **Cabecera, `y=6..26`:** nombre del mecanismo y objetivo breve.
 - **Progreso, `y=30..42`:** «Afirmación `n/6`» y seis indicadores.
 - **Afirmación, `y=48..78`:** máximo de tres líneas.
-- **Evidencias, `y=84..156`:** uno o dos registros breves asociados.
+- **Evidencias, `y=84..160`:** de uno a tres registros breves asociados, de
+  como máximo dos líneas envueltas cada uno; la última línea dibujada nunca
+  pasa de `y=160` para no invadir las cajas de veredicto.
 - **Veredictos, `y=164..204`:** tres opciones grandes y el estado `null`.
 - **Mensaje o pista, `y=210..238`:** máximo de tres líneas.
 - **Controles, `y=246..266`:** ayuda contextual.
@@ -626,8 +685,20 @@ Al volver a la escena:
 
 ### Datos y validador
 
-- existen exactamente seis evidencias y seis afirmaciones;
+- existen exactamente diez evidencias y seis afirmaciones;
 - los IDs son únicos;
+- la matriz de relevancia coincide con la tabla de la sección 6 y
+  `claim.evidenceIds` se deriva de ella;
+- cinco de las seis afirmaciones exigen cruzar al menos dos evidencias, con
+  `followed-trail` como única excepción;
+- los distractores genuinos declarados (papel `irrelevant`) se muestran
+  realmente en su afirmación, y ninguna evidencia portante se cuenta como
+  distractor;
+- ninguna evidencia repite ni parafrasea casi literalmente la afirmación que
+  ayuda a resolver, ni recupera el texto anterior a `v1.2`;
+- ninguna evidencia ni la intro estrenan personajes o premisas ajenas a los
+  textos jugables publicados;
+- la solución de las seis afirmaciones no cambia;
 - la solución completa es válida;
 - cada afirmación rechaza sus otros dos veredictos;
 - rechaza entrada no objeto y arrays;
@@ -746,7 +817,8 @@ demuestren una ambigüedad lógica real.
 ## 31. Criterios de aceptación
 
 - La pregunta correcta está declarada como tercer puzle definitivo.
-- Las seis evidencias y afirmaciones coinciden con esta especificación.
+- Las diez evidencias y las seis afirmaciones coinciden con esta
+  especificación.
 - La clasificación tiene una única solución.
 - Se comprende la diferencia entre los tres veredictos.
 - No usa grafos, recorridos, líneas ni ordenación de objetos.
@@ -758,7 +830,8 @@ demuestren una ambigüedad lógica real.
 - El estado transitorio se reconstruye de forma segura.
 - La lógica y el validador no dependen de presentación o plataforma.
 - La escena es legible a 480 × 270.
-- Las tres pistas son manuales y la última evita un bloqueo.
+- Las tres pistas son manuales y la última entrega los criterios de descarte
+  que evitan un bloqueo, sin revelar la clasificación.
 - Todos los formatos soportados se migran explícitamente.
 - La evidencia final no se duplica.
 - Las cuatro banderas del epílogo cumplen funciones distintas y coherentes.
