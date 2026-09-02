@@ -17,6 +17,11 @@ import {
   ARCHIVE_DESK_PIXEL_HEIGHT,
   ARCHIVE_DESK_PIXEL_WIDTH,
 } from "../../src/content/archiveDeskPixelArt.js";
+import {
+  EPILOGUE_GIFT_MECHANISM_PALETTE,
+  EPILOGUE_GIFT_MECHANISM_PIXEL_HEIGHT,
+  EPILOGUE_GIFT_MECHANISM_PIXEL_WIDTH,
+} from "../../src/content/epilogueGiftMechanismPixelArt.js";
 
 /*
  * Cubre la capa de cache de sprites pixel-art (src/scenes/WorldScene.js)
@@ -32,10 +37,20 @@ class FakeSpriteContext {
   constructor() {
     this.imageSmoothingEnabled = true;
     this.fillRectCalls = 0;
+    this.usedFillStyles = new Set();
+  }
+
+  set fillStyle(value) {
+    this.currentFillStyle = value;
+  }
+
+  get fillStyle() {
+    return this.currentFillStyle;
   }
 
   fillRect() {
     this.fillRectCalls += 1;
+    this.usedFillStyles.add(this.currentFillStyle);
   }
 
   strokeRect() {}
@@ -60,11 +75,21 @@ class FakeGameContext {
   constructor() {
     this.drawImageCalls = [];
     this.fillRectCalls = 0;
+    this.usedFillStyles = new Set();
     this.imageSmoothingEnabled = true;
+  }
+
+  set fillStyle(value) {
+    this.currentFillStyle = value;
+  }
+
+  get fillStyle() {
+    return this.currentFillStyle;
   }
 
   fillRect() {
     this.fillRectCalls += 1;
+    this.usedFillStyles.add(this.currentFillStyle);
   }
 
   strokeRect() {}
@@ -284,13 +309,14 @@ test("un segundo render de archive no crea canvases de sprite adicionales para l
 });
 
 /*
- * Regresión directa del caso especial por-id añadido a renderObjects()
+ * Regresión directa del caso especial por-id de renderObjects()
  * (WorldScene.js): "archive-criteria-table" es el único id que recibe el
- * tratamiento de escritorio dedicado (archive-desk, 48x48). El único otro
+ * tratamiento de escritorio dedicado (archive-desk, 48x48). El otro
  * objeto de type "table" de todo el juego, epilogue-gift-mechanism (en
- * axiom-plaza), no debe verse afectado -- debe seguir cayendo en la rama
- * genérica compartida ("table"), que dibuja directamente con fillRect
- * sobre el contexto real, sin pasar por drawCachedProp() para ese objeto.
+ * axiom-plaza), tiene desde v1.2 su propio caso especial por-id y su
+ * propio sprite indexado (40x40, ver
+ * tests/scenes/EpilogueGiftMechanismVisualPolishPixelArtCache.test.js):
+ * los dos casos por-id no deben solaparse ni intercambiarse.
  *
  * `createdCanvases` es un array a nivel de módulo que se acumula entre
  * TODOS los tests de este archivo (mismo `fakeDocument`, nunca se
@@ -302,9 +328,16 @@ test("un segundo render de archive no crea canvases de sprite adicionales para l
  * llamada a drawImage() con una imagen de 48x48 -- es decir, que este
  * render en concreto no reutiliza el sprite de archive-desk.
  */
-test("epilogue-gift-mechanism (axiom-plaza) no activa el caso especial de archive-criteria-table ni dibuja el sprite de archive-desk", () => {
+test("epilogue-gift-mechanism (axiom-plaza) dibuja su propio sprite indexado y no activa el caso especial de archive-criteria-table", () => {
   const scene = createSceneAt("axiom-plaza");
   const context = new FakeGameContext();
+
+  // axiom-plaza (768x512) es mayor que el viewport y el spawn por defecto
+  // (240,192) deja el mecanismo (x560) fuera de cámara: sin reposicionar
+  // al jugador, renderObjects() lo descartaría por culling.
+  scene.player.x = 576;
+  scene.player.y = 336;
+  scene.camera.follow(scene.player);
 
   scene.render(context);
 
@@ -319,8 +352,29 @@ test("epilogue-gift-mechanism (axiom-plaza) no activa el caso especial de archiv
     0,
     "el render de axiom-plaza no debería dibujar el sprite de archive-desk",
   );
+
+  // axiom-plaza tiene otro prop indexado de 40x40 (la mesa redonda de
+  // boda), así que el canvas del mecanismo se identifica por su color de
+  // contorno (#191820), exclusivo suyo en todo `src/`.
+  const mechanismCanvas = createdCanvases.find(
+    (canvas) =>
+      canvas.width === EPILOGUE_GIFT_MECHANISM_PIXEL_WIDTH &&
+      canvas.height === EPILOGUE_GIFT_MECHANISM_PIXEL_HEIGHT &&
+      canvas.context.usedFillStyles.has(EPILOGUE_GIFT_MECHANISM_PALETTE.O),
+  );
+
   assert.ok(
-    context.fillRectCalls > 0,
-    "epilogue-gift-mechanism debe seguir dibujándose con fillRect directo (rama genérica 'table')",
+    mechanismCanvas,
+    "se esperaba el canvas cacheado propio del mecanismo del regalo",
+  );
+  assert.equal(
+    context.drawImageCalls.filter((call) => call.image === mechanismCanvas)
+      .length,
+    1,
+    "epilogue-gift-mechanism debe dibujarse exactamente una vez con su propio sprite indexado",
+  );
+  assert.ok(
+    !context.usedFillStyles.has("#553b2d"),
+    "epilogue-gift-mechanism ya no debe dibujarse con el marrón madera de la rama genérica 'table'",
   );
 });

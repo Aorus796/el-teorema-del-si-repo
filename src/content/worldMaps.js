@@ -1318,8 +1318,8 @@ const ARCHIVE = createMap({
    * puramente visual, sin tocar colisión -- decorations nunca alimenta
    * solidTiles (ver createMap() más arriba), cero solidRegions nuevas. Las
    * 4 estanterías/cajas existentes migran del tipo compartido
-   * "tables" (rama que ahora solo sirve a axiom-plaza, ver el comentario
-   * de esa rama en WorldScene.js) a dos tipos exclusivos que se
+   * "tables" (rama genérica de decoraciones que hoy no usa ningún mapa)
+   * a dos tipos exclusivos que se
    * distinguen entre sí: "archive-shelf" (estanterías de libros, ver
    * archiveShelfPixelArt.js) para las dos del norte, y "archive-crates"
    * (cajas/documentos apilados con etiqueta, ver archiveCratesPixelArt.js)

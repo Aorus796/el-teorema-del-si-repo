@@ -176,6 +176,13 @@ import {
   ARCHIVE_DESK_TRANSPARENT,
 } from "../content/archiveDeskPixelArt.js";
 import {
+  EPILOGUE_GIFT_MECHANISM_PALETTE,
+  EPILOGUE_GIFT_MECHANISM_PIXEL_HEIGHT,
+  EPILOGUE_GIFT_MECHANISM_PIXEL_WIDTH,
+  EPILOGUE_GIFT_MECHANISM_PIXELS,
+  EPILOGUE_GIFT_MECHANISM_TRANSPARENT,
+} from "../content/epilogueGiftMechanismPixelArt.js";
+import {
   PARTNER_NAME,
   PROTAGONIST_NAME,
 } from "../content/personalizationConfig.js";
@@ -2434,10 +2441,10 @@ function drawArchiveConsultationTable(context, x, y) {
 
 /*
  * "archive-criteria-table" (archive-desk): tratamiento visual propio por
- * ID, no por type -- es la primera vez que este archivo usa este patrón
+ * ID, no por type -- fue la primera vez que este archivo usó este patrón
  * de excepción en vez de una rama por `type` (ver el caso especial
- * dedicado en renderObjects() más abajo, justo antes de la rama
- * compartida "table"). Escritorio ornamentado con lámpara, libro/registro
+ * dedicado en renderObjects() más abajo, antes de la rama genérica
+ * "table"). Escritorio ornamentado con lámpara, libro/registro
  * abierto, silla detrás y alfombra con dos macetas flanqueando (ver
  * archiveDeskPixelArt.js). El sprite (48x48) desborda a propósito el
  * hitbox real del objeto (32x24) hacia arriba, a los lados y hacia abajo
@@ -2480,6 +2487,99 @@ function drawArchiveDesk(context, x, y, width, height) {
   );
 }
 
+/*
+ * "epilogue-gift-mechanism": segundo tratamiento visual por ID de este
+ * archivo (Plaza del Axioma -- Visual Polish, v1.2), mismo patrón exacto
+ * que "archive-criteria-table". Antes caía en la rama genérica compartida
+ * "table" (dos fillRect: cuerpo marrón madera + franja dorada), que no se
+ * leía como nada concreto; ahora usa pixel-art indexado con pedestal de
+ * piedra, cuerpo metálico y aros de bronce, en coherencia literal con el
+ * diálogo ya existente del objeto (ver epilogueGiftMechanismPixelArt.js).
+ */
+const drawEpilogueGiftMechanismIndexedSprite = createIndexedPixelSprite({
+  width: EPILOGUE_GIFT_MECHANISM_PIXEL_WIDTH,
+  height: EPILOGUE_GIFT_MECHANISM_PIXEL_HEIGHT,
+  palette: EPILOGUE_GIFT_MECHANISM_PALETTE,
+  pixels: EPILOGUE_GIFT_MECHANISM_PIXELS,
+  transparent: EPILOGUE_GIFT_MECHANISM_TRANSPARENT,
+});
+
+/*
+ * El sprite (40x40) es mayor que el hitbox declarado del objeto (32x24,
+ * ver worldMaps.js), así que desborda 4px a cada lado ((40-32)/2) y 16px
+ * hacia arriba (40-24). A diferencia de archive-desk, aquí no hay
+ * `solidRegion` propio que compensar -- el objeto no bloquea el paso --,
+ * así que basta con anclar el sprite al fondo del hitbox (offsetY =
+ * alto del sprite - alto del hitbox) y no hace falta ninguna constante de
+ * desborde inferior. El desborde es puramente visual: no toca colisión ni
+ * interacción (interactionRadius de 30 sobre el hitbox real, sin cambios),
+ * pero sí lo tiene en cuenta el culling por viewport (ver
+ * objectRenderBounds() más abajo).
+ */
+function epilogueGiftMechanismSpriteOrigin(x, y, width, height) {
+  return {
+    x: x - (EPILOGUE_GIFT_MECHANISM_PIXEL_WIDTH - width) / 2,
+    y: y - (EPILOGUE_GIFT_MECHANISM_PIXEL_HEIGHT - height),
+  };
+}
+
+function drawEpilogueGiftMechanism(context, x, y, width, height) {
+  const origin = epilogueGiftMechanismSpriteOrigin(x, y, width, height);
+
+  drawCachedProp(
+    context,
+    "epilogue-gift-mechanism-indexed",
+    origin.x,
+    origin.y,
+    EPILOGUE_GIFT_MECHANISM_PIXEL_WIDTH,
+    EPILOGUE_GIFT_MECHANISM_PIXEL_HEIGHT,
+    drawEpilogueGiftMechanismIndexedSprite,
+  );
+}
+
+/*
+ * Caja de dibujo real de un objeto en pantalla, para el culling por
+ * viewport de renderObjects(). Por defecto es el hitbox declarado en
+ * worldMaps.js, que es lo que dibuja la inmensa mayoría de las ramas.
+ *
+ * Única excepción hoy: "epilogue-gift-mechanism", cuyo sprite (40x40)
+ * desborda su hitbox (32x24) 16px hacia arriba y 4px a cada lado. Medir su
+ * culling con el hitbox lo descartaba mientras la parte alta del sprite
+ * seguía dentro de pantalla, y el objeto aparecía de golpe al cruzar el
+ * borde inferior en axiom-plaza (el único mapa con estos props que además
+ * hace scroll de cámara). No se generaliza a todos los props con desborde
+ * visual a propósito: ampliar el margen cuesta descartar menos objetos por
+ * frame, así que se paga solo donde el desborde se nota de verdad.
+ */
+function objectRenderBounds(object, x, y) {
+  if (object.id === "epilogue-gift-mechanism") {
+    const origin = epilogueGiftMechanismSpriteOrigin(
+      x,
+      y,
+      object.width,
+      object.height,
+    );
+
+    return {
+      x: origin.x,
+      y: origin.y,
+      width: EPILOGUE_GIFT_MECHANISM_PIXEL_WIDTH,
+      height: EPILOGUE_GIFT_MECHANISM_PIXEL_HEIGHT,
+    };
+  }
+
+  return { x, y, width: object.width, height: object.height };
+}
+
+function isOutsideViewport(bounds) {
+  return (
+    bounds.x + bounds.width < 0 ||
+    bounds.y + bounds.height < 0 ||
+    bounds.x > VIEWPORT_WIDTH ||
+    bounds.y > VIEWPORT_HEIGHT
+  );
+}
+
 function renderObjects(context, camera, objects, state) {
   for (const object of objects) {
     if (object.requiresFlag && !state.flags[object.requiresFlag]) {
@@ -2489,12 +2589,7 @@ function renderObjects(context, camera, objects, state) {
     const x = Math.round(object.x - camera.x);
     const y = Math.round(object.y - camera.y);
 
-    if (
-      x + object.width < 0 ||
-      y + object.height < 0 ||
-      x > VIEWPORT_WIDTH ||
-      y > VIEWPORT_HEIGHT
-    ) {
+    if (isOutsideViewport(objectRenderBounds(object, x, y))) {
       continue;
     }
 
@@ -2532,17 +2627,28 @@ function renderObjects(context, camera, objects, state) {
       continue;
     }
 
-    // Excepción por-id (no por type), primera de este archivo: solo
-    // "archive-criteria-table" recibe este tratamiento visual dedicado
-    // (Archivo -- Visual Polish, v1.1); cualquier otro objeto de type
-    // "table" -- hoy únicamente epilogue-gift-mechanism en axiom-plaza --
-    // sigue cayendo en la rama genérica de abajo, sin cambios. Debe ir
-    // ANTES de esa rama genérica para interceptar solo este id.
+    // Excepciones por-id (no por type): cada uno de los dos objetos de
+    // type "table" del juego recibe su propio tratamiento visual dedicado
+    // -- "archive-criteria-table" (Archivo -- Visual Polish, v1.1) y
+    // "epilogue-gift-mechanism" (Plaza del Axioma -- Visual Polish, v1.2).
+    // Ambos casos deben ir ANTES de la rama genérica de abajo para
+    // interceptar su id.
     if (object.id === "archive-criteria-table") {
       drawArchiveDesk(context, x, y, object.width, object.height);
       continue;
     }
 
+    if (object.id === "epilogue-gift-mechanism") {
+      drawEpilogueGiftMechanism(context, x, y, object.width, object.height);
+      continue;
+    }
+
+    // Rama genérica de type "table": desde el visual polish de
+    // epilogue-gift-mechanism (v1.2) ya no la alcanza ningún objeto del
+    // juego -- los dos únicos objetos de este tipo se interceptan por id
+    // justo arriba. Se conserva como respaldo del contrato de tipos de
+    // worldMaps.js (un objeto de type "table" nuevo se dibujaría, no
+    // desaparecería) mientras "table" siga siendo un type válido.
     if (object.type === "table") {
       context.fillStyle = "#553b2d";
       context.fillRect(x, y + 4, object.width, object.height - 4);
