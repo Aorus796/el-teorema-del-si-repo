@@ -9,7 +9,7 @@ export const P2_HINTS = Object.freeze([
   }),
   Object.freeze({
     level: 3,
-    text: "Cierra B6 y prueba E-N-R-E-M-R-L: ningún puente se repite.",
+    text: "Cerrado el puente correcto, al lugar de llegada solo le queda una conexión abierta. Guárdala para el final: si la cruzas antes, quedarás varado con puentes sin recorrer.",
   }),
 ]);
 

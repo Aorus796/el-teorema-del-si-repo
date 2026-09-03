@@ -1269,6 +1269,34 @@ test("la pista de nivel 2 de P2 se lee completa sin cortarse y ya no tapa el men
     expect(width2).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
   });
 
+  const level3Line1 =
+    "R3/3: Cerrado el puente correcto, al lugar de llegada solo le queda una conexión abierta.";
+  const level3Line2 =
+    "Guárdala para el final: si la cruzas antes, quedarás varado con puentes sin recorrer.";
+
+  await test.step("la pista de nivel 3 (ya no un walkthrough) se envuelve en dos líneas completas, sin cortes", async () => {
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyQ");
+
+    await waitForRenderedText(level3Line1);
+    await waitForRenderedText(level3Line2);
+
+    // drawStatus() dibuja como mucho dos líneas (messageLines.slice(0, 2)):
+    // si la pista creciera hasta necesitar una tercera, el final se perdería
+    // en silencio. Comprobar aquí las dos líneas completas detecta ese corte.
+    const renderedTexts = await page.evaluate(() => window.__renderedTexts);
+
+    expect(
+      renderedTexts.some((text) => text.startsWith("R3/3:") && text.length > 100),
+    ).toBe(false);
+
+    const width1 = await measureTextWidth(level3Line1, "7px monospace");
+    const width2 = await measureTextWidth(level3Line2, "7px monospace");
+
+    expect(width1).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
+    expect(width2).toBeLessThan(STATUS_BOX_HALF_WIDTH * 2);
+  });
+
   await test.step("tras leer la pista, un intento fallido muestra el mensaje diferenciado, no la pista antigua", async () => {
     const incompleteRouteMessage =
       "Te has quedado sin puentes disponibles antes de cruzarlos todos. Pulsa R para reiniciar.";
@@ -1297,7 +1325,9 @@ test("la pista de nivel 2 de P2 se lee completa sin cortarse y ya no tapa el men
     );
 
     expect(
-      textsAfterFailure.some((text) => text.startsWith("R2/3:")),
+      textsAfterFailure.some(
+        (text) => text.startsWith("R2/3:") || text.startsWith("R3/3:"),
+      ),
     ).toBe(false);
   });
 
