@@ -6,6 +6,17 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Cambiado
 
+- La pista de nivel 3 del Paseo de los Siete Puentes deja de ser un
+  walkthrough: ya no nombra el puente que hay que cerrar ni una ruta
+  completa que el motor acepta, sino que explica el principio que conviene
+  revisar (cerrado el puente correcto, al lugar de llegada le queda una
+  sola conexión abierta, y cruzarla antes de agotar las demás deja al
+  jugador varado con puentes sin recorrer) (`P2Hints.js`). La pista habla
+  del "lugar de llegada" y no del "destino" para no chocar con el estado
+  de movimiento del propio puzle, que ya usa "Destino ... por ..." para el
+  nodo de la siguiente jugada. La solución del puzle, su topología y su
+  dificultad estructural no cambian, y las pistas de nivel 1 y 2 se
+  mantienen con su texto actual.
 - Primeras mejoras de dificultad v1.2 (contenido/presentación, sin cambios
   de lógica ni de solución): la pista de nivel 3 de la Biblioteca del
   Margen ya no entrega el orden final de los cinco documentos, sino una
