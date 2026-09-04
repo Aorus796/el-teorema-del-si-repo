@@ -125,6 +125,22 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   queda sin ningún consumidor real en el juego y queda documentada como
   respaldo del contrato de tipos de `worldMaps.js`.
 
+### Corregido
+
+- La pista de la combinación del epílogo ("La combinación del candado")
+  vuelve a leerse como cuatro versos en el cuaderno. Sus cuatro líneas se
+  guardan separadas por saltos de línea, pero el cuaderno las pintaba dentro
+  de un único `<p>` y el HTML colapsaba esos saltos: el jugador veía una
+  sola oración corrida, sin ninguna separación visual entre las cuatro
+  frases. `UiController.showNotebook()` pasa a crear un párrafo por línea de
+  la entrada, y `main.css` añade el espaciado entre párrafos hermanos de una
+  misma entrada (`.notebook-entry p + p`). Las entradas de una sola línea
+  (el resto del cuaderno) siguen produciendo exactamente un párrafo, igual
+  que antes. Cambio solo de presentación: el texto de la pista
+  (`GIFT_CODE_CLUE_LINES`) y su orden no cambian, la combinación `7152`
+  (`GIFT_CODE_DIGITS`) no cambia, y no hay cambios de lógica, de progresión
+  ni del formato de guardado.
+
 ## [1.1.0] - 2026-08-28
 
 Ampliación de personalización y presentación visual sobre la base estable

@@ -463,6 +463,32 @@ test("resuelve el tercer puzle del Archivo con teclado y desbloquea el epílogo"
 
   await expect(entryTitle).toHaveText("La pregunta correcta");
 
+  /*
+   * La pista de la combinación se guarda como cuatro líneas separadas por
+   * saltos de línea. El HTML los colapsa, así que el cuaderno debe pintar un
+   * párrafo por línea: si volviera a haber un solo <p>, el jugador leería
+   * las cuatro frases como una sola oración corrida, sin separación visual.
+   * El texto esperado se importa de GIFT_CODE_CLUE_LINES, no se duplica.
+   */
+  const clueEntry = page.locator("#notebook-content article.notebook-entry", {
+    has: page.locator("h2", { hasText: "La combinación del candado" }),
+  });
+
+  await expect(clueEntry).toHaveCount(1);
+  await expect(clueEntry.locator("p")).toHaveCount(
+    GIFT_CODE_CLUE_LINES.length,
+  );
+  await expect(clueEntry.locator("p")).toHaveText([...GIFT_CODE_CLUE_LINES]);
+
+  // Regresión del resto del cuaderno: una entrada de una sola línea sigue
+  // produciendo exactamente un párrafo.
+  const finalEvidenceEntry = page.locator(
+    "#notebook-content article.notebook-entry",
+    { has: page.locator("h2", { hasText: "La pregunta correcta" }) },
+  );
+
+  await expect(finalEvidenceEntry.locator("p")).toHaveCount(1);
+
   await page.keyboard.press("KeyQ");
   await expect(notebook).toBeHidden();
 
@@ -3669,6 +3695,27 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     const notebook = page.locator("#notebook-panel");
     await page.keyboard.press("KeyQ");
     await expect(notebook).toBeVisible();
+
+    // Regresión de presentación: la nota de la novia no tiene saltos de
+    // línea, así que sigue ocupando un único párrafo, mientras que la pista
+    // de la combinación se reparte en un párrafo por línea.
+    const brideNoteEntry = page.locator(
+      "#notebook-content article.notebook-entry",
+      {
+        has: page.locator("h2", {
+          hasText: "Nota encontrada en la habitación",
+        }),
+      },
+    );
+
+    await expect(brideNoteEntry.locator("p")).toHaveCount(1);
+
+    const clueEntry = page.locator("#notebook-content article.notebook-entry", {
+      has: page.locator("h2", { hasText: "La combinación del candado" }),
+    });
+
+    await expect(clueEntry.locator("p")).toHaveText([...GIFT_CODE_CLUE_LINES]);
+
     await page.keyboard.press("KeyQ");
     await expect(notebook).toBeHidden();
 
