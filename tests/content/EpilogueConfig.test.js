@@ -21,3 +21,19 @@ test("GIFT_CODE_CLUE_LINES define exactamente las cuatro líneas inmutables de l
     "Solo dos verdades resistieron al Archivo.",
   ]);
 });
+
+/*
+ * La pista es un texto para deducir, no la respuesta escrita: ninguna línea
+ * puede contener un dígito arábigo literal, que revelaría la combinación sin
+ * razonarla. Las palabras "Siete", "Uno", "Cinco" y "dos" son intencionales y
+ * no se prohíben aquí: la comprobación es únicamente sobre caracteres 0-9.
+ */
+test("ninguna línea de GIFT_CODE_CLUE_LINES revela la combinación con dígitos arábigos", () => {
+  for (const line of GIFT_CODE_CLUE_LINES) {
+    assert.equal(
+      /[0-9]/.test(line),
+      false,
+      `La línea "${line}" contiene un dígito arábigo literal.`,
+    );
+  }
+});
