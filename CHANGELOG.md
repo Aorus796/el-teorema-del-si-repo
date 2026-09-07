@@ -6,6 +6,23 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Cambiado
 
+- Las cuatro líneas de la pista de la combinación del epílogo
+  ("La combinación del candado") se reescriben (`GIFT_CODE_CLUE_LINES` en
+  `epilogueConfig.js`). El texto anterior contenía literalmente, escritos
+  con letra, los cuatro dígitos de la combinación ("Siete", "Uno",
+  "Cinco", "dos"), de modo que el jugador podía leer el código completo
+  sin relacionar nada con lo vivido. Ahora cada línea alude al tramo del
+  recorrido del que sale su dígito -- el Paseo de los Siete Puentes, la
+  decisión de cierre de ese mismo puzle, la Biblioteca del Margen y el
+  Archivo -- sin nombrar con letra el dígito que le corresponde: hay que
+  reconocer la procedencia de cada línea para reconstruir la combinación. La combinación en sí
+  (`GIFT_CODE_DIGITS`, `7152`) no cambia, y no hay cambios de lógica, de
+  progresión ni del formato de guardado. Limitación conocida: una partida
+  guardada que ya tenga persistida la entrada de cuaderno
+  `epilogue-combination-clue` (Archivo resuelto y epílogo aún sin
+  completar) conserva el texto antiguo hasta que esa entrada se sobrescriba
+  de forma natural; esta tarea no incluye migración retroactiva del
+  guardado.
 - La pista de nivel 3 del Paseo de los Siete Puentes deja de ser un
   walkthrough: ya no nombra el puente que hay que cerrar ni una ruta
   completa que el motor acepta, sino que explica el principio que conviene

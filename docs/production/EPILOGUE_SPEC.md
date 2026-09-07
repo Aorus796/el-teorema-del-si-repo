@@ -109,10 +109,29 @@ narrativos).
 
 Pista para el cuaderno (texto narrativo aprobado, no debe alterarse):
 
-> Siete caminos parecían posibles.
-> Uno nunca lo fue.
-> Cinco nombres recuperaron su lugar.
-> Solo dos verdades resistieron al Archivo.
+> Todos los puentes del Paseo parecían caminos posibles.
+> El mapa completo mentía sobre un puente que nunca estuvo abierto.
+> Los documentos del catálogo recuperaron su lugar correcto.
+> Solo las declaraciones coincidentes resistieron al Archivo.
+
+Estas cuatro líneas sustituyen a la redacción original de la pista
+(decisión del responsable del producto, 2026-09-07, en la revisión de
+accesibilidad del código del epílogo — PR #81). El texto anterior nombraba
+con letra los cuatro dígitos («Siete», «Uno», «Cinco», «dos») y permitía
+leer la combinación sin relacionarla con lo vivido.
+
+El texto de arriba queda protegido exactamente igual que la redacción a la
+que sustituye: **no debe alterarse sin una aprobación humana explícita
+nueva**. Que ya se haya reescrito una vez no lo convierte en texto abierto.
+
+Restricción adicional que cualquier reescritura futura aprobada debe
+conservar: cada línea alude a un tramo concreto del recorrido (Paseo de los
+Siete Puentes, la decisión de cierre de ese mismo puzle, la Biblioteca del
+Margen y el Archivo) y ninguna nombra con letra ningún dígito de la
+combinación — ni el suyo ni el de otra línea. El jugador debe reconocer la
+procedencia de cada línea para reconstruir la combinación. Esa restricción
+está cubierta por `tests/content/EpilogueConfig.test.js`, pero es una
+condición mínima, no un sustituto de la aprobación humana del texto.
 
 Este texto se centraliza como `GIFT_CODE_CLUE_LINES` (sección 5), junto a
 la propia combinación — no se escribe de forma literal en la lógica de la
@@ -128,10 +147,10 @@ que depende de la combinación aprobada — no solo los dígitos:
 export const GIFT_CODE_DIGITS = Object.freeze([7, 1, 5, 2]);
 
 export const GIFT_CODE_CLUE_LINES = Object.freeze([
-  "Siete caminos parecían posibles.",
-  "Uno nunca lo fue.",
-  "Cinco nombres recuperaron su lugar.",
-  "Solo dos verdades resistieron al Archivo.",
+  "Todos los puentes del Paseo parecían caminos posibles.",
+  "El mapa completo mentía sobre un puente que nunca estuvo abierto.",
+  "Los documentos del catálogo recuperaron su lugar correcto.",
+  "Solo las declaraciones coincidentes resistieron al Archivo.",
 ]);
 ```
 
