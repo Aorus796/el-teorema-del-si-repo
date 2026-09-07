@@ -93,16 +93,21 @@ export class UiController {
         const title = this.document.createElement("h2");
         title.textContent = entry.title;
 
-        const body = this.document.createElement("p");
-        body.textContent = entry.text;
+        article.append(title);
 
-        article.append(title, body);
+        for (const line of splitNotebookLines(entry.text)) {
+          const body = this.document.createElement("p");
+          body.textContent = line;
+          article.append(body);
+        }
+
         this.notebookContent.append(article);
       }
     }
 
     this.notebookPanel.hidden = false;
-    this.notebookClose.focus();
+    this.notebookContent.lastElementChild?.scrollIntoView({ block: "nearest" });
+    this.notebookClose.focus({ preventScroll: true });
   }
 
   hideNotebook() {
@@ -128,6 +133,18 @@ export class UiController {
     this.dialogue = null;
     this.dialoguePanel.hidden = true;
   }
+}
+
+/*
+ * Una entrada del cuaderno puede traer varias líneas separadas por saltos de
+ * línea (por ejemplo la pista de la combinación del epílogo). El HTML
+ * colapsa esos saltos, así que cada línea se pinta como su propio párrafo.
+ * Una entrada de una sola línea sigue produciendo exactamente un párrafo.
+ */
+function splitNotebookLines(text) {
+  return String(text)
+    .split("\n")
+    .filter((line) => line.trim().length > 0);
 }
 
 function requireElement(documentRef, selector) {

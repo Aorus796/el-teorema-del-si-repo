@@ -157,6 +157,10 @@ button:focus-visible {
   line-height: 1.45;
 }
 
+.notebook-entry p + p {
+  margin-top: 0.45rem;
+}
+
 .prototype-help {
   position: absolute;
   top: 2%;

@@ -6,6 +6,23 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ### Cambiado
 
+- Las cuatro líneas de la pista de la combinación del epílogo
+  ("La combinación del candado") se reescriben (`GIFT_CODE_CLUE_LINES` en
+  `epilogueConfig.js`). El texto anterior contenía literalmente, escritos
+  con letra, los cuatro dígitos de la combinación ("Siete", "Uno",
+  "Cinco", "dos"), de modo que el jugador podía leer el código completo
+  sin relacionar nada con lo vivido. Ahora cada línea alude al tramo del
+  recorrido del que sale su dígito -- el Paseo de los Siete Puentes, la
+  decisión de cierre de ese mismo puzle, la Biblioteca del Margen y el
+  Archivo -- sin nombrar con letra el dígito que le corresponde: hay que
+  reconocer la procedencia de cada línea para reconstruir la combinación. La combinación en sí
+  (`GIFT_CODE_DIGITS`, `7152`) no cambia, y no hay cambios de lógica, de
+  progresión ni del formato de guardado. Limitación conocida: una partida
+  guardada que ya tenga persistida la entrada de cuaderno
+  `epilogue-combination-clue` (Archivo resuelto y epílogo aún sin
+  completar) conserva el texto antiguo hasta que esa entrada se sobrescriba
+  de forma natural; esta tarea no incluye migración retroactiva del
+  guardado.
 - La pista de nivel 3 del Paseo de los Siete Puentes deja de ser un
   walkthrough: ya no nombra el puente que hay que cerrar ni una ruta
   completa que el motor acepta, sino que explica el principio que conviene
@@ -124,6 +141,55 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   que lo contiene. Con este cambio la rama genérica de `type "table"` se
   queda sin ningún consumidor real en el juego y queda documentada como
   respaldo del contrato de tipos de `worldMaps.js`.
+
+### Corregido
+
+- La pista de la combinación del epílogo ("La combinación del candado")
+  vuelve a leerse como cuatro versos en el cuaderno. Sus cuatro líneas se
+  guardan separadas por saltos de línea, pero el cuaderno las pintaba dentro
+  de un único `<p>` y el HTML colapsaba esos saltos: el jugador veía una
+  sola oración corrida, sin ninguna separación visual entre las cuatro
+  frases. `UiController.showNotebook()` pasa a crear un párrafo por línea de
+  la entrada, y `main.css` añade el espaciado entre párrafos hermanos de una
+  misma entrada (`.notebook-entry p + p`). Las entradas de una sola línea
+  (el resto del cuaderno) siguen produciendo exactamente un párrafo, igual
+  que antes. Cambio solo de presentación: el texto de la pista
+  (`GIFT_CODE_CLUE_LINES`) y su orden no cambian, la combinación `7152`
+  (`GIFT_CODE_DIGITS`) no cambia, y no hay cambios de lógica, de progresión
+  ni del formato de guardado.
+- La entrada de la pista de la combinación ya no se abre fuera del área
+  visible del cuaderno. Con el Archivo resuelto es la última de las cinco
+  entradas alcanzables (`bride-note`, `library-clue`, la del catálogo de la
+  Biblioteca, `archive-final-evidence` y `epilogue-combination-clue`) y el
+  panel del cuaderno tiene desplazamiento propio, así que aparecía por debajo
+  del borde inferior; la única forma de alcanzarla era con la rueda del
+  ratón o con teclas de desplazamiento nativas del navegador (Av Pág/Fin) no
+  anunciadas en ningún sitio al jugador, ya que `InputManager` no las
+  intercepta pero tampoco las documenta como control del cuaderno.
+  `UiController.showNotebook()` desplaza ahora el panel hasta la última
+  entrada al abrirlo (`scrollIntoView({ block: "nearest" })`, ya con el panel
+  visible y el contenido pintado) y enfoca el botón de cerrar con
+  `focus({ preventScroll: true })`, porque ese botón vive en el mismo
+  contenedor desplazable y, sin `preventScroll`, el navegador revertía el
+  desplazamiento recién aplicado. Efecto secundario aceptado: cuando el
+  panel desborda (a partir de 4 entradas), la cabecera "Cuaderno de
+  investigación" y el botón "Cerrar [Q]" quedan fuera del área visible al
+  abrirse, y el foco queda en ese botón ya no visible — cerrar con `Q`,
+  `Escape` o `Enter` sigue funcionando con normalidad, y las mismas teclas
+  de desplazamiento nativas (Av Pág/Re Pág/Inicio/Fin) permiten volver a las
+  entradas anteriores, aunque sin ninguna indicación en pantalla de que
+  existen. Limitación aceptada del mismo repaso: no se
+  ha modificado el texto de otras entradas del cuaderno (nota de la novia,
+  resumen del Paseo de los Siete Puentes, resumen del Archivo) que mencionan
+  números escritos con letra coincidentes con dígitos de la combinación,
+  porque no existe una reformulación que preserve su función narrativa y de
+  testing sin coste: "siete" describe hechos reales del puzle (siete
+  puentes), "dos" es vocabulario funcional reutilizado por la propia pista y
+  por el feedback del Archivo, y tocar solo "uno" resolvería media entrada
+  mientras rompe citas literales de las pruebas de compatibilidad de
+  guardados. Cambio solo de presentación: `GIFT_CODE_DIGITS` sin cambios, sin
+  cambios de lógica ni de progresión, `InputManager.js` sin tocar y
+  `SAVE_FORMAT_VERSION` sigue en 4.
 
 ## [1.1.0] - 2026-08-28
 

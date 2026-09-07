@@ -115,6 +115,37 @@ function buildGiftCodeKeystrokes(digits) {
   return keys;
 }
 
+/*
+ * Mide, sobre el cuaderno ya abierto, si la entrada con el título indicado
+ * cae dentro del área realmente visible del panel. `toBeVisible()` no sirve
+ * para esto: una entrada situada por debajo del borde inferior de un
+ * contenedor con desplazamiento propio sigue siendo "visible" para
+ * Playwright aunque el jugador no la vea. Devuelve también si el panel
+ * desborda, para poder distinguir una comprobación significativa de una
+ * trivial (un panel que cabe entero siempre da `fullyVisible`).
+ */
+async function measureNotebookEntryVisibility(page, entryTitle) {
+  return page.evaluate((title) => {
+    const panel = document.querySelector("#notebook-panel");
+    const entry = [
+      ...document.querySelectorAll("#notebook-content article.notebook-entry"),
+    ].find((element) => element.querySelector("h2")?.textContent === title);
+
+    if (!panel || !entry) {
+      return null;
+    }
+
+    const panelRect = panel.getBoundingClientRect();
+    const entryRect = entry.getBoundingClientRect();
+
+    return {
+      panelScrolls: panel.scrollHeight > panel.clientHeight,
+      fullyVisible:
+        entryRect.top >= panelRect.top && entryRect.bottom <= panelRect.bottom,
+    };
+  }, entryTitle);
+}
+
 test("carga la pantalla de título sin errores", async ({ page }) => {
   const errors = collectJavaScriptErrors(page);
 
@@ -462,6 +493,47 @@ test("resuelve el tercer puzle del Archivo con teclado y desbloquea el epílogo"
   );
 
   await expect(entryTitle).toHaveText("La pregunta correcta");
+
+  /*
+   * La pista de la combinación se guarda como cuatro líneas separadas por
+   * saltos de línea. El HTML los colapsa, así que el cuaderno debe pintar un
+   * párrafo por línea: si volviera a haber un solo <p>, el jugador leería
+   * las cuatro frases como una sola oración corrida, sin separación visual.
+   * El texto esperado se importa de GIFT_CODE_CLUE_LINES, no se duplica.
+   */
+  const clueEntry = page.locator("#notebook-content article.notebook-entry", {
+    has: page.locator("h2", { hasText: "La combinación del candado" }),
+  });
+
+  await expect(clueEntry).toHaveCount(1);
+  await expect(clueEntry.locator("p")).toHaveCount(
+    GIFT_CODE_CLUE_LINES.length,
+  );
+  await expect(clueEntry.locator("p")).toHaveText([...GIFT_CODE_CLUE_LINES]);
+
+  /*
+   * La pista es la última entrada del cuaderno al resolver el Archivo, así
+   * que debe quedar dentro del área visible del panel nada más abrirlo.
+   * (En esta partida sembrada el cuaderno arranca vacío y el panel todavía
+   * no desborda; la comprobación con desbordamiento real está en el test de
+   * la partida completa, más abajo.)
+   */
+  const clueEntryVisibility = await measureNotebookEntryVisibility(
+    page,
+    "La combinación del candado",
+  );
+
+  expect(clueEntryVisibility).not.toBeNull();
+  expect(clueEntryVisibility.fullyVisible).toBe(true);
+
+  // Regresión del resto del cuaderno: una entrada de una sola línea sigue
+  // produciendo exactamente un párrafo.
+  const finalEvidenceEntry = page.locator(
+    "#notebook-content article.notebook-entry",
+    { has: page.locator("h2", { hasText: "La pregunta correcta" }) },
+  );
+
+  await expect(finalEvidenceEntry.locator("p")).toHaveCount(1);
 
   await page.keyboard.press("KeyQ");
   await expect(notebook).toBeHidden();
@@ -3669,6 +3741,42 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     const notebook = page.locator("#notebook-panel");
     await page.keyboard.press("KeyQ");
     await expect(notebook).toBeVisible();
+
+    // Regresión de presentación: la nota de la novia no tiene saltos de
+    // línea, así que sigue ocupando un único párrafo, mientras que la pista
+    // de la combinación se reparte en un párrafo por línea.
+    const brideNoteEntry = page.locator(
+      "#notebook-content article.notebook-entry",
+      {
+        has: page.locator("h2", {
+          hasText: "Nota encontrada en la habitación",
+        }),
+      },
+    );
+
+    await expect(brideNoteEntry.locator("p")).toHaveCount(1);
+
+    const clueEntry = page.locator("#notebook-content article.notebook-entry", {
+      has: page.locator("h2", { hasText: "La combinación del candado" }),
+    });
+
+    await expect(clueEntry.locator("p")).toHaveText([...GIFT_CODE_CLUE_LINES]);
+
+    /*
+     * Con el cuaderno completo el panel desborda de verdad, y la pista es la
+     * última entrada: antes quedaba por debajo del borde inferior y solo se
+     * alcanzaba desplazando con el ratón. El cuaderno debe abrirse ya
+     * desplazado hasta ella.
+     */
+    const clueEntryVisibility = await measureNotebookEntryVisibility(
+      page,
+      "La combinación del candado",
+    );
+
+    expect(clueEntryVisibility).not.toBeNull();
+    expect(clueEntryVisibility.panelScrolls).toBe(true);
+    expect(clueEntryVisibility.fullyVisible).toBe(true);
+
     await page.keyboard.press("KeyQ");
     await expect(notebook).toBeHidden();
 
