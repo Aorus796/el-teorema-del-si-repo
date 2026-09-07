@@ -106,7 +106,8 @@ export class UiController {
     }
 
     this.notebookPanel.hidden = false;
-    this.notebookClose.focus();
+    this.notebookContent.lastElementChild?.scrollIntoView({ block: "nearest" });
+    this.notebookClose.focus({ preventScroll: true });
   }
 
   hideNotebook() {

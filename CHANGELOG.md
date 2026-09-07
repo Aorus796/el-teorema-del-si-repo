@@ -157,6 +157,39 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
   (`GIFT_CODE_CLUE_LINES`) y su orden no cambian, la combinación `7152`
   (`GIFT_CODE_DIGITS`) no cambia, y no hay cambios de lógica, de progresión
   ni del formato de guardado.
+- La entrada de la pista de la combinación ya no se abre fuera del área
+  visible del cuaderno. Con el Archivo resuelto es la última de las cinco
+  entradas alcanzables (`bride-note`, `library-clue`, la del catálogo de la
+  Biblioteca, `archive-final-evidence` y `epilogue-combination-clue`) y el
+  panel del cuaderno tiene desplazamiento propio, así que aparecía por debajo
+  del borde inferior; la única forma de alcanzarla era con la rueda del
+  ratón o con teclas de desplazamiento nativas del navegador (Av Pág/Fin) no
+  anunciadas en ningún sitio al jugador, ya que `InputManager` no las
+  intercepta pero tampoco las documenta como control del cuaderno.
+  `UiController.showNotebook()` desplaza ahora el panel hasta la última
+  entrada al abrirlo (`scrollIntoView({ block: "nearest" })`, ya con el panel
+  visible y el contenido pintado) y enfoca el botón de cerrar con
+  `focus({ preventScroll: true })`, porque ese botón vive en el mismo
+  contenedor desplazable y, sin `preventScroll`, el navegador revertía el
+  desplazamiento recién aplicado. Efecto secundario aceptado: cuando el
+  panel desborda (a partir de 4 entradas), la cabecera "Cuaderno de
+  investigación" y el botón "Cerrar [Q]" quedan fuera del área visible al
+  abrirse, y el foco queda en ese botón ya no visible — cerrar con `Q`,
+  `Escape` o `Enter` sigue funcionando con normalidad, y las mismas teclas
+  de desplazamiento nativas (Av Pág/Re Pág/Inicio/Fin) permiten volver a las
+  entradas anteriores, aunque sin ninguna indicación en pantalla de que
+  existen. Limitación aceptada del mismo repaso: no se
+  ha modificado el texto de otras entradas del cuaderno (nota de la novia,
+  resumen del Paseo de los Siete Puentes, resumen del Archivo) que mencionan
+  números escritos con letra coincidentes con dígitos de la combinación,
+  porque no existe una reformulación que preserve su función narrativa y de
+  testing sin coste: "siete" describe hechos reales del puzle (siete
+  puentes), "dos" es vocabulario funcional reutilizado por la propia pista y
+  por el feedback del Archivo, y tocar solo "uno" resolvería media entrada
+  mientras rompe citas literales de las pruebas de compatibilidad de
+  guardados. Cambio solo de presentación: `GIFT_CODE_DIGITS` sin cambios, sin
+  cambios de lógica ni de progresión, `InputManager.js` sin tocar y
+  `SAVE_FORMAT_VERSION` sigue en 4.
 
 ## [1.1.0] - 2026-08-28
 
