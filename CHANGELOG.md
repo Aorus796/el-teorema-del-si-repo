@@ -4,6 +4,20 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ## [No publicado]
 
+## [1.2.0] - 2026-09-08
+
+Pase de dificultad y accesibilidad sobre la base visual/narrativa estable
+de v1.1.0: el Paseo de los Siete Puentes se rediseña estructuralmente para
+exigir razonamiento real durante el recorrido (no solo en el cierre
+inicial) y sus pistas dejan de entregar la solución literal; el mecanismo
+final del epílogo migra de un bloque geométrico a pixel-art propio y su
+pista de cuaderno se reescribe para ser deductiva en vez de literal, con
+una corrección adicional de accesibilidad para que esa pista sea siempre
+visible al abrir el cuaderno. La solución de los tres puzles (Paseo de los
+Siete Puentes, Biblioteca del Margen, Archivo) y la combinación final
+(`7152`) no cambian; `SAVE_FORMAT_VERSION` se mantiene en 4 en todo el
+release.
+
 ### Cambiado
 
 - Las cuatro líneas de la pista de la combinación del epílogo
