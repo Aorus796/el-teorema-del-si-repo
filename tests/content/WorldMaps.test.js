@@ -9,15 +9,33 @@ import {
   ARCHIVE_DESK_PIXEL_HEIGHT,
   ARCHIVE_DESK_PIXEL_WIDTH,
 } from "../../src/content/archiveDeskPixelArt.js";
+import {
+  CUSTODIAN_PIXEL_HEIGHT,
+  CUSTODIAN_PIXEL_WIDTH,
+} from "../../src/content/custodianPixelArt.js";
+import {
+  CONTAINMENT_LATTICE_PIXEL_HEIGHT,
+  CONTAINMENT_LATTICE_PIXEL_WIDTH,
+} from "../../src/content/containmentLatticePixelArt.js";
+import {
+  CONTAINMENT_WELL_PIXEL_HEIGHT,
+  CONTAINMENT_WELL_PIXEL_WIDTH,
+} from "../../src/content/containmentWellPixelArt.js";
 import { ARCHIVE_DESK_EXTRA_BOTTOM_OVERFLOW } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
 import { CollisionMap } from "../../src/world/CollisionMap.js";
 import { Player } from "../../src/world/Player.js";
 
-test("el registro contiene las cuatro localizaciones obligatorias", () => {
+test("el registro contiene las cinco localizaciones del recorrido", () => {
   assert.deepEqual(
     Object.keys(WORLD_MAPS).sort(),
-    ["archive", "axiom-plaza", "library", "seven-bridges-walk"],
+    [
+      "archive",
+      "axiom-plaza",
+      "containment-chamber",
+      "library",
+      "seven-bridges-walk",
+    ],
   );
 });
 
@@ -497,7 +515,7 @@ test("archive-criteria-table y archive-to-library siguen siendo alcanzables a pi
   assertObjectIsReachable("archive", "archive-to-library");
 });
 
-test("epilogue-gift-mechanism (axiom-plaza) sigue siendo el único otro objeto de type 'table' del juego, ajeno a la migración de archive", () => {
+test("exactamente tres objetos de type 'table' interceptados por id (axiom-plaza, archive, containment-chamber), ninguno más en el resto de mapas", () => {
   for (const map of Object.values(WORLD_MAPS)) {
     const tables = map.objects.filter((object) => object.type === "table");
 
@@ -513,6 +531,14 @@ test("epilogue-gift-mechanism (axiom-plaza) sigue siendo el único otro objeto d
       assert.deepEqual(
         tables.map((object) => object.id),
         ["archive-criteria-table"],
+      );
+      continue;
+    }
+
+    if (map.id === "containment-chamber") {
+      assert.deepEqual(
+        tables.map((object) => object.id),
+        ["containment-budget-panel"],
       );
       continue;
     }
@@ -619,16 +645,17 @@ const ARCHIVE_AMBIENT_NPC_IDS = [
   "ambient-archive-researcher",
 ];
 
-test("archive tiene ahora 4 objects: los 2 originales más los 2 NPC ambientales nuevos", () => {
+test("archive tiene 5 objects: los 2 originales, los 2 NPC ambientales y la salida a la Cámara de Contención", () => {
   const map = getWorldMap("archive");
 
-  assert.equal(map.objects.length, 4);
+  assert.equal(map.objects.length, 5);
   assert.deepEqual(
     map.objects.map((object) => object.id).sort(),
     [
       "ambient-archive-clerk",
       "ambient-archive-researcher",
       "archive-criteria-table",
+      "archive-to-containment",
       "archive-to-library",
     ],
   );
@@ -1750,6 +1777,367 @@ test("p2-evidence es alcanzable a pie desde la entrada real llegando desde Bibli
     y: 304,
   });
 });
+
+/*
+ * Cobertura de la Cámara de Contención (v1.3): mapa nuevo del mismo tamaño
+ * exacto que archive, con el puzle del presupuesto de duda, el Custodio, la
+ * celosía tras la que espera la novia y la salida recíproca al Archivo.
+ */
+const CONTAINMENT_EXPECTED_OBJECTS = [
+  {
+    id: "containment-budget-panel",
+    type: "table",
+    x: 176,
+    y: 48,
+    width: 32,
+    height: 24,
+    interactionRadius: 30,
+    label: "Panel de consulta",
+  },
+  {
+    id: "containment-custodian",
+    type: "npc",
+    x: 224,
+    y: 48,
+    width: 20,
+    height: 32,
+    interactionRadius: 30,
+    label: "Custodio",
+  },
+  {
+    id: "containment-lattice",
+    type: "lattice",
+    x: 288,
+    y: 96,
+    width: 16,
+    height: 64,
+    interactionRadius: 30,
+    label: "Celosía de contención",
+  },
+  {
+    id: "containment-to-archive",
+    type: "exit",
+    x: 176,
+    y: 224,
+    width: 32,
+    height: 16,
+    interactionRadius: 30,
+    label: "Archivo",
+    targetMapId: "archive",
+    targetPlayerState: { x: 336, y: 112, facing: "right" },
+  },
+];
+
+test("containment-chamber tiene el mismo tamaño exacto que archive y su propia paleta fría", () => {
+  const map = getWorldMap("containment-chamber");
+  const archive = getWorldMap("archive");
+
+  assert.equal(map.name, "Cámara de Contención");
+  assert.equal(map.width, archive.width);
+  assert.equal(map.height, archive.height);
+  assert.equal(map.tileSize, archive.tileSize);
+  assert.equal(map.worldWidth, 384);
+  assert.equal(map.worldHeight, 256);
+  assert.equal(map.dawnPalette, null);
+
+  assert.deepEqual(map.palette, {
+    groundA: "#5b5f66",
+    groundB: "#666b73",
+    wall: "#33383f",
+    wallTop: "#5f666e",
+    water: "#3f7f82",
+  });
+
+  // Ninguna clave de la paleta fría coincide con la cálida del Archivo.
+  for (const key of Object.keys(map.palette)) {
+    assert.notEqual(
+      map.palette[key],
+      archive.palette[key],
+      `palette.${key} no debería coincidir con la del Archivo`,
+    );
+  }
+});
+
+test("containment-chamber declara exactamente los 4 objects esperados, con su geometría exacta", () => {
+  const map = getWorldMap("containment-chamber");
+
+  assert.equal(map.objects.length, CONTAINMENT_EXPECTED_OBJECTS.length);
+
+  for (const expected of CONTAINMENT_EXPECTED_OBJECTS) {
+    assert.deepEqual(
+      map.objects.find((object) => object.id === expected.id),
+      expected,
+    );
+  }
+
+  for (const object of map.objects) {
+    assert.equal(
+      object.requiresFlag,
+      undefined,
+      `${object.id} no debe depender de ninguna bandera para existir`,
+    );
+  }
+});
+
+test("containment-chamber declara exactamente las 4 decoraciones esperadas", () => {
+  const map = getWorldMap("containment-chamber");
+
+  assert.deepEqual(
+    map.decorations.map((decoration) => decoration.id).sort(),
+    [
+      "containment-lattice-screen",
+      "containment-rack-northwest",
+      "containment-rack-southwest",
+      "containment-well",
+    ],
+  );
+  assert.deepEqual(
+    map.decorations.map((decoration) => decoration.type).sort(),
+    [
+      "containment-lattice",
+      "containment-well",
+      "sealed-dossier-rack",
+      "sealed-dossier-rack",
+    ],
+  );
+});
+
+test("containment-chamber tiene los solidTiles del borde más sus 5 regiones sólidas, sin solapes", () => {
+  const map = getWorldMap("containment-chamber");
+
+  // 24x16 -> borde = 2*24 + 2*16 - 4 = 76 tiles. Regiones: 2 estanterías de
+  // 4x2 (8+8), el panel 2x2 (4), el pozo 2x2 (4) y la celosía 1x14 (14) =
+  // 38, ninguna tocando el borde ni a otra.
+  assert.equal(map.solidTiles.length, 76 + 38);
+  assert.equal(
+    new Set(map.solidTiles).size,
+    map.solidTiles.length,
+    "solidTiles no debe contener índices repetidos",
+  );
+});
+
+test("la aparición por defecto de containment-chamber es transitable y no solapa objetos", () => {
+  assertSpawnIsClear("containment-chamber");
+});
+
+test("ninguna decoración de containment-chamber solapa un objeto interactuable ni otra decoración", () => {
+  const map = getWorldMap("containment-chamber");
+
+  for (const decoration of map.decorations) {
+    for (const object of map.objects) {
+      assert.equal(
+        rectanglesOverlap(decoration, object),
+        false,
+        `la decoración ${decoration.id} solapa el objeto ${object.id}`,
+      );
+    }
+  }
+
+  for (let i = 0; i < map.decorations.length; i += 1) {
+    for (let j = i + 1; j < map.decorations.length; j += 1) {
+      assert.equal(
+        rectanglesOverlap(map.decorations[i], map.decorations[j]),
+        false,
+        `${map.decorations[i].id} solapa ${map.decorations[j].id}`,
+      );
+    }
+  }
+});
+
+test("ninguna decoración de containment-chamber solapa el rectángulo de aparición del jugador", () => {
+  const map = getWorldMap("containment-chamber");
+  const playerState = new GameState().getPlayerState("containment-chamber");
+  const spawnBounds = {
+    x: playerState.x - 5,
+    y: playerState.y - 7,
+    width: 10,
+    height: 14,
+  };
+
+  for (const decoration of map.decorations) {
+    assert.equal(
+      rectanglesOverlap(spawnBounds, decoration),
+      false,
+      `la decoración ${decoration.id} solapa la aparición del jugador`,
+    );
+  }
+});
+
+test("el Custodio, la celosía y la salida de containment-chamber no colisionan ni solapan nada", () => {
+  for (const objectId of [
+    "containment-custodian",
+    "containment-lattice",
+    "containment-to-archive",
+  ]) {
+    assertObjectIsClear("containment-chamber", objectId);
+  }
+});
+
+test("los 4 objects de containment-chamber son alcanzables a pie desde el spawn por defecto", () => {
+  for (const object of CONTAINMENT_EXPECTED_OBJECTS) {
+    assertObjectIsReachable("containment-chamber", object.id);
+  }
+});
+
+/*
+ * El sprite del Custodio (20x32) coincide al píxel con su hitbox declarado,
+ * a diferencia de archive-desk o epilogue-gift-mechanism. Se comprueba
+ * explícitamente porque toda la verificación de no-solape de arriba mide
+ * contra el hitbox: si el sprite creciera sin ajustar el hitbox, el
+ * Custodio empezaría a pisar el panel sin que ninguna otra prueba lo notara.
+ */
+test("el hitbox del Custodio coincide exactamente con su sprite, así que el hitbox SÍ es su footprint visual", () => {
+  const map = getWorldMap("containment-chamber");
+  const custodian = map.objects.find(
+    (object) => object.id === "containment-custodian",
+  );
+
+  assert.equal(custodian.width, CUSTODIAN_PIXEL_WIDTH);
+  assert.equal(custodian.height, CUSTODIAN_PIXEL_HEIGHT);
+});
+
+/*
+ * El pozo cubre EXACTAMENTE su solidRegion (32x32 = 2x2 tiles): lo que se
+ * ve bloqueado es lo que bloquea de verdad, sin desborde que compensar.
+ */
+test("el pozo de expedientes cubre exactamente su región sólida", () => {
+  const map = getWorldMap("containment-chamber");
+  const well = map.decorations.find(
+    (decoration) => decoration.id === "containment-well",
+  );
+
+  assert.equal(well.width, CONTAINMENT_WELL_PIXEL_WIDTH);
+  assert.equal(well.height, CONTAINMENT_WELL_PIXEL_HEIGHT);
+  assert.equal(well.x % map.tileSize, 0);
+  assert.equal(well.y % map.tileSize, 0);
+
+  const collisionMap = new CollisionMap({
+    width: map.width,
+    height: map.height,
+    tileSize: map.tileSize,
+    solidTiles: map.solidTiles,
+  });
+
+  // Cada uno de los 4 tiles del pozo bloquea, y los 4 tiles inmediatamente
+  // alrededor por arriba y por abajo no.
+  for (let tileY = 7; tileY <= 8; tileY += 1) {
+    for (let tileX = 11; tileX <= 12; tileX += 1) {
+      assert.equal(
+        collisionMap.collides({
+          x: tileX * map.tileSize + 4,
+          y: tileY * map.tileSize + 4,
+          width: 8,
+          height: 8,
+        }),
+        true,
+        `el tile (${tileX},${tileY}) del pozo debería bloquear`,
+      );
+    }
+  }
+
+  for (const tileY of [6, 9]) {
+    assert.equal(
+      collisionMap.collides({
+        x: 11 * map.tileSize + 4,
+        y: tileY * map.tileSize + 4,
+        width: 8,
+        height: 8,
+      }),
+      false,
+      `la fila ${tileY} junto al pozo debe ser transitable`,
+    );
+  }
+});
+
+test("la celosía es sólida en toda su altura y su footprint es un múltiplo exacto del patrón", () => {
+  const map = getWorldMap("containment-chamber");
+  const lattice = map.decorations.find(
+    (decoration) => decoration.id === "containment-lattice-screen",
+  );
+
+  assert.equal(lattice.width, CONTAINMENT_LATTICE_PIXEL_WIDTH);
+  assert.equal(lattice.height % CONTAINMENT_LATTICE_PIXEL_HEIGHT, 0);
+  assert.equal(lattice.height, map.worldHeight - 2 * map.tileSize);
+
+  const collisionMap = new CollisionMap({
+    width: map.width,
+    height: map.height,
+    tileSize: map.tileSize,
+    solidTiles: map.solidTiles,
+  });
+
+  for (
+    let y = lattice.y;
+    y < lattice.y + lattice.height;
+    y += map.tileSize
+  ) {
+    assert.equal(
+      collisionMap.collides({ x: lattice.x + 4, y: y + 4, width: 8, height: 8 }),
+      true,
+      `la celosía debería bloquear a la altura y=${y}`,
+    );
+  }
+});
+
+/*
+ * Recíproco exacto: cada salida aterriza en una posición transitable del
+ * mapa de destino y al alcance real de la salida de vuelta, de modo que el
+ * jugador nunca queda atrapado a un lado del portal.
+ */
+test("las dos salidas entre archive y containment-chamber son recíprocas y aterrizan en suelo transitable", () => {
+  const archiveExit = getWorldMap("archive").objects.find(
+    (object) => object.id === "archive-to-containment",
+  );
+  const chamberExit = getWorldMap("containment-chamber").objects.find(
+    (object) => object.id === "containment-to-archive",
+  );
+
+  assert.equal(archiveExit.targetMapId, "containment-chamber");
+  assert.equal(chamberExit.targetMapId, "archive");
+
+  assertPositionIsWalkable(
+    "containment-chamber",
+    archiveExit.targetPlayerState,
+  );
+  assertPositionIsWalkable("archive", chamberExit.targetPlayerState);
+
+  assertObjectIsReachable(
+    "containment-chamber",
+    "containment-to-archive",
+    archiveExit.targetPlayerState,
+  );
+  assertObjectIsReachable(
+    "archive",
+    "archive-to-containment",
+    chamberExit.targetPlayerState,
+  );
+});
+
+test("archive-to-containment no colisiona ni solapa nada del Archivo y es alcanzable desde su spawn", () => {
+  assertObjectIsClear("archive", "archive-to-containment");
+  assertObjectIsReachable("archive", "archive-to-containment");
+});
+
+test("añadir archive-to-containment no cambia los solidTiles del Archivo", () => {
+  assert.equal(getWorldMap("archive").solidTiles.length, 116);
+});
+
+function assertPositionIsWalkable(mapId, position) {
+  const map = getWorldMap(mapId);
+  const collisionMap = new CollisionMap({
+    width: map.width,
+    height: map.height,
+    tileSize: map.tileSize,
+    solidTiles: map.solidTiles,
+  });
+  const player = new Player(position);
+
+  assert.equal(
+    collisionMap.collides(player.getCollisionBox()),
+    false,
+    `(${position.x},${position.y}) no es transitable en ${mapId}`,
+  );
+}
 
 function assertSpawnIsClear(mapId) {
   const map = getWorldMap(mapId);

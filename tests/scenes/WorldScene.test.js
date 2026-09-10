@@ -22,8 +22,22 @@ import { P2BridgesScene } from "../../src/scenes/P2BridgesScene.js";
 import { WorldScene, resolveMaxSpawnPosition } from "../../src/scenes/WorldScene.js";
 import { GameState } from "../../src/state/GameState.js";
 import {
+  DOUBT_BUDGET_FAILURE_CODE,
+  DOUBT_BUDGET_PHASE,
+  DoubtBudgetState,
+} from "../../src/puzzles/doubt-budget/DoubtBudgetState.js";
+import {
+  DOUBT_BUDGET_RULE_LINES,
+  DOUBT_BUDGET_TRUE_DOSSIER_ID,
+} from "../../src/puzzles/doubt-budget/DoubtBudgetData.js";
+import {
+  CUSTODIAN_IDLE_PIXELS,
+  CUSTODIAN_PALETTE,
+} from "../../src/content/custodianPixelArt.js";
+import {
   BRIDE_PALETTE,
   NAMED_NPC_PALETTES,
+  NPC_SILHOUETTE,
 } from "../../src/content/characterPalettes.js";
 import {
   ELENA_FRONT_PIXELS,
@@ -535,6 +549,7 @@ test("el mecanismo del regalo con giftCodeSolved y epilogueCompleted también ca
 test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved no cambia de escena al entrar, e interactuar con el mecanismo del regalo ya resuelto cambia a epilogue-gift-code en modo de solo lectura", () => {
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -943,6 +958,7 @@ test("enter() sobre un GameState restaurado con brideNoteReceived=true reproduce
 test("enter() sobre un GameState restaurado con epilogueCompleted=true no reproduce ninguna música y detiene explícitamente la que pudiera sonar", () => {
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -1013,6 +1029,7 @@ test("enter() con epilogueCompleted=true detiene el opening que hubiera quedado 
 
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -1189,6 +1206,7 @@ test("load() dentro de World con brideNoteReceived:true y epilogueCompleted:fals
 test("load() dentro de World con epilogueCompleted:true detiene la música y no arranca el ambiental tras la carga", () => {
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -1458,6 +1476,7 @@ test("render() repetido produce el mismo resultado observable (idempotencia)", (
 test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved renderiza directamente con la paleta de amanecer", () => {
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -3451,6 +3470,7 @@ test("una WorldScene montada sobre un GameState restaurado con giftCodeSolved mu
   const bride = findObject("axiom-plaza", "bride-epilogue");
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -3559,6 +3579,7 @@ test("OBJECTIVE_LABELS reconoce epilogue-completed en el HUD renderizado", () =>
 test("restaurar una partida con epilogueCompleted=true no dispara ningún cambio de escena", () => {
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -4596,6 +4617,417 @@ function withPatchedTriggerReaction(run) {
   return calls;
 }
 
+/* --- Cámara de Contención (v1.3) --- */
+
+test("archive-to-containment está bloqueada mientras containmentUnlocked sea false", () => {
+  const setup = createWorldAt("archive");
+  const exit = findObject("archive", "archive-to-containment");
+
+  setup.scene.interact(exit);
+
+  assert.deepEqual(setup.scenes.changes, []);
+  assert.equal(setup.state.world.currentMapId, "archive");
+  assert.equal(setup.ui.dialogue.speaker, "Acceso a la Cámara de Contención");
+});
+
+test("con containmentUnlocked, archive-to-containment lleva de verdad a la Cámara", () => {
+  const setup = createWorldAt("archive");
+  setup.state.flags.investigationComplete = true;
+  setup.state.flags.containmentUnlocked = true;
+
+  const exit = findObject("archive", "archive-to-containment");
+  setup.scene.interact(exit);
+
+  assert.equal(setup.state.world.currentMapId, "containment-chamber");
+  assert.deepEqual(
+    setup.state.getPlayerState("containment-chamber"),
+    exit.targetPlayerState,
+  );
+  assert.equal(setup.ui.dialogue, null);
+  assert.deepEqual(setup.ui.toasts, ["Cámara de Contención"]);
+});
+
+test("containment-to-archive devuelve al Archivo junto a la salida recíproca", () => {
+  const setup = createContainmentWorld();
+  const exit = findObject("containment-chamber", "containment-to-archive");
+
+  setup.scene.interact(exit);
+
+  assert.equal(setup.state.world.currentMapId, "archive");
+  assert.deepEqual(
+    setup.state.getPlayerState("archive"),
+    exit.targetPlayerState,
+  );
+});
+
+test("el panel de consulta cambia a doubt-budget sin modificar el estado", () => {
+  const setup = createContainmentWorld();
+  const panel = findObject("containment-chamber", "containment-budget-panel");
+  const flagsBefore = { ...setup.state.flags };
+  const notebookBefore = structuredClone(setup.state.notebook);
+  const doubtBudgetBefore = setup.state.puzzles.doubtBudget.toSaveData();
+
+  setup.scene.player.x = 192;
+  setup.scene.player.y = 96;
+  setup.scene.player.facing = "up";
+
+  setup.scene.interact(panel);
+
+  assert.deepEqual(setup.scenes.changes, [
+    { name: "doubt-budget", payload: {} },
+  ]);
+  assert.deepEqual(setup.state.getPlayerState("containment-chamber"), {
+    x: 192,
+    y: 96,
+    facing: "up",
+  });
+  assert.equal(setup.ui.dialogue, null);
+  assert.deepEqual(setup.state.flags, flagsBefore);
+  assert.deepEqual(setup.state.notebook, notebookBefore);
+  assert.deepEqual(
+    setup.state.puzzles.doubtBudget.toSaveData(),
+    doubtBudgetBefore,
+  );
+});
+
+test("el panel de consulta arma la foto de puzles resueltos antes de cambiar de escena", () => {
+  const setup = createContainmentWorld();
+
+  setup.scene.interact(
+    findObject("containment-chamber", "containment-budget-panel"),
+  );
+
+  assert.deepEqual(setup.scene.pendingPuzzleSolvedSnapshot, {
+    p2: false,
+    libraryCatalogue: false,
+    archiveCriteria: false,
+    doubtBudget: false,
+  });
+});
+
+test("la primera conversación con el Custodio encadena saludo, protocolo y reacción de Gonzalo", () => {
+  const setup = createContainmentWorld();
+
+  setup.scene.interact(
+    findObject("containment-chamber", "containment-custodian"),
+  );
+
+  const turns = drainDialogue(setup.ui);
+
+  assert.deepEqual(
+    turns.map((turn) => turn.speaker),
+    ["Custodio", "Custodio", PROTAGONIST_NAME],
+  );
+  assert.equal(
+    turns[0].lines[0],
+    "Buenas tardes. Son las diecisiete horas y cuarenta y un minutos. No sé si son buenas; lo he dicho por convención.",
+  );
+  assert.equal(
+    turns[1].lines[0],
+    "Puedo responder preguntas sobre el expediente de contención. No puedo entregártelo. Una conclusión entregada deja de poder comprobarse.",
+  );
+  // El protocolo encadena con las reglas ya escritas por el propio puzle, sin
+  // duplicarlas en la escena.
+  for (const ruleLine of DOUBT_BUDGET_RULE_LINES) {
+    assert.ok(turns[1].lines.includes(ruleLine));
+  }
+  assert.equal(
+    turns[2].lines[0],
+    "Tres preguntas para ocho respuestas. Eso no es un acertijo. Es una factura.",
+  );
+});
+
+test("con la consulta ya empezada, el Custodio no repite el saludo", () => {
+  const setup = createContainmentWorld(
+    new DoubtBudgetState({
+      askedQuestionIds: ["P1"],
+      phase: DOUBT_BUDGET_PHASE.CONSULTING,
+    }),
+  );
+
+  setup.scene.interact(
+    findObject("containment-chamber", "containment-custodian"),
+  );
+
+  const turns = drainDialogue(setup.ui);
+
+  assert.equal(turns.length, 2);
+  assert.equal(
+    turns[0].lines[0].startsWith("Puedo responder preguntas"),
+    true,
+  );
+});
+
+test("tras un intento rechazado, el Custodio explica por qué no puede usar lo que Gonzalo ya sabe", () => {
+  const setup = createContainmentWorld(
+    new DoubtBudgetState({
+      askedQuestionIds: ["P1"],
+      identifiedDossierId: DOUBT_BUDGET_TRUE_DOSSIER_ID,
+      phase: DOUBT_BUDGET_PHASE.FAILED,
+      failureCode: DOUBT_BUDGET_FAILURE_CODE.UNFORCED_IDENTIFICATION,
+      attemptCount: 1,
+    }),
+  );
+
+  setup.scene.interact(
+    findObject("containment-chamber", "containment-custodian"),
+  );
+
+  const turns = drainDialogue(setup.ui);
+
+  assert.deepEqual(
+    turns.map((turn) => turn.speaker),
+    [PROTAGONIST_NAME, "Custodio"],
+  );
+  assert.equal(
+    turns[0].lines[0],
+    "Esa ya sé cómo la vas a contestar. Gastarla sería tirarla.",
+  );
+  assert.ok(
+    turns[1].lines.some((line) =>
+      line.includes("Ése es, exactamente, el motivo por el que ella sigue ahí dentro."),
+    ),
+  );
+  assert.ok(
+    turns[1].lines.some((line) =>
+      line.includes("Antes de que ella llegara llevaba abierto cuatro siglos."),
+    ),
+  );
+});
+
+test("el Custodio nunca dice «elegir» ni habla del futuro de la pareja", () => {
+  const forbidden = /elegi|elegir|eleg[ií]|casar|boda|ma[ñn]ana|futuro|juntos/i;
+
+  for (const doubtBudget of [
+    new DoubtBudgetState(),
+    new DoubtBudgetState({
+      askedQuestionIds: ["P1"],
+      phase: DOUBT_BUDGET_PHASE.CONSULTING,
+    }),
+    new DoubtBudgetState({
+      askedQuestionIds: ["P1"],
+      identifiedDossierId: DOUBT_BUDGET_TRUE_DOSSIER_ID,
+      phase: DOUBT_BUDGET_PHASE.FAILED,
+      failureCode: DOUBT_BUDGET_FAILURE_CODE.UNFORCED_IDENTIFICATION,
+      attemptCount: 1,
+    }),
+    solvedDoubtBudgetState(),
+  ]) {
+    const setup = createContainmentWorld(doubtBudget);
+    setup.scene.interact(
+      findObject("containment-chamber", "containment-custodian"),
+    );
+
+    for (const turn of drainDialogue(setup.ui)) {
+      if (turn.speaker !== "Custodio") {
+        continue;
+      }
+
+      for (const line of turn.lines) {
+        assert.equal(
+          forbidden.test(line),
+          false,
+          `el Custodio no debería decir «${line}»`,
+        );
+      }
+    }
+  }
+});
+
+test("la celosía abre el diálogo de Elena sin cambiar de escena, y cambia de contenido al cerrar el expediente", () => {
+  const pending = createContainmentWorld();
+  pending.scene.interact(
+    findObject("containment-chamber", "containment-lattice"),
+  );
+
+  const pendingTurns = drainDialogue(pending.ui);
+
+  assert.deepEqual(pending.scenes.changes, []);
+  assert.deepEqual(
+    pendingTurns.map((turn) => turn.speaker),
+    [PARTNER_NAME],
+  );
+  assert.equal(
+    pendingTurns[0].lines[0],
+    "Llevo cuatro horas viéndole abrir el mismo expediente. Nunca mira dentro. Sólo comprueba que la forma cuadra.",
+  );
+  assert.ok(
+    pendingTurns[0].lines.at(-1).includes(PROTAGONIST_NAME),
+    "la última réplica interpela a Gonzalo por su nombre real",
+  );
+
+  const solved = createContainmentWorld(solvedDoubtBudgetState());
+  solved.scene.interact(
+    findObject("containment-chamber", "containment-lattice"),
+  );
+
+  const solvedTurns = drainDialogue(solved.ui);
+
+  assert.equal(solvedTurns[0].speaker, "Celosía de contención");
+  assert.notEqual(solvedTurns[0].lines[0], pendingTurns[0].lines[0]);
+});
+
+/*
+ * La revelación se dispara exactamente una vez por resolución real, con el
+ * mismo criterio que la reacción de Max: nunca al reentrar a una consulta ya
+ * cerrada ni al cargar una partida (ninguno de esos caminos arma
+ * pendingPuzzleSolvedSnapshot).
+ */
+test("volver del puzle recién resuelto reproduce la revelación completa, terminando en el reencuentro", () => {
+  const setup = createContainmentWorld();
+  setup.scene.pendingPuzzleSolvedSnapshot =
+    setup.scene.getPuzzleSolvedSnapshot();
+  setup.state.puzzles.doubtBudget = solvedDoubtBudgetState();
+
+  setup.scene.setupCurrentMap();
+
+  const turns = drainDialogue(setup.ui);
+
+  assert.equal(turns[0].speaker, "Custodio");
+  assert.equal(
+    turns[0].lines[0],
+    "Tres preguntas. Ocho expedientes. Una sola conclusión compatible. Acepto la identificación.",
+  );
+  assert.ok(
+    turns.some((turn) =>
+      turn.lines.includes("Nunca había tenido que aplicármelo."),
+    ),
+  );
+  assert.ok(
+    turns.some(
+      (turn) => turn.speaker === PARTNER_NAME && turn.lines.includes("Ábrela."),
+    ),
+  );
+
+  const reunionSpeakers = turns
+    .slice(turns.findIndex((turn) => turn.lines[0].startsWith("La estoy abriendo")) + 1)
+    .map((turn) => turn.speaker);
+
+  assert.deepEqual(reunionSpeakers, [
+    PARTNER_NAME,
+    PROTAGONIST_NAME,
+    PARTNER_NAME,
+  ]);
+  assert.equal(setup.scene.pendingPuzzleSolvedSnapshot, null);
+});
+
+test("reentrar a una consulta ya cerrada no repite la revelación", () => {
+  const setup = createContainmentWorld(solvedDoubtBudgetState());
+  setup.scene.pendingPuzzleSolvedSnapshot =
+    setup.scene.getPuzzleSolvedSnapshot();
+
+  setup.scene.setupCurrentMap();
+
+  assert.equal(setup.ui.dialogue, null);
+});
+
+test("cargar una partida con la consulta ya cerrada no dispara la revelación", () => {
+  const setup = createContainmentWorld(solvedDoubtBudgetState());
+
+  setup.scene.enter();
+
+  assert.equal(setup.ui.dialogue, null);
+});
+
+test("el reencuentro no adelanta nada del epílogo ya escrito", () => {
+  const setup = createContainmentWorld();
+  setup.scene.pendingPuzzleSolvedSnapshot =
+    setup.scene.getPuzzleSolvedSnapshot();
+  setup.state.puzzles.doubtBudget = solvedDoubtBudgetState();
+  setup.scene.setupCurrentMap();
+
+  const spoken = drainDialogue(setup.ui)
+    .flatMap((turn) => turn.lines)
+    .join(" ");
+
+  for (const forbidden of ["teorema", "elegirlo", "comprobar antes de mañana"]) {
+    assert.equal(
+      spoken.includes(forbidden),
+      false,
+      `la revelación no debe adelantar «${forbidden}» del epílogo`,
+    );
+  }
+});
+
+test("el HUD tiene etiqueta para el objetivo de la Cámara de Contención", () => {
+  const setup = createContainmentWorld();
+  setup.state.objectiveId = "enter-containment-chamber";
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  assert.ok(
+    context.texts.some((text) =>
+      text.includes("Baja a la Cámara de Contención"),
+    ),
+    "el objetivo nuevo no debe renderizarse como identificador crudo",
+  );
+});
+
+test("renderNpc dibuja al Custodio con su propio pixel-art, no con el render genérico de NPC", () => {
+  const setup = createContainmentWorld();
+  const context = new FakeCanvasContext();
+
+  setup.scene.render(context);
+
+  /*
+   * Se cuenta la piedra base del fuste ("s") dentro del bounding box real
+   * del Custodio: debe haber exactamente un fillRect de 1x1 por cada
+   * símbolo "s" de su matriz de reposo, ni uno más. El recuento se acota a
+   * su rectángulo porque ese mismo gris de piedra lo comparte a propósito
+   * el panel de consulta de la misma sala (ver la lista cerrada de
+   * coincidencias permitidas en tests/content/CustodianPixelArt.test.js);
+   * fuera de la Cámara sigue sin aparecer en ningún módulo.
+   */
+  const custodian = findObject("containment-chamber", "containment-custodian");
+  const stoneRects = context.fillRects.filter(
+    (rect) =>
+      rect.fillStyle === CUSTODIAN_PALETTE.s &&
+      rect.x >= custodian.x &&
+      rect.x < custodian.x + custodian.width &&
+      rect.y >= custodian.y &&
+      rect.y < custodian.y + custodian.height,
+  );
+
+  assert.equal(
+    stoneRects.length,
+    countSymbolInPixels(CUSTODIAN_IDLE_PIXELS, "s"),
+  );
+
+  for (const rect of stoneRects) {
+    assert.deepEqual({ width: rect.width, height: rect.height }, {
+      width: 1,
+      height: 1,
+    });
+  }
+
+  /*
+   * Y no debe aparecer el rectángulo firma del render genérico de NPC
+   * (drawGenericNpcOutline: 14x8 en NPC_SILHOUETTE): el Custodio no puede
+   * caer en esa rama. No basta con mirar colores sueltos -- NPC_HEAD es
+   * SKIN_TONE, que Gonzalo también usa y sí se dibuja en este mismo frame.
+   */
+  assert.equal(
+    context.fillRects.some(
+      (rect) =>
+        rect.fillStyle === NPC_SILHOUETTE &&
+        rect.width === 14 &&
+        rect.height === 8,
+    ),
+    false,
+    "el Custodio no debe dibujarse con el render genérico de NPC",
+  );
+});
+
+function solvedDoubtBudgetState() {
+  return new DoubtBudgetState({
+    askedQuestionIds: ["P1", "P2", "P4"],
+    identifiedDossierId: DOUBT_BUDGET_TRUE_DOSSIER_ID,
+    phase: DOUBT_BUDGET_PHASE.SOLVED,
+    attemptCount: 1,
+  });
+}
+
 function createScene(storage) {
   const input = new FakeInput();
   const scenes = new FakeScenes();
@@ -4650,6 +5082,50 @@ function createWorldAt(
   scene.enter();
 
   return { input, scenes, state, ui, audio, scene };
+}
+
+/*
+ * Mundo situado en la Cámara de Contención con la investigación ya cerrada
+ * (que es lo único que permite llegar allí) y la consulta en el estado que
+ * pida cada prueba.
+ */
+function createContainmentWorld(doubtBudget = new DoubtBudgetState()) {
+  const input = new FakeInput();
+  const scenes = new FakeScenes();
+  const state = new GameState();
+  const ui = new FakeUi();
+  const audio = new FakeAudioService();
+
+  state.flags.investigationComplete = true;
+  state.flags.containmentUnlocked = true;
+  state.puzzles.doubtBudget = doubtBudget;
+  state.changeMap("containment-chamber");
+
+  const scene = new WorldScene({
+    scenes,
+    input,
+    storage: new FakeStorage(),
+    state,
+    ui,
+    audio,
+  });
+  scene.enter();
+
+  return { input, scenes, state, ui, audio, scene };
+}
+
+function drainDialogue(ui) {
+  const turns = [];
+
+  while (ui.dialogue) {
+    turns.push({
+      speaker: ui.dialogue.speaker,
+      lines: [...ui.dialogue.lines],
+    });
+    ui.dialogue.onComplete();
+  }
+
+  return turns;
 }
 
 function findObject(mapId, objectId) {

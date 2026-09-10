@@ -22,7 +22,7 @@ import {
 import {
   ARCHIVE_FINAL_EVIDENCE_ENTRY,
   EPILOGUE_COMBINATION_CLUE_ENTRY,
-  START_EPILOGUE_OBJECTIVE_ID,
+  ENTER_CONTAINMENT_OBJECTIVE_ID,
 } from "../../src/progression/ArchiveCriteriaProgression.js";
 import { PUZZLE_SUCCESS_SFX_PATH } from "../../src/content/sfxAudioConfig.js";
 import { GameState } from "../../src/state/GameState.js";
@@ -270,8 +270,13 @@ test("resolver el criterio aplica la progresión y muestra el toast una sola vez
     ARCHIVE_CRITERIA_PHASE.SOLVED,
   );
   assert.equal(state.flags.investigationComplete, true);
-  assert.equal(state.flags.epilogueUnlocked, true);
-  assert.equal(state.objectiveId, START_EPILOGUE_OBJECTIVE_ID);
+  assert.equal(state.flags.containmentUnlocked, true);
+  assert.equal(
+    state.flags.epilogueUnlocked,
+    false,
+    "desde v1.3 el epílogo lo desbloquea la consulta de contención, no el criterio del Archivo",
+  );
+  assert.equal(state.objectiveId, ENTER_CONTAINMENT_OBJECTIVE_ID);
   assert.equal(state.notebook.length, 2);
   assert.equal(state.notebook[0].id, ARCHIVE_FINAL_EVIDENCE_ENTRY.id);
   assert.equal(state.notebook[1].id, EPILOGUE_COMBINATION_CLUE_ENTRY.id);
@@ -331,6 +336,7 @@ test("confirmar un criterio ya resuelto no dispara el SFX una segunda vez", () =
 test("construir el estado ya resuelto vía GameState.restore() y solo entrar en la escena no dispara ningún SFX", () => {
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.puzzles.archiveCriteria = solvedState().toSaveData();
 
@@ -354,13 +360,13 @@ test("construir el estado ya resuelto vía GameState.restore() y solo entrar en 
   assert.deepEqual(audio.playSfxCalls, []);
 });
 
-test("si epilogueUnlocked ya era true, repara el cuaderno sin tocar el objetivo ni mostrar toast", () => {
+test("si containmentUnlocked ya era true, repara el cuaderno sin tocar el objetivo ni mostrar toast", () => {
   const fixture = new ArchiveCriteriaState({
     verdicts: { ...ARCHIVE_CRITERIA_SOLUTION },
     phase: ARCHIVE_CRITERIA_PHASE.CLASSIFYING,
   });
   const { scene, input, state, ui } = createScene(fixture);
-  state.flags.epilogueUnlocked = true;
+  state.flags.containmentUnlocked = true;
   state.objectiveId = "some-later-objective";
   scene.enter();
 

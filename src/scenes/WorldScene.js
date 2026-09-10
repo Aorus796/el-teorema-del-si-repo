@@ -176,6 +176,34 @@ import {
   ARCHIVE_DESK_TRANSPARENT,
 } from "../content/archiveDeskPixelArt.js";
 import {
+  CONTAINMENT_SHELF_PALETTE,
+  CONTAINMENT_SHELF_PIXEL_HEIGHT,
+  CONTAINMENT_SHELF_PIXEL_WIDTH,
+  CONTAINMENT_SHELF_PIXELS,
+  CONTAINMENT_SHELF_TRANSPARENT,
+} from "../content/containmentShelfPixelArt.js";
+import {
+  CONTAINMENT_LATTICE_PALETTE,
+  CONTAINMENT_LATTICE_PIXEL_HEIGHT,
+  CONTAINMENT_LATTICE_PIXEL_WIDTH,
+  CONTAINMENT_LATTICE_PIXELS,
+  CONTAINMENT_LATTICE_TRANSPARENT,
+} from "../content/containmentLatticePixelArt.js";
+import {
+  CONTAINMENT_WELL_PALETTE,
+  CONTAINMENT_WELL_PIXEL_HEIGHT,
+  CONTAINMENT_WELL_PIXEL_WIDTH,
+  CONTAINMENT_WELL_PIXELS,
+  CONTAINMENT_WELL_TRANSPARENT,
+} from "../content/containmentWellPixelArt.js";
+import {
+  CONTAINMENT_BUDGET_PANEL_PALETTE,
+  CONTAINMENT_BUDGET_PANEL_PIXEL_HEIGHT,
+  CONTAINMENT_BUDGET_PANEL_PIXEL_WIDTH,
+  CONTAINMENT_BUDGET_PANEL_PIXELS,
+  CONTAINMENT_BUDGET_PANEL_TRANSPARENT,
+} from "../content/containmentBudgetPanelPixelArt.js";
+import {
   EPILOGUE_GIFT_MECHANISM_PALETTE,
   EPILOGUE_GIFT_MECHANISM_PIXEL_HEIGHT,
   EPILOGUE_GIFT_MECHANISM_PIXEL_WIDTH,
@@ -199,7 +227,14 @@ import {
 import {
   ARCHIVE_CRITERIA_PHASE,
 } from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
+import {
+  DOUBT_BUDGET_PHASE,
+} from "../puzzles/doubt-budget/DoubtBudgetState.js";
+import {
+  DOUBT_BUDGET_RULE_LINES,
+} from "../puzzles/doubt-budget/DoubtBudgetData.js";
 import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
+import { renderCustodian as renderCustodianSprite } from "../render/CustodianRenderer.js";
 import { renderCorolaria as renderCorolariaSprite } from "../render/CorolariaRenderer.js";
 import { renderBrideFather as renderBrideFatherSprite } from "../render/BrideFatherRenderer.js";
 import { renderSilogio as renderSilogioSprite } from "../render/SilogioRenderer.js";
@@ -256,6 +291,145 @@ const BRIDE_EPILOGUE_DIALOGUE_TURNS = [
   },
 ];
 
+const CUSTODIAN_SPEAKER = "Custodio";
+
+/*
+ * Diálogo de la Cámara de Contención (v1.3). Texto narrativo congelado,
+ * aprobado en las rondas de diseño previas: no se reescribe al integrarlo.
+ *
+ * Regla dura del personaje: el Custodio nunca dice «elegir» ni habla del
+ * futuro de la pareja. Ese registro pertenece en exclusiva al epílogo ya
+ * escrito (BRIDE_EPILOGUE_DIALOGUE_TURNS, más abajo), que esta tarea no
+ * toca.
+ *
+ * Cuál de los tres bloques se reproduce no depende de ninguna bandera
+ * nueva de guardado: se deriva del estado real de la consulta
+ * (DoubtBudgetState), así que no hay nada más que persistir y el jugador
+ * puede volver a oír el bloque que le corresponde tantas veces como quiera.
+ */
+const CUSTODIAN_FIRST_MEETING_TURNS = [
+  {
+    speaker: CUSTODIAN_SPEAKER,
+    lines: [
+      "Buenas tardes. Son las diecisiete horas y cuarenta y un minutos. No sé si son buenas; lo he dicho por convención.",
+      "Consta que has entrado. Consta que no te lo he impedido. Ambas cosas están registradas y ninguna de las dos es un permiso.",
+    ],
+  },
+];
+
+const CUSTODIAN_PROTOCOL_TURNS = [
+  {
+    speaker: CUSTODIAN_SPEAKER,
+    lines: [
+      "Puedo responder preguntas sobre el expediente de contención. No puedo entregártelo. Una conclusión entregada deja de poder comprobarse.",
+      ...DOUBT_BUDGET_RULE_LINES,
+    ],
+  },
+  {
+    speaker: PROTAGONIST_NAME,
+    lines: [
+      "Tres preguntas para ocho respuestas. Eso no es un acertijo. Es una factura.",
+    ],
+  },
+];
+
+const CUSTODIAN_AFTER_FAILURE_TURNS = [
+  {
+    speaker: PROTAGONIST_NAME,
+    lines: [
+      "Esa ya sé cómo la vas a contestar. Gastarla sería tirarla.",
+    ],
+  },
+  {
+    speaker: CUSTODIAN_SPEAKER,
+    lines: [
+      "Sé que lo sabes. No puedo usar lo que tú sabes. Ése es, exactamente, el motivo por el que ella sigue ahí dentro.",
+      "No la retengo porque sea peligrosa. La retengo porque no he conseguido cerrar el expediente. Cuando se cierre, saldrá.",
+      "El expediente lleva abierto cuatro horas. Antes de que ella llegara llevaba abierto cuatro siglos. La diferencia es que entonces no había nadie dentro.",
+    ],
+  },
+];
+
+const CUSTODIAN_CLOSED_TURNS = [
+  {
+    speaker: CUSTODIAN_SPEAKER,
+    lines: [
+      "El expediente está cerrado. No queda ninguna pregunta que pueda cobrarte.",
+    ],
+  },
+];
+
+const CONTAINMENT_LATTICE_TURNS = [
+  {
+    speaker: PARTNER_NAME,
+    lines: [
+      "Llevo cuatro horas viéndole abrir el mismo expediente. Nunca mira dentro. Sólo comprueba que la forma cuadra.",
+      "Yo le hice nueve preguntas. Las nueve tenían respuesta. Ninguna obligaba a nada. Aquí sólo se acepta lo que obliga.",
+      `No me saques con un argumento bonito, ${PROTAGONIST_NAME}. Sácame con uno que él no pueda rechazar.`,
+    ],
+  },
+];
+
+const CONTAINMENT_LATTICE_OPEN_TURNS = [
+  {
+    speaker: "Celosía de contención",
+    lines: ["La celosía ha quedado abierta. Ya no hay nadie detrás."],
+  },
+];
+
+/*
+ * Revelación al cerrar el expediente. Se dispara desde setupCurrentMap()
+ * al volver de la escena "doubt-budget" con la consulta recién resuelta
+ * (misma detección de "resolución real" que ya usa la reacción de Max, ver
+ * getPuzzleSolvedSnapshot()), nunca al reentrar a una consulta ya cerrada
+ * ni al cargar una partida.
+ *
+ * Las tres últimas réplicas son el reencuentro, deliberadamente breve y
+ * contenido: sacan a los dos personajes de la Cámara sin adelantar nada de
+ * lo que el epílogo ya dice.
+ */
+const CONTAINMENT_REVELATION_TURNS = [
+  {
+    speaker: CUSTODIAN_SPEAKER,
+    lines: [
+      "Tres preguntas. Ocho expedientes. Una sola conclusión compatible. Acepto la identificación.",
+      "Asiento I: sostenido. Asiento II: presupuesto. Asiento III: presupuesto.",
+      "Dos de los tres asientos que sostienen la retención no se sostienen.",
+    ],
+  },
+  {
+    speaker: CUSTODIAN_SPEAKER,
+    lines: [
+      "El protocolo exige cerrar sin conclusión todo expediente cuyo fundamento sea un presupuesto.",
+      "Nunca había tenido que aplicármelo.",
+    ],
+  },
+  {
+    speaker: PARTNER_NAME,
+    lines: ["Ábrela."],
+  },
+  {
+    speaker: CUSTODIAN_SPEAKER,
+    lines: [
+      "La estoy abriendo. Tardaré ciento doce segundos. No es dramatismo. Es el mecanismo.",
+    ],
+  },
+  {
+    speaker: PARTNER_NAME,
+    lines: ["Ciento doce segundos. Los he contado."],
+  },
+  {
+    speaker: PROTAGONIST_NAME,
+    lines: ["Yo he contado cuatro horas."],
+  },
+  {
+    speaker: PARTNER_NAME,
+    lines: [
+      "Vamos fuera. Aquí dentro no se puede decir nada que no conste.",
+    ],
+  },
+];
+
 const OBJECTIVE_LABELS = {
   "review-preparations-board": "Revisa el tablón de preparativos",
   "speak-to-corolaria": "Habla con la alcaldesa Corolaria",
@@ -265,6 +439,8 @@ const OBJECTIVE_LABELS = {
   "go-to-library": "Dirígete a la Biblioteca del Margen",
   "inspect-archive-criteria-table":
     "Entra en el Archivo y examina la mesa de criterios.",
+  "enter-containment-chamber":
+    "Baja a la Cámara de Contención y consulta al Custodio.",
   "start-epilogue": "Regresa al lugar donde comenzó la demostración.",
   "epilogue-meet-bride": `Acércate a ${PARTNER_NAME} en la Plaza.`,
   "epilogue-completed": "La demostración ha terminado.",
@@ -377,6 +553,8 @@ export class WorldScene {
      * puzle ya resuelto ni al cargar una partida (que nunca arma este
      * campo).
      */
+    let hasNewlySolvedDoubtBudget = false;
+
     if (this.pendingPuzzleSolvedSnapshot !== null) {
       const currentSnapshot = this.getPuzzleSolvedSnapshot();
       const hasNewlySolvedPuzzle = Object.keys(
@@ -387,6 +565,10 @@ export class WorldScene {
           currentSnapshot[puzzleId],
       );
 
+      hasNewlySolvedDoubtBudget =
+        !this.pendingPuzzleSolvedSnapshot.doubtBudget &&
+        currentSnapshot.doubtBudget;
+
       if (hasNewlySolvedPuzzle) {
         this.maxCompanion?.triggerReaction();
       }
@@ -394,6 +576,20 @@ export class WorldScene {
 
     this.pendingPuzzleSolvedSnapshot = null;
     this.nearbyObject = null;
+
+    /*
+     * La revelación de la Cámara de Contención se dispara exactamente una
+     * vez por resolución real de la consulta, con el mismo criterio que la
+     * reacción de Max: nunca al reentrar a una consulta ya cerrada ni al
+     * cargar una partida (esos caminos no arman
+     * pendingPuzzleSolvedSnapshot). Va después de limpiar el snapshot para
+     * que el diálogo no dependa de un campo que ya no debe existir, y
+     * después de ui.closeAll() de enter(), que se ejecuta antes de esta
+     * función.
+     */
+    if (hasNewlySolvedDoubtBudget) {
+      this.playDialogueTurns(CONTAINMENT_REVELATION_TURNS, 0);
+    }
   }
 
   getPuzzleSolvedSnapshot() {
@@ -405,6 +601,8 @@ export class WorldScene {
       archiveCriteria:
         this.state.puzzles.archiveCriteria.phase ===
         ARCHIVE_CRITERIA_PHASE.SOLVED,
+      doubtBudget:
+        this.state.puzzles.doubtBudget.phase === DOUBT_BUDGET_PHASE.SOLVED,
     };
   }
 
@@ -653,6 +851,21 @@ export class WorldScene {
       return;
     }
 
+    if (object.id === "containment-budget-panel") {
+      this.interactWithCustodianConsole();
+      return;
+    }
+
+    if (object.id === "containment-custodian") {
+      this.interactWithCustodian();
+      return;
+    }
+
+    if (object.id === "containment-lattice") {
+      this.interactWithContainmentLattice();
+      return;
+    }
+
     if (object.id === "epilogue-gift-mechanism") {
       this.interactWithEpilogueGiftMechanism();
       return;
@@ -833,6 +1046,20 @@ export class WorldScene {
       return;
     }
 
+    if (
+      object.id === "archive-to-containment" &&
+      !this.state.flags.containmentUnlocked
+    ) {
+      this.ui.beginDialogue({
+        speaker: "Acceso a la Cámara de Contención",
+        lines: [
+          "Una escalera desciende hacia una puerta sin tirador.",
+          "Nada de lo que has leído todavía justifica bajar por ahí.",
+        ],
+      });
+      return;
+    }
+
     this.syncPlayerState();
     this.state.changeMap(
       object.targetMapId,
@@ -853,6 +1080,91 @@ export class WorldScene {
     this.syncPlayerState();
     this.pendingPuzzleSolvedSnapshot = this.getPuzzleSolvedSnapshot();
     this.scenes.change("archive-criteria");
+  }
+
+  /*
+   * Abre la consulta de contención. Mismo patrón exacto que
+   * interactWithArchiveCriteriaTable(): sincroniza la posición, toma la
+   * foto del estado resuelto de los puzles (para poder distinguir después
+   * una resolución real de una reentrada) y cambia de escena.
+   */
+  interactWithCustodianConsole() {
+    this.syncPlayerState();
+    this.pendingPuzzleSolvedSnapshot = this.getPuzzleSolvedSnapshot();
+    this.scenes.change("doubt-budget");
+  }
+
+  /*
+   * Qué dice el Custodio se decide solo con el estado real de la consulta,
+   * sin ninguna bandera nueva de guardado:
+   *  - consulta cerrada: una única línea de cierre;
+   *  - con al menos un intento rechazado: el bloque en el que explica por
+   *    qué no puede usar lo que el visitante ya sabe;
+   *  - consulta intacta (ready, sin preguntas ni intentos): la primera
+   *    aparición completa, encadenada con el protocolo;
+   *  - consulta ya empezada: solo el protocolo, sin repetir el saludo.
+   */
+  interactWithCustodian() {
+    const doubtBudget = this.state.puzzles.doubtBudget;
+
+    if (doubtBudget.phase === DOUBT_BUDGET_PHASE.SOLVED) {
+      this.playDialogueTurns(CUSTODIAN_CLOSED_TURNS, 0);
+      return;
+    }
+
+    if (doubtBudget.attemptCount > 0) {
+      this.playDialogueTurns(CUSTODIAN_AFTER_FAILURE_TURNS, 0);
+      return;
+    }
+
+    const isFirstMeeting =
+      doubtBudget.phase === DOUBT_BUDGET_PHASE.READY &&
+      doubtBudget.askedQuestionIds.length === 0;
+
+    this.playDialogueTurns(
+      isFirstMeeting
+        ? [...CUSTODIAN_FIRST_MEETING_TURNS, ...CUSTODIAN_PROTOCOL_TURNS]
+        : CUSTODIAN_PROTOCOL_TURNS,
+      0,
+    );
+  }
+
+  interactWithContainmentLattice() {
+    const isSolved =
+      this.state.puzzles.doubtBudget.phase === DOUBT_BUDGET_PHASE.SOLVED;
+
+    this.playDialogueTurns(
+      isSolved ? CONTAINMENT_LATTICE_OPEN_TURNS : CONTAINMENT_LATTICE_TURNS,
+      0,
+    );
+  }
+
+  /*
+   * Encadena una lista de réplicas con distintos hablantes en diálogos
+   * consecutivos, mismo mecanismo que playBrideDialogueTurn() usa para el
+   * epílogo. Se generaliza aquí en vez de reutilizar aquella función para
+   * no tocar ni una línea del recorrido del epílogo ya publicado.
+   */
+  playDialogueTurns(turns, turnIndex) {
+    const turn = turns[turnIndex];
+
+    if (!turn) {
+      return;
+    }
+
+    const isLastTurn = turnIndex === turns.length - 1;
+
+    this.ui.beginDialogue({
+      speaker: turn.speaker,
+      lines: turn.lines,
+      onComplete: () => {
+        if (isLastTurn) {
+          return;
+        }
+
+        this.playDialogueTurns(turns, turnIndex + 1);
+      },
+    });
   }
 
   interactWithEpilogueGiftMechanism() {
@@ -1511,6 +1823,26 @@ function renderForegroundDecorations(context, camera, map) {
 
     if (decoration.type === "archive-consultation-table") {
       drawArchiveConsultationTable(context, x, y);
+      continue;
+    }
+
+    // "sealed-dossier-rack"/"containment-lattice"/"containment-well":
+    // mobiliario exclusivo de containment-chamber (v1.3). Ninguno comparte
+    // rama con los tipos de archive a propósito -- el lenguaje visual de la
+    // Cámara es deliberadamente el contrario del Archivo (ver
+    // containmentShelfPixelArt.js).
+    if (decoration.type === "sealed-dossier-rack") {
+      drawSealedDossierRack(context, x, y);
+      continue;
+    }
+
+    if (decoration.type === "containment-lattice") {
+      drawContainmentLattice(context, x, y, decoration.height);
+      continue;
+    }
+
+    if (decoration.type === "containment-well") {
+      drawContainmentWell(context, x, y);
       continue;
     }
 
@@ -2488,6 +2820,149 @@ function drawArchiveDesk(context, x, y, width, height) {
 }
 
 /*
+ * Props de containment-chamber (v1.3). Mismo patrón
+ * createIndexedPixelSprite()+drawCachedProp() que el resto de props
+ * indexados: se rasterizan una única vez por tipo y se reutilizan con
+ * drawImage() en cada frame posterior.
+ */
+const drawSealedDossierRackIndexedSprite = createIndexedPixelSprite({
+  width: CONTAINMENT_SHELF_PIXEL_WIDTH,
+  height: CONTAINMENT_SHELF_PIXEL_HEIGHT,
+  palette: CONTAINMENT_SHELF_PALETTE,
+  pixels: CONTAINMENT_SHELF_PIXELS,
+  transparent: CONTAINMENT_SHELF_TRANSPARENT,
+});
+
+// Único tamaño real en containment-chamber (64x32, las dos instancias del
+// oeste comparten esas dimensiones exactas), así que basta un sprite
+// cacheado -- mismo criterio que drawArchiveShelf().
+function drawSealedDossierRack(context, x, y) {
+  drawCachedProp(
+    context,
+    "sealed-dossier-rack-indexed",
+    x,
+    y,
+    CONTAINMENT_SHELF_PIXEL_WIDTH,
+    CONTAINMENT_SHELF_PIXEL_HEIGHT,
+    drawSealedDossierRackIndexedSprite,
+  );
+}
+
+const drawContainmentLatticeIndexedSprite = createIndexedPixelSprite({
+  width: CONTAINMENT_LATTICE_PIXEL_WIDTH,
+  height: CONTAINMENT_LATTICE_PIXEL_HEIGHT,
+  palette: CONTAINMENT_LATTICE_PALETTE,
+  pixels: CONTAINMENT_LATTICE_PIXELS,
+  transparent: CONTAINMENT_LATTICE_TRANSPARENT,
+});
+
+/*
+ * Única decoración del juego cuyo sprite NO cubre por sí solo su footprint
+ * declarado: la celosía mide 16x224 y el patrón 16x32, así que se repite
+ * verticalmente siete veces (ver containmentLatticePixelArt.js, cuyo patrón
+ * es tileable por diseño). Se repite el MISMO canvas cacheado, igual que la
+ * decoración "dock" de seven-bridges-walk repite tablones horizontalmente:
+ * un solo sprite rasterizado, varias llamadas a drawImage().
+ */
+function drawContainmentLattice(context, x, y, height) {
+  for (
+    let offsetY = 0;
+    offsetY < height;
+    offsetY += CONTAINMENT_LATTICE_PIXEL_HEIGHT
+  ) {
+    drawCachedProp(
+      context,
+      "containment-lattice-indexed",
+      x,
+      y + offsetY,
+      CONTAINMENT_LATTICE_PIXEL_WIDTH,
+      CONTAINMENT_LATTICE_PIXEL_HEIGHT,
+      drawContainmentLatticeIndexedSprite,
+    );
+  }
+}
+
+const drawContainmentWellIndexedSprite = createIndexedPixelSprite({
+  width: CONTAINMENT_WELL_PIXEL_WIDTH,
+  height: CONTAINMENT_WELL_PIXEL_HEIGHT,
+  palette: CONTAINMENT_WELL_PALETTE,
+  pixels: CONTAINMENT_WELL_PIXELS,
+  transparent: CONTAINMENT_WELL_TRANSPARENT,
+});
+
+// Resplandor turquesa del pozo: dos rectángulos translúcidos concéntricos
+// dibujados directamente sobre el contexto (no forman parte del sprite
+// cacheado, que mide exactamente 32x32 y no puede desbordar su
+// solidRegion). Estáticos y deterministas: sin animación ni estado.
+const CONTAINMENT_WELL_GLOW_STEPS = [
+  { inset: -12, color: "rgb(87 201 194 / 10%)" },
+  { inset: -6, color: "rgb(87 201 194 / 16%)" },
+];
+
+function drawContainmentWell(context, x, y) {
+  for (const step of CONTAINMENT_WELL_GLOW_STEPS) {
+    context.fillStyle = step.color;
+    context.fillRect(
+      x + step.inset,
+      y + step.inset,
+      CONTAINMENT_WELL_PIXEL_WIDTH - step.inset * 2,
+      CONTAINMENT_WELL_PIXEL_HEIGHT - step.inset * 2,
+    );
+  }
+
+  drawCachedProp(
+    context,
+    "containment-well-indexed",
+    x,
+    y,
+    CONTAINMENT_WELL_PIXEL_WIDTH,
+    CONTAINMENT_WELL_PIXEL_HEIGHT,
+    drawContainmentWellIndexedSprite,
+  );
+}
+
+/*
+ * "containment-budget-panel": tercer tratamiento visual por ID de este
+ * archivo, mismo patrón exacto que "archive-criteria-table" y
+ * "epilogue-gift-mechanism" (ver el caso especial dedicado en
+ * renderObjects(), antes de la rama genérica "table"). Sin él, el panel
+ * caía en esa rama genérica y se pintaba con madera cálida y franja dorada
+ * -- la paleta del mobiliario del Archivo y la Biblioteca dentro de una
+ * sala deliberadamente de piedra, metal y turquesa (ver
+ * containmentBudgetPanelPixelArt.js).
+ */
+const drawContainmentBudgetPanelIndexedSprite = createIndexedPixelSprite({
+  width: CONTAINMENT_BUDGET_PANEL_PIXEL_WIDTH,
+  height: CONTAINMENT_BUDGET_PANEL_PIXEL_HEIGHT,
+  palette: CONTAINMENT_BUDGET_PANEL_PALETTE,
+  pixels: CONTAINMENT_BUDGET_PANEL_PIXELS,
+  transparent: CONTAINMENT_BUDGET_PANEL_TRANSPARENT,
+});
+
+/*
+ * El sprite (32x32) es 8px más alto que el hitbox interactivo del objeto
+ * (32x24) y cubre exactamente su `solidRegion` de 2x2 tiles, así que se
+ * ancla al borde SUPERIOR del hitbox y desborda esos 8px hacia abajo. Es el
+ * mismo desajuste hitbox/solidRegion que archive-desk, pero aquí no hace
+ * falta ninguna constante de compensación: el desborde ES la diferencia
+ * entre ambos rectángulos. No toca colisión ni interacción, y tampoco el
+ * culling -- containment-chamber (384x256) entra entera en el viewport, así
+ * que la cámara nunca se mueve de (0,0) y objectRenderBounds() no necesita
+ * excepción para este objeto.
+ */
+function drawContainmentBudgetPanel(context, x, y) {
+  drawCachedProp(
+    context,
+    "containment-budget-panel-indexed",
+    x,
+    y,
+    CONTAINMENT_BUDGET_PANEL_PIXEL_WIDTH,
+    CONTAINMENT_BUDGET_PANEL_PIXEL_HEIGHT,
+    drawContainmentBudgetPanelIndexedSprite,
+  );
+}
+
+/*
  * "epilogue-gift-mechanism": segundo tratamiento visual por ID de este
  * archivo (Plaza del Axioma -- Visual Polish, v1.2), mismo patrón exacto
  * que "archive-criteria-table". Antes caía en la rama genérica compartida
@@ -2598,6 +3073,19 @@ function renderObjects(context, camera, objects, state) {
       continue;
     }
 
+    /*
+     * "lattice" (containment-chamber): objeto puramente dialogante, sin
+     * representación propia. Lo que el jugador ve es la decoración
+     * "containment-lattice-screen" de la columna siguiente, que sí dibuja
+     * la celosía completa; este objeto solo aporta el hitbox de
+     * interacción por delante de ella. La rama existe explícitamente en vez
+     * de dejarlo caer al final de la función para que quede claro que no
+     * dibujar es la intención, no un olvido.
+     */
+    if (object.type === "lattice") {
+      continue;
+    }
+
     if (object.type === "puzzle") {
       context.fillStyle = "#4d3628";
       context.fillRect(x + 8, y + 10, 4, object.height);
@@ -2627,12 +3115,13 @@ function renderObjects(context, camera, objects, state) {
       continue;
     }
 
-    // Excepciones por-id (no por type): cada uno de los dos objetos de
+    // Excepciones por-id (no por type): cada uno de los tres objetos de
     // type "table" del juego recibe su propio tratamiento visual dedicado
-    // -- "archive-criteria-table" (Archivo -- Visual Polish, v1.1) y
-    // "epilogue-gift-mechanism" (Plaza del Axioma -- Visual Polish, v1.2).
-    // Ambos casos deben ir ANTES de la rama genérica de abajo para
-    // interceptar su id.
+    // -- "archive-criteria-table" (Archivo -- Visual Polish, v1.1),
+    // "epilogue-gift-mechanism" (Plaza del Axioma -- Visual Polish, v1.2) y
+    // "containment-budget-panel" (Cámara de Contención, v1.3). Los tres
+    // casos deben ir ANTES de la rama genérica de abajo para interceptar su
+    // id.
     if (object.id === "archive-criteria-table") {
       drawArchiveDesk(context, x, y, object.width, object.height);
       continue;
@@ -2643,12 +3132,18 @@ function renderObjects(context, camera, objects, state) {
       continue;
     }
 
-    // Rama genérica de type "table": desde el visual polish de
-    // epilogue-gift-mechanism (v1.2) ya no la alcanza ningún objeto del
-    // juego -- los dos únicos objetos de este tipo se interceptan por id
-    // justo arriba. Se conserva como respaldo del contrato de tipos de
-    // worldMaps.js (un objeto de type "table" nuevo se dibujaría, no
-    // desaparecería) mientras "table" siga siendo un type válido.
+    if (object.id === "containment-budget-panel") {
+      drawContainmentBudgetPanel(context, x, y);
+      continue;
+    }
+
+    // Rama genérica de type "table": no la alcanza ningún objeto del juego
+    // -- los tres objetos de este tipo se interceptan por id justo arriba.
+    // Se conserva como respaldo del contrato de tipos de worldMaps.js (un
+    // objeto de type "table" nuevo se dibujaría, no desaparecería) mientras
+    // "table" siga siendo un type válido. Su paleta cálida de madera y oro
+    // es, precisamente, la razón por la que cada sala con identidad visual
+    // propia acaba necesitando su excepción.
     if (object.type === "table") {
       context.fillStyle = "#553b2d";
       context.fillRect(x, y + 4, object.width, object.height - 4);
@@ -2950,6 +3445,11 @@ function renderNpc(context, x, y, object) {
     return;
   }
 
+  if (object.id === "containment-custodian") {
+    renderCustodian(context, x, y);
+    return;
+  }
+
   const palette = NAMED_NPC_PALETTES[object.id] ?? DEFAULT_NPC_PALETTE;
 
   drawGenericNpcOutline(context, x, y);
@@ -3003,6 +3503,20 @@ function renderBrideFather(context, x, y) {
 // renderBrideFather() justo arriba).
 function renderSilogio(context, x, y) {
   renderSilogioSprite(context, x, y, "down");
+}
+
+/*
+ * Custodio (v1.3): a diferencia de los cuatro anteriores, no se le pide un
+ * facing porque no lo tiene -- no camina, se desliza por una guía fija (ver
+ * CustodianRenderer.js). Lo que sí acepta el renderer es una variante de
+ * estado de su ranura, y aquí se pide siempre la de reposo: la variante
+ * "contradiction" pertenece al momento en que aplica su propio protocolo,
+ * que se narra en diálogo y no en el mundo explorable. El hitbox declarado
+ * del NPC (20x32, ver worldMaps.js) coincide al píxel con el sprite, así
+ * que no hay desborde visual que compensar.
+ */
+function renderCustodian(context, x, y) {
+  renderCustodianSprite(context, x, y);
 }
 
 function renderHud(context, map, objectiveId) {

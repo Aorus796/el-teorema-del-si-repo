@@ -2,21 +2,30 @@
 
 Aventura narrativa de puzles en un pueblo llamado Axioma, diseñada como
 regalo de boda. El jugador explora la Plaza del Axioma, el Paseo de los
-Siete Puentes, la Biblioteca del Margen y un Archivo compacto,
-investigando la desaparición de la novia y resolviendo tres puzles
-principales que culminan en un epílogo con la combinación de un candado
-real.
+Siete Puentes, la Biblioteca del Margen, un Archivo compacto y la Cámara
+de Contención, investigando la desaparición de la novia y resolviendo
+cuatro puzles principales que culminan en un epílogo con la combinación de
+un candado real.
 
 ## Estado del proyecto
 
-Versión estable actual: **[`v1.0.0`](https://github.com/Aorus796/el-teorema-del-si-repo/releases/tag/v1.0.0)**,
-publicada el 2026-08-11. Recorrido principal implementado y jugable de
-principio a fin: las cuatro localizaciones, los tres puzles principales,
-el cuaderno de pistas, el guardado y carga (con migración entre
-formatos), y el epílogo completo. Disponible como versión web estática y
-como portable Windows publicado en la GitHub Release. La personalización
-final (nombres reales, fecha, mascota, dedicatoria) queda fuera del
-alcance de `v1.0.0` y se implementará después, como trabajo posterior.
+Versión estable actual: **[`v1.2.0`](https://github.com/Aorus796/el-teorema-del-si-repo/releases/tag/v1.2.0)**,
+publicada el 2026-09-08 sobre la base de
+[`v1.0.0`](https://github.com/Aorus796/el-teorema-del-si-repo/releases/tag/v1.0.0)
+(2026-08-11), que cerró el recorrido principal completo. Disponible como
+versión web estática y como portable Windows publicado en la GitHub
+Release.
+
+En desarrollo: **`v1.3`**, que añade la Cámara de Contención y el cuarto
+puzle principal ("El presupuesto de la duda"). Resolver el criterio del
+Archivo deja de habilitar directamente el epílogo y pasa a abrir la
+Cámara; cerrar allí el expediente de contención es lo que desbloquea el
+epílogo, que no cambia. Ver el detalle en
+[`CHANGELOG.md`](CHANGELOG.md) y
+[`docs/puzzles/DOUBT_BUDGET_SPEC.md`](docs/puzzles/DOUBT_BUDGET_SPEC.md).
+
+La personalización final (nombres reales, fecha, mascota, dedicatoria)
+quedó fuera del alcance de `v1.0.0` y sigue siendo trabajo posterior.
 
 Ver el detalle completo de evidencia, la matriz de QA, los riesgos
 residuales aceptados y el registro de la publicación en

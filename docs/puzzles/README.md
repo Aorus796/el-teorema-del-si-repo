@@ -14,7 +14,7 @@ Este directorio contendrá la ficha viva de cada acertijo, sus prototipos, prueb
 | P7 | La plaza es un diagrama | Diseño conceptual | No |
 | P8 | La red que se justifica a sí misma | Diseñado | No |
 | P9 | Tres transformaciones | Diseñado | No |
-| P10 | Lo que sabemos que el otro sabe | Diseñado; alto riesgo | Sí |
+| P10 | Lo que sabemos que el otro sabe | Descartado; sustituido por "El presupuesto de la duda" ([spec](DOUBT_BUDGET_SPEC.md)) | Sí |
 | P11 | Lo que falta forma la respuesta | Parametrizable | Tras comprar el candado |
 
 ## Flujo de aprobación

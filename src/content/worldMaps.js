@@ -1292,6 +1292,36 @@ const ARCHIVE = createMap({
         facing: "left",
       },
     },
+    /*
+     * Acceso a la Cámara de Contención (v1.3). Recíproco exacto de
+     * `containment-to-archive`, gateado por la bandera `containmentUnlocked`
+     * en interactWithExit() (WorldScene.js) igual que `library-to-archive`
+     * lo está por `archiveUnlocked`: el objeto existe y se dibuja desde el
+     * principio, y es el diálogo de la salida el que explica que todavía no
+     * hay nada que consultar ahí dentro.
+     *
+     * Geometría: columna de tiles 22 (x352-368), la interior adyacente al
+     * borde este, entre la estantería noreste (y48-80) y las cajas del este
+     * (y128-160) -- sin solape con ninguna de las dos ni con el escritorio
+     * central, y sobre tiles realmente transitables (ver
+     * tests/content/WorldMaps.test.js).
+     */
+    {
+      id: "archive-to-containment",
+      type: "exit",
+      x: 352,
+      y: 96,
+      width: 16,
+      height: 32,
+      interactionRadius: 30,
+      label: "Cámara de Contención",
+      targetMapId: "containment-chamber",
+      targetPlayerState: {
+        x: 192,
+        y: 208,
+        facing: "up",
+      },
+    },
     {
       id: "ambient-archive-clerk",
       type: "npc",
@@ -1420,11 +1450,154 @@ const ARCHIVE = createMap({
   ],
 });
 
+/*
+ * Cámara de Contención (v1.3): la sala donde el Custodio mantiene abierto
+ * el expediente de contención y donde vive el puzle "presupuesto de duda".
+ *
+ * Mismo tamaño exacto que `archive` (24x16 tiles, 384x256 px), así que --
+ * igual que allí -- Camera.follow() la clampa siempre a (0,0) y la sala
+ * completa está siempre en pantalla. Se usa su misma plantilla de
+ * createMap()/createBorderTiles()/addSolidRegion(): nada de mecanismos
+ * nuevos de mapa.
+ *
+ * Paleta fría y sin dawnPalette, deliberadamente distinta de la cálida de
+ * `archive`: el Archivo es un lugar de trabajo, la Cámara es piedra,
+ * metal y una única fuente de luz turquesa (el pozo del centro, la ranura
+ * del Custodio y la celosía del este comparten esa familia de color, ver
+ * containmentWellPixelArt.js).
+ *
+ * Distribución (verificada sin solapes en tests/content/WorldMaps.test.js,
+ * también contra el footprint VISUAL real de los sprites y no solo contra
+ * los hitboxes declarados):
+ *  - centro: `containment-well`, decoración de 32x32 que cubre EXACTAMENTE
+ *    su solidRegion de 2x2 tiles (x176-208, y112-144), sin desborde;
+ *  - norte: `containment-budget-panel`, objeto interactuable de type
+ *    "table" que abre la escena "doubt-budget" (mismo patrón exacto que
+ *    `archive-criteria-table`), con su propio solidRegion de 2x2;
+ *  - junto al panel: `containment-custodian`, NPC estático de 20x32 -- el
+ *    hitbox declarado coincide con el sprite al píxel (ver
+ *    CustodianRenderer.js), así que aquí no hay desborde visual que
+ *    compensar;
+ *  - este: `containment-lattice-screen`, decoración de 16x224 (siete
+ *    repeticiones verticales del patrón de 16x32 de
+ *    containmentLatticePixelArt.js) sobre un solidRegion de 1x14 tiles que
+ *    la hace sólida en toda su altura, más el objeto `containment-lattice`
+ *    en la columna inmediatamente anterior, que solo abre diálogo (Elena
+ *    está detrás; el jugador nunca cruza la celosía, ni antes ni después de
+ *    cerrar el expediente);
+ *  - oeste: dos `sealed-dossier-rack` de 64x32, cada uno sobre su propio
+ *    solidRegion de 4x2 tiles con el mismo footprint exacto;
+ *  - sur: `containment-to-archive`, recíproco de `archive-to-containment`.
+ */
+const CONTAINMENT_CHAMBER = createMap({
+  id: "containment-chamber",
+  name: "Cámara de Contención",
+  width: 24,
+  height: 16,
+  palette: {
+    groundA: "#5b5f66",
+    groundB: "#666b73",
+    wall: "#33383f",
+    wallTop: "#5f666e",
+    water: "#3f7f82",
+  },
+  solidRegions: [
+    { x: 2, y: 3, width: 4, height: 2 },
+    { x: 2, y: 9, width: 4, height: 2 },
+    { x: 11, y: 3, width: 2, height: 2 },
+    { x: 11, y: 7, width: 2, height: 2 },
+    { x: 19, y: 1, width: 1, height: 14 },
+  ],
+  objects: [
+    {
+      id: "containment-budget-panel",
+      type: "table",
+      x: 176,
+      y: 48,
+      width: 32,
+      height: 24,
+      interactionRadius: 30,
+      label: "Panel de consulta",
+    },
+    {
+      id: "containment-custodian",
+      type: "npc",
+      x: 224,
+      y: 48,
+      width: 20,
+      height: 32,
+      interactionRadius: 30,
+      label: "Custodio",
+    },
+    {
+      id: "containment-lattice",
+      type: "lattice",
+      x: 288,
+      y: 96,
+      width: 16,
+      height: 64,
+      interactionRadius: 30,
+      label: "Celosía de contención",
+    },
+    {
+      id: "containment-to-archive",
+      type: "exit",
+      x: 176,
+      y: 224,
+      width: 32,
+      height: 16,
+      interactionRadius: 30,
+      label: "Archivo",
+      targetMapId: "archive",
+      targetPlayerState: {
+        x: 336,
+        y: 112,
+        facing: "right",
+      },
+    },
+  ],
+  decorations: [
+    {
+      id: "containment-well",
+      type: "containment-well",
+      x: 176,
+      y: 112,
+      width: 32,
+      height: 32,
+    },
+    {
+      id: "containment-rack-northwest",
+      type: "sealed-dossier-rack",
+      x: 32,
+      y: 48,
+      width: 64,
+      height: 32,
+    },
+    {
+      id: "containment-rack-southwest",
+      type: "sealed-dossier-rack",
+      x: 32,
+      y: 144,
+      width: 64,
+      height: 32,
+    },
+    {
+      id: "containment-lattice-screen",
+      type: "containment-lattice",
+      x: 304,
+      y: 16,
+      width: 16,
+      height: 224,
+    },
+  ],
+});
+
 export const WORLD_MAPS = {
   [AXIOM_PLAZA.id]: AXIOM_PLAZA,
   [SEVEN_BRIDGES_WALK.id]: SEVEN_BRIDGES_WALK,
   [LIBRARY.id]: LIBRARY,
   [ARCHIVE.id]: ARCHIVE,
+  [CONTAINMENT_CHAMBER.id]: CONTAINMENT_CHAMBER,
 };
 
 export function getWorldMap(mapId) {

@@ -32,7 +32,13 @@ const INCORRECT_MESSAGE =
   "Al menos un veredicto exige más —o menos— evidencia de la que contienen los registros.";
 const ALREADY_SOLVED_MESSAGE = "El criterio ya está registrado.";
 const SOLVED_MESSAGE = "Criterio aceptado.";
-const EPILOGUE_TOAST = "La investigación ha terminado";
+/*
+ * Desde v1.3 resolver el criterio ya no desbloquea el epílogo, sino la
+ * Cámara de Contención, así que el aviso se dispara al ver la transición de
+ * `containmentUnlocked` y no la de `epilogueUnlocked` (que ahora la fija
+ * DoubtBudgetProgression y aquí nunca cambiaría, dejando el toast mudo).
+ */
+const CONTAINMENT_TOAST = "La investigación ha terminado";
 
 export class ArchiveCriteriaScene {
   constructor({ scenes, input, state, ui, audio }) {
@@ -175,11 +181,11 @@ export class ArchiveCriteriaScene {
 
     this.audio.playSfx(PUZZLE_SUCCESS_SFX_PATH);
 
-    const wasEpilogueUnlocked = this.state.flags.epilogueUnlocked;
+    const wasContainmentUnlocked = this.state.flags.containmentUnlocked;
     applyArchiveCriteriaProgression(this.state);
 
-    if (!wasEpilogueUnlocked && this.state.flags.epilogueUnlocked) {
-      this.ui.showToast(EPILOGUE_TOAST);
+    if (!wasContainmentUnlocked && this.state.flags.containmentUnlocked) {
+      this.ui.showToast(CONTAINMENT_TOAST);
     }
   }
 

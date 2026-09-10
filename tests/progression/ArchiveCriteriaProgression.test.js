@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   ARCHIVE_FINAL_EVIDENCE_ENTRY,
   EPILOGUE_COMBINATION_CLUE_ENTRY,
-  START_EPILOGUE_OBJECTIVE_ID,
+  ENTER_CONTAINMENT_OBJECTIVE_ID,
   applyArchiveCriteriaProgression,
 } from "../../src/progression/ArchiveCriteriaProgression.js";
 import { GIFT_CODE_CLUE_LINES } from "../../src/content/epilogueConfig.js";
@@ -30,7 +30,7 @@ test("ready, classifying y failed no aplican consecuencias", () => {
       applied: false,
     });
     assert.equal(state.flags.investigationComplete, false);
-    assert.equal(state.flags.epilogueUnlocked, false);
+    assert.equal(state.flags.containmentUnlocked, false);
     assert.equal(state.notebook.length, 0);
     assert.equal(
       state.objectiveId,
@@ -48,8 +48,8 @@ test("primera resolución establece ambas banderas, el objetivo y el cuaderno", 
 
   assert.deepEqual(result, { applied: true, notebookAdded: true });
   assert.equal(state.flags.investigationComplete, true);
-  assert.equal(state.flags.epilogueUnlocked, true);
-  assert.equal(state.objectiveId, START_EPILOGUE_OBJECTIVE_ID);
+  assert.equal(state.flags.containmentUnlocked, true);
+  assert.equal(state.objectiveId, ENTER_CONTAINMENT_OBJECTIVE_ID);
   assert.equal(state.notebook.length, 2);
   assert.deepEqual(state.notebook, [
     ARCHIVE_FINAL_EVIDENCE_ENTRY,
@@ -82,13 +82,13 @@ test("una segunda aplicación no repite consecuencias ni duplica el cuaderno", (
   assert.deepEqual(second, { applied: false });
   assert.equal(state.notebook.length, 2);
   assert.equal(state.flags.investigationComplete, true);
-  assert.equal(state.flags.epilogueUnlocked, true);
+  assert.equal(state.flags.containmentUnlocked, true);
 });
 
 test("repara investigationComplete de forma independiente sin retroceder el objetivo", () => {
   const state = new GameState();
   state.puzzles.archiveCriteria = solvedState();
-  state.flags.epilogueUnlocked = true;
+  state.flags.containmentUnlocked = true;
   state.objectiveId = "some-later-objective";
   state.addNotebookEntry(ARCHIVE_FINAL_EVIDENCE_ENTRY);
   state.addNotebookEntry(EPILOGUE_COMBINATION_CLUE_ENTRY);
@@ -97,12 +97,12 @@ test("repara investigationComplete de forma independiente sin retroceder el obje
 
   assert.deepEqual(result, { applied: true, notebookAdded: false });
   assert.equal(state.flags.investigationComplete, true);
-  assert.equal(state.flags.epilogueUnlocked, true);
+  assert.equal(state.flags.containmentUnlocked, true);
   assert.equal(state.objectiveId, "some-later-objective");
   assert.equal(state.notebook.length, 2);
 });
 
-test("repara epilogueUnlocked y fija el objetivo del epílogo en la transición real", () => {
+test("repara containmentUnlocked y fija el objetivo de la Cámara en la transición real", () => {
   const state = new GameState();
   state.puzzles.archiveCriteria = solvedState();
   state.flags.investigationComplete = true;
@@ -112,15 +112,15 @@ test("repara epilogueUnlocked y fija el objetivo del epílogo en la transición 
   const result = applyArchiveCriteriaProgression(state);
 
   assert.deepEqual(result, { applied: true, notebookAdded: false });
-  assert.equal(state.flags.epilogueUnlocked, true);
-  assert.equal(state.objectiveId, START_EPILOGUE_OBJECTIVE_ID);
+  assert.equal(state.flags.containmentUnlocked, true);
+  assert.equal(state.objectiveId, ENTER_CONTAINMENT_OBJECTIVE_ID);
 });
 
 test("repara solo el cuaderno cuando ambas banderas ya eran true, conservando el objetivo posterior", () => {
   const state = new GameState();
   state.puzzles.archiveCriteria = solvedState();
   state.flags.investigationComplete = true;
-  state.flags.epilogueUnlocked = true;
+  state.flags.containmentUnlocked = true;
   state.objectiveId = "some-later-objective";
   state.addNotebookEntry(ARCHIVE_FINAL_EVIDENCE_ENTRY);
 
@@ -138,7 +138,7 @@ test("un estado completamente reconciliado con objetivo posterior no vuelve a ap
   const state = new GameState();
   state.puzzles.archiveCriteria = solvedState();
   state.flags.investigationComplete = true;
-  state.flags.epilogueUnlocked = true;
+  state.flags.containmentUnlocked = true;
   state.objectiveId = "some-later-objective";
   state.addNotebookEntry(ARCHIVE_FINAL_EVIDENCE_ENTRY);
   state.addNotebookEntry(EPILOGUE_COMBINATION_CLUE_ENTRY);
@@ -150,11 +150,11 @@ test("un estado completamente reconciliado con objetivo posterior no vuelve a ap
   assert.equal(state.notebook.length, 2);
 });
 
-test("las banderas del epílogo permanecen intactas al reaplicar sobre un estado ya resuelto", () => {
+test("las banderas posteriores permanecen intactas al reaplicar sobre un estado ya resuelto", () => {
   const state = new GameState();
   state.puzzles.archiveCriteria = solvedState();
   state.flags.investigationComplete = true;
-  state.flags.epilogueUnlocked = true;
+  state.flags.containmentUnlocked = true;
   state.flags.epilogueStarted = true;
   state.flags.giftCodeSolved = true;
   state.flags.epilogueCompleted = true;
@@ -166,7 +166,7 @@ test("las banderas del epílogo permanecen intactas al reaplicar sobre un estado
 
   assert.deepEqual(result, { applied: false });
   assert.equal(state.flags.investigationComplete, true);
-  assert.equal(state.flags.epilogueUnlocked, true);
+  assert.equal(state.flags.containmentUnlocked, true);
   assert.equal(state.flags.epilogueStarted, true);
   assert.equal(state.flags.giftCodeSolved, true);
   assert.equal(state.flags.epilogueCompleted, true);
@@ -174,15 +174,37 @@ test("las banderas del epílogo permanecen intactas al reaplicar sobre un estado
   assert.equal(state.notebook.length, 2);
 });
 
+/*
+ * Regresión directa del recableado de progresión de v1.3: resolver el
+ * criterio del Archivo abre la Cámara de Contención y NADA MÁS. El
+ * epílogo lo desbloquea ahora applyDoubtBudgetProgression() al cerrar el
+ * expediente de contención; si esta progresión volviera a tocar
+ * `epilogueUnlocked`, el puzle del Custodio quedaría saltable.
+ */
 test("las banderas del epílogo no se crean como efecto colateral de la primera resolución", () => {
   const state = new GameState();
   state.puzzles.archiveCriteria = solvedState();
 
   applyArchiveCriteriaProgression(state);
 
+  assert.equal(state.flags.epilogueUnlocked, false);
   assert.equal(state.flags.epilogueStarted, false);
   assert.equal(state.flags.giftCodeSolved, false);
   assert.equal(state.flags.epilogueCompleted, false);
+});
+
+test("un estado ya reconciliado con el epílogo desbloqueado no vuelve a fijar el objetivo de la Cámara", () => {
+  const state = new GameState();
+  state.puzzles.archiveCriteria = solvedState();
+  state.flags.investigationComplete = true;
+  state.flags.containmentUnlocked = true;
+  state.flags.epilogueUnlocked = true;
+  state.objectiveId = "start-epilogue";
+  state.addNotebookEntry(ARCHIVE_FINAL_EVIDENCE_ENTRY);
+  state.addNotebookEntry(EPILOGUE_COMBINATION_CLUE_ENTRY);
+
+  assert.deepEqual(applyArchiveCriteriaProgression(state), { applied: false });
+  assert.equal(state.objectiveId, "start-epilogue");
 });
 
 function solvedState(attemptCount = 1) {
