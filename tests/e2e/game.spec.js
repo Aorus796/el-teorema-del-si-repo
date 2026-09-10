@@ -23,6 +23,9 @@ import {
   DoubtBudgetState,
 } from "../../src/puzzles/doubt-budget/DoubtBudgetState.js";
 import {
+  CONSOLE_BRIEFING_LINES,
+} from "../../src/scenes/DoubtBudgetScene.js";
+import {
   ENTER_CONTAINMENT_OBJECTIVE_ID,
 } from "../../src/progression/ArchiveCriteriaProgression.js";
 import {
@@ -3630,6 +3633,21 @@ test("recorre la Cámara de Contención con teclado, del Archivo resuelto al ep�
     await waitForRenderedText("EL PRESUPUESTO DE LA DUDA");
     await waitForRenderedText("Presupuesto: 3/3 preguntas");
     await waitForRenderedText("Expedientes compatibles: 8/8");
+
+    // El panel abre con una introducción obligatoria propia, distinta del
+    // diálogo del Custodio ya verificado antes: cubre en qué consiste la
+    // consulta aunque el jugador haya llegado aquí sin hablar con él.
+    await expect(dialoguePanel).toBeVisible();
+    await expect(dialogueSpeaker).toHaveText("Custodio");
+    await expect(dialogueText).toHaveText(CONSOLE_BRIEFING_LINES[0]);
+
+    for (const line of CONSOLE_BRIEFING_LINES.slice(1)) {
+      await page.keyboard.press("KeyE");
+      await expect(dialogueText).toHaveText(line);
+    }
+
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeHidden();
 
     // Una sola pregunta parte los ocho expedientes justo por la mitad.
     await clearRenderedTexts();

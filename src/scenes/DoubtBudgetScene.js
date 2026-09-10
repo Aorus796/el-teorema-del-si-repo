@@ -43,6 +43,26 @@ const PANEL = Object.freeze({
   DOSSIERS: "dossiers",
 });
 
+/*
+ * Nota operativa del panel, distinta del diálogo del Custodio
+ * (CUSTODIAN_PROTOCOL_TURNS, en WorldScene.js) y de las reglas del propio
+ * puzle (DOUBT_BUDGET_RULE_LINES, en DoubtBudgetData.js): un jugador puede
+ * llegar aquí sin haber hablado nunca con el NPC, así que el panel mismo
+ * tiene que cubrir, en prosa y sin listar combinaciones ni nombrar el
+ * expediente real, que hay varios expedientes posibles, que solo uno
+ * corresponde a lo ocurrido, que las preguntas sirven para descartarlos,
+ * que hay un límite de tres y que después hay que identificar el
+ * expediente. No es un primer encuentro (puede reaparecer tras un
+ * reinicio si el jugador sale y vuelve a entrar con la consulta otra vez
+ * intacta), así que no saluda.
+ */
+export const CONSOLE_BRIEFING_LINES = Object.freeze([
+  "Este panel contiene ocho expedientes de contención. Cada uno describe una versión distinta de lo ocurrido. Solo uno coincide con los hechos.",
+  "Cada pregunta reduce el conjunto de expedientes compatibles con lo que ya sabes. No busques la respuesta que prefieras: busca la que descarte más posibilidades.",
+  "Dispones de tres formulaciones. Cada una es una oportunidad de obtener información, no una prueba que puedas fallar. Todas quedan registradas en cuanto se pronuncian.",
+  "Cuando un único expediente siga siendo compatible con todo lo preguntado, podrás identificarlo. Antes de eso, cualquier identificación se rechaza por no estar sostenida.",
+]);
+
 const UNFORCED_MESSAGE =
   "El Custodio no acepta una identificación que su expediente de consulta no obligue a sostener.";
 const INCORRECT_MESSAGE =
@@ -82,9 +102,26 @@ export class DoubtBudgetScene {
       doubtBudgetState.phase === DOUBT_BUDGET_PHASE.SOLVED
         ? null
         : doubtBudgetState.hintsRead.at(-1) ?? null;
+
+    if (
+      doubtBudgetState.phase === DOUBT_BUDGET_PHASE.READY &&
+      doubtBudgetState.askedQuestionIds.length === 0
+    ) {
+      this.ui.beginDialogue({
+        speaker: "Custodio",
+        lines: CONSOLE_BRIEFING_LINES,
+      });
+    }
   }
 
   update() {
+    if (this.ui.isDialogueOpen()) {
+      if (this.input.wasPressed("interact")) {
+        this.ui.advanceDialogue();
+      }
+      return;
+    }
+
     if (this.input.wasPressed("cancel")) {
       this.scenes.change("world");
       return;
@@ -410,9 +447,11 @@ function drawDossiers(context, scene, state) {
   context.fillText("EXPEDIENTES", 340, 58);
 
   context.font = "7px monospace";
+  context.fillStyle = "#8fbdb9";
+  context.fillText("I·II·III   S sostenido / P presupuesto", 340, 70);
 
   DOUBT_BUDGET_DOSSIERS.forEach((dossier, index) => {
-    const y = 70 + index * 14;
+    const y = 84 + index * 14;
     const isCompatible = compatible.includes(dossier.id);
     const isFocused = isPanelFocused && index === scene.focusedDossierIndex;
 
@@ -429,9 +468,6 @@ function drawDossiers(context, scene, state) {
       y,
     );
   });
-
-  context.fillStyle = "#8fbdb9";
-  context.fillText("I·II·III   S sostenido / P presupuesto", 340, 70 + 8 * 14);
 }
 
 function drawMessage(context, scene) {

@@ -111,6 +111,15 @@ probada desde los formatos 1 a 4.
   `restore()` lo repararía en silencio en cada carga y ninguna prueba lo
   notaría—, y un guardado de formato 5 mal formado debe fallar la
   invariante en vez de auto-curarse.
+- `DoubtBudgetScene`: el panel de consulta abre ahora con una introducción
+  obligatoria propia (`CONSOLE_BRIEFING_LINES`) siempre que la consulta
+  esté intacta, para cubrir el caso de un jugador que llega al panel sin
+  haber hablado nunca con el Custodio. Ninguna tecla del panel tiene
+  efecto mientras esa introducción está abierta, salvo la de avanzarla. La
+  leyenda `S sostenido / P presupuesto` pasa a mostrarse antes de la lista
+  de expedientes, no después, para que se lea primero. Cambio puramente de
+  presentación: el modelo matemático, los datos, la dificultad y el estado
+  persistente del puzle no cambian.
 - Documentación: nueva
   [`docs/puzzles/DOUBT_BUDGET_SPEC.md`](docs/puzzles/DOUBT_BUDGET_SPEC.md);
   `docs/gdd/04-personajes.md` §4.4 describe al Custodio tal como está

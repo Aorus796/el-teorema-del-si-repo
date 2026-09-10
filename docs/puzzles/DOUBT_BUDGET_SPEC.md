@@ -159,6 +159,20 @@ Examinar `containment-budget-panel` en `containment-chamber` sincroniza la
 posición del jugador, toma la foto del estado resuelto de los puzles y
 cambia a la escena `doubt-budget`.
 
+Un jugador puede llegar a este panel sin haber hablado nunca con el
+Custodio, así que `DoubtBudgetScene.enter()` abre una introducción propia
+(`CONSOLE_BRIEFING_LINES`) siempre que la consulta esté intacta (`ready`,
+sin preguntas formuladas). Es prosa corta y distinta tanto de
+`DOUBT_BUDGET_RULE_LINES` como del diálogo del Custodio en el mundo
+(`CUSTODIAN_PROTOCOL_TURNS`): explica que hay varios expedientes posibles,
+que solo uno es real, que las preguntas descartan posibilidades, que hay un
+límite de tres y que después hace falta identificar el expediente, sin
+listar combinaciones ni nombrar el expediente real. Mientras esa
+introducción está abierta, ninguna tecla del panel tiene efecto salvo la de
+avanzar el diálogo. Puede reaparecer tras un reinicio (`R`) si el jugador
+vuelve a entrar con la consulta otra vez intacta, así que no saluda como un
+primer encuentro.
+
 ### Navegación
 
 Dos paneles con foco explícito: **preguntas** (6) y **expedientes** (8).
@@ -320,7 +334,7 @@ la invariante, no auto-curarse.
 | `tests/puzzles/DoubtBudgetHints.test.js`             | las tres reflexiones                              |
 | `tests/state/GameStateDoubtBudgetSaveCompatibility.test.js` | formato 5 y migración desde 1-4           |
 | `tests/progression/DoubtBudgetProgression.test.js`   | idempotencia y consecuencias                      |
-| `tests/scenes/DoubtBudgetScene.test.js`              | controles, realimentación y render                |
+| `tests/scenes/DoubtBudgetScene.test.js`              | controles, introducción obligatoria, realimentación y render |
 | `tests/content/CustodianPixelArt.test.js`            | dimensiones, paleta y exclusividad de color       |
 | `tests/render/CustodianRenderer.test.js`             | cache de sprites y variantes                      |
 | `tests/scenes/ContainmentChamberPixelArtCache.test.js` | cache de props de la Cámara                     |
