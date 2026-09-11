@@ -4,6 +4,142 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ## [No publicado]
 
+Cuarto puzle principal y localización nueva: la **Cámara de Contención** y
+**El presupuesto de la duda**, el enfrentamiento lógico con el Custodio de
+las Certezas. El recorrido pasa de tres puzles a cuatro: resolver el
+criterio del Archivo deja de habilitar directamente el epílogo y pasa a
+abrir la Cámara, donde cerrar el expediente de contención es lo que
+desbloquea el epílogo. El epílogo ya publicado no cambia: ni su diálogo, ni
+la combinación del regalo (`7152`), ni `epilogueConfig.js`. Seven Bridges,
+Biblioteca y el criterio del Archivo conservan sus datos, su solución y su
+lógica intactos. `SAVE_FORMAT_VERSION` pasa de 4 a 5, con migración
+probada desde los formatos 1 a 4.
+
+### Añadido
+
+- **Puzle "El presupuesto de la duda"** (`src/puzzles/doubt-budget/`):
+  identificar cuál de los ocho expedientes de contención posibles es el
+  real formulando como máximo tres preguntas de sí o no de un menú de seis.
+  El Custodio solo acepta la identificación que sus propias respuestas
+  obliguen a sostener: mientras queden dos o más expedientes compatibles,
+  incluso nombrar el correcto es una identificación no forzada y se
+  rechaza. La condición de victoria se calcula siempre recorriendo los ocho
+  expedientes, nunca desde una tabla de ternas "ganadoras" — una tabla
+  estática rechazaría partidas legítimas. Las respuestas del Custodio no se
+  persisten: se derivan de las preguntas formuladas y del expediente real,
+  que son contenido inmutable. Especificación completa en
+  [`docs/puzzles/DOUBT_BUDGET_SPEC.md`](docs/puzzles/DOUBT_BUDGET_SPEC.md).
+- **Escena `doubt-budget`** (`src/scenes/DoubtBudgetScene.js`, registrada en
+  `main.js`): 480 × 270, dos paneles con foco explícito (preguntas y
+  expedientes), `←/→` cambia de panel, `↑/↓` mueve dentro del panel activo,
+  `Enter` formula o concluye, `Q` pista, `R` reinicia, `Esc` sale — mismos
+  controles establecidos por las escenas de puzle anteriores. Muestra en
+  todo momento el presupuesto restante, la respuesta de cada pregunta ya
+  formulada y el número de expedientes todavía compatibles, que es la forma
+  en que el jugador ve la condición de victoria sin que se la enuncien.
+- **Mapa `containment-chamber`** (`src/content/worldMaps.js`): 24 × 16
+  tiles, el mismo tamaño exacto que `archive`, con paleta fría propia y sin
+  `dawnPalette`. Pozo de expedientes en el centro (cubre exactamente su
+  región sólida, con resplandor turquesa), panel de consulta y Custodio al
+  norte, celosía de cristal al este con Elena detrás, dos estanterías
+  selladas al oeste y salida al Archivo al sur. Se añade el acceso
+  recíproco `archive-to-containment` en el Archivo, gateado por la bandera
+  `containmentUnlocked` igual que `library-to-archive` lo está por
+  `archiveUnlocked`. Geometría verificada sin solapes contra el footprint
+  visual real de los sprites, no solo contra los hitboxes declarados.
+- **Custodio de las Certezas** como personaje jugable en el mundo:
+  pixel-art indexado propio de 20 × 32 (`src/content/custodianPixelArt.js`)
+  y renderer dedicado (`src/render/CustodianRenderer.js`) con su propia
+  cache, siguiendo el patrón de `ElenaRenderer.js`. Deliberadamente no
+  humano: bounding box mayor que el de los personajes humanos (14 × 22),
+  cabeza en trapecio invertido, una ranura horizontal de cristal turquesa
+  en lugar de ojos, y una paleta que no comparte ningún valor con la de
+  ningún personaje del juego. Simplificación documentada frente a los
+  renderers humanos: no expone `facing`, porque el Custodio no camina; lo
+  que distingue son dos variantes estáticas de su ranura (reposo y
+  contradicción).
+- Cuatro props de pixel-art nuevos y exclusivos de la Cámara: estantería
+  sellada de expedientes, celosía de cristal (patrón de 16 × 32 repetido
+  verticalmente, único prop del juego cuyo sprite no cubre por sí solo su
+  footprint declarado), pozo de expedientes y panel de consulta. El panel
+  es de type `table`, así que —igual que `archive-criteria-table` y
+  `epilogue-gift-mechanism`— se intercepta por id antes de la rama genérica
+  de ese tipo en `renderObjects()`, que pinta madera cálida y franja dorada:
+  la paleta del mobiliario del Archivo y la Biblioteca dentro de una sala
+  deliberadamente de piedra, metal y turquesa. Su sprite (32 × 32) cubre
+  exactamente la región sólida del panel, 8 px más alta que su hitbox
+  interactivo.
+- Diálogos de la Cámara: primera aparición del Custodio, explicación de su
+  protocolo encadenada con las reglas del propio puzle, su respuesta cuando
+  el jugador ya ha visto una identificación rechazada, las tres réplicas de
+  Elena tras la celosía y la revelación completa al cerrar el expediente,
+  cerrada con un reencuentro breve. Cuál de esos bloques se reproduce se
+  deriva del estado real de la consulta, sin ninguna bandera nueva de
+  guardado. La revelación se dispara exactamente una vez por resolución
+  real, con el mismo criterio que ya usaba la reacción de Max: nunca al
+  reentrar a una consulta ya cerrada ni al cargar una partida.
+- Elena visible tras la celosía de la Cámara de Contención antes de
+  resolver el presupuesto de duda, y liberada (ya no se dibuja ahí) en
+  cuanto se resuelve: nueva decoración `containment-elena` en
+  `containment-chamber` (`src/content/worldMaps.js`), sin hitbox de
+  interacción a propósito, para no duplicar el diálogo ya existente del
+  objeto `containment-lattice`. Reutiliza sin cambios el mismo sprite
+  indexado de `ElenaRenderer.js` que ya usa `bride-epilogue` en la Plaza,
+  sincronizado con `state.flags.epilogueUnlocked` — el mismo flag que ya
+  disparaba la revelación narrativa al volver del puzle recién resuelto —,
+  así que nunca puede verse encerrada en la Cámara y libre en la Plaza a la
+  vez.
+- `src/progression/DoubtBudgetProgression.js`: único punto del juego que
+  pone `epilogueUnlocked` en `true`. Idempotente, calcado de
+  `ArchiveCriteriaProgression.js`; fija el objetivo del epílogo solo en la
+  transición real y añade una entrada de cuaderno nueva sobre la
+  revelación. Asegura además `containmentUnlocked` e
+  `investigationComplete` en el mismo paso, para no poder producir por sí
+  solo un guardado que violara las invariantes nuevas del formato 5.
+
+### Cambiado
+
+- `applyArchiveCriteriaProgression()` fija ahora `containmentUnlocked` y el
+  objetivo `enter-containment-chamber` en lugar de `epilogueUnlocked` y
+  `start-epilogue`. `ArchiveCriteriaScene` observa esa misma bandera para
+  disparar su aviso de éxito, que de lo contrario habría dejado de
+  mostrarse en silencio. Los datos, la solución, los controles y el estado
+  persistente del criterio del Archivo no cambian.
+- `SAVE_FORMAT_VERSION` pasa de 4 a 5: el formato nuevo añade
+  `puzzles.doubtBudget` y la bandera `containmentUnlocked`, con dos
+  invariantes nuevas (`containmentUnlocked ⟹ investigationComplete` y
+  `epilogueUnlocked ⟹ containmentUnlocked`). Los guardados de formatos 1 a
+  4 siguen cargando: estrenan la consulta en su estado inicial, salvo los
+  que ya tuvieran el epílogo desbloqueado —o el criterio del Archivo
+  resuelto, que es lo que lo producía en `v1.2`—, que conservan todas sus
+  banderas y reciben una consulta realmente resuelta, calculada contra los
+  predicados reales. Revertirlas dejaría ilegibles partidas ya terminadas
+  de `v1.2`.
+- La reparación de `containmentUnlocked` e `investigationComplete` a partir
+  del criterio del Archivo ya resuelto queda restringida a los guardados de
+  formato legacy. En el formato vigente ambas banderas se leen tal cual
+  vienen: deducirlas también ahí enmascararía un bug real de escritura —
+  `restore()` lo repararía en silencio en cada carga y ninguna prueba lo
+  notaría—, y un guardado de formato 5 mal formado debe fallar la
+  invariante en vez de auto-curarse.
+- `DoubtBudgetScene`: el panel de consulta abre ahora con una introducción
+  obligatoria propia (`CONSOLE_BRIEFING_LINES`) siempre que la consulta
+  esté intacta, para cubrir el caso de un jugador que llega al panel sin
+  haber hablado nunca con el Custodio. Ninguna tecla del panel tiene
+  efecto mientras esa introducción está abierta, salvo la de avanzarla. La
+  leyenda `S sostenido / P presupuesto` pasa a mostrarse antes de la lista
+  de expedientes, no después, para que se lea primero. Cambio puramente de
+  presentación: el modelo matemático, los datos, la dificultad y el estado
+  persistente del puzle no cambian.
+- Documentación: nueva
+  [`docs/puzzles/DOUBT_BUDGET_SPEC.md`](docs/puzzles/DOUBT_BUDGET_SPEC.md);
+  `docs/gdd/04-personajes.md` §4.4 describe al Custodio tal como está
+  implementado; la sección P10 de `docs/gdd/07-puzzles.md` (sumas y
+  productos sobre trece parejas) queda marcada como variante descartada;
+  `docs/gdd/05-mapa-y-flujo.md` §5.10 aclara qué salas del Archivo
+  histórico existen de verdad; `docs/puzzles/ARCHIVE_CRITERIA_SPEC.md`
+  registra el cambio de qué habilita resolver el criterio.
+
 ## [1.2.0] - 2026-09-08
 
 Pase de dificultad y accesibilidad sobre la base visual/narrativa estable

@@ -22,9 +22,12 @@ import {
 } from "../../src/puzzles/archive-criteria/ArchiveCriteriaState.js";
 import {
   ARCHIVE_FINAL_EVIDENCE_ENTRY,
+  ENTER_CONTAINMENT_OBJECTIVE_ID,
   EPILOGUE_COMBINATION_CLUE_ENTRY,
-  START_EPILOGUE_OBJECTIVE_ID,
 } from "../../src/progression/ArchiveCriteriaProgression.js";
+import {
+  DOUBT_BUDGET_PHASE,
+} from "../../src/puzzles/doubt-budget/DoubtBudgetState.js";
 
 const INITIAL_CATALOGUE_DATA = {
   order: ["C", "M", "A", "R", "D"],
@@ -40,6 +43,17 @@ function cloneInitialArchiveCriteriaData() {
   return {
     verdicts: { ...ARCHIVE_CRITERIA_INITIAL_VERDICTS },
     phase: ARCHIVE_CRITERIA_PHASE.READY,
+    hintsRead: [],
+    attemptCount: 0,
+    failureCode: null,
+  };
+}
+
+function cloneInitialDoubtBudgetData() {
+  return {
+    askedQuestionIds: [],
+    identifiedDossierId: null,
+    phase: DOUBT_BUDGET_PHASE.READY,
     hintsRead: [],
     attemptCount: 0,
     failureCode: null,
@@ -171,9 +185,12 @@ const ARCHIVE_CRITERIA_INVALID_CASES = [
 ];
 
 /*
- * Cada mutador viola exactamente una de las cuatro invariantes de
- * implicación entre banderas del epílogo (EPILOGUE_SPEC.md §13):
+ * Cada mutador viola exactamente una de las seis invariantes de
+ * implicación entre banderas del epílogo (EPILOGUE_SPEC.md §13, más las dos
+ * que añade la consulta de contención del formato 5):
  * epilogueUnlocked ⟹ investigationComplete
+ * containmentUnlocked ⟹ investigationComplete
+ * epilogueUnlocked ⟹ containmentUnlocked
  * epilogueStarted  ⟹ epilogueUnlocked
  * giftCodeSolved   ⟹ epilogueStarted
  * epilogueCompleted ⟹ giftCodeSolved
@@ -181,6 +198,15 @@ const ARCHIVE_CRITERIA_INVALID_CASES = [
 const EPILOGUE_FLAG_INVARIANT_INVALID_CASES = [
   (saved) => {
     saved.flags.investigationComplete = false;
+    saved.flags.epilogueUnlocked = true;
+  },
+  (saved) => {
+    saved.flags.investigationComplete = false;
+    saved.flags.containmentUnlocked = true;
+  },
+  (saved) => {
+    saved.flags.investigationComplete = true;
+    saved.flags.containmentUnlocked = false;
     saved.flags.epilogueUnlocked = true;
   },
   (saved) => {
@@ -209,6 +235,7 @@ function captureObservableState(state) {
       p2: state.puzzles.p2.toSaveData(),
       libraryCatalogue: state.puzzles.libraryCatalogue.toSaveData(),
       archiveCriteria: state.puzzles.archiveCriteria.toSaveData(),
+      doubtBudget: state.puzzles.doubtBudget.toSaveData(),
     },
   };
 }
@@ -283,6 +310,7 @@ test("GameState restaura una partida valida", () => {
     puzzles: {
       libraryCatalogue: { ...INITIAL_CATALOGUE_DATA },
       archiveCriteria: cloneInitialArchiveCriteriaData(),
+      doubtBudget: cloneInitialDoubtBudgetData(),
     },
     notebook: [
       {
@@ -720,8 +748,8 @@ test("GameState no retrocede un objetivo posterior al restaurar", () => {
   assert.equal(restored.notebook.length, 1);
 });
 
-test("SAVE_FORMAT_VERSION es 4", () => {
-  assert.equal(SAVE_FORMAT_VERSION, 4);
+test("SAVE_FORMAT_VERSION es 5", () => {
+  assert.equal(SAVE_FORMAT_VERSION, 5);
 });
 
 test("GameState reset() incluye investigationComplete y epilogueUnlocked en false", () => {
@@ -753,7 +781,7 @@ test("toSaveData() incluye archiveCriteria con los cinco campos exactos", () => 
   const state = new GameState();
   const saved = state.toSaveData();
 
-  assert.equal(saved.formatVersion, 4);
+  assert.equal(saved.formatVersion, 5);
   assert.deepEqual(
     Object.keys(saved.puzzles.archiveCriteria).sort(),
     ["attemptCount", "failureCode", "hintsRead", "phase", "verdicts"],
@@ -940,14 +968,20 @@ test("restaurar un archiveCriteria solved parcialmente reconciliado repara bande
     failureCode: null,
   };
   saved.flags.investigationComplete = false;
+  saved.flags.containmentUnlocked = false;
   saved.flags.epilogueUnlocked = false;
 
   const restored = new GameState();
   restored.restore(saved);
 
   assert.equal(restored.flags.investigationComplete, true);
-  assert.equal(restored.flags.epilogueUnlocked, true);
-  assert.equal(restored.objectiveId, START_EPILOGUE_OBJECTIVE_ID);
+  assert.equal(restored.flags.containmentUnlocked, true);
+  assert.equal(
+    restored.flags.epilogueUnlocked,
+    false,
+    "el criterio del Archivo abre la Cámara de Contención, no el epílogo",
+  );
+  assert.equal(restored.objectiveId, ENTER_CONTAINMENT_OBJECTIVE_ID);
   assert.equal(restored.notebook.length, 2);
   assert.equal(restored.notebook[0].id, ARCHIVE_FINAL_EVIDENCE_ENTRY.id);
   assert.equal(restored.notebook[1].id, EPILOGUE_COMBINATION_CLUE_ENTRY.id);
@@ -956,7 +990,7 @@ test("restaurar un archiveCriteria solved parcialmente reconciliado repara bande
   assert.equal(restored.notebook.length, 2);
 });
 
-test("restaurar un archiveCriteria solved con epilogueUnlocked ya true conserva un objetivo posterior sin duplicar el cuaderno", () => {
+test("restaurar un archiveCriteria solved con containmentUnlocked ya true conserva un objetivo posterior sin duplicar el cuaderno", () => {
   const saved = new GameState().toSaveData();
   saved.puzzles.archiveCriteria = {
     verdicts: { ...ARCHIVE_CRITERIA_SOLUTION },
@@ -966,7 +1000,7 @@ test("restaurar un archiveCriteria solved con epilogueUnlocked ya true conserva 
     failureCode: null,
   };
   saved.flags.investigationComplete = true;
-  saved.flags.epilogueUnlocked = true;
+  saved.flags.containmentUnlocked = true;
   saved.objectiveId = "some-later-objective";
   saved.notebook = [{ ...ARCHIVE_FINAL_EVIDENCE_ENTRY }];
 
@@ -1069,6 +1103,7 @@ test("GameState reset() incluye las tres nuevas banderas del epílogo en false s
     libraryObjectiveUnlocked: false,
     archiveUnlocked: false,
     investigationComplete: false,
+    containmentUnlocked: false,
     epilogueUnlocked: false,
     epilogueStarted: false,
     giftCodeSolved: false,
@@ -1115,6 +1150,7 @@ test("un guardado sin las tres banderas nuevas del epílogo las restaura en fals
 test("un guardado de formato 4 con la cadena completa de banderas del epílogo se restaura exactamente", () => {
   const saved = new GameState().toSaveData();
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -1134,6 +1170,7 @@ test("GameState conserva combinaciones parciales válidas de las banderas del ep
   const partialCases = [
     {
       investigationComplete: true,
+      containmentUnlocked: true,
       epilogueUnlocked: true,
       epilogueStarted: false,
       giftCodeSolved: false,
@@ -1141,6 +1178,7 @@ test("GameState conserva combinaciones parciales válidas de las banderas del ep
     },
     {
       investigationComplete: true,
+      containmentUnlocked: true,
       epilogueUnlocked: true,
       epilogueStarted: true,
       giftCodeSolved: false,
@@ -1184,8 +1222,35 @@ test("GameState rechaza banderas del epílogo que violan las invariantes de impl
     makeInvalid(saved);
 
     const state = new GameState();
-    assert.throws(() => state.restore(saved), /epílogo/i);
+    assert.throws(() => state.restore(saved), /epílogo|contención/i);
   }
+});
+
+test("GameState rechaza containmentUnlocked sin la investigación completa", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = false;
+  saved.flags.containmentUnlocked = true;
+
+  const state = new GameState();
+
+  assert.throws(
+    () => state.restore(saved),
+    /consulta de contención desbloqueada sin haber completado la investigación/,
+  );
+});
+
+test("GameState rechaza epilogueUnlocked sin la consulta de contención desbloqueada", () => {
+  const saved = new GameState().toSaveData();
+  saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = false;
+  saved.flags.epilogueUnlocked = true;
+
+  const state = new GameState();
+
+  assert.throws(
+    () => state.restore(saved),
+    /epílogo desbloqueado sin haber desbloqueado la consulta de contención/,
+  );
 });
 
 test("GameState.restore() no muta el receptor cuando las banderas del epílogo violan las invariantes (estado por defecto)", () => {
@@ -1196,7 +1261,7 @@ test("GameState.restore() no muta el receptor cuando las banderas del epílogo v
     const state = new GameState();
     const before = captureObservableState(state);
 
-    assert.throws(() => state.restore(saved), /epílogo/i);
+    assert.throws(() => state.restore(saved), /epílogo|contención/i);
     assert.deepEqual(captureObservableState(state), before);
   }
 });
@@ -1209,7 +1274,7 @@ test("GameState.restore() no muta el receptor cuando las banderas del epílogo v
     const state = buildProgressedState();
     const before = captureObservableState(state);
 
-    assert.throws(() => state.restore(saved), /epílogo/i);
+    assert.throws(() => state.restore(saved), /epílogo|contención/i);
     assert.deepEqual(captureObservableState(state), before);
   }
 });
@@ -1218,6 +1283,7 @@ function buildGiftCodeSolvedSaveData() {
   const saved = new GameState().toSaveData();
 
   saved.flags.investigationComplete = true;
+  saved.flags.containmentUnlocked = true;
   saved.flags.epilogueUnlocked = true;
   saved.flags.epilogueStarted = true;
   saved.flags.giftCodeSolved = true;
@@ -1490,6 +1556,7 @@ test("epilogueCompleted=false respeta el objectiveId literal del guardado (el fi
 test("un round-trip toSaveData() -> restore() con epilogueCompleted=true conserva objectiveId=epilogue-completed", () => {
   const state = new GameState();
   state.flags.investigationComplete = true;
+  state.flags.containmentUnlocked = true;
   state.flags.epilogueUnlocked = true;
   state.flags.epilogueStarted = true;
   state.flags.giftCodeSolved = true;

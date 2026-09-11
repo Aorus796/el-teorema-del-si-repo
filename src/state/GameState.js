@@ -8,24 +8,42 @@ import {
   applyLibraryCatalogueProgression,
 } from "../progression/LibraryCatalogueProgression.js";
 import {
+  ARCHIVE_CRITERIA_PHASE,
   ArchiveCriteriaState,
 } from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
 import {
   applyArchiveCriteriaProgression,
 } from "../progression/ArchiveCriteriaProgression.js";
+import {
+  applyDoubtBudgetProgression,
+} from "../progression/DoubtBudgetProgression.js";
+import {
+  DOUBT_BUDGET_QUESTIONS,
+  DOUBT_BUDGET_QUESTION_LIMIT,
+  DOUBT_BUDGET_TRUE_DOSSIER,
+} from "../puzzles/doubt-budget/DoubtBudgetData.js";
+import {
+  getCompatibleDossiers,
+} from "../puzzles/doubt-budget/DoubtBudgetValidator.js";
+import {
+  DOUBT_BUDGET_PHASE,
+  DoubtBudgetState,
+} from "../puzzles/doubt-budget/DoubtBudgetState.js";
 
-export const SAVE_FORMAT_VERSION = 4;
+export const SAVE_FORMAT_VERSION = 5;
 
 /*
- * Tres conceptos distintos, con listas separadas a propósito: reutilizar
- * una sola lista de "formatos legacy" para libraryCatalogue y para
- * archiveCriteria reiniciaría por error el catálogo real de una partida
- * de formato 3 (que ya contiene datos reales del catálogo, solo carece de
- * archiveCriteria).
+ * Cuatro conceptos distintos, con listas separadas a propósito: reutilizar
+ * una sola lista de "formatos legacy" para libraryCatalogue, para
+ * archiveCriteria y para doubtBudget reiniciaría por error el catálogo real
+ * de una partida de formato 3 (que ya contiene datos reales del catálogo,
+ * solo carece de archiveCriteria) o el criterio del Archivo real de una
+ * partida de formato 4 (que solo carece de doubtBudget).
  */
-const SUPPORTED_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2, 3]);
+const SUPPORTED_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2, 3, 4]);
 const LIBRARY_CATALOGUE_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2]);
 const ARCHIVE_CRITERIA_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2, 3]);
+const DOUBT_BUDGET_LEGACY_FORMAT_VERSIONS = Object.freeze([1, 2, 3, 4]);
 const LIBRARY_CATALOGUE_SAVE_FIELDS = Object.freeze([
   "order",
   "phase",
@@ -35,6 +53,20 @@ const LIBRARY_CATALOGUE_SAVE_FIELDS = Object.freeze([
 ]);
 const ARCHIVE_CRITERIA_SAVE_FIELDS = Object.freeze([
   "verdicts",
+  "phase",
+  "hintsRead",
+  "attemptCount",
+  "failureCode",
+]);
+/*
+ * Las respuestas del Custodio no aparecen aquí a propósito: se derivan
+ * siempre de las preguntas formuladas y del expediente real, que son
+ * contenido inmutable, igual que las evidencias del criterio del Archivo
+ * tampoco se persisten.
+ */
+const DOUBT_BUDGET_SAVE_FIELDS = Object.freeze([
+  "askedQuestionIds",
+  "identifiedDossierId",
   "phase",
   "hintsRead",
   "attemptCount",
@@ -61,6 +93,11 @@ const DEFAULT_PLAYER_BY_MAP = {
   archive: {
     x: 192,
     y: 192,
+    facing: "up",
+  },
+  "containment-chamber": {
+    x: 192,
+    y: 208,
     facing: "up",
   },
 };
@@ -107,6 +144,7 @@ export class GameState {
       libraryObjectiveUnlocked: false,
       archiveUnlocked: false,
       investigationComplete: false,
+      containmentUnlocked: false,
       epilogueUnlocked: false,
       epilogueStarted: false,
       giftCodeSolved: false,
@@ -120,6 +158,7 @@ export class GameState {
       p2: new P2State(),
       libraryCatalogue: new LibraryCatalogueState(),
       archiveCriteria: new ArchiveCriteriaState(),
+      doubtBudget: new DoubtBudgetState(),
     };
   }
 
@@ -253,6 +292,7 @@ export class GameState {
           this.puzzles.libraryCatalogue.toSaveData(),
         archiveCriteria:
           this.puzzles.archiveCriteria.toSaveData(),
+        doubtBudget: this.puzzles.doubtBudget.toSaveData(),
       },
     };
   }
@@ -287,6 +327,29 @@ export class GameState {
     const world = restoreWorldState(data, giftCodeSolved);
     const player = readPlayerStateFromWorld(world);
 
+    /*
+     * Los puzles se restauran antes que las banderas porque tanto
+     * containmentUnlocked como el estado de la consulta de contención se
+     * deducen, en parte, del progreso de los puzles: un guardado anterior al
+     * formato 5 no trae ninguno de los dos (ver hasLegacyContainmentProgress
+     * y restoreDoubtBudget).
+     */
+    const p2 = restoreP2(data);
+    const libraryCatalogue = restoreLibraryCatalogue(data);
+    const archiveCriteria = restoreArchiveCriteria(data);
+    const archiveCriteriaSolved =
+      archiveCriteria.phase === ARCHIVE_CRITERIA_PHASE.SOLVED;
+    const legacyContainmentProgress = hasLegacyContainmentProgress(
+      data,
+      archiveCriteriaSolved,
+    );
+    const puzzles = {
+      p2,
+      libraryCatalogue,
+      archiveCriteria,
+      doubtBudget: restoreDoubtBudget(data, legacyContainmentProgress),
+    };
+
     const flags = {
       examinedPrototypeSign: Boolean(
         data.flags?.examinedPrototypeSign,
@@ -307,9 +370,37 @@ export class GameState {
         data.flags?.libraryObjectiveUnlocked,
       ),
       archiveUnlocked: Boolean(data.flags?.archiveUnlocked),
-      investigationComplete: Boolean(
-        data.flags?.investigationComplete,
-      ),
+      /*
+       * Reparación acotada A GUARDADOS LEGACY, no general.
+       *
+       * Un guardado anterior al formato 5 no puede traer
+       * `containmentUnlocked` -- la bandera no existía --, así que hay que
+       * deducirla del progreso que sí trae: `legacyContainmentProgress`
+       * (epílogo ya desbloqueado, o criterio del Archivo ya resuelto; ver
+       * hasLegacyContainmentProgress). `investigationComplete` acompaña por
+       * la invariante `containmentUnlocked ⟹ investigationComplete`: sin
+       * ella, un guardado de formato 3/4 con el criterio resuelto pero la
+       * bandera ausente se volvería irrestaurable.
+       *
+       * A partir del formato 5, en cambio, ambas banderas se leen tal cual
+       * vienen. Deducirlas también aquí (que es lo que hacía la versión
+       * anterior de este bloque, con `|| archiveCriteriaSolved` para
+       * cualquier versión) enmascararía un bug real de escritura: si
+       * applyArchiveCriteriaProgression() dejara alguna vez de fijar
+       * `containmentUnlocked` al resolver el Archivo, restore() lo repararía
+       * en silencio en cada carga y ninguna prueba lo notaría. Un guardado de
+       * formato 5 mal formado -- por ejemplo con `epilogueUnlocked` pero sin
+       * `containmentUnlocked` -- debe fallar la invariante, no auto-curarse.
+       * El único auto-curado que sigue existiendo para el formato 5 es el ya
+       * documentado al final de restore(): applyArchiveCriteriaProgression()
+       * y applyDoubtBudgetProgression(), que reparan banderas a partir de
+       * puzles resueltos DESPUÉS de comprobar las invariantes.
+       */
+      investigationComplete:
+        Boolean(data.flags?.investigationComplete) ||
+        legacyContainmentProgress,
+      containmentUnlocked:
+        Boolean(data.flags?.containmentUnlocked) || legacyContainmentProgress,
       epilogueUnlocked: Boolean(data.flags?.epilogueUnlocked),
       epilogueStarted: Boolean(data.flags?.epilogueStarted),
       giftCodeSolved,
@@ -330,12 +421,6 @@ export class GameState {
           .map((entry) => ({ ...entry }))
       : [];
 
-    const puzzles = {
-      p2: restoreP2(data),
-      libraryCatalogue: restoreLibraryCatalogue(data),
-      archiveCriteria: restoreArchiveCriteria(data),
-    };
-
     this.scene = scene;
     this.world = world;
     this.player = player;
@@ -346,6 +431,7 @@ export class GameState {
 
     applyLibraryCatalogueProgression(this);
     applyArchiveCriteriaProgression(this);
+    applyDoubtBudgetProgression(this);
   }
 }
 
@@ -353,6 +439,18 @@ function assertEpilogueFlagInvariants(flags) {
   if (flags.epilogueUnlocked && !flags.investigationComplete) {
     throw new Error(
       "La partida guardada tiene el epílogo desbloqueado sin haber completado la investigación.",
+    );
+  }
+
+  if (flags.containmentUnlocked && !flags.investigationComplete) {
+    throw new Error(
+      "La partida guardada tiene la consulta de contención desbloqueada sin haber completado la investigación.",
+    );
+  }
+
+  if (flags.epilogueUnlocked && !flags.containmentUnlocked) {
+    throw new Error(
+      "La partida guardada tiene el epílogo desbloqueado sin haber desbloqueado la consulta de contención.",
     );
   }
 
@@ -646,6 +744,125 @@ function hasExactArchiveCriteriaFields(archiveCriteriaData) {
       Object.hasOwn(archiveCriteriaData, field),
     )
   );
+}
+
+/*
+ * El caso indultado: guardados anteriores al formato 5 que ya habían pasado
+ * de largo por donde ahora vive la consulta de contención.
+ *
+ * En v1.2 el epílogo se desbloqueaba directamente al resolver el criterio
+ * del Archivo; la consulta de contención no existía. Un guardado de formato
+ * 4 con `epilogueUnlocked` (o con el criterio del Archivo ya resuelto, que
+ * es lo que lo producía) describe una partida que, con las reglas vigentes
+ * entonces, se ganó todo lo que viene después. Revertir esas banderas para
+ * "obligar" a hacer la consulta nueva no es solo antipático: es imposible
+ * sin dejar ilegibles partidas ya terminadas de v1.2. Si `epilogueCompleted`
+ * era `true`, bajar `epilogueUnlocked` violaría de inmediato las
+ * invariantes de assertEpilogueFlagInvariants() y restore() lanzaría sobre
+ * un guardado perfectamente legítimo.
+ *
+ * Así que se indulta: las banderas del epílogo se conservan tal cual venían,
+ * `containmentUnlocked` pasa a `true` y la consulta se restaura como
+ * `solved`. Es el mismo tipo de decisión acotada que documenta restoreP2()
+ * para los recorridos "semánticamente falsos" guardados con la topología
+ * anterior: se prefiere un estado coherente y jugable a uno literal pero
+ * roto. La diferencia es que aquí no basta con un estado por defecto: un
+ * DoubtBudgetState en `ready` junto a `containmentUnlocked=true` dejaría la
+ * progresión creyendo que la consulta está pendiente cuando el epílogo ya
+ * está abierto, así que se construye una consulta realmente resuelta.
+ */
+function hasLegacyContainmentProgress(data, archiveCriteriaSolved) {
+  if (!DOUBT_BUDGET_LEGACY_FORMAT_VERSIONS.includes(data.formatVersion)) {
+    return false;
+  }
+
+  return Boolean(data.flags?.epilogueUnlocked) || archiveCriteriaSolved;
+}
+
+function restoreDoubtBudget(data, legacyContainmentProgress) {
+  if (DOUBT_BUDGET_LEGACY_FORMAT_VERSIONS.includes(data.formatVersion)) {
+    return legacyContainmentProgress
+      ? createLegacySolvedDoubtBudgetState()
+      : new DoubtBudgetState();
+  }
+
+  const hasDoubtBudget =
+    data.puzzles &&
+    typeof data.puzzles === "object" &&
+    !Array.isArray(data.puzzles) &&
+    Object.hasOwn(data.puzzles, "doubtBudget");
+  const doubtBudgetData = data.puzzles?.doubtBudget;
+
+  if (
+    !hasDoubtBudget ||
+    !doubtBudgetData ||
+    typeof doubtBudgetData !== "object" ||
+    Array.isArray(doubtBudgetData) ||
+    !hasExactDoubtBudgetFields(doubtBudgetData)
+  ) {
+    throw new Error(
+      "La partida guardada no contiene una consulta de contención válida.",
+    );
+  }
+
+  try {
+    return new DoubtBudgetState(doubtBudgetData);
+  } catch (error) {
+    throw new Error(
+      `La consulta de contención de la partida guardada no es válida: ${error.message}`,
+    );
+  }
+}
+
+function hasExactDoubtBudgetFields(doubtBudgetData) {
+  const fields = Object.keys(doubtBudgetData);
+
+  return (
+    fields.length === DOUBT_BUDGET_SAVE_FIELDS.length &&
+    DOUBT_BUDGET_SAVE_FIELDS.every((field) =>
+      Object.hasOwn(doubtBudgetData, field),
+    )
+  );
+}
+
+/*
+ * Construye una consulta resuelta que un jugador real podría haber
+ * alcanzado: se van formulando preguntas mientras cada una reduzca de
+ * verdad el conjunto de expedientes compatibles, hasta que solo quede uno.
+ * Se calcula contra los predicados reales en vez de fijar una terna
+ * concreta, para que siga siendo coherente si el contenido cambiara; el
+ * propio constructor de DoubtBudgetState rechazaría cualquier combinación
+ * que no zanjara la consulta.
+ */
+function createLegacySolvedDoubtBudgetState() {
+  const askedQuestionIds = [];
+
+  for (const question of DOUBT_BUDGET_QUESTIONS) {
+    const compatibleCount = getCompatibleDossiers({ askedQuestionIds }).length;
+
+    if (
+      compatibleCount === 1 ||
+      askedQuestionIds.length === DOUBT_BUDGET_QUESTION_LIMIT
+    ) {
+      break;
+    }
+
+    const candidate = [...askedQuestionIds, question.id];
+    const candidateCount = getCompatibleDossiers({
+      askedQuestionIds: candidate,
+    }).length;
+
+    if (candidateCount < compatibleCount) {
+      askedQuestionIds.push(question.id);
+    }
+  }
+
+  return new DoubtBudgetState({
+    askedQuestionIds,
+    identifiedDossierId: DOUBT_BUDGET_TRUE_DOSSIER.id,
+    phase: DOUBT_BUDGET_PHASE.SOLVED,
+    attemptCount: 1,
+  });
 }
 
 function readPlayerStateFromWorld(world, mapId = world.currentMapId) {

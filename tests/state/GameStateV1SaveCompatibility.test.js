@@ -8,6 +8,9 @@ import {
   ARCHIVE_FINAL_EVIDENCE_ENTRY,
   EPILOGUE_COMBINATION_CLUE_ENTRY,
 } from "../../src/progression/ArchiveCriteriaProgression.js";
+import {
+  CONTAINMENT_CLOSURE_ENTRY,
+} from "../../src/progression/DoubtBudgetProgression.js";
 
 /*
  * Cobertura de compatibilidad con guardados reales de v1.0.0 (tag
@@ -347,8 +350,20 @@ function captureObservableState(state) {
       p2: state.puzzles.p2.toSaveData(),
       libraryCatalogue: state.puzzles.libraryCatalogue.toSaveData(),
       archiveCriteria: state.puzzles.archiveCriteria.toSaveData(),
+      doubtBudget: state.puzzles.doubtBudget.toSaveData(),
     },
   };
+}
+
+/*
+ * Los guardados de v1.0.0 son de formato 4 y no conocen `containmentUnlocked`
+ * ni la consulta de contención, que llegan con el formato 5. Al restaurarlos,
+ * la bandera nueva se deduce del progreso que sí traen: queda en `false`
+ * mientras la investigación no esté completa, y en `true` cuando el epílogo
+ * ya estaba desbloqueado (ver el caso indultado en src/state/GameState.js).
+ */
+function withContainmentFlag(flags, containmentUnlocked) {
+  return { ...flags, containmentUnlocked };
 }
 
 test("Caso A: un guardado real de v1.0.0 justo tras leer el tablón de preparativos carga correctamente en el runtime v1.1", () => {
@@ -373,7 +388,10 @@ test("Caso A: un guardado real de v1.0.0 justo tras leer el tablón de preparati
     fixture.world.playerByMap.library,
   );
 
-  assert.deepEqual(state.flags, fixture.flags);
+  assert.deepEqual(
+    state.flags,
+    withContainmentFlag(fixture.flags, false),
+  );
   assert.equal(state.objectiveId, fixture.objectiveId);
   assert.deepEqual(state.notebook, fixture.notebook);
 
@@ -415,7 +433,10 @@ test("Caso B: un guardado real de v1.0.0 a mitad del primer puzle de los Siete P
     fixture.world.playerByMap["axiom-plaza"],
   );
 
-  assert.deepEqual(state.flags, fixture.flags);
+  assert.deepEqual(
+    state.flags,
+    withContainmentFlag(fixture.flags, false),
+  );
   assert.equal(state.objectiveId, fixture.objectiveId);
   assert.deepEqual(state.notebook, fixture.notebook);
 
@@ -476,9 +497,23 @@ test("Caso C: un guardado real de v1.0.0 con los tres puzles y el código del re
     fixture.world.playerByMap.library,
   );
 
-  assert.deepEqual(state.flags, fixture.flags);
+  assert.deepEqual(
+    state.flags,
+    withContainmentFlag(fixture.flags, true),
+  );
   assert.equal(state.objectiveId, fixture.objectiveId);
-  assert.deepEqual(state.notebook, fixture.notebook);
+  /*
+   * El caso indultado restaura la consulta de contención como resuelta (ver
+   * src/state/GameState.js), así que applyDoubtBudgetProgression() añade su
+   * entrada de cuaderno al final del cuaderno original de v1.0.0. Es la
+   * única diferencia esperada, y se comprueba explícitamente en vez de
+   * relajarla a "contiene lo de antes": las seis entradas anteriores deben
+   * seguir intactas y en el mismo orden.
+   */
+  assert.deepEqual(state.notebook, [
+    ...fixture.notebook,
+    { ...CONTAINMENT_CLOSURE_ENTRY },
+  ]);
 
   assert.deepEqual(state.puzzles.p2.toSaveData(), fixture.puzzles.p2);
   assert.deepEqual(

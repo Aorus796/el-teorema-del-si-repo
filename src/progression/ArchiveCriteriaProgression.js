@@ -3,7 +3,19 @@ import {
 } from "../puzzles/archive-criteria/ArchiveCriteriaState.js";
 import { GIFT_CODE_CLUE_LINES } from "../content/epilogueConfig.js";
 
+/*
+ * Objetivo que deja resolver el criterio del Archivo desde v1.3. Antes de
+ * esa versión, resolverlo desbloqueaba el epílogo directamente y fijaba
+ * START_EPILOGUE_OBJECTIVE_ID; ahora abre la Cámara de Contención y es la
+ * consulta del Custodio la que desbloquea el epílogo (ver
+ * DoubtBudgetProgression.js). START_EPILOGUE_OBJECTIVE_ID sigue exportado
+ * desde aquí porque es donde ya vivía y varios consumidores lo importan de
+ * este módulo; su única escritura real está ahora en la progresión de la
+ * consulta de contención.
+ */
 export const START_EPILOGUE_OBJECTIVE_ID = "start-epilogue";
+
+export const ENTER_CONTAINMENT_OBJECTIVE_ID = "enter-containment-chamber";
 
 export const ARCHIVE_FINAL_EVIDENCE_ENTRY = Object.freeze({
   id: "archive-final-evidence",
@@ -32,9 +44,9 @@ export function applyArchiveCriteriaProgression(state) {
     changed = true;
   }
 
-  if (!state.flags.epilogueUnlocked) {
-    state.flags.epilogueUnlocked = true;
-    state.objectiveId = START_EPILOGUE_OBJECTIVE_ID;
+  if (!state.flags.containmentUnlocked) {
+    state.flags.containmentUnlocked = true;
+    state.objectiveId = ENTER_CONTAINMENT_OBJECTIVE_ID;
     changed = true;
   }
 

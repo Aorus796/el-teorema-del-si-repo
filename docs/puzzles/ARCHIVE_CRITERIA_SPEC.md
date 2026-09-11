@@ -35,8 +35,16 @@ afirmación presente y verificable:
 
 > Con la información que poseen ahora, ambas personas eligen avanzar juntas.
 
-Resolver el puzle termina la investigación y habilita el epílogo. No abre
-ninguna localización adicional.
+Resolver el puzle termina la investigación.
+
+> **Actualizado tras `v1.2`.** Hasta esa versión, resolver este puzle
+> habilitaba directamente el epílogo. Desde el ciclo posterior, termina la
+> investigación y **abre la Cámara de Contención**: el epílogo lo habilita
+> cerrar el expediente del Custodio (ver
+> [`DOUBT_BUDGET_SPEC.md`](DOUBT_BUDGET_SPEC.md)). El resto de esta
+> especificación —mecánica, datos, solución, controles y estado
+> persistente de este puzle— sigue vigente sin cambios; solo cambia qué
+> bandera y qué objetivo fija su progresión al resolverse.
 
 ## 2. Objetivo exacto del jugador
 

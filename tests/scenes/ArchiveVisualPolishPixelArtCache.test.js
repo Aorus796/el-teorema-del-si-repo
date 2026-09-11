@@ -311,12 +311,14 @@ test("un segundo render de archive no crea canvases de sprite adicionales para l
 /*
  * Regresión directa del caso especial por-id de renderObjects()
  * (WorldScene.js): "archive-criteria-table" es el único id que recibe el
- * tratamiento de escritorio dedicado (archive-desk, 48x48). El otro
- * objeto de type "table" de todo el juego, epilogue-gift-mechanism (en
- * axiom-plaza), tiene desde v1.2 su propio caso especial por-id y su
- * propio sprite indexado (40x40, ver
- * tests/scenes/EpilogueGiftMechanismVisualPolishPixelArtCache.test.js):
- * los dos casos por-id no deben solaparse ni intercambiarse.
+ * tratamiento de escritorio dedicado (archive-desk, 48x48). Los otros dos
+ * objetos de type "table" del juego -- epilogue-gift-mechanism (en
+ * axiom-plaza, desde v1.2, ver
+ * tests/scenes/EpilogueGiftMechanismVisualPolishPixelArtCache.test.js) y
+ * containment-budget-panel (en containment-chamber, desde v1.3, ver
+ * tests/scenes/ContainmentChamberPixelArtCache.test.js) -- tienen cada
+ * uno su propio caso especial por-id y su propio sprite indexado: los
+ * tres casos por-id no deben solaparse ni intercambiarse.
  *
  * `createdCanvases` es un array a nivel de módulo que se acumula entre
  * TODOS los tests de este archivo (mismo `fakeDocument`, nunca se

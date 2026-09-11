@@ -94,6 +94,13 @@ Al resolver P2, el jugador obtiene una anotación de la novia y un símbolo que 
 - A6: cámara de comunicación.
 - A7: núcleo del Custodio.
 
+De este esquema de siete salas, la implementación reduce el Archivo a una
+única sala compacta (`archive`, la sala de criterios de A5) más una segunda
+localización propia para A7: la **Cámara de Contención**
+(`containment-chamber`), accesible desde el Archivo una vez resuelto el
+criterio. Ver [`../puzzles/DOUBT_BUDGET_SPEC.md`](../puzzles/DOUBT_BUDGET_SPEC.md).
+A1-A4 y A6 no están implementadas.
+
 ## 5.11. Estados de progresión
 
 ### Estado 0: prólogo

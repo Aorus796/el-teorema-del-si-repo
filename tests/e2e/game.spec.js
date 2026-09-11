@@ -11,9 +11,27 @@ import {
   GIFT_CODE_CLUE_LINES,
   GIFT_CODE_DIGITS,
 } from "../../src/content/epilogueConfig.js";
-import { GameState } from "../../src/state/GameState.js";
+import { GameState, SAVE_FORMAT_VERSION } from "../../src/state/GameState.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
+import { ELENA_PALETTE } from "../../src/content/elenaPixelArt.js";
 import { PARTNER_NAME } from "../../src/content/personalizationConfig.js";
+import {
+  DOUBT_BUDGET_DOSSIERS,
+  DOUBT_BUDGET_RULE_LINES,
+  DOUBT_BUDGET_TRUE_DOSSIER_ID,
+} from "../../src/puzzles/doubt-budget/DoubtBudgetData.js";
+import {
+  DoubtBudgetState,
+} from "../../src/puzzles/doubt-budget/DoubtBudgetState.js";
+import {
+  CONSOLE_BRIEFING_LINES,
+} from "../../src/scenes/DoubtBudgetScene.js";
+import {
+  ENTER_CONTAINMENT_OBJECTIVE_ID,
+} from "../../src/progression/ArchiveCriteriaProgression.js";
+import {
+  CONTAINMENT_CLOSURE_ENTRY,
+} from "../../src/progression/DoubtBudgetProgression.js";
 
 function collectJavaScriptErrors(page) {
   const errors = [];
@@ -96,6 +114,22 @@ async function countSfxPlayEvents(page, sfxPath) {
       ).length,
     fileName,
   );
+}
+
+/*
+ * "#rrggbb" -> {r, g, b}, para comparar contra los canales enteros que
+ * devuelve CanvasRenderingContext2D.getImageData() en el navegador real
+ * (ver containsElenaOutlineColor() más abajo, dentro del test de la
+ * Cámara de Contención).
+ */
+function hexToRgb(hex) {
+  const value = hex.replace("#", "");
+
+  return {
+    r: Number.parseInt(value.slice(0, 2), 16),
+    g: Number.parseInt(value.slice(2, 4), 16),
+    b: Number.parseInt(value.slice(4, 6), 16),
+  };
 }
 
 function buildGiftCodeKeystrokes(digits) {
@@ -300,7 +334,7 @@ test("entra en la escena archive-criteria desde un guardado existente y vuelve a
   expect(errors).toEqual([]);
 });
 
-test("resuelve el tercer puzle del Archivo con teclado y desbloquea el epílogo", async ({
+test("resuelve el tercer puzle del Archivo con teclado y desbloquea la Cámara de Contención", async ({
   page,
 }) => {
   const errors = collectJavaScriptErrors(page);
@@ -464,8 +498,14 @@ test("resuelve el tercer puzle del Archivo con teclado y desbloquea el epílogo"
   const savedData = JSON.parse(savedRaw);
 
   expect(savedData.flags.investigationComplete).toBe(true);
-  expect(savedData.flags.epilogueUnlocked).toBe(true);
-  expect(savedData.objectiveId).toBe("start-epilogue");
+  expect(savedData.flags.containmentUnlocked).toBe(true);
+  /*
+   * Desde v1.3 el criterio del Archivo abre la Cámara de Contención, no el
+   * epílogo: éste lo desbloquea cerrar el expediente del Custodio (ver el
+   * recorrido de la Cámara más abajo en este mismo archivo).
+   */
+  expect(savedData.flags.epilogueUnlocked).toBe(false);
+  expect(savedData.objectiveId).toBe("enter-containment-chamber");
   expect(savedData.puzzles.archiveCriteria.phase).toBe("solved");
   expect(savedData.puzzles.archiveCriteria.attemptCount).toBe(1);
   expect(savedData.puzzles.archiveCriteria.verdicts).toEqual({
@@ -2794,12 +2834,38 @@ test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles c
     },
   };
 
+  /*
+   * El fixture de entrada es de formato 4 (el que producía v1.2): al
+   * cargarlo, el runtime lo migra al formato vigente, que añade la bandera
+   * `containmentUnlocked` y la consulta de contención. Esta partida no ha
+   * llegado siquiera a resolver el criterio del Archivo, así que la
+   * migración deja ambas cosas en su estado inicial -- que es exactamente
+   * lo que se comprueba aquí, campo a campo, en vez de relajar la
+   * comparación.
+   */
   const assertCombinedState = (savedData) => {
-    expect(savedData.formatVersion).toBe(savedGame.formatVersion);
+    expect(savedData.formatVersion).toBe(SAVE_FORMAT_VERSION);
     expect(savedData.scene).toBe(savedGame.scene);
     expect(savedData.player).toEqual(savedGame.player);
-    expect(savedData.world).toEqual(savedGame.world);
-    expect(savedData.flags).toEqual(savedGame.flags);
+    /*
+     * Los mapas conocidos ganan uno nuevo con v1.3 (la Cámara de
+     * Contención), así que un guardado de formato 4 recupera su punto de
+     * aparición por defecto al migrar. El resto de posiciones por mapa debe
+     * conservarse exactamente como venían.
+     */
+    expect(savedData.world).toEqual({
+      ...savedGame.world,
+      playerByMap: {
+        ...savedGame.world.playerByMap,
+        "containment-chamber": new GameState().getPlayerState(
+          "containment-chamber",
+        ),
+      },
+    });
+    expect(savedData.flags).toEqual({
+      ...savedGame.flags,
+      containmentUnlocked: false,
+    });
     expect(savedData.objectiveId).toBe(savedGame.objectiveId);
     expect(savedData.notebook).toEqual(savedGame.notebook);
 
@@ -2827,6 +2893,7 @@ test("conserva mapa, posición, banderas, objetivo, cuaderno y los tres puzles c
           id: "p2-bridges",
         },
       },
+      doubtBudget: new DoubtBudgetState().toSaveData(),
     });
   };
 
@@ -3056,7 +3123,7 @@ test("migra un guardado de formato 1 y continúa el recorrido de P2 con teclado"
   );
   const savedData = JSON.parse(savedRaw);
 
-  expect(savedData.formatVersion).toBe(4);
+  expect(savedData.formatVersion).toBe(SAVE_FORMAT_VERSION);
   expect(savedData.puzzles.p2.phase).toBe("traversing");
   expect(savedData.puzzles.p2.closedBridgeId).toBe("B6");
   expect(savedData.puzzles.p2.currentNode).toBe("R");
@@ -3234,6 +3301,652 @@ for (const variant of INVALID_SAVE_VARIANTS) {
     expect(uncaughtExceptions).toEqual([]);
   });
 }
+
+/*
+ * Punto de partida del recorrido de la Cámara de Contención (v1.3): criterio
+ * del Archivo ya resuelto -- lo único que abre la Cámara -- y consulta de
+ * contención intacta, con el jugador ya dentro de la sala, en su punto de
+ * aparición por defecto.
+ *
+ * Calcado de buildEpilogueReadySaveData(): parte de un guardado de formato 4
+ * real (el que producía v1.2) y deja que GameState.restore() ejecute la
+ * progresión de producción, en vez de fabricar a mano las banderas y el
+ * cuaderno resultantes.
+ */
+function buildContainmentReadySaveData() {
+  const seedState = new GameState();
+
+  seedState.restore({
+    formatVersion: 4,
+    scene: "world",
+    player: { x: 192, y: 145, facing: "up" },
+    world: {
+      currentMapId: "archive",
+      playerByMap: {
+        "axiom-plaza": { x: 240, y: 192, facing: "up" },
+        "seven-bridges-walk": { x: 48, y: 192, facing: "right" },
+        library: { x: 240, y: 256, facing: "up" },
+        archive: { x: 192, y: 145, facing: "up" },
+      },
+    },
+    flags: {
+      examinedPrototypeSign: true,
+      preparationsBoardRead: true,
+      brideNoteReceived: true,
+      sevenBridgesUnlocked: true,
+      p2EvidenceFound: true,
+      libraryObjectiveUnlocked: true,
+      archiveUnlocked: true,
+      investigationComplete: false,
+      epilogueUnlocked: false,
+      epilogueStarted: false,
+      giftCodeSolved: false,
+      epilogueCompleted: false,
+    },
+    objectiveId: "inspect-archive-criteria-table",
+    notebook: [],
+    puzzles: {
+      p2: {
+        lifecycle: { status: "solved", attemptCount: 1 },
+        phase: "solved",
+        closedBridgeId: "B1",
+        currentNode: "L",
+        route: ["E", "R", "N", "L", "R", "M", "L"],
+        usedBridgeIds: ["B2", "B3", "B6", "B7", "B4", "B5"],
+        hintsRead: [1],
+        failureCode: null,
+      },
+      libraryCatalogue: {
+        order: ["A", "D", "R", "C", "M"],
+        phase: "solved",
+        hintsRead: [1],
+        attemptCount: 1,
+        failureCode: null,
+      },
+      archiveCriteria: {
+        verdicts: {
+          "voluntary-entry": "confirmed",
+          "followed-trail": "confirmed",
+          "never-disagreed": "contradicted",
+          "someone-refuses-now": "contradicted",
+          "present-choice": "confirmed",
+          "universal-future": "undecidable",
+        },
+        phase: "solved",
+        hintsRead: [1],
+        attemptCount: 1,
+        failureCode: null,
+      },
+    },
+  });
+
+  /*
+   * El indulto de formato 4 (ver src/state/GameState.js) deja la consulta de
+   * contención como resuelta, que es justo lo contrario de lo que este
+   * recorrido necesita: aquí se quiere jugarla de verdad. Se reinicia a su
+   * estado inicial y se revierten las consecuencias que solo pertenecen a
+   * haberla cerrado, dejando el resto de la progresión real intacta.
+   */
+  seedState.puzzles.doubtBudget = new DoubtBudgetState();
+  seedState.flags.epilogueUnlocked = false;
+  seedState.notebook = seedState.notebook.filter(
+    (entry) => entry.id !== CONTAINMENT_CLOSURE_ENTRY.id,
+  );
+  seedState.objectiveId = ENTER_CONTAINMENT_OBJECTIVE_ID;
+  seedState.changeMap("containment-chamber", {
+    x: 192,
+    y: 208,
+    facing: "up",
+  });
+
+  const isCoherent =
+    seedState.scene === "world" &&
+    seedState.world.currentMapId === "containment-chamber" &&
+    seedState.flags.investigationComplete === true &&
+    seedState.flags.containmentUnlocked === true &&
+    seedState.flags.epilogueUnlocked === false &&
+    seedState.puzzles.archiveCriteria.phase === "solved" &&
+    seedState.puzzles.doubtBudget.phase === "ready" &&
+    seedState.notebook.some((entry) => entry.id === "epilogue-combination-clue");
+
+  if (!isCoherent) {
+    throw new Error(
+      "buildContainmentReadySaveData() produjo un fixture incoherente con el punto de partida esperado del recorrido E2E de la Cámara de Contención.",
+    );
+  }
+
+  return seedState.toSaveData();
+}
+
+/*
+ * Recorrido completo de la Cámara de Contención en el navegador real:
+ * diálogos de Elena y del Custodio, un intento fallido (cuarta pregunta
+ * bloqueada e identificación no forzada), guardado/recarga con la consulta a
+ * medias, reinicio, resolución correcta, revelación, y confirmación de que el
+ * epílogo ya publicado sigue funcionando sin cambios hasta los créditos.
+ */
+test("recorre la Cámara de Contención con teclado, del Archivo resuelto al epílogo", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+
+  const errors = collectJavaScriptErrors(page);
+  const savedGame = buildContainmentReadySaveData();
+
+  await page.addInitScript(() => {
+    window.__renderedTexts = [];
+
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function patchedFillText(
+      text,
+      x,
+      y,
+      maxWidth,
+    ) {
+      window.__renderedTexts.push(String(text));
+      return originalFillText.call(this, text, x, y, maxWidth);
+    };
+  });
+
+  await disableAudioPlayback(page);
+
+  await page.addInitScript((data) => {
+    localStorage.setItem("el-teorema-del-si.save.v1", JSON.stringify(data));
+  }, savedGame);
+
+  await page.goto("/");
+
+  const canvas = page.locator("#game-canvas");
+  const interactionPrompt = page.locator("#interaction-prompt");
+  const dialoguePanel = page.locator("#dialogue-panel");
+  const dialogueSpeaker = page.locator("#dialogue-speaker");
+  const dialogueText = page.locator("#dialogue-text");
+  const toast = page.locator("#toast");
+
+  const currentFrame = () => canvas.evaluate((element) => element.toDataURL());
+  /*
+   * Lee píxeles reales del <canvas> (no el DataURL completo) para
+   * confirmar de forma acotada si el sprite de Elena está dibujado dentro
+   * de un rectángulo dado -- mismo criterio de color que
+   * elenaOutlineRectsWithin() en tests/scenes/WorldScene.test.js
+   * (ELENA_PALETTE.O), pero sobre el canvas real en vez de un contexto
+   * simulado. El canvas del juego es 480x270 sin escalado interno (ver
+   * width/height en index.html), así que getImageData() opera en las
+   * mismas coordenadas lógicas que el resto del juego -- sin necesidad de
+   * traducir por devicePixelRatio ni por el tamaño CSS del elemento. El
+   * rectángulo tampoco necesita compensar la cámara: containment-chamber
+   * mide 384x256px, más pequeño que el viewport de 480x270 en ambos ejes,
+   * así que Camera.follow() (src/world/Camera.js) mantiene camera.x y
+   * camera.y clamped a 0 para cualquier posición de la jugadora en este
+   * mapa.
+   */
+  const containsElenaOutlineColor = ({ x, y, width, height }) =>
+    canvas.evaluate(
+      (element, rect) => {
+        const context = element.getContext("2d");
+        const { data } = context.getImageData(
+          rect.x,
+          rect.y,
+          rect.width,
+          rect.height,
+        );
+
+        for (let index = 0; index < data.length; index += 4) {
+          if (
+            data[index] === rect.color.r &&
+            data[index + 1] === rect.color.g &&
+            data[index + 2] === rect.color.b &&
+            data[index + 3] > 0
+          ) {
+            return true;
+          }
+        }
+
+        return false;
+      },
+      { x, y, width, height, color: hexToRgb(ELENA_PALETTE.O) },
+    );
+  const clearRenderedTexts = () =>
+    page.evaluate(() => {
+      window.__renderedTexts.length = 0;
+    });
+  const waitForRenderedText = (text) =>
+    expect
+      .poll(
+        () =>
+          page.evaluate(
+            (needle) => window.__renderedTexts.includes(needle),
+            text,
+          ),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+  /*
+   * Guardar es asíncrono respecto al test: WorldScene.save() ocurre en el
+   * siguiente frame del bucle de juego, no al soltar la tecla. Leer
+   * localStorage sin esperar antes al aviso de confirmación deja una
+   * carrera real (vista de forma intermitente al desarrollar este test).
+   */
+  const saveAndWaitForConfirmation = async () => {
+    await page.keyboard.press("KeyK");
+    await expect(toast).toHaveText("Partida guardada");
+
+    return page.evaluate(() =>
+      JSON.parse(localStorage.getItem("el-teorema-del-si.save.v1")),
+    );
+  };
+  /*
+   * Los mensajes largos de DoubtBudgetScene se dibujan partidos en varias
+   * llamadas a fillText() (wrapText), así que no aparecen como una entrada
+   * exacta de window.__renderedTexts: se buscan sobre la concatenación de
+   * todo lo dibujado desde el último clearRenderedTexts().
+   */
+  const waitForRenderedFragment = (fragment) =>
+    expect
+      .poll(
+        () =>
+          page.evaluate(
+            (needle) => window.__renderedTexts.join(" ").includes(needle),
+            fragment,
+          ),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+  const waitForFrameChangeFrom = async (previousFrame) => {
+    await expect.poll(currentFrame).not.toBe(previousFrame);
+    return currentFrame();
+  };
+
+  /*
+   * InputManager acumula las teclas pulsadas en un Set por código que se
+   * vacía una vez por frame: dos pulsaciones distintas dentro del mismo
+   * frame colapsan y la escena solo atiende la primera que comprueba su
+   * update(). Cada pulsación del menú de la consulta espera por tanto a que
+   * el frame cambie -- mismo patrón que ya usa la entrada de la combinación
+   * del regalo en este mismo archivo.
+   */
+  const pressAndWaitForFrameChange = async (key) => {
+    const previousFrame = await currentFrame();
+    await page.keyboard.press(key);
+    await waitForFrameChangeFrom(previousFrame);
+  };
+
+  /*
+   * Camina manteniendo pulsadas las teclas indicadas hasta que el aviso de
+   * interacción sea exactamente el esperado, y las suelta en ese mismo
+   * instante.
+   *
+   * La comprobación se hace DENTRO de la página, una vez por frame de
+   * animación (`polling: "raf"`), no con sondeos desde el proceso de test.
+   * El motivo es que el radio de interacción de estos objetos es de 30 px y
+   * el jugador se mueve a 72 px/s con el delta acotado a 0,1 s
+   * (src/core/Game.js), es decir, como máximo 7,2 px por frame: comprobando
+   * una vez por frame es imposible atravesar entera la ventana en la que el
+   * objeto está al alcance entre dos comprobaciones, mientras que un sondeo
+   * externo con latencia de red local sí podría saltársela y volver el
+   * recorrido intermitente.
+   */
+  const walkUntilPrompt = async (keys, expectedPrompt) => {
+    for (const key of keys) {
+      await page.keyboard.down(key);
+    }
+
+    try {
+      await page.waitForFunction(
+        (expected) =>
+          document.querySelector("#interaction-prompt")?.textContent ===
+          expected,
+        expectedPrompt,
+        { polling: "raf", timeout: 20_000 },
+      );
+    } finally {
+      for (const key of keys) {
+        await page.keyboard.up(key);
+      }
+    }
+
+    await expect(interactionPrompt).toHaveText(expectedPrompt);
+  };
+
+  const titleFrame = await currentFrame();
+
+  await test.step("carga el guardado y aparece dentro de la Cámara de Contención", async () => {
+    await page.keyboard.press("KeyL");
+    await waitForFrameChangeFrom(titleFrame);
+
+    await waitForRenderedText("Cámara de Contención");
+    await waitForRenderedText(
+      "Objetivo: Baja a la Cámara de Contención y consulta al Custodio.",
+    );
+    await expect(interactionPrompt).toHaveText("[E] Ir a Archivo");
+  });
+
+  await test.step("habla con Elena a través de la celosía", async () => {
+    await walkUntilPrompt(
+      ["KeyD", "KeyW"],
+      "[E] Examinar Celosía de contención",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeVisible();
+    await expect(dialogueSpeaker).toHaveText(PARTNER_NAME);
+    await expect(dialogueText).toHaveText(
+      "Llevo cuatro horas viéndole abrir el mismo expediente. Nunca mira dentro. Sólo comprueba que la forma cuadra.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueText).toHaveText(
+      "Yo le hice nueve preguntas. Las nueve tenían respuesta. Ninguna obligaba a nada. Aquí sólo se acepta lo que obliga.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueText).toHaveText(
+      "No me saques con un argumento bonito, Gonzalo. Sácame con uno que él no pueda rechazar.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeHidden();
+  });
+
+  await test.step("el Custodio se presenta y explica el protocolo del presupuesto", async () => {
+    await walkUntilPrompt(["KeyA", "KeyW"], "[E] Hablar con Custodio");
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueSpeaker).toHaveText("Custodio");
+    await expect(dialogueText).toHaveText(
+      "Buenas tardes. Son las diecisiete horas y cuarenta y un minutos. No sé si son buenas; lo he dicho por convención.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueText).toHaveText(
+      "Consta que has entrado. Consta que no te lo he impedido. Ambas cosas están registradas y ninguna de las dos es un permiso.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueText).toHaveText(
+      "Puedo responder preguntas sobre el expediente de contención. No puedo entregártelo. Una conclusión entregada deja de poder comprobarse.",
+    );
+
+    for (const ruleLine of DOUBT_BUDGET_RULE_LINES) {
+      await page.keyboard.press("KeyE");
+      await expect(dialogueText).toHaveText(ruleLine);
+    }
+
+    await page.keyboard.press("KeyE");
+    await expect(dialogueSpeaker).toHaveText("Gonzalo");
+    await expect(dialogueText).toHaveText(
+      "Tres preguntas para ocho respuestas. Eso no es un acertijo. Es una factura.",
+    );
+
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeHidden();
+  });
+
+  await test.step("Elena sigue encerrada y visible tras la celosía mientras el presupuesto de duda no se ha resuelto", async () => {
+    const elenaDecoration = getWorldMap("containment-chamber").decorations.find(
+      (decoration) => decoration.id === "containment-elena",
+    );
+
+    await expect(canvas).toBeVisible();
+    expect(await containsElenaOutlineColor(elenaDecoration)).toBe(true);
+  });
+
+  await test.step("abre la consulta y comprueba una identificación no forzada", async () => {
+    await walkUntilPrompt(["KeyA", "KeyW"], "[E] Examinar Panel de consulta");
+
+    await clearRenderedTexts();
+    const worldFrame = await currentFrame();
+    await page.keyboard.press("KeyE");
+    await waitForFrameChangeFrom(worldFrame);
+    await waitForRenderedText("EL PRESUPUESTO DE LA DUDA");
+    await waitForRenderedText("Presupuesto: 3/3 preguntas");
+    await waitForRenderedText("Expedientes compatibles: 8/8");
+
+    // El panel abre con una introducción obligatoria propia, distinta del
+    // diálogo del Custodio ya verificado antes: cubre en qué consiste la
+    // consulta aunque el jugador haya llegado aquí sin hablar con él.
+    await expect(dialoguePanel).toBeVisible();
+    await expect(dialogueSpeaker).toHaveText("Custodio");
+    await expect(dialogueText).toHaveText(CONSOLE_BRIEFING_LINES[0]);
+
+    for (const line of CONSOLE_BRIEFING_LINES.slice(1)) {
+      await page.keyboard.press("KeyE");
+      await expect(dialogueText).toHaveText(line);
+    }
+
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeHidden();
+
+    // Una sola pregunta parte los ocho expedientes justo por la mitad.
+    await clearRenderedTexts();
+    await pressAndWaitForFrameChange("Enter");
+    await waitForRenderedText("Presupuesto: 2/3 preguntas");
+    await waitForRenderedText("Expedientes compatibles: 4/8");
+
+    // Con cuatro expedientes compatibles, ninguna identificación está
+    // forzada: ni siquiera la del expediente real.
+    await pressAndWaitForFrameChange("ArrowRight");
+    await clearRenderedTexts();
+    await pressAndWaitForFrameChange("Enter");
+    await waitForRenderedFragment(
+      "El Custodio no acepta una identificación que su expediente de consulta no obligue a sostener.",
+    );
+  });
+
+  await test.step("guarda y recarga con la consulta a medias sin perder la pregunta formulada", async () => {
+    const puzzleFrame = await currentFrame();
+    await page.keyboard.press("Escape");
+    await waitForFrameChangeFrom(puzzleFrame);
+    await expect(interactionPrompt).toHaveText("[E] Examinar Panel de consulta");
+
+    const savedPayload = await saveAndWaitForConfirmation();
+
+    await page.keyboard.press("KeyL");
+    await expect(toast).toHaveText("Partida cargada");
+
+    expect(savedPayload.formatVersion).toBe(SAVE_FORMAT_VERSION);
+    expect(savedPayload.flags.containmentUnlocked).toBe(true);
+    expect(savedPayload.flags.epilogueUnlocked).toBe(false);
+    expect(savedPayload.puzzles.doubtBudget.askedQuestionIds).toEqual(["P1"]);
+    expect(savedPayload.puzzles.doubtBudget.attemptCount).toBe(1);
+
+    await expect(interactionPrompt).toHaveText("[E] Examinar Panel de consulta");
+
+    await clearRenderedTexts();
+    const worldFrame = await currentFrame();
+    await page.keyboard.press("KeyE");
+    await waitForFrameChangeFrom(worldFrame);
+    await waitForRenderedText("Presupuesto: 2/3 preguntas");
+  });
+
+  await test.step("reinicia la consulta, agota el presupuesto y comprueba el bloqueo de la cuarta pregunta", async () => {
+    await clearRenderedTexts();
+    await pressAndWaitForFrameChange("KeyR");
+    await waitForRenderedText("Consulta reiniciada.");
+    await waitForRenderedText("Presupuesto: 3/3 preguntas");
+    await waitForRenderedText("Expedientes compatibles: 8/8");
+
+    // P1, P2 y P4: la terna que deja un único expediente compatible.
+    for (const key of [
+      "Enter",
+      "ArrowDown",
+      "Enter",
+      "ArrowDown",
+      "ArrowDown",
+      "Enter",
+    ]) {
+      await pressAndWaitForFrameChange(key);
+    }
+
+    await clearRenderedTexts();
+    await waitForRenderedText("Presupuesto: 0/3 preguntas");
+    await waitForRenderedText("Expedientes compatibles: 1/8");
+
+    // Una cuarta pregunta nueva y legítima no llega a formularse.
+    await pressAndWaitForFrameChange("ArrowDown");
+    await pressAndWaitForFrameChange("ArrowDown");
+    await clearRenderedTexts();
+    await pressAndWaitForFrameChange("Enter");
+    await waitForRenderedFragment(
+      "El presupuesto está agotado. El Custodio no concede una cuarta entrada.",
+    );
+    await waitForRenderedText("Presupuesto: 0/3 preguntas");
+  });
+
+  await test.step("identifica el expediente real y el Custodio acepta", async () => {
+    await pressAndWaitForFrameChange("ArrowRight");
+
+    const trueDossierIndex = DOUBT_BUDGET_DOSSIERS.findIndex(
+      (dossier) => dossier.id === DOUBT_BUDGET_TRUE_DOSSIER_ID,
+    );
+
+    for (let step = 0; step < trueDossierIndex; step += 1) {
+      await pressAndWaitForFrameChange("ArrowDown");
+    }
+
+    await clearRenderedTexts();
+    await pressAndWaitForFrameChange("Enter");
+    await waitForRenderedText("Identificación aceptada.");
+    await waitForRenderedText("EXPEDIENTE CERRADO | Esc salir");
+
+    expect(await countSfxPlayEvents(page, PUZZLE_SUCCESS_SFX_PATH)).toBe(1);
+  });
+
+  await test.step("al volver al mundo se reproduce la revelación y el reencuentro", async () => {
+    const puzzleFrame = await currentFrame();
+    await page.keyboard.press("Escape");
+    await waitForFrameChangeFrom(puzzleFrame);
+
+    await expect(dialoguePanel).toBeVisible();
+    await expect(dialogueSpeaker).toHaveText("Custodio");
+    await expect(dialogueText).toHaveText(
+      "Tres preguntas. Ocho expedientes. Una sola conclusión compatible. Acepto la identificación.",
+    );
+
+    const revelationLines = [
+      "Asiento I: sostenido. Asiento II: presupuesto. Asiento III: presupuesto.",
+      "Dos de los tres asientos que sostienen la retención no se sostienen.",
+      "El protocolo exige cerrar sin conclusión todo expediente cuyo fundamento sea un presupuesto.",
+      "Nunca había tenido que aplicármelo.",
+      "Ábrela.",
+      "La estoy abriendo. Tardaré ciento doce segundos. No es dramatismo. Es el mecanismo.",
+      "Ciento doce segundos. Los he contado.",
+      "Yo he contado cuatro horas.",
+      "Vamos fuera. Aquí dentro no se puede decir nada que no conste.",
+    ];
+
+    for (const line of revelationLines) {
+      await page.keyboard.press("KeyE");
+      await expect(dialogueText).toHaveText(line);
+    }
+
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeHidden();
+
+    await waitForRenderedText(
+      "Objetivo: Regresa al lugar donde comenzó la demostración.",
+    );
+  });
+
+  await test.step("Elena ya no se dibuja encerrada tras la revelación", async () => {
+    const elenaDecoration = getWorldMap("containment-chamber").decorations.find(
+      (decoration) => decoration.id === "containment-elena",
+    );
+
+    await expect(canvas).toBeVisible();
+    expect(await containsElenaOutlineColor(elenaDecoration)).toBe(false);
+  });
+
+  await test.step("el guardado resultante abre el epílogo y anota la revelación", async () => {
+    const savedPayload = await saveAndWaitForConfirmation();
+
+    expect(savedPayload.flags.epilogueUnlocked).toBe(true);
+    expect(savedPayload.flags.epilogueStarted).toBe(false);
+    expect(savedPayload.objectiveId).toBe("start-epilogue");
+    expect(savedPayload.puzzles.doubtBudget.phase).toBe("solved");
+    expect(savedPayload.puzzles.doubtBudget.identifiedDossierId).toBe(
+      DOUBT_BUDGET_TRUE_DOSSIER_ID,
+    );
+    expect(savedPayload.notebook.map((entry) => entry.id)).toContain(
+      CONTAINMENT_CLOSURE_ENTRY.id,
+    );
+  });
+
+  /*
+   * El epílogo no cambia con esta tarea: se comprueba que el recorrido ya
+   * publicado sigue funcionando tal cual partiendo del estado real que
+   * acaba de producir la Cámara. El salto físico hasta la Plaza se hace
+   * reescribiendo el guardado desde el propio test -- misma técnica que el
+   * resto de fixtures de este archivo -- en vez de teclear el trayecto
+   * entero por cuatro mapas.
+   */
+  await test.step("desde ese guardado, el epílogo publicado sigue llevando a los créditos", async () => {
+    await page.evaluate(() => {
+      const key = "el-teorema-del-si.save.v1";
+      const saved = JSON.parse(localStorage.getItem(key));
+      saved.world.currentMapId = "axiom-plaza";
+      saved.world.playerByMap["axiom-plaza"] = {
+        x: 576,
+        y: 325,
+        facing: "up",
+      };
+      saved.player = { x: 576, y: 325, facing: "up" };
+      localStorage.setItem(key, JSON.stringify(saved));
+    });
+
+    await page.keyboard.press("KeyL");
+    await expect(interactionPrompt).toHaveText(
+      "[E] Examinar Mecanismo del regalo",
+      { timeout: 15_000 },
+    );
+
+    await clearRenderedTexts();
+    let previousFrame = await currentFrame();
+    await page.keyboard.press("KeyE");
+    await waitForFrameChangeFrom(previousFrame);
+    await waitForRenderedText("MECANISMO DEL REGALO");
+
+    for (const key of buildGiftCodeKeystrokes(GIFT_CODE_DIGITS)) {
+      previousFrame = await currentFrame();
+      await page.keyboard.press(key);
+      await waitForFrameChangeFrom(previousFrame);
+    }
+
+    await waitForRenderedText(GIFT_CODE_DIGITS.join(" · "));
+
+    previousFrame = await currentFrame();
+    await page.keyboard.press("Enter");
+    await waitForFrameChangeFrom(previousFrame);
+
+    await walkUntilPrompt(["KeyD", "KeyW"], `[E] Hablar con ${PARTNER_NAME}`);
+
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeVisible();
+    await expect(dialogueSpeaker).toHaveText(PARTNER_NAME);
+    await expect(dialogueText).toHaveText(
+      "No quería saber si serías capaz de encontrarme. Quería que supieras que podías dejar de buscar.",
+    );
+
+    for (const line of [
+      "Y aun así he venido.",
+      "Entonces dime qué demuestra el teorema.",
+      "Que ningún sí vale para siempre solo porque se pronunció una vez. Vale porque, pudiendo decir que no, hoy volvemos a elegirlo.",
+      "Eso era lo único que necesitaba comprobar antes de mañana.",
+    ]) {
+      await page.keyboard.press("KeyE");
+      await expect(dialogueText).toHaveText(line);
+    }
+
+    await clearRenderedTexts();
+    await page.keyboard.press("KeyE");
+    await expect(dialoguePanel).toBeHidden();
+    await waitForRenderedFragment(
+      "No existe un sí para siempre. Existen dos personas que pueden volver a elegirse cada día.",
+    );
+  });
+
+  expect(errors).toEqual([]);
+});
 
 function buildEpilogueReadySaveData() {
   const seedState = new GameState();
@@ -3685,8 +4398,9 @@ test("recorre el epílogo completo con teclado, desde el Archivo resuelto hasta 
     );
     const savedData = JSON.parse(savedRaw);
 
-    expect(savedData.formatVersion).toBe(4);
+    expect(savedData.formatVersion).toBe(SAVE_FORMAT_VERSION);
     expect(savedData.flags.investigationComplete).toBe(true);
+    expect(savedData.flags.containmentUnlocked).toBe(true);
     expect(savedData.flags.epilogueUnlocked).toBe(true);
     expect(savedData.flags.epilogueStarted).toBe(true);
     expect(savedData.flags.giftCodeSolved).toBe(true);

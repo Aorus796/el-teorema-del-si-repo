@@ -520,6 +520,19 @@ La señal llega a la novia y se abre la Cámara de Comunicación.
 
 ## 7.13. P10 - Lo que sabemos que el otro sabe
 
+> **Sección histórica, superada por la implementación.** El puzle del
+> Custodio finalmente implementado **no** es este juego de sumas y
+> productos sobre trece parejas, sino **El presupuesto de la duda**: tres
+> preguntas de sí o no sobre un expediente de tres asientos binarios, con
+> ocho expedientes posibles y una condición de victoria dinámica. Ver
+> [`../puzzles/DOUBT_BUDGET_SPEC.md`](../puzzles/DOUBT_BUDGET_SPEC.md),
+> que es la fuente de verdad del puzle del Custodio.
+>
+> Lo que sigue se conserva como registro de diseño de la variante
+> descartada: mantiene el mismo objetivo conceptual (deducción con
+> información parcial frente al Custodio) pero ninguno de sus datos,
+> controles ni interfaz están implementados.
+
 ### Conceptos
 
 Lógica epistémica, información parcial, eliminación iterativa y conocimiento compartido.

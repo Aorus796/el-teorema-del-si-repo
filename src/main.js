@@ -15,6 +15,9 @@ import {
   ArchiveCriteriaScene,
 } from "./scenes/ArchiveCriteriaScene.js";
 import {
+  DoubtBudgetScene,
+} from "./scenes/DoubtBudgetScene.js";
+import {
   EpilogueGiftCodeScene,
 } from "./scenes/EpilogueGiftCodeScene.js";
 import { CreditsScene } from "./scenes/CreditsScene.js";
@@ -54,6 +57,11 @@ scenes.register(
 scenes.register(
   "archive-criteria",
   new ArchiveCriteriaScene({ scenes, input, state, ui, audio }),
+);
+
+scenes.register(
+  "doubt-budget",
+  new DoubtBudgetScene({ scenes, input, state, ui, audio }),
 );
 
 scenes.register(

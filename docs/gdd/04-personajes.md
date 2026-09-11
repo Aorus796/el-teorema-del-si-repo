@@ -24,11 +24,20 @@ Su vestuario ceremonial será práctico y compatible con la exploración. El dis
 
 ## 4.4. Custodio de las Certezas
 
+- **Zona:** Cámara de Contención (`containment-chamber`, accesible desde el Archivo).
+- **Función:** presentar y arbitrar el puzle del presupuesto de duda (ver [`../puzzles/DOUBT_BUDGET_SPEC.md`](../puzzles/DOUBT_BUDGET_SPEC.md)).
+
 Autómata alto, geométrico y cortés. Habla con precisión, enumera condiciones y solicita definiciones innecesarias. No comprende metáforas, pero está convencido de estar protegiendo a la pareja.
 
-Su humor nace de la literalidad. Su evolución es lógica: detecta inconsistencias, intenta conservar sus reglas y finalmente reconoce que no puede validar sus propios criterios absolutos.
+Su humor nace de la literalidad. Su evolución es lógica: detecta inconsistencias, intenta conservar sus reglas y finalmente reconoce que no puede validar sus propios criterios absolutos. Esa contradicción no la resuelve el jugador discutiendo con él, sino aplicando el protocolo del propio Custodio a su propio expediente: dos de los tres asientos que sostienen la retención resultan ser presupuestos, y su norma le obliga a cerrar sin conclusión todo expediente fundado en un presupuesto.
 
-Visualmente combina piedra clara, metal dorado, cristal turquesa y placas móviles. Sus emociones se expresan como estados de procesamiento, confirmación, error y contradicción.
+No retiene a la novia por hostilidad. La retiene porque no ha conseguido cerrar el expediente; cuando se cierra, la deja salir.
+
+**Registro fijo del personaje:** el Custodio nunca habla de elegir ni del futuro de la pareja. Ese registro pertenece en exclusiva al epílogo.
+
+Visualmente combina piedra clara, metal dorado, cristal turquesa y placas móviles. No es humano y no debe leerse como tal: su silueta es más alta y más ancha que la de los personajes humanos y su cabeza es un trapecio invertido, más ancha arriba que abajo. En lugar de ojos tiene una ranura horizontal de cristal turquesa.
+
+Sus emociones se expresan como estados de procesamiento, confirmación, error y contradicción. De esos estados solo hay dos implementados — reposo y contradicción —, reducción de alcance aceptada explícitamente: el juego solo necesita distinguir el reposo administrativo del único momento en que el Custodio tiene que aplicarse su propio protocolo.
 
 ## 4.5. Maestro Nodo
 
