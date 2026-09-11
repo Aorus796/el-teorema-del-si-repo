@@ -1430,7 +1430,7 @@ export class WorldScene {
     renderGround(context, this.camera, map);
     renderSolidTiles(context, this.camera, map);
     renderBackgroundDecorations(context, this.camera, map);
-    renderForegroundDecorations(context, this.camera, map);
+    renderForegroundDecorations(context, this.camera, map, this.state);
     renderObjects(context, this.camera, map.objects, this.state);
     this.maxCompanion?.render(context, this.camera);
     this.player.render(context, this.camera);
@@ -1731,7 +1731,7 @@ function renderBackgroundDecorations(context, camera, map) {
   }
 }
 
-function renderForegroundDecorations(context, camera, map) {
+function renderForegroundDecorations(context, camera, map, state) {
   for (const decoration of map.decorations) {
     if (decoration.type === "river") {
       continue;
@@ -1843,6 +1843,25 @@ function renderForegroundDecorations(context, camera, map) {
 
     if (decoration.type === "containment-well") {
       drawContainmentWell(context, x, y);
+      continue;
+    }
+
+    /*
+     * "containment-elena": Elena encerrada tras la celosía (v1.3), única
+     * rama de renderForegroundDecorations() que necesita `state` --
+     * exactamente por eso se le añadió el parámetro. Antes de resolver el
+     * presupuesto de duda (`epilogueUnlocked` false) se dibuja con el mismo
+     * sprite indexado de ElenaRenderer.js que usa `bride-epilogue` en la
+     * Plaza del Axioma (mismo (x,y) de anclaje: esquina superior
+     * izquierda). En cuanto se resuelve (`epilogueUnlocked` true) deja de
+     * dibujarse -- "ya no está", liberada -- sin que este archivo dispare
+     * ni toque el diálogo de la revelación, que ya vive completo en
+     * CONTAINMENT_REVELATION_TURNS.
+     */
+    if (decoration.type === "containment-elena") {
+      if (!state.flags.epilogueUnlocked) {
+        renderElenaSprite(context, x, y, "down");
+      }
       continue;
     }
 

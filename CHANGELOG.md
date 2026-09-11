@@ -78,6 +78,17 @@ probada desde los formatos 1 a 4.
   guardado. La revelación se dispara exactamente una vez por resolución
   real, con el mismo criterio que ya usaba la reacción de Max: nunca al
   reentrar a una consulta ya cerrada ni al cargar una partida.
+- Elena visible tras la celosía de la Cámara de Contención antes de
+  resolver el presupuesto de duda, y liberada (ya no se dibuja ahí) en
+  cuanto se resuelve: nueva decoración `containment-elena` en
+  `containment-chamber` (`src/content/worldMaps.js`), sin hitbox de
+  interacción a propósito, para no duplicar el diálogo ya existente del
+  objeto `containment-lattice`. Reutiliza sin cambios el mismo sprite
+  indexado de `ElenaRenderer.js` que ya usa `bride-epilogue` en la Plaza,
+  sincronizado con `state.flags.epilogueUnlocked` — el mismo flag que ya
+  disparaba la revelación narrativa al volver del puzle recién resuelto —,
+  así que nunca puede verse encerrada en la Cámara y libre en la Plaza a la
+  vez.
 - `src/progression/DoubtBudgetProgression.js`: único punto del juego que
   pone `epilogueUnlocked` en `true`. Idempotente, calcado de
   `ArchiveCriteriaProgression.js`; fija el objetivo del epílogo solo en la

@@ -13,6 +13,7 @@ import {
 } from "../../src/content/epilogueConfig.js";
 import { GameState, SAVE_FORMAT_VERSION } from "../../src/state/GameState.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
+import { ELENA_PALETTE } from "../../src/content/elenaPixelArt.js";
 import { PARTNER_NAME } from "../../src/content/personalizationConfig.js";
 import {
   DOUBT_BUDGET_DOSSIERS,
@@ -113,6 +114,22 @@ async function countSfxPlayEvents(page, sfxPath) {
       ).length,
     fileName,
   );
+}
+
+/*
+ * "#rrggbb" -> {r, g, b}, para comparar contra los canales enteros que
+ * devuelve CanvasRenderingContext2D.getImageData() en el navegador real
+ * (ver containsElenaOutlineColor() más abajo, dentro del test de la
+ * Cámara de Contención).
+ */
+function hexToRgb(hex) {
+  const value = hex.replace("#", "");
+
+  return {
+    r: Number.parseInt(value.slice(0, 2), 16),
+    g: Number.parseInt(value.slice(2, 4), 16),
+    b: Number.parseInt(value.slice(4, 6), 16),
+  };
 }
 
 function buildGiftCodeKeystrokes(digits) {
@@ -3447,6 +3464,48 @@ test("recorre la Cámara de Contención con teclado, del Archivo resuelto al ep�
   const toast = page.locator("#toast");
 
   const currentFrame = () => canvas.evaluate((element) => element.toDataURL());
+  /*
+   * Lee píxeles reales del <canvas> (no el DataURL completo) para
+   * confirmar de forma acotada si el sprite de Elena está dibujado dentro
+   * de un rectángulo dado -- mismo criterio de color que
+   * elenaOutlineRectsWithin() en tests/scenes/WorldScene.test.js
+   * (ELENA_PALETTE.O), pero sobre el canvas real en vez de un contexto
+   * simulado. El canvas del juego es 480x270 sin escalado interno (ver
+   * width/height en index.html), así que getImageData() opera en las
+   * mismas coordenadas lógicas que el resto del juego -- sin necesidad de
+   * traducir por devicePixelRatio ni por el tamaño CSS del elemento. El
+   * rectángulo tampoco necesita compensar la cámara: containment-chamber
+   * mide 384x256px, más pequeño que el viewport de 480x270 en ambos ejes,
+   * así que Camera.follow() (src/world/Camera.js) mantiene camera.x y
+   * camera.y clamped a 0 para cualquier posición de la jugadora en este
+   * mapa.
+   */
+  const containsElenaOutlineColor = ({ x, y, width, height }) =>
+    canvas.evaluate(
+      (element, rect) => {
+        const context = element.getContext("2d");
+        const { data } = context.getImageData(
+          rect.x,
+          rect.y,
+          rect.width,
+          rect.height,
+        );
+
+        for (let index = 0; index < data.length; index += 4) {
+          if (
+            data[index] === rect.color.r &&
+            data[index + 1] === rect.color.g &&
+            data[index + 2] === rect.color.b &&
+            data[index + 3] > 0
+          ) {
+            return true;
+          }
+        }
+
+        return false;
+      },
+      { x, y, width, height, color: hexToRgb(ELENA_PALETTE.O) },
+    );
   const clearRenderedTexts = () =>
     page.evaluate(() => {
       window.__renderedTexts.length = 0;
@@ -3623,6 +3682,15 @@ test("recorre la Cámara de Contención con teclado, del Archivo resuelto al ep�
     await expect(dialoguePanel).toBeHidden();
   });
 
+  await test.step("Elena sigue encerrada y visible tras la celosía mientras el presupuesto de duda no se ha resuelto", async () => {
+    const elenaDecoration = getWorldMap("containment-chamber").decorations.find(
+      (decoration) => decoration.id === "containment-elena",
+    );
+
+    await expect(canvas).toBeVisible();
+    expect(await containsElenaOutlineColor(elenaDecoration)).toBe(true);
+  });
+
   await test.step("abre la consulta y comprueba una identificación no forzada", async () => {
     await walkUntilPrompt(["KeyA", "KeyW"], "[E] Examinar Panel de consulta");
 
@@ -3778,6 +3846,15 @@ test("recorre la Cámara de Contención con teclado, del Archivo resuelto al ep�
     await waitForRenderedText(
       "Objetivo: Regresa al lugar donde comenzó la demostración.",
     );
+  });
+
+  await test.step("Elena ya no se dibuja encerrada tras la revelación", async () => {
+    const elenaDecoration = getWorldMap("containment-chamber").decorations.find(
+      (decoration) => decoration.id === "containment-elena",
+    );
+
+    await expect(canvas).toBeVisible();
+    expect(await containsElenaOutlineColor(elenaDecoration)).toBe(false);
   });
 
   await test.step("el guardado resultante abre el epílogo y anota la revelación", async () => {

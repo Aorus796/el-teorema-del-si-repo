@@ -1879,12 +1879,13 @@ test("containment-chamber declara exactamente los 4 objects esperados, con su ge
   }
 });
 
-test("containment-chamber declara exactamente las 4 decoraciones esperadas", () => {
+test("containment-chamber declara exactamente las 5 decoraciones esperadas", () => {
   const map = getWorldMap("containment-chamber");
 
   assert.deepEqual(
     map.decorations.map((decoration) => decoration.id).sort(),
     [
+      "containment-elena",
       "containment-lattice-screen",
       "containment-rack-northwest",
       "containment-rack-southwest",
@@ -1894,12 +1895,65 @@ test("containment-chamber declara exactamente las 4 decoraciones esperadas", () 
   assert.deepEqual(
     map.decorations.map((decoration) => decoration.type).sort(),
     [
+      "containment-elena",
       "containment-lattice",
       "containment-well",
       "sealed-dossier-rack",
       "sealed-dossier-rack",
     ],
   );
+});
+
+/*
+ * Elena encerrada (v1.3): decoración, no object -- sin hitbox de
+ * interacción, dentro de la franja este sellada por la celosía, y sin
+ * solapar nada del resto del mapa (cubierto también por el test genérico
+ * de arriba, pero se deja explícito con su geometría real por si esa
+ * franja cambiara).
+ */
+test("containment-elena está dentro de los límites del mapa, en la franja este sellada, sin hitbox de interacción", () => {
+  const map = getWorldMap("containment-chamber");
+  const elena = map.decorations.find(
+    (decoration) => decoration.id === "containment-elena",
+  );
+
+  assert.ok(elena, "containment-elena debe existir como decoración");
+  assert.equal(
+    map.objects.some((object) => object.id === "containment-elena"),
+    false,
+    "containment-elena no debe existir como object interactuable",
+  );
+
+  assert.ok(elena.x >= 0);
+  assert.ok(elena.y >= 0);
+  assert.ok(elena.x + elena.width <= map.worldWidth);
+  assert.ok(elena.y + elena.height <= map.worldHeight);
+
+  // La celosía (containment-lattice-screen, x304-320) y su solidRegion
+  // (columna 19 -> x304-320) quedan estrictamente al oeste de Elena.
+  const latticeScreen = map.decorations.find(
+    (decoration) => decoration.id === "containment-lattice-screen",
+  );
+  assert.ok(elena.x >= latticeScreen.x + latticeScreen.width);
+
+  for (const decoration of map.decorations) {
+    if (decoration.id === "containment-elena") {
+      continue;
+    }
+    assert.equal(
+      rectanglesOverlap(elena, decoration),
+      false,
+      `containment-elena solapa la decoración ${decoration.id}`,
+    );
+  }
+
+  for (const object of map.objects) {
+    assert.equal(
+      rectanglesOverlap(elena, object),
+      false,
+      `containment-elena solapa el objeto ${object.id}`,
+    );
+  }
 });
 
 test("containment-chamber tiene los solidTiles del borde más sus 5 regiones sólidas, sin solapes", () => {

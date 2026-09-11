@@ -1484,7 +1484,16 @@ const ARCHIVE = createMap({
  *    la hace sólida en toda su altura, más el objeto `containment-lattice`
  *    en la columna inmediatamente anterior, que solo abre diálogo (Elena
  *    está detrás; el jugador nunca cruza la celosía, ni antes ni después de
- *    cerrar el expediente);
+ *    cerrar el expediente). Detrás de la pantalla, en la franja este
+ *    sellada (x320-368, la única columna libre al este del solidRegion de
+ *    la celosía y al oeste del borde del mapa), la decoración
+ *    `containment-elena` (v1.3) la dibuja encerrada con el mismo sprite de
+ *    ElenaRenderer.js que usa `bride-epilogue` en la Plaza -- visible solo
+ *    mientras `state.flags.epilogueUnlocked` es false, oculta en cuanto se
+ *    resuelve el presupuesto de duda (ver renderForegroundDecorations() en
+ *    WorldScene.js). Es `decoration`, no `object`: no tiene hitbox de
+ *    interacción, así que nunca duplica el diálogo que ya cubre
+ *    `containment-lattice`;
  *  - oeste: dos `sealed-dossier-rack` de 64x32, cada uno sobre su propio
  *    solidRegion de 4x2 tiles con el mismo footprint exacto;
  *  - sur: `containment-to-archive`, recíproco de `archive-to-containment`.
@@ -1588,6 +1597,36 @@ const CONTAINMENT_CHAMBER = createMap({
       y: 16,
       width: 16,
       height: 224,
+    },
+    /*
+     * Elena encerrada tras la celosía (v1.3): x337/y117 centra el sprite de
+     * 14x22 (ELENA_PIXEL_WIDTH/ELENA_PIXEL_HEIGHT, elenaPixelArt.js) tanto
+     * en la franja este libre (x320-368: 48px de ancho entre el
+     * solidRegion de la celosía en x304-320 y el borde sólido del mapa en
+     * x368-384, columna 23) como en la altura transitable completa
+     * (y16-240, entre las filas de borde 0 y 15) -- ambos centrados
+     * exactos, 320+(48-14)/2=337 y 16+(224-22)/2=117. No solapa nada:
+     * ningún otro object/decoration de containment-chamber tiene ninguna
+     * coordenada por encima de x304 (ver la lista de arriba), y la propia
+     * celosía (x304-320) impide por diseño que el jugador entre en esa
+     * franja para comprobarlo a pie (ver `containment-lattice`, que abre
+     * diálogo en vez de dejar cruzar). Es `decoration`, no `object`, a
+     * propósito: sin `interactionRadius` ni hitbox, `findNearbyObject()`
+     * (que solo recorre `map.objects`) nunca puede encontrarla, así que el
+     * jugador no puede "hablar" con esta Elena como si ya estuviera libre
+     * -- ese diálogo, con su propio contenido antes/después de resolver, ya
+     * vive completo en el objeto `containment-lattice` de arriba. Su
+     * visibilidad (mostrarla mientras `epilogueUnlocked` es false, ocultarla
+     * en cuanto pasa a true) la decide renderForegroundDecorations() en
+     * WorldScene.js, no este archivo de contenido.
+     */
+    {
+      id: "containment-elena",
+      type: "containment-elena",
+      x: 337,
+      y: 117,
+      width: 14,
+      height: 22,
     },
   ],
 });

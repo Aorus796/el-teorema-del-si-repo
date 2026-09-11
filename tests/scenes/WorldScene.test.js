@@ -30,6 +30,7 @@ import {
   DOUBT_BUDGET_RULE_LINES,
   DOUBT_BUDGET_TRUE_DOSSIER_ID,
 } from "../../src/puzzles/doubt-budget/DoubtBudgetData.js";
+import { applyDoubtBudgetProgression } from "../../src/progression/DoubtBudgetProgression.js";
 import {
   CUSTODIAN_IDLE_PIXELS,
   CUSTODIAN_PALETTE,
@@ -42,6 +43,8 @@ import {
 import {
   ELENA_FRONT_PIXELS,
   ELENA_PALETTE,
+  ELENA_PIXEL_HEIGHT,
+  ELENA_PIXEL_WIDTH,
   ELENA_TRANSPARENT,
 } from "../../src/content/elenaPixelArt.js";
 import {
@@ -220,6 +223,24 @@ function countSymbolInPixels(pixels, symbol) {
     .join("")
     .split("")
     .filter((char) => char === symbol).length;
+}
+
+// ELENA_PALETTE.O (= "#302637") coincide a propósito con NPC_SILHOUETTE:
+// lo comparten todos los NPC genéricos de axiom-plaza (ver
+// drawGenericNpcOutline()). Un filtro sin acotar por posición confundiría
+// "hay algún NPC genérico visible" con "Elena está visible", así que las
+// comprobaciones que necesitan distinguirla de verdad acotan el recuento al
+// rectángulo de pantalla real de su ancla (mismo patrón que ya usa el test
+// del Custodio de más abajo con CUSTODIAN_PALETTE.s).
+function elenaOutlineRectsWithin(fillRects, bounds) {
+  return fillRects.filter(
+    (rect) =>
+      rect.fillStyle === ELENA_PALETTE.O &&
+      rect.x >= bounds.x &&
+      rect.x < bounds.x + bounds.width &&
+      rect.y >= bounds.y &&
+      rect.y < bounds.y + bounds.height,
+  );
 }
 
 test("el acceso bloqueado no cambia progreso ni mapa", () => {
@@ -5016,6 +5037,209 @@ test("renderNpc dibuja al Custodio con su propio pixel-art, no con el render gen
     ),
     false,
     "el Custodio no debe dibujarse con el render genérico de NPC",
+  );
+});
+
+/*
+ * Elena encerrada tras la celosía (v1.3): capa puramente visual sobre el
+ * puzle ya validado, sincronizada con exactamente el mismo flag
+ * (`epilogueUnlocked`) que dispara CONTAINMENT_REVELATION_TURNS al volver
+ * del puzle recién resuelto (ver los tests de más arriba, que no cambian).
+ * Estos tests no tocan ese diálogo: solo confirman que el sprite
+ * aparece/desaparece en el momento correcto y que nunca es interactuable.
+ */
+test("render() en containment-chamber sin epilogueUnlocked dibuja a Elena encerrada tras la celosía", () => {
+  const setup = createContainmentWorld();
+  assert.equal(setup.state.flags.epilogueUnlocked, false);
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const elenaOutlineRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === ELENA_PALETTE.O,
+  );
+
+  assert.equal(
+    elenaOutlineRects.length,
+    countSymbolInPixels(ELENA_FRONT_PIXELS, "O"),
+  );
+});
+
+test("render() en containment-chamber con epilogueUnlocked ya no dibuja a Elena", () => {
+  const setup = createContainmentWorld(solvedDoubtBudgetState());
+  setup.state.flags.epilogueUnlocked = true;
+
+  const context = new FakeCanvasContext();
+  setup.scene.render(context);
+
+  const elenaOutlineRects = context.fillRects.filter(
+    (rect) => rect.fillStyle === ELENA_PALETTE.O,
+  );
+
+  assert.equal(elenaOutlineRects.length, 0);
+});
+
+test("containment-elena nunca se encuentra por proximidad: es decoración, no object interactuable", () => {
+  const setup = createContainmentWorld();
+  const elena = getWorldMap("containment-chamber").decorations.find(
+    (decoration) => decoration.id === "containment-elena",
+  );
+
+  // Centra a la jugadora exactamente sobre Elena -- muy dentro de
+  // cualquier interactionRadius plausible -- y confirma que sigue sin
+  // encontrarse nada: findNearbyObject() solo recorre map.objects (ver
+  // WorldScene.js), que nunca incluye containment-elena.
+  setup.scene.player.x = elena.x + elena.width / 2;
+  setup.scene.player.y = elena.y + elena.height / 2;
+  setup.scene.update(0);
+
+  assert.equal(setup.scene.nearbyObject, null);
+});
+
+test("no hay duplicación posible de Elena: nunca se dibuja encerrada en la Cámara y libre en la Plaza para el mismo estado", () => {
+  const elenaOutlinePixels = countSymbolInPixels(ELENA_FRONT_PIXELS, "O");
+
+  /*
+   * Presupuesto de duda sin resolver: Elena está encerrada en la Cámara.
+   * bride-epilogue exige requiresFlag "giftCodeSolved", y la invariante de
+   * GameState (assertEpilogueFlagInvariants: epilogueUnlocked ⟹
+   * containmentUnlocked ⟹ investigationComplete, epilogueStarted ⟹
+   * epilogueUnlocked, giftCodeSolved ⟹ epilogueStarted) hace inalcanzable
+   * cualquier partida con giftCodeSolved=true y epilogueUnlocked=false, así
+   * que bride-epilogue nunca puede estar libre en la Plaza mientras Elena
+   * sigue encerrada.
+   */
+  const elenaDecoration = getWorldMap("containment-chamber").decorations.find(
+    (decoration) => decoration.id === "containment-elena",
+  );
+  const brideObject = findObject("axiom-plaza", "bride-epilogue");
+
+  const lockedChamber = createContainmentWorld();
+  const lockedChamberContext = new FakeCanvasContext();
+  lockedChamber.scene.render(lockedChamberContext);
+
+  const lockedPlaza = createWorldAt("axiom-plaza");
+  const lockedPlazaContext = new FakeCanvasContext();
+  lockedPlaza.scene.render(lockedPlazaContext);
+
+  assert.equal(
+    elenaOutlineRectsWithin(lockedChamberContext.fillRects, {
+      x: elenaDecoration.x - lockedChamber.scene.camera.x,
+      y: elenaDecoration.y - lockedChamber.scene.camera.y,
+      width: elenaDecoration.width,
+      height: elenaDecoration.height,
+    }).length,
+    elenaOutlinePixels,
+    "Elena debe estar encerrada, visible, en la Cámara",
+  );
+  assert.equal(
+    elenaOutlineRectsWithin(lockedPlazaContext.fillRects, {
+      x: brideObject.x - lockedPlaza.scene.camera.x,
+      y: brideObject.y - lockedPlaza.scene.camera.y,
+      // El sprite de Elena (14x22, ELENA_PIXEL_WIDTH/HEIGHT) se dibuja
+      // anclado en (object.x, object.y) sin desplazamiento adicional (ver
+      // el contrato de renderElena() en ElenaRenderer.js), pero es más
+      // alto que el hitbox declarado de bride-epilogue (14x18) -- acotar
+      // con el tamaño real del sprite, no con el del hitbox, para no
+      // recortar filas reales del sprite fuera del rectángulo comprobado.
+      width: ELENA_PIXEL_WIDTH,
+      height: ELENA_PIXEL_HEIGHT,
+    }).length,
+    0,
+    "Elena no debe estar libre en la Plaza mientras sigue encerrada en la Cámara",
+  );
+
+  /*
+   * Presupuesto de duda resuelto y regalo ya resuelto: Elena deja la
+   * Cámara y pasa a estar libre en la Plaza -- nunca las dos cosas a la
+   * vez para el mismo estado.
+   */
+  const freedChamber = createContainmentWorld(solvedDoubtBudgetState());
+  freedChamber.state.flags.epilogueUnlocked = true;
+  const freedChamberContext = new FakeCanvasContext();
+  freedChamber.scene.render(freedChamberContext);
+
+  const freedPlaza = createWorldAt("axiom-plaza");
+  freedPlaza.state.flags.investigationComplete = true;
+  freedPlaza.state.flags.containmentUnlocked = true;
+  freedPlaza.state.flags.epilogueUnlocked = true;
+  freedPlaza.state.flags.epilogueStarted = true;
+  freedPlaza.state.flags.giftCodeSolved = true;
+  // Misma posición que el test equivalente de bride-epilogue de más
+  // arriba, para que la cámara la deje dentro del viewport.
+  freedPlaza.scene.player.x = 445;
+  freedPlaza.scene.player.y = 220;
+  freedPlaza.scene.update(0);
+  const freedPlazaContext = new FakeCanvasContext();
+  freedPlaza.scene.render(freedPlazaContext);
+
+  assert.equal(
+    elenaOutlineRectsWithin(freedChamberContext.fillRects, {
+      x: elenaDecoration.x - freedChamber.scene.camera.x,
+      y: elenaDecoration.y - freedChamber.scene.camera.y,
+      width: elenaDecoration.width,
+      height: elenaDecoration.height,
+    }).length,
+    0,
+    "Elena no debe seguir encerrada una vez resuelto el presupuesto de duda",
+  );
+  assert.equal(
+    elenaOutlineRectsWithin(freedPlazaContext.fillRects, {
+      x: brideObject.x - freedPlaza.scene.camera.x,
+      y: brideObject.y - freedPlaza.scene.camera.y,
+      width: ELENA_PIXEL_WIDTH,
+      height: ELENA_PIXEL_HEIGHT,
+    }).length,
+    elenaOutlinePixels,
+    "Elena debe estar libre, visible, en la Plaza tras resolver el regalo",
+  );
+});
+
+test("round-trip de guardado: Elena deja de dibujarse tras resolver el presupuesto de duda mediante el flujo real de progresión, incluso tras toSaveData()/restore()", () => {
+  const setup = createContainmentWorld();
+  const beforeContext = new FakeCanvasContext();
+  setup.scene.render(beforeContext);
+
+  assert.equal(
+    beforeContext.fillRects.filter(
+      (rect) => rect.fillStyle === ELENA_PALETTE.O,
+    ).length,
+    countSymbolInPixels(ELENA_FRONT_PIXELS, "O"),
+    "Elena debe dibujarse antes de resolver el presupuesto de duda",
+  );
+
+  // Flujo real de progresión (el mismo que invoca DoubtBudgetScene al
+  // resolver en caliente, ver DoubtBudgetScene.js), no un flag puesto a
+  // mano.
+  setup.state.puzzles.doubtBudget = solvedDoubtBudgetState();
+  const progressionResult = applyDoubtBudgetProgression(setup.state);
+
+  assert.equal(progressionResult.applied, true);
+  assert.equal(setup.state.flags.epilogueUnlocked, true);
+
+  const restoredState = new GameState();
+  restoredState.restore(setup.state.toSaveData());
+
+  assert.equal(restoredState.flags.epilogueUnlocked, true);
+  assert.equal(restoredState.world.currentMapId, "containment-chamber");
+
+  const restoredScene = new WorldScene({
+    scenes: new FakeScenes(),
+    input: new FakeInput(),
+    storage: new FakeStorage(),
+    state: restoredState,
+    ui: new FakeUi(),
+    audio: new FakeAudioService(),
+  });
+  restoredScene.enter();
+
+  const afterContext = new FakeCanvasContext();
+  restoredScene.render(afterContext);
+
+  assert.equal(
+    afterContext.fillRects.some((rect) => rect.fillStyle === ELENA_PALETTE.O),
+    false,
+    "Elena no debe dibujarse tras un ciclo de guardado/restauración con el presupuesto ya resuelto",
   );
 });
 
