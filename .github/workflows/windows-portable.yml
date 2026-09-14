@@ -74,6 +74,24 @@ jobs:
       - name: Package Windows portable
         run: npm run desktop:package:win
 
+      - name: Win-unpacked runtime smoke test
+        # Comprueba si el .exe real desempaquetado (release/win-unpacked/,
+        # el payload de staging de electron-builder) permanece vivo al
+        # menos 10s en este runner limpio de GitHub Actions. La ruta de
+        # win-unpacked es estatica (siempre release/win-unpacked/
+        # ElTeoremaDelSi.exe), no calculada por el step "Validate packaged
+        # artifact" (que va despues en el orden del job), asi que este
+        # step no necesita ningun output de ese step.
+        id: win-unpacked-smoke
+        shell: pwsh
+        run: |
+          tools/windows-runtime-smoke.ps1 `
+            -LauncherPath "release\win-unpacked\ElTeoremaDelSi.exe" `
+            -RealProcessName "ElTeoremaDelSi" `
+            -SurvivalSeconds 10 `
+            -AppearanceTimeoutSeconds 30 `
+            -OutputPrefix "WIN_UNPACKED"
+
       - name: Validate packaged artifact
         id: validate
         shell: pwsh
@@ -124,9 +142,75 @@ jobs:
 
           echo "exe_path=$($portable.FullName)" >> $env:GITHUB_OUTPUT
 
+      - name: Portable runtime smoke test
+        # Comprueba si el portable final (el stub NSIS autoextraible
+        # validado en el step anterior) consigue lanzar y mantener vivo el
+        # proceso real al menos 10s en este runner limpio de GitHub
+        # Actions. Usa exactamente steps.validate.outputs.exe_path: nunca
+        # recalcula el nombre del artefacto de forma independiente.
+        id: portable-smoke
+        shell: pwsh
+        run: |
+          tools/windows-runtime-smoke.ps1 `
+            -LauncherPath "${{ steps.validate.outputs.exe_path }}" `
+            -RealProcessName "ElTeoremaDelSi" `
+            -SurvivalSeconds 10 `
+            -AppearanceTimeoutSeconds 30 `
+            -OutputPrefix "PORTABLE"
+
       - name: Upload portable artifact
         uses: actions/upload-artifact@v7
         with:
           name: el-teorema-del-si-windows-x64-portable
           path: ${{ steps.validate.outputs.exe_path }}
           if-no-files-found: error
+
+      - name: Classify runtime smoke results
+        # Contrasta win-unpacked (payload desempaquetado) frente a portable
+        # (stub NSIS autoextraible) para distinguir un cierre causado por
+        # el wrapper de empaquetado de un cierre causado por el propio
+        # runtime empaquetado de Electron. Este es el unico step nuevo que
+        # puede fallar el job: los dos smoke tests anteriores siempre
+        # terminan en 0 para que "Upload portable artifact" se ejecute sin
+        # interrupcion incluso si algun smoke test dio FAIL.
+        id: classify
+        shell: pwsh
+        run: |
+          $winUnpacked = "${{ steps.win-unpacked-smoke.outputs.WIN_UNPACKED_RUNTIME }}"
+          $portable = "${{ steps.portable-smoke.outputs.PORTABLE_RUNTIME }}"
+
+          if ($winUnpacked -eq "PASS" -and $portable -eq "PASS") {
+            $classification = "CLEAN WINDOWS PASS"
+          }
+          elseif ($winUnpacked -eq "PASS" -and $portable -eq "FAIL") {
+            $classification = "PORTABLE WRAPPER SUSPECTED"
+          }
+          elseif ($winUnpacked -eq "FAIL" -and $portable -eq "PASS") {
+            $classification = "ANOMALOUS: UNPACKED FAILED BUT PORTABLE PASSED"
+          }
+          else {
+            $classification = "PACKAGED RUNTIME SUSPECTED"
+          }
+
+          Write-Output "Classification: $classification"
+          echo "CLASSIFICATION=$classification" >> $env:GITHUB_OUTPUT
+
+          if ($env:GITHUB_STEP_SUMMARY) {
+            $summaryLines = @(
+              "## Runtime smoke test classification: $classification",
+              "",
+              "| Metric | win-unpacked | portable |",
+              "| --- | --- | --- |",
+              "| Runtime | $winUnpacked | $portable |",
+              "| Never appeared | ${{ steps.win-unpacked-smoke.outputs.WIN_UNPACKED_NEVER_APPEARED }} | ${{ steps.portable-smoke.outputs.PORTABLE_NEVER_APPEARED }} |",
+              "| Time to appear (s) | ${{ steps.win-unpacked-smoke.outputs.WIN_UNPACKED_TIME_TO_APPEAR_SECONDS }} | ${{ steps.portable-smoke.outputs.PORTABLE_TIME_TO_APPEAR_SECONDS }} |",
+              "| Alive (s) | ${{ steps.win-unpacked-smoke.outputs.WIN_UNPACKED_ALIVE_SECONDS }} | ${{ steps.portable-smoke.outputs.PORTABLE_ALIVE_SECONDS }} |",
+              "| Exit code | ${{ steps.win-unpacked-smoke.outputs.WIN_UNPACKED_EXIT_CODE }} | ${{ steps.portable-smoke.outputs.PORTABLE_EXIT_CODE }} |"
+            )
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ($summaryLines -join "`n")
+          }
+
+          if ($classification -ne "CLEAN WINDOWS PASS") {
+            exit 1
+          }
+          exit 0
