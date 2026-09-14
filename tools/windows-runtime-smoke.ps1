@@ -286,8 +286,16 @@ if (-not $realProcess) {
 
     # Cierre defensivo del proceso lanzado, por si sigue vivo aunque el
     # proceso real esperado nunca haya aparecido.
-    if ($launcherProcess -and -not $launcherProcess.HasExited) {
-        Stop-Process -Id $launcherProcess.Id -Force -ErrorAction SilentlyContinue
+    if ($launcherProcess) {
+        try {
+            if (-not $launcherProcess.HasExited) {
+                Stop-Process -Id $launcherProcess.Id -Force -ErrorAction SilentlyContinue
+            }
+        }
+        catch {
+            # El launcher puede no ser accesible (handle invalido,
+            # interferencia externa); no es un error para este script.
+        }
     }
 
     Write-Summary -OutputPrefix $OutputPrefix -Result $result
@@ -305,24 +313,41 @@ Write-Output "'$RealProcessName' aparecio (PID $($realProcess.Id)) tras $($resul
 
 $survivalDeadline = $appearedAt.AddSeconds($SurvivalSeconds)
 $died = $false
+$survivalProbeFailed = $false
 
-while ((Get-Date) -lt $survivalDeadline) {
-    $realProcess.Refresh()
-    if ($realProcess.HasExited) {
-        $died = $true
-        break
+try {
+    while ((Get-Date) -lt $survivalDeadline) {
+        $realProcess.Refresh()
+        if ($realProcess.HasExited) {
+            $died = $true
+            break
+        }
+        Start-Sleep -Milliseconds $PollIntervalMilliseconds
     }
-    Start-Sleep -Milliseconds $PollIntervalMilliseconds
-}
 
-if (-not $died) {
-    $realProcess.Refresh()
-    $died = $realProcess.HasExited
+    if (-not $died) {
+        $realProcess.Refresh()
+        $died = $realProcess.HasExited
+    }
+}
+catch {
+    # El proceso real puede dejar de ser accesible durante el sondeo (por
+    # ejemplo por interferencia de un AV/EDR sobre el handle) en lugar de
+    # terminar limpiamente. Se trata como una muerte para efectos del
+    # veredicto, pero se distingue en el log.
+    $died = $true
+    $survivalProbeFailed = $true
+    Write-Output "(fallo al sondear '$RealProcessName' durante la ventana de supervivencia: $($_.Exception.Message))"
 }
 
 if ($died) {
     $aliveSeconds = [math]::Round(((Get-Date) - $appearedAt).TotalSeconds, 2)
-    Write-Output "FAIL: '$RealProcessName' murio tras $aliveSeconds s (antes de los $SurvivalSeconds s requeridos)."
+    if ($survivalProbeFailed) {
+        Write-Output "FAIL: no se pudo seguir sondeando '$RealProcessName' tras $aliveSeconds s (excepcion al consultar el proceso; posible interferencia externa)."
+    }
+    else {
+        Write-Output "FAIL: '$RealProcessName' murio tras $aliveSeconds s (antes de los $SurvivalSeconds s requeridos)."
+    }
 
     $result.Runtime = "FAIL"
     $result.AliveSeconds = $aliveSeconds
