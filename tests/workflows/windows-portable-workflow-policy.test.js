@@ -319,6 +319,97 @@ test("Invoke-Expression never appears anywhere in the file", async () => {
   assert.ok(!workflow.includes("Invoke-Expression"));
 });
 
+test("the three runtime smoke test steps exist with their exact names", async () => {
+  const workflow = await readWorkflow();
+
+  // extractStepBlock ya hace assert.notEqual(startIndex, -1, ...) si no
+  // encuentra el step, asi que basta con invocarlo para cada nombre.
+  extractStepBlock(workflow, "Win-unpacked runtime smoke test");
+  extractStepBlock(workflow, "Portable runtime smoke test");
+  extractStepBlock(workflow, "Classify runtime smoke results");
+});
+
+test("runtime smoke steps appear in the correct relative order around the existing steps", async () => {
+  const workflow = await readWorkflow();
+  const lines = workflow.split(/\r?\n/);
+
+  const indexOfStep = (stepName) => {
+    const nameLinePattern = new RegExp(`^\\s*-\\s*name:\\s*"?${stepName}"?\\s*$`);
+    const index = lines.findIndex((line) => nameLinePattern.test(line));
+    assert.notEqual(index, -1, `expected to find a step named "${stepName}"`);
+    return index;
+  };
+
+  const packageIndex = indexOfStep("Package Windows portable");
+  const winUnpackedSmokeIndex = indexOfStep("Win-unpacked runtime smoke test");
+  const validateIndex = indexOfStep("Validate packaged artifact");
+  const portableSmokeIndex = indexOfStep("Portable runtime smoke test");
+  const uploadIndex = indexOfStep("Upload portable artifact");
+  const classifyIndex = indexOfStep("Classify runtime smoke results");
+
+  assert.ok(
+    packageIndex < winUnpackedSmokeIndex,
+    "expected Package Windows portable before Win-unpacked runtime smoke test"
+  );
+  assert.ok(
+    winUnpackedSmokeIndex < validateIndex,
+    "expected Win-unpacked runtime smoke test before Validate packaged artifact"
+  );
+  assert.ok(
+    validateIndex < portableSmokeIndex,
+    "expected Validate packaged artifact before Portable runtime smoke test"
+  );
+  assert.ok(
+    portableSmokeIndex < uploadIndex,
+    "expected Portable runtime smoke test before Upload portable artifact"
+  );
+  assert.ok(
+    uploadIndex < classifyIndex,
+    "expected Upload portable artifact before Classify runtime smoke results"
+  );
+});
+
+test('"Win-unpacked runtime smoke test" step targets the static win-unpacked exe path and never reads steps.validate.outputs.exe_path', async () => {
+  const workflow = await readWorkflow();
+  const step = extractStepBlock(workflow, "Win-unpacked runtime smoke test");
+
+  assert.match(step, /release[\\/]win-unpacked[\\/]ElTeoremaDelSi\.exe/);
+  assert.ok(
+    !step.includes("steps.validate.outputs.exe_path"),
+    "expected the win-unpacked smoke step to never depend on the Validate step's computed artifact path"
+  );
+});
+
+test('"Portable runtime smoke test" step uses steps.validate.outputs.exe_path and never recomputes the artifact name independently', async () => {
+  const workflow = await readWorkflow();
+  const step = extractStepBlock(workflow, "Portable runtime smoke test");
+
+  assert.ok(
+    step.includes("steps.validate.outputs.exe_path"),
+    "expected the portable smoke step to reuse steps.validate.outputs.exe_path"
+  );
+  assert.ok(
+    !step.includes("ConvertFrom-Json"),
+    "expected the portable smoke step to never recompute the artifact name via ConvertFrom-Json"
+  );
+});
+
+test("both runtime smoke test steps invoke the shared tools/windows-runtime-smoke.ps1 script", async () => {
+  const workflow = await readWorkflow();
+
+  for (const stepName of ["Win-unpacked runtime smoke test", "Portable runtime smoke test"]) {
+    const step = extractStepBlock(workflow, stepName);
+    assert.match(step, /tools\/windows-runtime-smoke\.ps1/);
+  }
+});
+
+test('"Classify runtime smoke results" step writes to $env:GITHUB_STEP_SUMMARY', async () => {
+  const workflow = await readWorkflow();
+  const step = extractStepBlock(workflow, "Classify runtime smoke results");
+
+  assert.ok(step.includes("$env:GITHUB_STEP_SUMMARY"));
+});
+
 test("checkout, setup-node, and upload-artifact are pinned to modern majors, never @v4", async () => {
   const workflow = await readWorkflow();
 
