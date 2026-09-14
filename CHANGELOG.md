@@ -4,6 +4,8 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ## [No publicado]
 
+## [1.3.0] - 2026-09-14
+
 Cuarto puzle principal y localización nueva: la **Cámara de Contención** y
 **El presupuesto de la duda**, el enfrentamiento lógico con el Custodio de
 las Certezas. El recorrido pasa de tres puzles a cuatro: resolver el
@@ -96,6 +98,26 @@ probada desde los formatos 1 a 4.
   revelación. Asegura además `containmentUnlocked` e
   `investigationComplete` en el mismo paso, para no poder producir por sí
   solo un guardado que violara las invariantes nuevas del formato 5.
+- Smoke test de runtime del portable Windows en CI
+  (`.github/workflows/windows-portable.yml`): tres pasos nuevos tras el
+  empaquetado -- lanzar `release/win-unpacked/ElTeoremaDelSi.exe` y, por
+  separado, el portable NSIS autoextraíble ya validado, confirmando en
+  ambos casos que el proceso real permanece vivo al menos 10 segundos
+  (no solo que el archivo existe o que su SHA-256 es correcto) antes de
+  cerrarlo de forma controlada. Script reutilizable
+  `tools/windows-runtime-smoke.ps1`, sin dependencias nuevas, que recoge
+  diagnóstico (event log, Windows Error Reporting, Microsoft Defender,
+  `%TEMP%` reciente) solo cuando un lanzamiento falla, y que siempre
+  termina en `exit 0` para que "Upload portable artifact" se ejecute
+  igualmente aunque algún smoke test dé FAIL -- el único paso nuevo capaz
+  de poner el job en rojo es la clasificación final. Motivado por un
+  cierre reproducible (~2 s) del portable observado en una máquina
+  Windows corporativa con ESET: el mismo runtime empaquetado se ejecutó
+  repetidamente en un runner `windows-latest` limpio de GitHub Actions
+  (incluida una ejecución posterior al fusionar sobre `main`) sin
+  reproducir ese cierre en ningún caso. El hallazgo local queda
+  documentado como específico de ese entorno -- ESET es una hipótesis
+  plausible, no demostrada -- y no bloquea esta publicación.
 
 ### Cambiado
 
