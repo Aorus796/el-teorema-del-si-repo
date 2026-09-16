@@ -1,5 +1,5 @@
 import { getWorldMap } from "../content/worldMaps.js";
-import { COUPLE_DEDICATION } from "../content/personalizationConfig.js";
+import { COUPLE_DEDICATION, WEDDING_CITY, WEDDING_DATE } from "../content/personalizationConfig.js";
 import { BRIDE_PALETTE } from "../content/characterPalettes.js";
 import { renderMax } from "../render/MaxRenderer.js";
 import { renderElena as renderElenaSprite } from "../render/ElenaRenderer.js";
@@ -29,6 +29,8 @@ const CLOSING_LINE_MAX_CHARS = 48;
 const TITLE_TEXT = "EL TEOREMA DEL SÍ";
 const DEDICATION_MAX_CHARS = 44;
 const DEDICATION_LINE_HEIGHT = 16;
+const DEDICATION_SIGNATURE = `${WEDDING_CITY}, ${WEDDING_DATE}.`;
+const DEDICATION_SIGNATURE_GAP = 22;
 const CREDITS_LINE_1 = "CREADO CON CARIÑO";
 const CREDITS_LINE_2 = "COMO REGALO DE BODA";
 const CREDITS_LINE_3 = "GRACIAS POR JUGAR";
@@ -216,6 +218,10 @@ function renderDedication(context) {
   lines.forEach((line, index) => {
     context.fillText(line, 240, startY + index * DEDICATION_LINE_HEIGHT);
   });
+
+  context.fillStyle = "#d9c896";
+  context.font = "italic 9px monospace";
+  context.fillText(DEDICATION_SIGNATURE, 240, startY + blockHeight + DEDICATION_SIGNATURE_GAP);
 
   context.fillStyle = "#c9bea4";
   context.font = "7px monospace";
