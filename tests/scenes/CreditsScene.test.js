@@ -9,7 +9,11 @@ import {
 import { SceneManager } from "../../src/core/SceneManager.js";
 import { getWorldMap } from "../../src/content/worldMaps.js";
 import { GameState } from "../../src/state/GameState.js";
-import { COUPLE_DEDICATION } from "../../src/content/personalizationConfig.js";
+import {
+  COUPLE_DEDICATION,
+  WEDDING_CITY,
+  WEDDING_DATE,
+} from "../../src/content/personalizationConfig.js";
 import { ELENA_FRONT_PIXELS } from "../../src/content/elenaPixelArt.js";
 import {
   GONZALO_FRONT_PIXELS,
@@ -35,6 +39,7 @@ const CREDITS_LINE_3 = "GRACIAS POR JUGAR";
 const FINAL_CARD_TEXT = "Pulsa para guardar y volver al menú";
 const CLOSING_LINE =
   "No existe un sí para siempre. Existen dos personas que pueden volver a elegirse cada día.";
+const EXPECTED_SIGNATURE = `${WEDDING_CITY}, ${WEDDING_DATE}.`;
 
 class FakeInput {
   constructor() {
@@ -88,6 +93,16 @@ class FakeCanvasContext {
     });
   }
 }
+
+test("la firma de fecha/ciudad tiene exactamente el copy aprobado, fijado como literal independiente de la plantilla de producción", () => {
+  // Literal hardcodeado a propósito (mismo patrón que TITLE_TEXT/CLOSING_LINE
+  // en este archivo): EXPECTED_SIGNATURE se construye con la misma plantilla
+  // `${WEDDING_CITY}, ${WEDDING_DATE}.` que usa CreditsScene.js, así que por
+  // sí sola no detectaría un orden invertido (p. ej. fecha antes que ciudad)
+  // introducido a la vez en ambos sitios. Esta aserción fija el texto visible
+  // exacto ya aprobado, con independencia de cómo se construya.
+  assert.equal(EXPECTED_SIGNATURE, "Logroño, 26 de septiembre de 2026.");
+});
 
 test("CreditsScene puede registrarse como \"credits\" y activarse sin lanzar", () => {
   const scenes = new SceneManager();
@@ -162,6 +177,7 @@ test("los cinco pasos renderizan, en orden, los textos exactos de la sección 12
   const step3 = new FakeCanvasContext();
   scene.render(step3);
   assert.ok(textIncludesDedication(step3));
+  assert.ok(step3.texts.some((entry) => entry.text === EXPECTED_SIGNATURE));
 
   press(scene, input);
   const step4 = new FakeCanvasContext();
@@ -174,6 +190,38 @@ test("los cinco pasos renderizan, en orden, los textos exactos de la sección 12
   const step5 = new FakeCanvasContext();
   scene.render(step5);
   assert.ok(step5.texts.some((entry) => entry.text === FINAL_CARD_TEXT));
+});
+
+test("la firma de fecha/ciudad se dibuja debajo de la dedicatoria y por encima del hint de continuar, sin solaparse", () => {
+  const { scene, input } = createScene();
+  scene.enter();
+  press(scene, input); // title
+  press(scene, input); // dedication
+
+  const context = new FakeCanvasContext();
+  scene.render(context);
+
+  const signatureEntry = context.texts.find((entry) => entry.text === EXPECTED_SIGNATURE);
+  const continueHintEntry = context.texts.find((entry) => entry.text === "E / Enter: continuar");
+  // Se identifican las líneas de la dedicatoria por ser substrings literales
+  // de COUPLE_DEDICATION (así producidas por wrapTextToLines), en vez de
+  // comprobar por palabra suelta: palabras cortas como "de" también
+  // aparecen dentro de EXPECTED_SIGNATURE ("...septiembre de 2026.") y un
+  // filtro por palabra incluiría incorrectamente la propia firma como línea
+  // de dedicatoria.
+  const dedicationEntries = context.texts.filter((entry) =>
+    COUPLE_DEDICATION.includes(entry.text),
+  );
+  assert.ok(
+    dedicationEntries.length > 0,
+    "debe encontrarse al menos una línea de dedicatoria (si no, Math.max sobre un array vacío daría -Infinity y la comprobación de solape pasaría sin verificar nada real)",
+  );
+  const lastDedicationY = Math.max(...dedicationEntries.map((entry) => entry.y));
+
+  assert.ok(signatureEntry, "la firma debe estar presente en el paso de dedicatoria");
+  assert.ok(continueHintEntry, "el hint de continuar debe estar presente");
+  assert.ok(signatureEntry.y > lastDedicationY, "la firma debe ir por debajo de la última línea de la dedicatoria");
+  assert.ok(signatureEntry.y < continueHintEntry.y, "la firma no debe solaparse con el hint de continuar");
 });
 
 test("el bloque de créditos mantiene un salto claramente mayor antes de GRACIAS POR JUGAR (línea en blanco)", () => {
@@ -824,6 +872,11 @@ test("los nombres de la pareja solo aparecen en el paso de dedicatoria, no en lo
   for (const step of [closingShot, title, credits, finalCard]) {
     assert.equal(step.includes("Gonzalo"), false);
     assert.equal(step.includes("Elena"), false);
+  }
+
+  assert.ok(dedication.includes(EXPECTED_SIGNATURE));
+  for (const step of [closingShot, title, credits, finalCard]) {
+    assert.equal(step.includes(EXPECTED_SIGNATURE), false);
   }
 });
 
