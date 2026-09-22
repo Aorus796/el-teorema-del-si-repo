@@ -28,7 +28,7 @@ archivos son efectos de sonido (SFX) cortos e independientes de la música
   (registro octavas 4-5), una melodía corta de 4 notas por compás, y un
   click de refuerzo del pulso muy corto y bajo en amplitud sobre cada
   negra. Suena en loop desde la primera interacción del usuario en
-  `TitleScene` hasta completar el diálogo con el padre de la novia (ver
+  `TitleScene` hasta completar el diálogo con el padre del novio (ver
   `WorldScene.syncMusicToFlags()`), momento en el que la música
   ambiental lo sustituye.
 - **Regenerar**: `node tools/generate-intro-theme.mjs` (o
@@ -59,7 +59,7 @@ archivos son efectos de sonido (SFX) cortos e independientes de la música
   silencio digital entre eventos. Perceptual y objetivamente más
   silenciosa que el opening y el epílogo, pero con un pulso propio y
   perceptible, no solo eventos dispersos. Arranca la primera vez que se
-  completa el diálogo con el padre de la novia (bandera
+  completa el diálogo con el padre del novio (bandera
   `brideNoteReceived`, ver `WorldScene.interactWithBrideFather()`) y se
   reproduce con `loop: true` en `WorldScene` mientras dura la
   exploración, en los cuatro mapas jugables por igual.

@@ -1,7 +1,7 @@
 /*
  * Pixel-art indexado de Silogio (Silogio Character Pixel-Art -- aplica a
  * Silogio el mismo lenguaje visual ya aprobado para Gonzalo, Elena,
- * Corolaria y el Padre de la novia: matriz de caracteres + paleta
+ * Corolaria y el Padre del novio: matriz de caracteres + paleta
  * compacta, rasterizada una única vez y cacheada -- ver
  * src/render/SilogioRenderer.js, que replica el patrón de
  * BrideFatherRenderer.js/CorolariaRenderer.js/ElenaRenderer.js/

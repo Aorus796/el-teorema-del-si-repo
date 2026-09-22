@@ -38,7 +38,7 @@ La Plaza del Axioma funciona como introducción narrativa y núcleo central del 
 - **PL2: zona de invitados.** Filas de sillas, mesas de banquete, flores y cajas pendientes de colocar.
 - **PL3: tablón de preparativos.** Introduce movimiento, interacción, cuaderno y guardado dentro de la ficción.
 - **PL4: zona de organización.** Maestro de ceremonias y habitantes que preparan el evento.
-- **PL5: punto de encuentro.** El padre de la novia entrega la nota que inicia la búsqueda.
+- **PL5: punto de encuentro.** El padre del novio entrega la nota que inicia la búsqueda.
 - **PL6: accesos.** Caminos hacia la biblioteca, el Paseo de los Siete Puentes, el jardín, el observatorio y el molino.
 
 Durante el vertical slice solo estarán operativos el centro de la plaza y la salida hacia el Paseo de los Siete Puentes. Los demás accesos podrán verse, pero permanecerán narrativamente bloqueados.
@@ -105,7 +105,7 @@ A1-A4 y A6 no están implementadas.
 
 ### Estado 0: prólogo
 
-Plaza del Axioma y Paseo de los Siete Puentes. Se presentan los preparativos de la boda, los controles y el cuaderno. El padre de la novia entrega la primera nota y el jugador resuelve P2. La pista obtenida señala la biblioteca como siguiente destino.
+Plaza del Axioma y Paseo de los Siete Puentes. Se presentan los preparativos de la boda, los controles y el cuaderno. El padre del novio entrega la primera nota y el jugador resuelve P2. La pista obtenida señala la biblioteca como siguiente destino.
 
 ### Estado 1: primera investigación
 

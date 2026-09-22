@@ -2518,7 +2518,7 @@ test("Caso A de compatibilidad con guardados de v1.0.0: preparationsBoardRead re
 
   await page.keyboard.press("KeyE");
   await expect(dialogueText).toHaveText(
-    "Ahora necesito que hables con el padre de la novia.",
+    "Ahora necesito que hables con el padre del novio.",
   );
 
   expect(errors).toEqual([]);
@@ -4719,7 +4719,7 @@ test("Caso C de compatibilidad con guardados de v1.0.0: giftCodeSolved restaurad
  * audio de WorldScene.js que hasta ahora solo tenía cobertura unitaria
  * (con FakeScenes, que no reproduce fielmente que SceneManager.change()
  * invoca el exit() real de la escena saliente): el disparo narrativo real
- * de la música ambiental (completar el diálogo con el padre de la novia),
+ * de la música ambiental (completar el diálogo con el padre del novio),
  * cancelar desde dentro del mundo (debe detener la música antes de volver
  * al título), cargar una partida estando ya dentro del mundo
  * (WorldScene.update(), tecla "load", debe reconciliar el audio contra el
@@ -4746,7 +4746,7 @@ function stripLeadingDotSlash(path) {
   return path.replace(/^\.\//, "");
 }
 
-test("completar el diálogo con el padre de la novia dispara la música ambiental, sustituyendo al opening", async ({
+test("completar el diálogo con el padre del novio dispara la música ambiental, sustituyendo al opening", async ({
   page,
 }) => {
   const errors = collectJavaScriptErrors(page);
@@ -4838,7 +4838,7 @@ test("completar el diálogo con el padre de la novia dispara la música ambienta
   // epilogueCompleted, así que WorldScene.enter() arranca el opening en
   // loop por su propia autoridad (syncMusicToFlags()) al restaurar el
   // estado -- justo la condición que este test necesita para comprobar
-  // después que el disparo narrativo del padre de la novia lo sustituye.
+  // después que el disparo narrativo del padre del novio lo sustituye.
   await page.keyboard.press("KeyL");
   await expect.poll(currentFrame).not.toBe(titleFrame);
 
@@ -4857,7 +4857,7 @@ test("completar el diálogo con el padre de la novia dispara la música ambienta
   );
   expect(ambientPlayedBeforeDialogue).toBe(false);
 
-  // Abre el diálogo del padre de la novia (primera vez, sin
+  // Abre el diálogo del padre del novio (primera vez, sin
   // brideNoteReceived): interactWithBrideFather() lo compone con cinco
   // líneas, así que hacen falta cinco pulsaciones más para completarlo.
   await page.keyboard.press("KeyE");
@@ -4865,7 +4865,7 @@ test("completar el diálogo con el padre de la novia dispara la música ambienta
   const dialogueSpeaker = page.locator("#dialogue-speaker");
   const dialogueTextLocator = page.locator("#dialogue-text");
   const dialoguePanel = page.locator("#dialogue-panel");
-  await expect(dialogueSpeaker).toHaveText("Padre de la novia");
+  await expect(dialogueSpeaker).toHaveText("Padre del novio");
 
   /*
    * InputManager acumula las teclas pulsadas en un Set por código que se
@@ -5530,7 +5530,7 @@ test("el opening suena de forma continua, sin re-disparo, desde el título hasta
   // Ningún evento "pause" del opening debería haber ocurrido todavía: la
   // pista sigue sonando de forma continua, sin interrupción ni
   // re-disparo, mientras el jugador permanece dentro del mundo antes de
-  // completar el diálogo con el padre de la novia.
+  // completar el diálogo con el padre del novio.
   const audioEventsAfterEntry = await readAudioEvents();
   const openingPauseEvents = audioEventsAfterEntry.filter(
     (event) => event.type === "pause" && event.src.endsWith(openingSrcSuffix),

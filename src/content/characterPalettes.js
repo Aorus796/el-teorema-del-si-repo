@@ -51,7 +51,7 @@ export const MAYOR_PALETTE = Object.freeze({
   bodyAccent: "#d6b65f",
 });
 
-// Paleta propia del Padre de la novia. Ya no la consume WorldScene:
+// Paleta propia del Padre del novio. Ya no la consume WorldScene:
 // WorldScene.renderBrideFather delega en render/BrideFatherRenderer.js
 // (brideFatherPixelArt.js), que trae su propia paleta indexada. Se
 // conserva como referencia histórica de color, consumida hoy por

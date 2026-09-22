@@ -6,7 +6,7 @@
  * como uno.
  *
  * Bounding box 20x32, frente a los 14x22 de los personajes humanos
- * (Gonzalo/Elena/Corolaria/Silogio/padre de la novia): más alto y más
+ * (Gonzalo/Elena/Corolaria/Silogio/padre del novio): más alto y más
  * ancho, para que se lea como mobiliario institucional con voz propia y no
  * como "una persona más" del reparto.
  *
@@ -36,7 +36,7 @@
  *
  * Paleta de 10 colores, sin un solo valor hexadecimal compartido con
  * characterPalettes.js ni con la paleta de ningún personaje del juego
- * (Gonzalo/Elena/Corolaria/Silogio/padre de la novia/Max): el Custodio no
+ * (Gonzalo/Elena/Corolaria/Silogio/padre del novio/Max): el Custodio no
  * puede leerse como un personaje humano recoloreado.
  *
  * Sí comparte colores -- a propósito, y sólo dentro de la Cámara de

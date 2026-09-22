@@ -158,9 +158,9 @@ El concepto funciona si el jugador entiende los controles rápidamente, sonríe,
 
 ## 2.1. Premisa
 
-El día anterior a la boda, el protagonista se encuentra en la Plaza del Axioma mientras los habitantes preparan la ceremonia. Entre mesas, sillas, flores y cajas todavía por colocar, el padre de la novia le comunica que ella no está en su habitación y que nadie sabe dónde se encuentra. No existen señales de violencia ni petición de rescate.
+El día anterior a la boda, el protagonista se encuentra en la Plaza del Axioma mientras los habitantes preparan la ceremonia. Entre mesas, sillas, flores y cajas todavía por colocar, el padre del novio le comunica que ella no está en su habitación y que nadie sabe dónde se encuentra. No existen señales de violencia ni petición de rescate.
 
-El padre entrega al protagonista una nota encontrada en la habitación de la novia. El mensaje indica que estaba investigando algo antes de la ceremonia y conduce al **Paseo de los Siete Puentes**. Allí, el protagonista encuentra un mapa alterado y la primera evidencia que relaciona su desaparición con la biblioteca.
+El padre entrega al protagonista una nota. El mensaje indica que estaba investigando algo antes de la ceremonia y conduce al **Paseo de los Siete Puentes**. Allí, el protagonista encuentra un mapa alterado y la primera evidencia que relaciona su desaparición con la biblioteca.
 
 Los habitantes recuerdan versiones contradictorias. Siguiendo las pistas, el protagonista descubre que la novia investigaba una construcción oculta bajo el pueblo: el **Archivo de las Conjeturas**, una antigua institución dedicada a registrar y validar conocimiento.
 
@@ -212,7 +212,7 @@ Su conflicto se resuelve lógicamente. El jugador no lo destruye ni lo convence 
 
 ### Prólogo: la víspera interrumpida
 
-Se presentan la Plaza del Axioma, los preparativos de la boda y los controles básicos. El padre de la novia entrega una nota encontrada en su habitación, que conduce al Paseo de los Siete Puentes. La resolución del primer problema revela una pista relacionada con la biblioteca.
+Se presentan la Plaza del Axioma, los preparativos de la boda y los controles básicos. El padre del novio entrega una nota, que conduce al Paseo de los Siete Puentes. La resolución del primer problema revela una pista relacionada con la biblioteca.
 
 ### Acto I: versiones incompatibles
 
@@ -292,7 +292,7 @@ No se utilizará una estructura de cuatro llaves. Cada zona modifica un sistema 
 La plaza es el punto inicial y final. Contiene el altar, la fuente central, el ayuntamiento, el tablón y los accesos a las zonas. Evoluciona durante la partida:
 
 - Al inicio está en plena preparación para la boda del día siguiente, con mesas, sillas, flores, cajas y habitantes trabajando.
-- Durante el prólogo, el padre de la novia entrega la nota que inicia la búsqueda.
+- Durante el prólogo, el padre del novio entrega la nota que inicia la búsqueda.
 - En la mitad, los mecanismos antiguos comienzan a reaccionar.
 - Al final, la fuente revela el acceso subterráneo.
 
@@ -447,7 +447,7 @@ Visualmente combina piedra clara, metal dorado, cristal turquesa y placas móvil
 - **Zona inicial:** Plaza del Axioma.
 - **Función:** iniciar la búsqueda y entregar la primera nota de la novia.
 - **Personalidad:** afectuoso, prudente y visiblemente preocupado, aunque intenta mantener la calma para no alarmar a todo el pueblo.
-- **Contradicción:** quiere proteger a su hija, pero comprende que ocultar la nota impediría encontrarla.
+- **Contradicción:** quiere proteger a su futura nuera, pero comprende que ocultar la nota impediría encontrarla.
 - **Evolución:** pasa de pedir una búsqueda discreta a colaborar activamente cuando aparecen pruebas del Archivo.
 - **Rasgo visual:** ropa preparada para ayudar con la ceremonia y la nota doblada en la mano.
 - **Papel en el prólogo:** explica que la novia no está en su habitación, entrega la nota al protagonista y activa el objetivo de investigar el Paseo de los Siete Puentes.
@@ -516,7 +516,7 @@ La Plaza del Axioma funciona como introducción narrativa y núcleo central del 
 - **PL2: zona de invitados.** Filas de sillas, mesas de banquete, flores y cajas pendientes de colocar.
 - **PL3: tablón de preparativos.** Introduce movimiento, interacción, cuaderno y guardado dentro de la ficción.
 - **PL4: zona de organización.** Maestro de ceremonias y habitantes que preparan el evento.
-- **PL5: punto de encuentro.** El padre de la novia entrega la nota que inicia la búsqueda.
+- **PL5: punto de encuentro.** El padre del novio entrega la nota que inicia la búsqueda.
 - **PL6: accesos.** Caminos hacia la biblioteca, el Paseo de los Siete Puentes, el jardín, el observatorio y el molino.
 
 Durante el vertical slice solo estarán operativos el centro de la plaza y la salida hacia el Paseo de los Siete Puentes. Los demás accesos podrán verse, pero permanecerán narrativamente bloqueados.
@@ -576,7 +576,7 @@ Al resolver P2, el jugador obtiene una anotación de la novia y un símbolo que 
 
 ### Estado 0: prólogo
 
-Plaza del Axioma y Paseo de los Siete Puentes. Se presentan los preparativos de la boda, los controles y el cuaderno. El padre de la novia entrega la primera nota y el jugador resuelve P2. La pista obtenida señala la biblioteca como siguiente destino.
+Plaza del Axioma y Paseo de los Siete Puentes. Se presentan los preparativos de la boda, los controles y el cuaderno. El padre del novio entrega la primera nota y el jugador resuelve P2. La pista obtenida señala la biblioteca como siguiente destino.
 
 ### Estado 1: primera investigación
 

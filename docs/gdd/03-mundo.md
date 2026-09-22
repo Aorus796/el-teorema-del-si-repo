@@ -29,7 +29,7 @@ No se utilizará una estructura de cuatro llaves. Cada zona modifica un sistema 
 La plaza es el punto inicial y final. Contiene el altar, la fuente central, el ayuntamiento, el tablón y los accesos a las zonas. Evoluciona durante la partida:
 
 - Al inicio está en plena preparación para la boda del día siguiente, con mesas, sillas, flores, cajas y habitantes trabajando.
-- Durante el prólogo, el padre de la novia entrega la nota que inicia la búsqueda.
+- Durante el prólogo, el padre del novio entrega la nota que inicia la búsqueda.
 - En la mitad, los mecanismos antiguos comienzan a reaccionar.
 - Al final, la fuente revela el acceso subterráneo.
 

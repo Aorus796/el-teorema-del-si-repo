@@ -1,7 +1,7 @@
 /*
  * Render de Silogio con pixel-art indexado (Silogio Character Pixel-Art
  * -- aplica el mismo lenguaje visual ya aprobado para Gonzalo, Elena,
- * Corolaria y el Padre de la novia). Vive en src/render/, igual que
+ * Corolaria y el Padre del novio). Vive en src/render/, igual que
  * BrideFatherRenderer.js/CorolariaRenderer.js/ElenaRenderer.js/
  * GonzaloRenderer.js/MaxRenderer.js, como módulo de render independiente
  * de la capa de escena (src/scenes/WorldScene.js).

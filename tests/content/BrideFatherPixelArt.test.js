@@ -12,7 +12,7 @@ import {
 
 /*
  * Validación de datos puros (sin DOM, sin cache) del pixel-art indexado
- * del Padre de la novia (Bride Father Character Pixel-Art -- aplica el
+ * del Padre del novio (Bride Father Character Pixel-Art -- aplica el
  * mismo lenguaje visual ya aprobado para Gonzalo, Elena y Corolaria).
  * Mismo patrón que tests/content/GonzaloPixelArt.test.js/
  * ElenaPixelArt.test.js/CorolariaPixelArt.test.js: invariantes
@@ -270,7 +270,7 @@ for (const [name, pixels] of Object.entries(VARIANTS)) {
 }
 
 /*
- * Identidad propia del Padre de la novia (secciones 5/11/12 de la
+ * Identidad propia del Padre del novio (secciones 5/11/12 de la
  * tarea): torso mucho más ancho que la cabeza y que las piernas (lectura
  * de "torso robusto, hombros amplios, presencia madura"), y piernas
  * legibles y separadas por un hueco central, a diferencia de Gonzalo

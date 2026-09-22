@@ -938,7 +938,7 @@ test("completar el diálogo de bride-epilogue no añade campos del servicio de a
   assert.equal(serialized.includes("playEpilogueTheme"), false);
 });
 
-test("enter() con una partida nueva, antes de completar el diálogo del padre de la novia, reproduce el opening en loop", () => {
+test("enter() con una partida nueva, antes de completar el diálogo del padre del novio, reproduce el opening en loop", () => {
   const setup = createWorldAt("axiom-plaza");
 
   assert.equal(setup.state.flags.brideNoteReceived, false);
@@ -1072,7 +1072,7 @@ test("enter() con epilogueCompleted=true detiene el opening que hubiera quedado 
   ]);
 });
 
-test("completar el diálogo con el padre de la novia dispara la música ambiental en loop exactamente una vez, después de marcar brideNoteReceived", () => {
+test("completar el diálogo con el padre del novio dispara la música ambiental en loop exactamente una vez, después de marcar brideNoteReceived", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.preparationsBoardRead = true;
 
@@ -1096,7 +1096,7 @@ test("completar el diálogo con el padre de la novia dispara la música ambienta
   ]);
 });
 
-test("reinteractuar con el padre de la novia tras brideNoteReceived:true no duplica la reproducción del ambiental", () => {
+test("reinteractuar con el padre del novio tras brideNoteReceived:true no duplica la reproducción del ambiental", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.state.flags.preparationsBoardRead = true;
 
@@ -1152,7 +1152,7 @@ test("cancelar con ambiental activo detiene la música antes de cambiar a title"
   ]);
 });
 
-test("cancelar sin haber completado nunca el diálogo del padre de la novia también detiene la música (no-op seguro)", () => {
+test("cancelar sin haber completado nunca el diálogo del padre del novio también detiene la música (no-op seguro)", () => {
   const setup = createWorldAt("axiom-plaza");
   setup.input.press("cancel");
 
@@ -3210,7 +3210,7 @@ test("la base inferior de Corolaria (mayor-corolaria) es tan ancha como su líne
     // Filtra también por rango de X propio de Corolaria (su sprite mide
     // 14 columnas): algunos símbolos de COROLARIA_PALETTE (piel, calzado)
     // reutilizan a propósito el mismo hex que otros personajes cercanos
-    // en axiom-plaza (p.ej. el Padre de la novia), así que filtrar solo
+    // en axiom-plaza (p.ej. el padre del novio), así que filtrar solo
     // por color e Y podría capturar pixeles ajenos que caen en la misma
     // fila absoluta de pantalla.
     const xs = context.fillRects
@@ -3232,7 +3232,7 @@ test("la base inferior de Corolaria (mayor-corolaria) es tan ancha como su líne
   assert.equal(rowSpanAt(17), rowSpanAt(9));
 });
 
-test("bride-father (Padre de la novia) usa varios tonos distintos de BRIDE_FATHER_PIXEL_PALETTE, no un único color de bloque", () => {
+test("bride-father (padre del novio) usa varios tonos distintos de BRIDE_FATHER_PIXEL_PALETTE, no un único color de bloque", () => {
   const setup = createWorldAt("axiom-plaza");
   const context = new FakeCanvasContext();
 
@@ -4549,7 +4549,7 @@ test("el primer diálogo de Corolaria (antes de leer el tablón) se dirige al pr
   );
 });
 
-test('el nombre de PARTNER_NAME solo aparece por primera vez al recibir la nota del padre de la novia, nunca antes -- consumiendo PARTNER_NAME, no un literal', () => {
+test('el nombre de PARTNER_NAME solo aparece por primera vez al recibir la nota del padre del novio, nunca antes -- consumiendo PARTNER_NAME, no un literal', () => {
   const setup = createWorldAt("axiom-plaza");
 
   setup.scene.interactWithCorolaria();
@@ -4585,7 +4585,7 @@ test('el nombre de PARTNER_NAME solo aparece por primera vez al recibir la nota 
   setup.scene.interactWithBrideFather();
   assert.ok(
     setup.ui.dialogue.lines.some((line) => line.includes(PARTNER_NAME)),
-    "El padre de la novia debe revelar el nombre de la pareja en esta rama",
+    "El padre del novio debe revelar el nombre de la pareja en esta rama",
   );
 
   assert.equal(setup.state.flags.brideNoteReceived, false);
