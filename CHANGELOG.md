@@ -4,6 +4,36 @@ Todos los cambios relevantes se registrarán siguiendo una adaptación de Keep a
 
 ## [No publicado]
 
+## [1.4.0] - 2026-09-22
+
+"El dato real": la fecha y la ciudad reales de la boda, ya escritas y
+aprobadas desde v1.1 en `personalizationConfig.js` (`WEDDING_DATE`,
+`WEDDING_CITY`) pero sin ningún consumidor en pantalla, pasan a formar
+parte de la experiencia. No es un puzle, ni un acto, ni un mapa nuevo:
+es una única línea de firma, tipo cierre de invitación, bajo la
+dedicatoria ya existente en los créditos finales.
+`SAVE_FORMAT_VERSION` se mantiene en 5 -- esta versión no añade estado
+persistente, banderas, puzles, mapas ni cambios de dificultad. El
+epílogo, la combinación del regalo (`7152`) y el resto del cierre de
+v1.3.0 no cambian.
+
+### Añadido
+
+- Firma de fecha y ciudad reales en el paso de dedicatoria de los
+  créditos finales (`src/scenes/CreditsScene.js`): bajo el párrafo ya
+  existente de `COUPLE_DEDICATION`, una línea más pequeña y en cursiva
+  con el texto `Logroño, 26 de septiembre de 2026.`, construida a
+  partir de `WEDDING_CITY`/`WEDDING_DATE` (sin duplicar esos literales
+  en la propia escena). Su posición vertical se calcula a partir del
+  final real del bloque de dedicatoria, para no depender de una
+  coordenada fija que pudiera solaparse si el texto de la dedicatoria
+  cambiara de longitud en el futuro. No añade un sexto paso a la
+  secuencia de créditos ni cambia el número de confirmaciones
+  necesarias para llegar a la tarjeta final (siguen siendo cinco pasos
+  y cuatro confirmaciones). Diseñada explícitamente para no sonar a
+  metadato técnico ni a explicación meta: sigue el formato ya
+  reconocible de una firma de invitación real.
+
 ## [1.3.0] - 2026-09-14
 
 Cuarto puzle principal y localización nueva: la **Cámara de Contención** y
