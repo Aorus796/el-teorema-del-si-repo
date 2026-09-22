@@ -1,5 +1,5 @@
 /*
- * Render del Padre de la novia con pixel-art indexado (Bride Father
+ * Render del Padre del novio con pixel-art indexado (Bride Father
  * Character Pixel-Art -- aplica el mismo lenguaje visual ya aprobado
  * para Gonzalo, Elena y Corolaria). Vive en src/render/, igual que
  * CorolariaRenderer.js/ElenaRenderer.js/GonzaloRenderer.js/MaxRenderer.js,

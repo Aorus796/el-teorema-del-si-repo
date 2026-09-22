@@ -433,7 +433,7 @@ const CONTAINMENT_REVELATION_TURNS = [
 const OBJECTIVE_LABELS = {
   "review-preparations-board": "Revisa el tablón de preparativos",
   "speak-to-corolaria": "Habla con la alcaldesa Corolaria",
-  "speak-to-bride-father": "Habla con el padre de la novia",
+  "speak-to-bride-father": "Habla con el padre del novio",
   "investigate-seven-bridges": "Investiga el Paseo de los Siete Puentes",
   "inspect-p2-evidence": "Busca la pista junto al embarcadero",
   "go-to-library": "Dirígete a la Biblioteca del Margen",
@@ -937,7 +937,7 @@ export class WorldScene {
         speaker: "Alcaldesa Corolaria",
         lines: [
           "Bien. Ya conoces las normas básicas de esta operación.",
-          "Ahora necesito que hables con el padre de la novia.",
+          "Ahora necesito que hables con el padre del novio.",
           "Ha venido buscándote y, por una vez, el retraso no parece culpa de las flores.",
         ],
         onComplete: () => {
@@ -960,7 +960,7 @@ export class WorldScene {
   interactWithBrideFather() {
     if (!this.state.flags.preparationsBoardRead) {
       this.ui.beginDialogue({
-        speaker: "Padre de la novia",
+        speaker: "Padre del novio",
         lines: [
           "Necesito hablar contigo, pero primero termina con Corolaria.",
           "No quiero que toda la plaza escuche esto.",
@@ -971,9 +971,9 @@ export class WorldScene {
 
     if (this.state.flags.brideNoteReceived) {
       this.ui.beginDialogue({
-        speaker: "Padre de la novia",
+        speaker: "Padre del novio",
         lines: [
-          `La nota era lo único extraño en la habitación de ${PARTNER_NAME}.`,
+          "La nota era lo único fuera de lugar.",
           "No había señales de violencia ni de que hubiera preparado un viaje.",
           "Confío en ti. Encuentra el lugar del que habla.",
         ],
@@ -982,10 +982,10 @@ export class WorldScene {
     }
 
     this.ui.beginDialogue({
-      speaker: "Padre de la novia",
+      speaker: "Padre del novio",
       lines: [
         `${PARTNER_NAME} no está en su habitación y nadie la ha visto salir esta mañana.`,
-        "No hay señales de violencia. Solo encontré esta nota sobre la mesa.",
+        "No hay señales de violencia. Solo había esta nota sobre la mesa.",
         "«Antes de mañana tengo que comprobar una cosa.»",
         "«Si no he vuelto al anochecer, sigue el camino de los siete puentes.»",
         "«No confíes en el mapa completo: uno de ellos nunca estuvo abierto.»",
@@ -1378,7 +1378,7 @@ export class WorldScene {
    * cualquier música que pudiera seguir sonando de un estado anterior de
    * esta misma instancia de escena (por ejemplo, el opening de una
    * partida nueva iniciada antes de cargar una partida ya terminada);
-   * (2) diálogo con el padre de la novia ya completado sin el epílogo
+   * (2) diálogo con el padre del novio ya completado sin el epílogo
    * completado: ambiental en loop; (3) ningún hito narrativo alcanzado
    * todavía (partida nueva o muy temprana): opening en loop. Se usa tanto
    * desde enter() como desde reconcileAudioAfterLoad().

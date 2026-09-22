@@ -99,7 +99,7 @@ Sus emociones se expresan como estados de procesamiento, confirmación, error y 
 - **Zona inicial:** Plaza del Axioma.
 - **Función:** iniciar la búsqueda y entregar la primera nota de la novia.
 - **Personalidad:** afectuoso, prudente y visiblemente preocupado, aunque intenta mantener la calma para no alarmar a todo el pueblo.
-- **Contradicción:** quiere proteger a su hija, pero comprende que ocultar la nota impediría encontrarla.
+- **Contradicción:** quiere proteger a su futura nuera, pero comprende que ocultar la nota impediría encontrarla.
 - **Evolución:** pasa de pedir una búsqueda discreta a colaborar activamente cuando aparecen pruebas del Archivo.
 - **Rasgo visual:** ropa preparada para ayudar con la ceremonia y la nota doblada en la mano.
 - **Papel en el prólogo:** explica que la novia no está en su habitación, entrega la nota al protagonista y activa el objetivo de investigar el Paseo de los Siete Puentes.

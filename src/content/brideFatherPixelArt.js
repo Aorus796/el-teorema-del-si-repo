@@ -1,6 +1,6 @@
 /*
- * Pixel-art indexado del Padre de la novia (Bride Father Character
- * Pixel-Art -- aplica al Padre de la novia el mismo lenguaje visual ya
+ * Pixel-art indexado del Padre del novio (Bride Father Character
+ * Pixel-Art -- aplica al Padre del novio el mismo lenguaje visual ya
  * aprobado para Gonzalo, Elena y Corolaria: matriz de caracteres +
  * paleta compacta, rasterizada una única vez y cacheada -- ver
  * src/render/BrideFatherRenderer.js, que replica el patrón de
@@ -25,7 +25,7 @@
  * en tiempo de dibujo (ver BrideFatherRenderer.js) -- un único dataset
  * lateral, no dos.
  *
- * Identidad propia del Padre de la novia, preservando el diseño
+ * Identidad propia del Padre del novio, preservando el diseño
  * geométrico ya aprobado que sustituye (WorldScene.js:renderBrideFather()
  * anterior: azul #486987 + crema #efe2bf, silueta oscura, torso robusto
  * de ancho completo) pero deliberadamente distinta de Gonzalo en su

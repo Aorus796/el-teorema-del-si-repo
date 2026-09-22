@@ -2,7 +2,7 @@
  * Pixel-art indexado de Max (perro, pastor belga malinois) -- Max
  * Character Pixel-Art: aplica a Max el mismo NIVEL DE CALIDAD ya
  * aprobado para los cinco personajes humanos (Gonzalo, Elena, Corolaria,
- * el Padre de la novia y Silogio) -- matriz de caracteres + paleta
+ * el Padre del novio y Silogio) -- matriz de caracteres + paleta
  * compacta, rasterizada una única vez y cacheada -- sin copiar su
  * arquitectura visual: Max es un cuadrúpedo, no un bípedo con
  * front/back/side + ojos por orientación.

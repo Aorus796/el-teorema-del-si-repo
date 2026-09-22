@@ -34,6 +34,23 @@ v1.3.0 no cambian.
   metadato técnico ni a explicación meta: sigue el formato ya
   reconocible de una firma de invitación real.
 
+### Corregido
+
+- Nombre visible del NPC `bride-father` en la Plaza del Axioma: pasa de
+  "Padre de la novia" a "Padre del novio" (`label` en
+  `src/content/worldMaps.js`, hablante y objetivo en
+  `src/scenes/WorldScene.js`). Ajuste mínimo de dos líneas de su propio
+  diálogo que dependían de tener acceso directo a la habitación de
+  Elena ("La nota era lo único extraño en la habitación de Elena" /
+  "Solo encontré esta nota sobre la mesa"), para que sigan siendo
+  coherentes con quién es ahora el personaje, sin inventar contenido
+  narrativo nuevo. El resto del diálogo, la nota del cuaderno, la
+  revelación del nombre de Elena y la música ambiental que dispara no
+  cambian. Identificadores internos (`bride-father`, `BrideFatherRenderer`,
+  `BRIDE_FATHER_PIXEL_PALETTE`, nombres de archivo) se mantienen sin
+  cambios a propósito: es una corrección de copy, no un rediseño
+  técnico.
+
 ## [1.3.0] - 2026-09-14
 
 Cuarto puzle principal y localización nueva: la **Cámara de Contención** y

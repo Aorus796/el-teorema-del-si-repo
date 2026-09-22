@@ -190,7 +190,7 @@ test("bride-father tiene el label coherente con su hablante real en los diálogo
   const father = map.objects.find((object) => object.id === "bride-father");
 
   assert.equal(father?.type, "npc");
-  assert.equal(father?.label, "Padre de la novia");
+  assert.equal(father?.label, "Padre del novio");
   assert.notEqual(father?.label, "Padre de la Investigadora");
 });
 

@@ -2,9 +2,9 @@
 
 ## 2.1. Premisa
 
-El día anterior a la boda, el protagonista se encuentra en la Plaza del Axioma mientras los habitantes preparan la ceremonia. Entre mesas, sillas, flores y cajas todavía por colocar, el padre de la novia le comunica que ella no está en su habitación y que nadie sabe dónde se encuentra. No existen señales de violencia ni petición de rescate.
+El día anterior a la boda, el protagonista se encuentra en la Plaza del Axioma mientras los habitantes preparan la ceremonia. Entre mesas, sillas, flores y cajas todavía por colocar, el padre del novio le comunica que ella no está en su habitación y que nadie sabe dónde se encuentra. No existen señales de violencia ni petición de rescate.
 
-El padre entrega al protagonista una nota encontrada en la habitación de la novia. El mensaje indica que estaba investigando algo antes de la ceremonia y conduce al **Paseo de los Siete Puentes**. Allí, el protagonista encuentra un mapa alterado y la primera evidencia que relaciona su desaparición con la biblioteca.
+El padre entrega al protagonista una nota. El mensaje indica que estaba investigando algo antes de la ceremonia y conduce al **Paseo de los Siete Puentes**. Allí, el protagonista encuentra un mapa alterado y la primera evidencia que relaciona su desaparición con la biblioteca.
 
 Los habitantes recuerdan versiones contradictorias. Siguiendo las pistas, el protagonista descubre que la novia investigaba una construcción oculta bajo el pueblo: el **Archivo de las Conjeturas**, una antigua institución dedicada a registrar y validar conocimiento.
 
@@ -56,7 +56,7 @@ Su conflicto se resuelve lógicamente. El jugador no lo destruye ni lo convence 
 
 ### Prólogo: la víspera interrumpida
 
-Se presentan la Plaza del Axioma, los preparativos de la boda y los controles básicos. El padre de la novia entrega una nota encontrada en su habitación, que conduce al Paseo de los Siete Puentes. La resolución del primer problema revela una pista relacionada con la biblioteca.
+Se presentan la Plaza del Axioma, los preparativos de la boda y los controles básicos. El padre del novio entrega una nota, que conduce al Paseo de los Siete Puentes. La resolución del primer problema revela una pista relacionada con la biblioteca.
 
 ### Acto I: versiones incompatibles
 
